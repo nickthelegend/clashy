@@ -8,13 +8,13 @@
     "scheme": "clashy",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "bundleIdentifier": "fun.clashy.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#5B6CFF"
       },
       "predictiveBackGestureEnabled": false,
       "package": "fun.clashy.app"
