@@ -1,0 +1,210 @@
+/* Clashy landing: tab.markets' page structure, Clashy's black theme and clay art. */
+:root {
+  --bg: #000;
+  --s1: #111113;
+  --s2: #1c1c1f;
+  --s3: #26262b;
+  --line: rgba(255, 255, 255, 0.08);
+  --line2: rgba(255, 255, 255, 0.14);
+  --ink: #f5f5f7;
+  --muted: #9a9aa6;
+  --dim: #5a5a64;
+  --you: #5b6cff;
+  --you-hi: #8592ff;
+  --opp: #f0468c;
+  --gold: #ffc94a;
+  --lav: #c9c2ff;
+  --cream: #fff3df;
+  --up: #30d158;
+  --down: #ff453a;
+  --display: 'Readex Pro', system-ui, sans-serif;
+  --ui: 'Inter', system-ui, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+:focus-visible {
+  outline: 2px solid var(--you-hi);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+.wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.cents {
+  color: var(--dim);
+}
+.up {
+  color: var(--up);
+}
+.down {
+  color: var(--down);
+}
+.you {
+  color: var(--you-hi);
+}
+.opp {
+  color: var(--opp);
+}
+.sample {
+  font-size: 11px;
+  color: var(--dim);
+}
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  z-index: 100;
+  background: var(--you);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+.skip:focus {
+  left: 16px;
+}
+
+/* buttons (tab.markets pills) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 8px 0 22px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 0.15s var(--ease),
+    background 0.2s;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--you);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #6b7bff;
+}
+.btn-primary .arrow {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--you);
+  display: grid;
+  place-items: center;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line2);
+  color: var(--ink);
+  padding: 0 22px 0 8px;
+}
+.btn-ghost .play {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--s2);
+  display: grid;
+  place-items: center;
+}
+.btn-white {
+  background: #fff;
+  color: #000;
+  padding: 0 22px;
+}
+.btn-dark {
+  background: var(--s2);
+  border-color: var(--line2);
+  color: var(--ink);
+  padding: 0 18px;
+}
+.btn-sm {
+  min-height: 40px;
+  font-size: 14px;
+  padding: 0 16px;
+}
+
+.label {
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .wrap {
+    padding: 0 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
