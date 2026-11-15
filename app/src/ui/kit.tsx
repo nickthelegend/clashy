@@ -359,3 +359,55 @@ export const SearchBar = ({ value, onChange, placeholder }: { value: string; onC
       style={{ flex: 1, color: C.ink, fontFamily: F.medium, fontSize: 14 }} />
   </View>
 );
+
+/* ---------- live chart: smooth line, min range, glowing live dot, price tag ---------- */
+const smooth = (pts: [number, number][]) => {
+  if (pts.length < 3) return pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6, c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+};
+/** Price chart for games: real history plus live ticks, a smoothed line, at least ±minSpan of range so quiet markets
+ *  don't look like stairs, an optional reference line (e.g. a round's start price), and a pulsing live dot. */
+export const LiveChart = ({ data, w, h = 240, refLine, refLabel, minSpan = 0.0008, color = C.brand }: { data: number[]; w: number; h?: number; refLine?: number; refLabel?: string; minSpan?: number; color?: string }) => {
+  const pulse = useSharedValue(1);
+  useEffect(() => { pulse.value = withRepeat(withTiming(2.4, { duration: 1100 }), -1, false); }, [pulse]);
+  const ring = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }], opacity: 1.4 - pulse.value / 2 }));
+  if (data.length < 2) return <View style={{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">Loading price…</Txt></View>;
+  const last = data[data.length - 1];
+  let lo = Math.min(...data, refLine ?? Infinity), hi = Math.max(...data, refLine ?? -Infinity);
+  const need = last * minSpan;
+  if (hi - lo < need) { const mid = (hi + lo) / 2; lo = mid - need / 2; hi = mid + need / 2; }
+  const pad = (hi - lo) * 0.14; lo -= pad; hi += pad;
+  const R_ = 74; // right gutter for the price tag
+  const X = (i: number) => 4 + (i / (data.length - 1)) * (w - R_);
+  const Y = (v: number) => 8 + (1 - (v - lo) / (hi - lo)) * (h - 16);
+  const pts = data.map((v, i) => [X(i), Y(v)] as [number, number]);
+  const d = smooth(pts);
+  const ex = pts[pts.length - 1][0], ey = pts[pts.length - 1][1];
+  const up = refLine === undefined ? last >= data[0] : last >= refLine;
+  const lc = refLine === undefined ? color : up ? C.up : C.down;
+  return (
+    <View style={{ width: w, height: h }}>
+      <Svg width={w} height={h}>
+        <Defs><LinearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={lc} stopOpacity={0.28} /><Stop offset="1" stopColor={lc} stopOpacity={0} /></LinearGradient></Defs>
+        {[0.25, 0.5, 0.75].map((f) => <Line key={f} x1={0} x2={w - R_ + 4} y1={h * f} y2={h * f} stroke="#18181C" />)}
+        <Path d={`${d} L${ex},${h} L${pts[0][0]},${h}Z`} fill="url(#lcg)" />
+        {refLine !== undefined ? <Line x1={0} x2={w} y1={Y(refLine)} y2={Y(refLine)} stroke={C.brandSoft} strokeWidth={1.2} strokeDasharray="5 5" /> : null}
+        <Path d={d} stroke={lc} strokeOpacity={0.25} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d={d} stroke={lc} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <Line x1={ex} x2={w} y1={ey} y2={ey} stroke={lc} strokeOpacity={0.5} strokeDasharray="2 3" />
+      </Svg>
+      <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: ex - 6, top: ey - 6, width: 12, height: 12, borderRadius: 6, backgroundColor: lc }, ring]} />
+      <View pointerEvents="none" style={{ position: 'absolute', left: ex - 5, top: ey - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: lc, borderWidth: 2, borderColor: '#000' }} />
+      <View pointerEvents="none" style={{ position: 'absolute', right: 4, top: Math.max(2, Math.min(h - 24, ey - 11)), backgroundColor: lc, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 3 }}>
+        <Text style={{ fontFamily: F.bold, fontSize: 11, color: '#000' }}>{last >= 1000 ? last.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.toPrecision(5)}</Text>
+      </View>
+      {refLine !== undefined && refLabel ? <Text style={{ position: 'absolute', left: 8, top: Math.max(2, Y(refLine) - 18), fontFamily: F.semi, fontSize: 10.5, color: C.brandSoft }}>{refLabel}</Text> : null}
+    </View>
+  );
+};
