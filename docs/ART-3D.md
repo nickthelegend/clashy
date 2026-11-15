@@ -1,19 +1,17 @@
-# Clashy art kit: "bold sticker" (v5, final)
+# Clashy art kit: "soft clay" (v7, final)
 
-Picked Nov 15, 2026 from six style boards (style 4; Nick asked grokbot new to decide between clay and sticker). It
-replaces the "duel light" set, which was too dark to read at app size. Every asset is a flat, cel-shaded sticker
-that reads at 32 px.
+Picked by Nick on Nov 15, 2026: "use clay dough please". It replaces the bold sticker set (v5), which replaced
+"duel light" (v4). Every asset is matte play-dough / plasticine.
 
-- **Shape:** chunky, slightly toy-like original designs; one subject per sticker.
-- **Line:** a thick dark navy outline `#14143A` around every shape.
-- **Colour:** flat fills with exactly one hard shadow tone and one small white highlight. Indigo `#5B6CFF` (you),
-  hot pink `#F0468C` (your rival), gold `#FFC83D` for rewards, white.
-- **Border:** a thick clean white sticker border is the outer edge of every sticker.
-- **Background:** real alpha (transparent PNG/WebP). Scenes, the splash, onboarding and the profile banner sit on black
-  or navy. `scripts/convert-art.sh` converts. ChatGPT sometimes paints a fake checkerboard or black behind a sticker;
-  `clean.py` in the generation run strips it and redraws the white border (see SOURCES.md).
-- **Text:** none, except the chat reaction stickers (KO!, GG, REKT, LFG, FADE ME), each checked for spelling.
-- **Banned:** real logos and brands, Clash of Clans or any other game's characters, fomo.family's art.
+- **Form:** soft rounded chunky shapes with a visible thumb-press texture; matte, no gloss.
+- **Light:** gentle studio light from the upper left, with a soft contact shadow baked in.
+- **Character:** cute but premium, Apple Memoji clay / Headspace polish. The 20 avatars are one character family:
+  same head shape, round eyes, rosy cheeks, in an indigo badge with a gold rim.
+- **Palette:** indigo `#5B6CFF` (you), hot pink `#F0468C` (your rival), warm gold `#FFC94A`, plus soft cream and white.
+- **Never:** outlines, sticker borders, comic halftone.
+- **Background:** real alpha for objects and characters. Banners, onboarding, splash, the desktop hero and the web
+  scenes sit on pure black.
+- **Words:** chat stickers, VS and LIVE are made of clay letters, each spell-checked.
+- **Banned:** real logos and brands (coins are generic), any existing game's characters, fomo.family's art.
 
-**Wordmark (final, option A "Slice", picked Nov 15; alternatives in `assets/brand/options/`):**
-`web/src/components/Wordmark.tsx` and `assets/brand/wordmark*.svg`.
+**Wordmark (final, option A "Slice"; alternatives in `assets/brand/options/`):** `assets/brand/wordmark*.svg`.
