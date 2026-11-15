@@ -2,7 +2,7 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { ReactNode, useEffect } from 'react';
-import { Pressable, StyleProp, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { C, F, R, fmtPct } from './tokens';
@@ -35,16 +35,22 @@ export const Money = ({ value, size = 26, color = C.ink }: { value: number; size
 
 /* ---------- press feedback ---------- */
 export const Press = ({ onPress, style, children, haptic = true, disabled }: { onPress?: () => void; style?: StyleProp<ViewStyle>; children: ReactNode; haptic?: boolean; disabled?: boolean }) => {
-  const s = useSharedValue(1);
-  const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  const sc = useSharedValue(1);
+  const a = useAnimatedStyle(() => ({ transform: [{ scale: sc.value }] }));
+  // Layout props (flex, width, margins, alignSelf) belong on the touch target, not the inner view,
+  // otherwise side-by-side buttons collapse to their text width.
+  const flat = (StyleSheet.flatten(style) ?? {}) as ViewStyle;
+  const { flex, flexGrow, flexShrink, flexBasis, width, minWidth, maxWidth, alignSelf, margin, marginTop, marginBottom, marginLeft, marginRight, marginHorizontal, marginVertical, position, left, right, top, bottom, ...inner } = flat;
+  const outer: ViewStyle = { flex, flexGrow, flexShrink, flexBasis, width, minWidth, maxWidth, alignSelf, margin, marginTop, marginBottom, marginLeft, marginRight, marginHorizontal, marginVertical, position, left, right, top, bottom };
   return (
     <Pressable
+      style={outer}
       disabled={disabled}
-      onPressIn={() => (s.value = withSpring(0.96, { damping: 18, stiffness: 400 }))}
-      onPressOut={() => (s.value = withSpring(1, { damping: 14, stiffness: 300 }))}
+      onPressIn={() => (sc.value = withSpring(0.97, { damping: 18, stiffness: 420 }))}
+      onPressOut={() => (sc.value = withSpring(1, { damping: 14, stiffness: 300 }))}
       onPress={() => { if (haptic) Haptics.selectionAsync(); onPress?.(); }}
       hitSlop={6}>
-      <Animated.View style={[a, style, disabled ? { opacity: 0.4 } : null]}>{children}</Animated.View>
+      <Animated.View style={[a, inner, (width !== undefined || flex !== undefined) ? { width: '100%' } : null, disabled ? { opacity: 0.4 } : null]}>{children}</Animated.View>
     </Pressable>
   );
 };
@@ -55,10 +61,10 @@ const BK: Record<BtnKind, { bg: string; fg: string }> = {
   brand: { bg: C.brand, fg: '#fff' }, white: { bg: C.white, fg: '#000' }, long: { bg: C.up, fg: '#03140A' },
   short: { bg: C.down, fg: '#fff' }, ghost: { bg: C.s2, fg: C.ink },
 };
-export const Btn = ({ title, kind = 'brand', onPress, h = 52, style, disabled, icon }: { title: string; kind?: BtnKind; onPress?: () => void; h?: number; style?: StyleProp<ViewStyle>; disabled?: boolean; icon?: ReactNode }) => (
-  <Press onPress={onPress} disabled={disabled} style={[{ height: h, borderRadius: R.md, backgroundColor: BK[kind].bg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 16 }, style]}>
+export const Btn = ({ title, kind = 'brand', onPress, h = 48, style, disabled, icon }: { title: string; kind?: BtnKind; onPress?: () => void; h?: number; style?: StyleProp<ViewStyle>; disabled?: boolean; icon?: ReactNode }) => (
+  <Press onPress={onPress} disabled={disabled} style={[{ height: h, borderRadius: h <= 38 ? 11 : 14, backgroundColor: BK[kind].bg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: h <= 38 ? 14 : 18 }, style]}>
     {icon}
-    <Text style={{ fontFamily: F.semi, fontSize: h < 40 ? 13.5 : 16, color: BK[kind].fg }}>{title}</Text>
+    <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: h <= 38 ? 13.5 : 15, letterSpacing: -0.1, color: BK[kind].fg }}>{title}</Text>
   </Press>
 );
 export const IconBtn = ({ children, onPress, size = 38, dot }: { children: ReactNode; onPress?: () => void; size?: number; dot?: boolean }) => (
