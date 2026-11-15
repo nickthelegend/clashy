@@ -8,12 +8,12 @@ import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
-import { MAJORS } from '@/data/markets';
+import { MAJORS, useCandles } from '@/data/markets';
 import { Countdown, CountUp, FX, Hit, RoundBanner, Shake, WinBurst } from '@/ui/fx';
 import { Image } from 'expo-image';
 import { ART } from '@/ui/kit';
 import { useTicks } from '@/data/ticks';
-import { BackBtn, Btn, Card, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { BackBtn, Btn, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, R, S, fmtUsd } from '@/ui/tokens';
 
@@ -32,6 +32,8 @@ export default function Royale() {
   const { width } = useWindowDimensions();
   const [coin, setCoin] = useState('BTC');
   const { ticks, last, error } = useTicks(coin, 90);
+  const candles = useCandles(coin); // real 1-minute closes as history, live ticks on top
+  const history = [...(candles.data ?? []).slice(-45), ...ticks.map((k) => k.p)];
   const [phase, setPhase] = useState<Phase>('ready');
   const [lives, setLives] = useState(LIVES);
   const [round, setRound] = useState(0);
@@ -189,9 +191,9 @@ export default function Royale() {
       <View style={{ flexDirection: desk ? 'row' : 'column', gap: 14 }}>
         <View>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <PriceChart data={ticks.map((k) => k.p)} w={chartW} h={desk ? 380 : 240} />
+            <LiveChart data={history} w={chartW} h={desk ? 380 : 240} />
             <Row style={{ justifyContent: 'space-between', padding: 10, paddingTop: 2 }}>
-              <Txt v="small" color={C.brandSoft}>{`${coin} live`}</Txt>
+              <Txt v="small" color={C.brandSoft}>{`${coin} · last 45 min + live`}</Txt>
               <Txt v="small" color={C.ink}>{last ? fmtUsd(last) : 'Loading…'}</Txt>
             </Row>
           </Card>
