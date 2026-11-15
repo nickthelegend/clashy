@@ -1,0 +1,30 @@
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { C } from '@/ui/tokens';
+
+SplashScreen.preventAutoHideAsync();
+
+const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, text: C.ink, border: C.line, primary: C.brand } };
+
+export default function Root() {
+  const [loaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  useEffect(() => { if (loaded) SplashScreen.hideAsync(); }, [loaded]);
+  if (!loaded) return null;
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
+      <ThemeProvider value={theme}>
+        <StatusBar style="light" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="duel/amount" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="duel/live" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="duel/result" options={{ gestureEnabled: false, animation: 'fade' }} />
+        </Stack>
+      </ThemeProvider>
+    </GestureHandlerRootView>
+  );
+}
