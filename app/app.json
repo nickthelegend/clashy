@@ -14,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#5B6CFF"
+        "backgroundColor": "#000000"
       },
       "predictiveBackGestureEnabled": false,
       "package": "fun.clashy.app"
