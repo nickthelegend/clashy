@@ -25,7 +25,10 @@ The winner is whoever has the better **real** P&L % at the bell. Trading fees ar
 | Other launchpads | Meteora DBC, LetsBonk, etc. | Through Jupiter once routable | none | Jupiter integrator fee |
 
 XORR already has working, tested adapters for all of these (`xorr-v2/server/src/venues/perps/phoenix.ts`,
-`venues/memes/trade.ts`, `venues/jupiter.ts`). Clashy reuses that code rather than rewriting it.
+`venues/memes/trade.ts`, `venues/jupiter.ts`). **Open (clashy.md question 5, waiting on Nick):** reusing them
+clashes with the rule that Clashy doesn't overlap XORR (Nick's Dec 5 perps/memes entry), and Blitz says to build
+during the event. No XORR code is copied into clashy/ until Nick decides; the alternative is fresh adapters
+written after the Nov 20 kickoff against the venues' public SDKs.
 
 ## How a real Knockout duel runs
 1. **Queue.** You pick the pot size ($5 / $20 / $50) and your margin. The pot goes into escrow.
