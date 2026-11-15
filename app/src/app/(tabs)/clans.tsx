@@ -45,6 +45,11 @@ export default function Clans() {
           <Btn title="Create a clan" kind="white" style={{ flex: 1 }} disabled={!live} />
           <Btn title="Find one" kind="ghost" style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.16)' }} onPress={() => setSearching(true)} />
         </Row>
+        <Row style={{ gap: 8, marginTop: 8 }}>
+          <Btn title="Clan Chest" kind="ghost" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }} onPress={() => router.push('/clan/chest')} />
+          <Btn title="Skirmish" kind="ghost" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }} onPress={() => router.push('/game/skirmish')} />
+        </Row>
+        <Txt v="small" color="#C9CEFF" style={{ marginTop: 8, textAlign: 'center' }}>Practice the chest and skirmishes now · real clans open at the Blitz kickoff</Txt>
       </LinearGradient>
 
       <Row style={{ justifyContent: 'space-between', marginTop: 20, marginBottom: 6 }}>

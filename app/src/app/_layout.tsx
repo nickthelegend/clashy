@@ -36,6 +36,8 @@ export default function Root() {
           <Stack.Screen name="game/line" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/royale" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/war" />
+          <Stack.Screen name="game/skirmish" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="clan/chest" />
           <Stack.Screen name="game/diamond" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/cup" />
           <Stack.Screen name="game/bounty" />
