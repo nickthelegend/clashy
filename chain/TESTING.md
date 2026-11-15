@@ -6,7 +6,7 @@ Every on-chain test runs against real validators: the real Clashy program, Magic
 | Suite | Command | Count | Last result |
 |---|---|---|---|
 | Program unit tests (math, price scaling) | `cargo test -p clashy --lib` | 9 | 9 pass (Nov 16, 2026) |
-| End-to-end on the local MagicBlock stack | `npx tsx --test --test-concurrency=1 tests/clashy.test.ts` | 5 | 5 pass in 134 s (Nov 16, 2026); log `.localnet/e2e-last.log` |
+| End-to-end on the local MagicBlock stack | `npx tsx --test --test-concurrency=1 tests/clashy.test.ts` | 5 | 5 pass in 135 s (Nov 16, 2026); log `.localnet/e2e-last.log` |
 | Mainnet-fork trade on Phoenix | `npx tsx scripts/fork-trade.ts 1` | 1 | sold 1 SOL for 54.660103 USDC, book expected 54.660103 |
 | App on-chain duel, two browser tabs | Playwright: two contexts on `/onchain` | 3 duels | 3 settled, no errors (Nov 16, 2026) |
 | App on-chain clan, two browser tabs | Playwright: two contexts on `/onchain-clan` | 1 full flow | create, join, deposit, propose, vote, execute, close; no errors (Nov 16, 2026) |
@@ -32,7 +32,7 @@ npx tsx scripts/crank.ts          # only needed for the app; the tests run their
 5. **Royale tournament:** entries escrowed, calls and rounds on the ER, survivors split the pot. Last run on BTC:
    lives 0 / 1 / 0, so one survivor took 0.1455 SOL (0.15 SOL pot minus 3% rake).
 
-The suite also caught a real limit: the MagicBlock rollup sponsors only 10 commits per delegated account, which broke
+Running the crank for the app caught a real limit: the MagicBlock rollup sponsors only 10 commits per delegated account, which broke
 the crank's 30-second feed commits after five minutes. Solana-side reads now use base feeds (see README).
 
 ## Mainnet fork
