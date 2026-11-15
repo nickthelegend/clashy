@@ -160,7 +160,7 @@ describe('clans: group trading by vote, then clan vs clan', () => {
     await dep(capB, clanB, 2);
     assert.equal(await lamports(P.chest(clanA)), 3 * LAMPORTS_PER_SOL);
 
-    // proposal: long SOL 5x with 50% of the chest; captain yes (2 SOL), member no (1 SOL) → passes 2:1 and holds a chest majority
+    // proposal: long SOL 5x with 50% of the chest; captain yes (2 SOL), member no (1 SOL) → passes 2:1 with over half of all shares
     const prop = P.proposal(clanA, 0);
     await programFor(member).methods.propose(0, 1, 5, 5000, new BN(60)).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop }).rpc();
     await programFor(capA).methods.vote(true).accountsPartial({ wallet: capA.publicKey, clan: clanA, member: P.member(clanA, capA.publicKey), proposal: prop, vote: P.vote(prop, capA.publicKey) }).rpc();
@@ -203,6 +203,21 @@ describe('clans: group trading by vote, then clan vs clan', () => {
     console.log(`  war returns ${w.returnBps.map(String)} bps → winner ${w.winner === 1 ? nameA : w.winner === 2 ? nameB : 'tie'}`);
     const after = await baseProgram.account.clan.fetch(clanA);
     assert.ok(after.war.equals(new (await import('@solana/web3.js')).PublicKey(new Uint8Array(32))), 'chest unlocked');
+
+    // the member cashes out all their shares: exactly their pro-rata part of the chest after the war
+    const m = await baseProgram.account.member.fetch(P.member(clanA, member.publicKey));
+    const before = await lamports(member.publicKey);
+    const expected = BigInt(after.chest.toString()) * BigInt(m.shares.toString()) / BigInt(after.shares.toString());
+    await programFor(member).methods.withdrawChest(m.shares).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), chest: P.chest(clanA) }).rpc();
+    const got = BigInt(await lamports(member.publicKey)) - BigInt(before);
+    assert.ok(got <= expected && expected - got <= 10_000n, `pro-rata payout ${got} vs ${expected} (only the fee differs)`);
+    const am = await baseProgram.account.member.fetch(P.member(clanA, member.publicKey));
+    assert.equal(am.shares.toNumber(), 0);
+    console.log(`  member cashed out ${m.shares} shares of ${after.shares} for ${Number(expected) / LAMPORTS_PER_SOL} SOL of a ${after.chest.toNumber() / LAMPORTS_PER_SOL} SOL chest`);
+    // a war can stake at most half the chest
+    const war2 = P.war(clanA, clanB, 2);
+    const chestNow = (await baseProgram.account.clan.fetch(clanA)).chest.toNumber();
+    await assert.rejects(programFor(capA).methods.declareWar(new BN(2), new BN(Math.floor(chestNow / 2) + 1), new BN(60)).accountsPartial({ captain: capA.publicKey, clanA, clanB, chestA: P.chest(clanA), war: war2, vault: P.vault(war2) }).rpc(), /WarStakeTooBig/);
   });
 });
 

@@ -525,6 +525,7 @@ pub mod clashy {
         c.crest = crest;
         c.members = 1;
         c.chest = 0;
+        c.shares = 0;
         c.score_pnl = 0;
         c.proposals = 0;
         c.positions_open = 0;
@@ -535,6 +536,7 @@ pub mod clashy {
         m.clan = clan_key;
         m.wallet = ctx.accounts.founder.key();
         m.deposit = 0;
+        m.shares = 0;
         m.joined_at = Clock::get()?.unix_timestamp;
         m.bump = ctx.bumps.member;
         ctx.accounts.player.clan = clan_key;
@@ -548,6 +550,7 @@ pub mod clashy {
         m.clan = clan_key;
         m.wallet = ctx.accounts.wallet.key();
         m.deposit = 0;
+        m.shares = 0;
         m.joined_at = Clock::get()?.unix_timestamp;
         m.bump = ctx.bumps.member;
         ctx.accounts.clan.members += 1;
@@ -557,7 +560,7 @@ pub mod clashy {
 
     /// Leaves the clan. Withdraw your deposit first; the captain leaves last.
     pub fn leave_clan(ctx: Context<LeaveClan>) -> Result<()> {
-        require!(ctx.accounts.member.deposit == 0, ClashyError::ChestTooLow);
+        require!(ctx.accounts.member.shares == 0, ClashyError::ChestTooLow);
         let c = &mut ctx.accounts.clan;
         if ctx.accounts.wallet.key() == c.captain {
             require!(c.members == 1, ClashyError::NotCaptain);
@@ -569,22 +572,36 @@ pub mod clashy {
 
     pub fn deposit_chest(ctx: Context<ChestMove>, amount: u64) -> Result<()> {
         require!(amount > 0, ClashyError::StakeTooLow);
+        let minted = math::shares_for_deposit(amount, ctx.accounts.clan.chest, ctx.accounts.clan.shares).ok_or(ClashyError::ChestTooLow)?;
+        require!(minted > 0, ClashyError::StakeTooLow);
         deposit(&ctx.accounts.wallet.to_account_info(), &ctx.accounts.chest.to_account_info(), &ctx.accounts.system_program.to_account_info(), amount)?;
-        ctx.accounts.member.deposit += amount;
-        ctx.accounts.clan.chest += amount;
+        let m = &mut ctx.accounts.member;
+        m.deposit += amount;
+        m.shares += minted;
+        let c = &mut ctx.accounts.clan;
+        c.chest += amount;
+        c.shares += minted;
         Ok(())
     }
 
-    /// Withdraws your own deposit. Blocked while the clan is at war (the chest backs the war pot).
-    pub fn withdraw_chest(ctx: Context<ChestMove>, amount: u64) -> Result<()> {
+    /// Redeems `shares` of your chest shares for their pro-rata part of the chest, so war wins and
+    /// losses are shared by every member whatever order they leave in. Blocked while at war.
+    pub fn withdraw_chest(ctx: Context<ChestMove>, shares: u64) -> Result<()> {
         let c = &ctx.accounts.clan;
         require!(c.war == Pubkey::default(), ClashyError::WarLocked);
-        require!(amount > 0 && amount <= ctx.accounts.member.deposit && amount <= c.chest, ClashyError::ChestTooLow);
+        let held = ctx.accounts.member.shares;
+        require!(shares > 0 && shares <= held, ClashyError::NotEnoughShares);
+        let payout = math::payout_for_shares(shares, c.chest, c.shares);
+        require!(payout > 0, ClashyError::ChestTooLow);
         let clan_key = c.key();
         let seeds: &[&[u8]] = &[CHEST_SEED, clan_key.as_ref(), &[c.chest_bump]];
-        pay_from_vault(&ctx.accounts.chest.to_account_info(), &ctx.accounts.wallet.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
-        ctx.accounts.member.deposit -= amount;
-        ctx.accounts.clan.chest -= amount;
+        pay_from_vault(&ctx.accounts.chest.to_account_info(), &ctx.accounts.wallet.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, payout)?;
+        let m = &mut ctx.accounts.member;
+        m.deposit -= (m.deposit as u128 * shares as u128 / held as u128) as u64;
+        m.shares -= shares;
+        let c = &mut ctx.accounts.clan;
+        c.chest -= payout;
+        c.shares -= shares;
         Ok(())
     }
 
@@ -614,9 +631,9 @@ pub mod clashy {
         Ok(())
     }
 
-    /// Votes are weighted by the member's chest deposit; one vote per member per proposal.
+    /// Votes are weighted by the member's chest shares; one vote per member per proposal.
     pub fn vote(ctx: Context<CastVote>, yes: bool) -> Result<()> {
-        let weight = ctx.accounts.member.deposit;
+        let weight = ctx.accounts.member.shares;
         require!(weight > 0, ClashyError::NoWeight);
         let p = &mut ctx.accounts.proposal;
         require!(p.status == proposal_status::OPEN, ClashyError::WrongStatus);
@@ -636,14 +653,16 @@ pub mod clashy {
     }
 
     /// Captain executes a passed proposal at the oracle price: opens a scored clan position.
-    /// Passed = more yes than no, and either the window closed or yes holds a chest majority.
+    /// Passed = more yes than no, and either the window closed or yes holds over half of all shares.
     pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         let chest = ctx.accounts.clan.chest;
+        let shares = ctx.accounts.clan.shares;
         let p = &ctx.accounts.proposal;
         require!(p.status == proposal_status::OPEN, ClashyError::WrongStatus);
         require!(p.yes > p.no, ClashyError::NotPassed);
-        require!(now > p.deadline || (p.yes as u128) * 2 > chest as u128, ClashyError::VotingOpen);
+        // votes are in shares: early execution needs yes from over half of all shares
+        require!(now > p.deadline || (p.yes as u128) * 2 > shares as u128, ClashyError::VotingOpen);
         let price = solana_price(&ctx.accounts.config, p.coin, &ctx.accounts.price.to_account_info(), now)?;
         let notional = (chest as u128 * p.size_bps as u128 / BPS as u128) as u64;
         require!(notional > 0, ClashyError::ChestTooLow);
@@ -699,6 +718,7 @@ pub mod clashy {
         require_keys_neq!(a.key(), ctx.accounts.clan_b.key(), ClashyError::SelfWar);
         require!(a.war == Pubkey::default(), ClashyError::WarLocked);
         require!(a.chest >= stake, ClashyError::ChestTooLow);
+        require!(stake <= a.chest / 2, ClashyError::WarStakeTooBig);
         let a_key = a.key();
         let seeds: &[&[u8]] = &[CHEST_SEED, a_key.as_ref(), &[a.chest_bump]];
         pay_from_vault(&ctx.accounts.chest_a.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, stake)?;
@@ -725,6 +745,7 @@ pub mod clashy {
         let b = &ctx.accounts.clan_b;
         require!(b.war == Pubkey::default(), ClashyError::WarLocked);
         require!(b.chest >= stake, ClashyError::ChestTooLow);
+        require!(stake <= b.chest / 2, ClashyError::WarStakeTooBig);
         let b_key = b.key();
         let seeds: &[&[u8]] = &[CHEST_SEED, b_key.as_ref(), &[b.chest_bump]];
         pay_from_vault(&ctx.accounts.chest_b.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, stake)?;

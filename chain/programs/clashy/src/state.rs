@@ -112,8 +112,10 @@ pub struct Clan {
     pub captain: Pubkey,
     pub crest: u8,
     pub members: u32,
-    /// Lamports deposited into the chest vault (members' deposits).
+    /// Lamports in the chest vault: members' deposits, minus war stakes lost, plus war pots won.
     pub chest: u64,
+    /// Total chest shares held by members. A share is worth `chest / shares` lamports.
+    pub shares: u64,
     /// Realized paper P&L of the clan's voted trades, in lamports of notional.
     pub score_pnl: i64,
     pub proposals: u64,
@@ -130,7 +132,10 @@ pub struct Clan {
 pub struct Member {
     pub clan: Pubkey,
     pub wallet: Pubkey,
+    /// Lamports this member put in, net of withdrawals (cost basis, for display).
     pub deposit: u64,
+    /// Chest shares: withdrawals pay `shares * chest / clan.shares`, and votes weigh by shares.
+    pub shares: u64,
     pub joined_at: i64,
     pub bump: u8,
 }
