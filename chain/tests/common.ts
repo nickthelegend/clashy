@@ -11,9 +11,19 @@ import type { Clashy } from '../target/types/clashy.ts';
 const idl = JSON.parse(readFileSync(new URL('../target/idl/clashy.json', import.meta.url), 'utf8'));
 export const BASE_URL = process.env.CLASHY_BASE ?? 'http://127.0.0.1:8999';
 export const ER_URL = process.env.CLASHY_ER ?? 'http://127.0.0.1:7799';
-export const LOCAL_ER_VALIDATOR = new PublicKey('mAGicPQYBMvcYveUZA5F5UNNwyHvfYh5xkLS2Fr1mev');
+/** Local stack (tests, app development) unless CLASHY_BASE points at devnet or mainnet. */
+export const IS_LOCAL = /127\.0\.0\.1|localhost/.test(BASE_URL);
+function setupRequired(name: string, what: string): never {
+  throw new Error(`Setup required: set ${name} (${what}) to run against ${BASE_URL}`);
+}
+/** The rollup validator duels, feeds and tournaments are delegated to (MagicBlock publishes theirs per region). */
+export const LOCAL_ER_VALIDATOR = process.env.CLASHY_ER_VALIDATOR
+  ? new PublicKey(process.env.CLASHY_ER_VALIDATOR)
+  : IS_LOCAL ? new PublicKey('mAGicPQYBMvcYveUZA5F5UNNwyHvfYh5xkLS2Fr1mev') : setupRequired('CLASHY_ER_VALIDATOR', 'MagicBlock ER validator identity');
 /** MagicBlock's VRF test queue, served on a local stack by their `vrf-oracle` (scripts/localnet.sh starts it). */
 export const LOCAL_VRF_QUEUE = new PublicKey('GKE6d7iv8kCBrsxr78W3xVdjGLLLJnxsGiuzrsZCGEvb');
+/** MagicBlock's VRF base queue with their hosted oracles on devnet and mainnet. */
+export const BASE_VRF_QUEUE = new PublicKey('Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh');
 export const PRICE_SCALE = 1_000_000;
 export const COINS = [
   { symbol: 'SOL', product: 'SOL-USD' },
@@ -28,7 +38,10 @@ export function loadKeypair(path: string) {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))));
 }
 
-export const authority = loadKeypair('../.keys/local-authority.json');
+/** Admin + crank key. Off the local stack it must come from CLASHY_AUTHORITY (a keypair file path; never printed). */
+export const authority = process.env.CLASHY_AUTHORITY
+  ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.CLASHY_AUTHORITY, 'utf8'))))
+  : IS_LOCAL ? loadKeypair('../.keys/local-authority.json') : setupRequired('CLASHY_AUTHORITY', 'path to the admin/crank keypair');
 export const base = new Connection(BASE_URL, 'confirmed');
 export const er = new Connection(ER_URL, 'confirmed');
 const wallet = new anchor.Wallet(authority);
@@ -121,11 +134,14 @@ export async function sendEr(builder: { transaction(): Promise<Transaction> }, s
 export async function ensureSetup(treasury: PublicKey) {
   const cfg = await base.getAccountInfo(P.config);
   if (!cfg) {
-    await baseProgram.methods.initialize(300, false, authority.publicKey, treasury).accountsPartial({ authority: authority.publicKey }).rpc();
+    // off the local stack every coin is rolled by MagicBlock VRF; the commit-reveal fallback is refused
+    await baseProgram.methods.initialize(300, !IS_LOCAL, authority.publicKey, treasury).accountsPartial({ authority: authority.publicKey }).rpc();
   }
-  // local stack: coin rolls go to MagicBlock's test queue, which their local vrf-oracle answers
-  if (!(await baseProgram.account.config.fetch(P.config)).vrfQueue.equals(LOCAL_VRF_QUEUE)) {
-    await baseProgram.methods.setVrfQueue().accountsPartial({ authority: authority.publicKey, queue: LOCAL_VRF_QUEUE }).rpc();
+  // local stack: coin rolls go to MagicBlock's test queue, which their local vrf-oracle answers;
+  // devnet and mainnet keep the base queue that initialize sets
+  const queue = IS_LOCAL ? LOCAL_VRF_QUEUE : BASE_VRF_QUEUE;
+  if (!(await baseProgram.account.config.fetch(P.config)).vrfQueue.equals(queue)) {
+    await baseProgram.methods.setVrfQueue().accountsPartial({ authority: authority.publicKey, queue }).rpc();
   }
   for (let i = 0; i < COINS.length; i++) {
     const feed = P.feed(i);

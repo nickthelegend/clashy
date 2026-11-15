@@ -52,6 +52,11 @@ The app's **On-chain duel** screen (`app/src/app/onchain.tsx`) talks to the same
 (`EXPO_PUBLIC_CLASHY_BASE`, `_ER`, `_NET`, `_ER_VALIDATOR` point it elsewhere). Open it in two browser tabs: each tab
 gets its own device test wallet.
 
+**Devnet / mainnet.** `scripts/deploy.sh devnet|mainnet` checks the admin balance against the program's rent, deploys,
+then runs first-time setup with VRF required on MagicBlock's base queue. It needs `CLASHY_AUTHORITY` (keypair path),
+`CLASHY_TREASURY`, `CLASHY_ER` and `CLASHY_ER_VALIDATOR`, prints "Setup required" when one is missing, and refuses
+mainnet unless `CLASHY_MAINNET_GO=yes`. The crank then runs as a service with the same environment.
+
 **Mainnet fork.** `bash scripts/forknet.sh` clones Phoenix and its SOL/USDC market from mainnet into a local validator
 on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bids of that fork.
 
@@ -61,10 +66,11 @@ on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bi
   Browser players ran full duels, a clan trade, a clan war and a three-player Royale through the app.
 - **VRF: proven locally with MagicBlock's own oracle.** MagicBlock's validator CLI ships `vrf-oracle` and their test
   queue; the local stack runs it, and duels and Royales get their coin from a real VRF callback (about 1.3 s). A forged
-  callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 6 devnet SOL;
+  callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 12.5 devnet SOL;
   the devnet faucet rate-limited the airdrop twice, and the web faucet needs a sign-in and a CAPTCHA.
-- **Mainnet: not deployed.** Needs real SOL: the 870 KB program is 4.42 SOL rent-exempt (`solana rent 870000`), more if deployed with upgrade headroom, plus an equal temporary buffer during the deploy that is refunded, and Nick's
-  go-ahead. Real money stays off until then.
+- **Mainnet: not deployed.** The 884 KB program is 6.16 SOL rent-exempt (`solana rent 884520`); a deploy briefly
+  holds about 12.5 SOL (buffer plus program data) and returns the buffer. It needs real SOL and Nick's go-ahead.
+  Real money stays off until then.
 - **Why base feeds:** MagicBlock sponsors only 10 commits per delegated account ("sponsored commit limit exceeded …
   current commit nonce 10 reached the limit of 10"), so committing the rollup feeds back to Solana every 30 s stopped
   after 10 commits. Duels and tournaments commit once, when they finish, so they are not affected.
