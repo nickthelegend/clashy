@@ -2,6 +2,7 @@
 // Board: open bounties sorted by size. They need the program, so the board shows its setup state.
 // Poster: your own wanted poster, built from your real practice bests stored on this device.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -63,6 +64,7 @@ export default function Bounty() {
         <BackBtn onPress={() => router.back()} />
         <View style={{ flex: 1 }}><Txt v="h2">Bounty</Txt><Txt v="small">Put a price on your head · beat theirs and take it</Txt></View>
       </Row>
+      <Image source={ART.bannerBounty} style={{ width: '100%', aspectRatio: 16 / 9, maxHeight: 260, borderRadius: 20, marginBottom: 12 }} contentFit="cover" />
       {desk ? (
         <Row style={{ gap: 20, alignItems: 'flex-start' }}><View style={{ flex: 1 }}>{board}</View>{poster}</Row>
       ) : (

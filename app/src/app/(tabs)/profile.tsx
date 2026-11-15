@@ -69,7 +69,7 @@ export default function ProfileTab() {
           ))}
         </View>
       ) : (
-        <Pending art={tab === 'duels' ? ART.duels : ART.bell} title={tab === 'duels' ? 'No duels yet' : 'No callouts yet'} body={ready ? 'Your record shows here.' : SOCIAL_SETUP} />
+        <Pending art={tab === 'duels' ? ART.emptyProfile : ART.bell} title={tab === 'duels' ? 'No duels yet' : 'No callouts yet'} body={ready ? 'Your record shows here.' : SOCIAL_SETUP} />
       )}
     </ScrollView>
   );

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 // Desktop shell pieces: collapsible sidebar (D1 full ↔ D2 icon rail) and the right rail.
 import { router } from 'expo-router';
 import { TabTrigger } from 'expo-router/ui';
@@ -54,7 +55,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       <View style={{ flex: 1 }} />
       {collapsed ? (
         <Pressable onPress={() => router.push('/arena')} style={{ height: 52, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
-          <Swords size={22} color="#fff" />
+          <Image source={ART.sidebarBattle} style={{ width: 30, height: 30 }} contentFit="contain" />
         </Pressable>
       ) : (
         <Btn title="Battle" h={52} icon={<Swords size={18} color="#fff" />} onPress={() => router.push('/arena')} />
@@ -68,11 +69,11 @@ export function RightRail() {
   return (
     <ScrollView style={{ width: 340, flexGrow: 0, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: C.line }} contentContainerStyle={{ padding: 16, gap: 14 }}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Txt v="h2">Live duels</Txt>
+        <Row style={{ gap: 8 }}><Txt v="h2">Live duels</Txt><Image source={ART.railLive} style={{ width: 54, height: 24 }} contentFit="contain" /></Row>
         <Row style={{ gap: 6 }}><LiveDot /><Txt v="small">0 live</Txt></Row>
       </Row>
       <View style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 14, alignItems: 'center', gap: 8 }}>
-        <Art src={ART.duels} size={64} radius={16} />
+        <Art src={ART.radar} size={72} radius={0} />
         <Txt v="small" style={{ textAlign: 'center', lineHeight: 18 }}>Duels between players appear here to watch and back a side once duels are on chain.</Txt>
         <Btn title="Practice a duel" kind="ghost" h={36} onPress={() => router.push('/arena')} />
       </View>
@@ -81,7 +82,7 @@ export function RightRail() {
         <Pressable onPress={() => router.push('/clans')}><Txt v="small">Clans</Txt></Pressable>
       </Row>
       <View style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 14, gap: 10 }}>
-        <Row style={{ gap: 10 }}><Art src={ART.crest} size={40} radius={12} /><View style={{ flex: 1 }}><Txt v="label">No clan yet</Txt><Txt v="small">Clan chat docks here</Txt></View></Row>
+        <Row style={{ gap: 10 }}><Art src={ART.crestCreate} size={40} radius={0} /><View style={{ flex: 1 }}><Txt v="label">No clan yet</Txt><Txt v="small">Clan chat docks here</Txt></View></Row>
         <Txt v="small" style={{ lineHeight: 18 }}>{SETUP_REASON}</Txt>
         <View style={{ height: 40, borderRadius: R.md, backgroundColor: C.s2, justifyContent: 'center', paddingHorizontal: 12 }}><Txt v="small">Message your clan</Txt></View>
       </View>

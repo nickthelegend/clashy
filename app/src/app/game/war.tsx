@@ -93,9 +93,10 @@ export default function ClanWar() {
         <BackBtn onPress={() => router.back()} />
         <View style={{ flex: 1 }}><Txt v="h2">Clan war</Txt><Txt v="small">Clan vs clan · one week · live coin map</Txt></View>
       </Row>
+      <Image source={ART.bannerWar} style={{ width: '100%', aspectRatio: 16 / 9, maxHeight: 260, borderRadius: 20, marginBottom: 12 }} contentFit="cover" />
       <Row style={{ backgroundColor: C.s1, borderRadius: 20, padding: 12, gap: 10, marginBottom: 12 }}>
         <View style={{ flex: 1, alignItems: 'center' }}><Art src={ART.crestCreate} size={56} radius={0} /><Txt v="label" style={{ marginTop: 4 }}>Your clan</Txt><Txt v="small">Join or create</Txt></View>
-        <Txt v="title" color={C.dim} style={{ fontStyle: 'italic' }}>VS</Txt>
+        <Art src={ART.vs} size={64} radius={0} />
         <View style={{ flex: 1, alignItems: 'center' }}><View style={{ opacity: 0.35 }}><Art src={ART.crest} size={56} radius={0} /></View><Txt v="label" style={{ marginTop: 4 }}>Rival clan</Txt><Txt v="small">Matched at war start</Txt></View>
       </Row>
       <View style={{ marginBottom: 12 }}><UnderTabs items={[{ key: 'map', label: 'Map' }, { key: 'feed', label: 'Feed' }, { key: 'votes', label: 'Pot votes' }]} value={tab} onChange={setTab} /></View>

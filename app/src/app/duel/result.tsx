@@ -25,7 +25,10 @@ export default function Result() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 40, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Animated.View style={[{ alignItems: 'center' }, pop]}>
-        <View style={{ opacity: won ? 1 : 0.55 }}><Art src={p.reason === 'ko' ? ART.ko : ART.crown} size={180} radius={36} /></View>
+        <View style={{ width: 200, height: 200, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+          {won ? <View style={{ position: 'absolute', top: -40 }}><Art src={ART.confetti} size={240} radius={0} /></View> : null}
+          <View style={{ opacity: won || flat ? 1 : 0.8 }}><Art src={p.reason === 'ko' || (!won && !flat) ? ART.koSkull : flat ? ART.draw : ART.winTrophy} size={180} radius={0} /></View>
+        </View>
         <Txt v="small" style={{ marginTop: 18 }}>{p.reason === 'ko' ? 'Knockout' : p.reason === 'cash' ? 'Cashed out' : 'Bell'} · {p.secs}s · practice</Txt>
         <Txt v="title" style={{ fontSize: 44, marginTop: 6 }}>{title}</Txt>
         {hasRival && p.reason !== 'ko' ? (

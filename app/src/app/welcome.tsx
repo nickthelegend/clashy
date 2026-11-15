@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 // First-open onboarding: three swipeable slides with the sticker art, then into the app. Shown once.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -12,9 +13,9 @@ import { C, S } from '@/ui/tokens';
 export const ONBOARDED_KEY = 'clashy:onboarded';
 
 const SLIDES = [
-  { art: ART.tileDuel, title: 'Duel anyone.', body: 'Challenge a friend or a stranger. You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.' },
-  { art: ART.matchmaking, title: 'Any coin. Any time.', body: 'SOL, BTC, ETH or the newest Solana coin. Hit your knockout line and you are out.' },
-  { art: ART.tileWar, title: 'Fight with your clan.', body: 'Join a clan, chat, push the pot and win the weekly war together.' },
+  { art: ART.onboard1, title: 'Duel anyone.', body: 'Challenge a friend or a stranger. You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.' },
+  { art: ART.onboard2, title: 'Any coin. Any time.', body: 'SOL, BTC, ETH or the newest Solana coin. Hit your knockout line and you are out.' },
+  { art: ART.onboard3, title: 'Fight with your clan.', body: 'Join a clan, chat, push the pot and win the weekly war together.' },
 ];
 
 export default function Welcome() {
@@ -49,7 +50,7 @@ export default function Welcome() {
         getItemLayout={(_, k) => ({ length: w, offset: w * k, index: k })}
         renderItem={({ item }) => (
           <View style={{ width: w, paddingHorizontal: S.gutter, justifyContent: 'center', alignItems: 'center' }}>
-            <Art src={item.art} size={Math.min(w - 60, 300)} radius={48} />
+            <Image source={item.art} style={{ width: Math.min(w - 60, 280), height: Math.min(w - 60, 280) * 1.5, borderRadius: 32 }} contentFit="cover" />
             <Txt v="title" style={{ marginTop: 28, fontSize: 32, textAlign: 'center' }}>{item.title}</Txt>
             <Txt v="body" color="#B9B9C2" style={{ marginTop: 10, textAlign: 'center', lineHeight: 21, maxWidth: 320 }}>{item.body}</Txt>
           </View>

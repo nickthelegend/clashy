@@ -1,5 +1,6 @@
 // Arena (Nick's pick A6): swipe between game modes, one huge Battle button. Any coin is picked inside the game.
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -13,13 +14,13 @@ import { C, F, R, S } from '@/ui/tokens';
 import { useLayout } from '@/ui/layout';
 import { ScrollView } from 'react-native';
 
-type Mode = { key: string; title: string; who: string; line: string; art: number; live: boolean };
+type Mode = { key: string; title: string; who: string; line: string; art: number; banner: number; live: boolean };
 const MODES: Mode[] = [
-  { key: 'ko', title: 'Knockout duel', who: '1 v 1 · any coin · 60 s', line: 'You pick any coin, they pick theirs. Hit your knockout line and you are out.', art: ART.tileDuel, live: true },
-  { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, live: true },
-  { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, live: false },
-  { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, live: true },
-  { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, live: false },
+  { key: 'ko', title: 'Knockout duel', who: '1 v 1 · any coin · 60 s', line: 'You pick any coin, they pick theirs. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
+  { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, banner: ART.bannerLine, live: true },
+  { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, banner: ART.bannerWar, live: false },
+  { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true },
+  { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, banner: ART.bannerBounty, live: false },
 ];
 const STAKES = [5, 10, 20, 50];
 /** Opens a mode's game. Practice modes play on live prices; Clan war and Bounty open their preview screens. */
@@ -49,10 +50,10 @@ function ArenaDesk() {
             const on = k === i;
             return (
               <Pressable key={g.key} onPress={() => setI(k)} style={(st) => ({
-                width: 236, backgroundColor: C.s1, borderRadius: R.xl, padding: 14,
+                width: 300, backgroundColor: C.s1, borderRadius: R.xl, padding: 12,
                 borderWidth: 1.5, borderColor: on ? C.brand : (st as { hovered?: boolean }).hovered ? '#2A2A30' : 'transparent',
               })}>
-                <Art src={g.art} size={206} radius={18} />
+                <Image source={g.banner} style={{ width: 276, height: 155, borderRadius: 14 }} contentFit="cover" />
                 <Row style={{ justifyContent: 'space-between', marginTop: 12 }}>
                   <Txt v="h2">{g.title}</Txt>
                   <View style={{ backgroundColor: g.live ? C.upBg : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}><Txt v="small" color={g.live ? C.up : C.muted} style={{ fontSize: 11 }}>{g.live ? 'Practice' : 'Soon'}</Txt></View>

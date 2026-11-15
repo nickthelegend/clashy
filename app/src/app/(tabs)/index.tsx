@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 // Home (Nick's pick, Nov 15): H2 live stories on top, H4 one-time "Play now" card, H5 posts feed.
 // No coins, no holdings. Stories and posts come from the social backend; until it's live they show honest empty states.
 import { router } from 'expo-router';
@@ -42,6 +43,8 @@ export default function HomeScreen() {
           <IconBtn size={36}><Bell size={18} color={C.ink} /></IconBtn>
         </Row>
       </Row>
+
+      {desk ? <Image source={ART.heroHome} style={{ width: '100%', aspectRatio: 4, borderRadius: 20, marginBottom: 16 }} contentFit="cover" /> : null}
 
       {/* H2: live stories. Friends you have in common post stories of their duels. */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginBottom: 14 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
