@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_SETUP, useLeaderboard } from '@/data/social';
 import { ART, BackBtn, Btn, Pending, Row, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
@@ -19,11 +20,12 @@ const Step = ({ place, h }: { place: 1 | 2 | 3; h: number }) => (
 
 export default function Leaderboard() {
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const [range, setRange] = useState<Range>('7d');
   const board = useLeaderboard();
   const loading = useFirstLoad();
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 24 }}>
       <Row style={{ gap: 10, marginBottom: 14 }}><BackBtn onPress={() => router.back()} /><Txt v="title">Leaderboard</Txt></Row>
       <Row style={{ gap: 6, marginBottom: 16 }}>
         {(['24h', '7d', '30d', 'all'] as Range[]).map((r) => (

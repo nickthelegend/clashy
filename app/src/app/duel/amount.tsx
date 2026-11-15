@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { useMajors, useMarket, useTrending } from '@/data/markets';
 import { Del } from '@/ui/icons';
 import { BackBtn, Btn, Row, TokenArt, Txt } from '@/ui/kit';
@@ -21,6 +22,7 @@ export default function Amount() {
   const trending = useTrending();
   const picks = [...(majors.data ?? []), ...(trending.data ?? []).slice(0, 12)];
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const m = useMarket(id);
   const [side, setSide] = useState<'long' | 'short'>(p.side === 'short' ? 'short' : 'long');
   const [amt, setAmt] = useState(p.stake ?? '20');
@@ -45,7 +47,7 @@ export default function Amount() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={() => router.back()} />
         <Txt v="small" style={{ flex: 1 }}>Knockout duel · 60s</Txt>

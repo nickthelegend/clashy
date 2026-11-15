@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { SETUP_REASON, useClans } from '@/data/clans';
 import { Search } from '@/ui/icons';
 import { ART, Art, Btn, IconBtn, Pending, Press, Row, SearchBar, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
@@ -11,6 +12,7 @@ import { C, F, R, S } from '@/ui/tokens';
 
 export default function Clans() {
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const clans = useClans();
   const loading = useFirstLoad();
   const [q, setQ] = useState('');
@@ -19,7 +21,7 @@ export default function Clans() {
   const list = live ? clans.data.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase())) : [];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
       <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
         <Txt v="title">Clans</Txt>
         <Row style={{ gap: 8 }}>

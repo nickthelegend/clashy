@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_LIVE, SOCIAL_SETUP } from '@/data/social';
 import { Swords } from '@/ui/icons';
 import { ART, Avatar, BackBtn, Btn, IconBtn, Pending, Row, Txt } from '@/ui/kit';
@@ -11,10 +12,11 @@ import { C, F, R, S } from '@/ui/tokens';
 export default function Conversation() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const [draft, setDraft] = useState('');
   const title = name ?? 'Chat';
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg, ...col }}>
       <Row style={{ gap: 10, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
         <BackBtn onPress={() => router.back()} />
         <Avatar name={title} size={38} />
