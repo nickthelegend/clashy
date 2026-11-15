@@ -1,6 +1,7 @@
 // Profile (last tab): your record. Rank card opens the leaderboard. Needs a wallet, so it says so until then.
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { Image } from 'expo-image';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
@@ -23,11 +24,12 @@ export default function ProfileTab() {
   const p = ready ? me.data : undefined;
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
-      <Row style={{ gap: 14 }}>
-        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+      <Image source={ART.banner} style={{ height: 112, borderRadius: 20, marginBottom: -36 }} contentFit="cover" />
+      <Row style={{ gap: 14, paddingLeft: 12, alignItems: 'flex-start' }}>
+        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: C.bg }}>
           <Txt v="title" color={C.dim}>?</Txt>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingTop: 42 }}>
           <Txt v="title" style={{ fontSize: 24 }}>{p?.name ?? 'Your profile'}</Txt>
           <Txt v="small" style={{ marginTop: 2 }}>{ready ? 'Gold III' : 'Connect a wallet to claim your name'}</Txt>
         </View>

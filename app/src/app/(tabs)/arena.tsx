@@ -18,8 +18,8 @@ const MODES: Mode[] = [
   { key: 'ko', title: 'Knockout duel', who: '1 v 1 · any coin · 60 s', line: 'You pick any coin, they pick theirs. Hit your knockout line and you are out.', art: ART.tileDuel, live: true },
   { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, live: true },
   { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, live: false },
-  { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.ko, live: true },
-  { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.crown, live: false },
+  { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, live: true },
+  { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, live: false },
 ];
 const STAKES = [5, 10, 20, 50];
 /** Opens a mode's game. Draw the line and Royale have solo practice; the knockout duel goes through the stake screen. */
