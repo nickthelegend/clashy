@@ -139,6 +139,9 @@ export async function ensureSetup(treasury: PublicKey) {
   }
   // local stack: coin rolls go to MagicBlock's test queue, which their local vrf-oracle answers;
   // devnet and mainnet keep the base queue that initialize sets
+  if (!(await baseProgram.account.config.fetch(P.config)).erValidator.equals(LOCAL_ER_VALIDATOR)) {
+    await baseProgram.methods.setErValidator(LOCAL_ER_VALIDATOR).accountsPartial({ authority: authority.publicKey }).rpc();
+  }
   const queue = IS_LOCAL ? LOCAL_VRF_QUEUE : BASE_VRF_QUEUE;
   if (!(await baseProgram.account.config.fetch(P.config)).vrfQueue.equals(queue)) {
     await baseProgram.methods.setVrfQueue().accountsPartial({ authority: authority.publicKey, queue }).rpc();

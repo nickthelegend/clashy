@@ -28,6 +28,12 @@ pub const MIN_DUEL_SECS: u32 = 30;
 pub const MAX_DUEL_SECS: u32 = 3_600;
 pub const MAX_LEVERAGE: u16 = 100;
 pub const MAX_CHALLENGE_SECS: i64 = 7 * 86_400;
+/// A matched duel must reach the rollup within this; otherwise anyone can abort it (refund or forfeit).
+pub const DUEL_SETUP_SECS: i64 = 600;
+/// An unstarted tournament lobby can be cancelled by anyone after this.
+pub const TOUR_LOBBY_SECS: i64 = 3_600;
+/// A proposal the captain never executes can be closed by anyone this long after its deadline.
+pub const EXECUTE_GRACE_SECS: i64 = 3_600;
 
 /// A feed read inside the rollup must be this fresh (the crank pushes about every second).
 pub const MAX_ER_PRICE_AGE: i64 = 15;

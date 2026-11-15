@@ -26,6 +26,8 @@ pub struct Config {
     /// The MagicBlock VRF oracle queue coin rolls go to: the base queue on devnet and mainnet, or
     /// MagicBlock's test queue on a local stack running their `vrf-oracle`.
     pub vrf_queue: Pubkey,
+    /// The MagicBlock rollup validator duels and tournaments may be delegated to (set by the admin).
+    pub er_validator: Pubkey,
 }
 
 /// Clashy-owned price feed. Delegated to the ER and updated about every second by the crank;
@@ -106,6 +108,8 @@ pub struct Duel {
     pub winner: u8,
     pub bump: u8,
     pub vault_bump: u8,
+    /// When the joiner matched; after DUEL_SETUP_SECS a duel stuck before the rollup can be aborted.
+    pub matched_at: i64,
 }
 
 #[account]
@@ -123,6 +127,8 @@ pub struct Clan {
     pub score_pnl: i64,
     pub proposals: u64,
     pub positions_open: u16,
+    /// Proposals still open. Withdrawals wait until they close, so one deposit cannot vote twice.
+    pub open_votes: u16,
     pub wins: u32,
     pub losses: u32,
     pub war: Pubkey,
@@ -257,4 +263,6 @@ pub struct Tournament {
     pub status: u8,
     pub bump: u8,
     pub vault_bump: u8,
+    /// Lobby opened; after TOUR_LOBBY_SECS anyone can cancel an unstarted tournament (full refunds).
+    pub created_at: i64,
 }
