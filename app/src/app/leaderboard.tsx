@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_SETUP, useLeaderboard } from '@/data/social';
-import { ART, Art, BackBtn, Btn, MEDALS, Pending, Row, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
+import { ART, Art, BackBtn, Btn, MEDALS, Pending, RANKS, Row, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
 
 type Range = '24h' | '7d' | '30d' | 'all';
@@ -38,10 +38,20 @@ export default function Leaderboard() {
         <Step place={2} h={70} /><Step place={1} h={100} /><Step place={3} h={56} />
       </Row>
       {loading ? <SkeletonRows n={4} /> : board.status !== 'ready' ? (
-        <Pending art={ART.crown} title="Setup required: rankings" body={`Rankings come from settled duels on Solana. ${SOCIAL_SETUP}`} />
+        <Pending art={ART.emptyLeaderboard} title="Setup required: rankings" body={`Rankings come from settled duels on Solana. ${SOCIAL_SETUP}`} />
       ) : board.data.length === 0 ? (
-        <Pending art={ART.crown} title="No ranked duels yet" body="The first settled duel puts someone on the podium." />
+        <Pending art={ART.emptyLeaderboard} title="No ranked duels yet" body="The first settled duel puts someone on the podium." />
       ) : null}
+      <Txt v="h2" style={{ marginTop: 22, marginBottom: 4 }}>Ranks</Txt>
+      <Txt v="small" style={{ marginBottom: 12 }}>Every season you climb by winning duels. Your rank shows on your profile and in every duel.</Txt>
+      <Row style={{ flexWrap: 'wrap', gap: 8 }}>
+        {RANKS.map((r) => (
+          <View key={r.key} style={{ width: '31%', flexGrow: 1, backgroundColor: C.s1, borderRadius: 16, paddingVertical: 12, alignItems: 'center' }}>
+            <Art src={r.src} size={64} radius={0} />
+            <Txt v="label" style={{ marginTop: 6 }}>{r.label}</Txt>
+          </View>
+        ))}
+      </Row>
     </ScrollView>
   );
 }

@@ -56,7 +56,7 @@ export default function Clans() {
       ) : !live ? (
         <Pending art={ART.clan} title="Setup required: clans" body={SETUP_REASON} />
       ) : list.length === 0 ? (
-        <Pending art={ART.clan} title={q ? 'No clans match' : 'No clans yet'} body="Be the first: create a clan and invite your friends." />
+        <Pending art={q ? ART.emptySearch : ART.clan} title={q ? 'No clans match' : 'No clans yet'} body="Be the first: create a clan and invite your friends." />
       ) : (
         list.map((c) => (
           <Press key={c.id} onPress={() => router.push({ pathname: '/clan/[id]', params: { id: c.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 }}>

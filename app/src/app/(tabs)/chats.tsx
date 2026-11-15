@@ -44,9 +44,9 @@ export default function Chats() {
       {loading ? (
         <><Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.6 }}>PINNED</Txt><SkeletonRows n={1} square /><View style={{ height: 1, backgroundColor: C.line, marginVertical: 6 }} /><Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.6 }}>RECENT</Txt><SkeletonRows n={4} /></>
       ) : chats.status !== 'ready' ? (
-        <Pending art={ART.bell} title="Setup required: chats" body={SOCIAL_SETUP} action="Practice a duel" onAction={() => router.push('/arena')} />
+        <Pending art={ART.emptyChats} title="Setup required: chats" body={SOCIAL_SETUP} action="Practice a duel" onAction={() => router.push('/arena')} />
       ) : list.length === 0 ? (
-        <Pending art={ART.bell} title="No chats yet" body="Challenge someone or join a clan to start talking." />
+        <Pending art={ART.emptyChats} title="No chats yet" body="Challenge someone or join a clan to start talking." />
       ) : (
         list.map((c) => (
           <Pressable key={c.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: c.id, name: c.name } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
