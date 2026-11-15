@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import {
-  BN, COINS, Keypair, sendEr, LAMPORTS_PER_SOL, LOCAL_ER_VALIDATOR, P, authority, base, baseProgram, commitFeeds, ensureSetup,
+  BN, COINS, Keypair, sendEr, LAMPORTS_PER_SOL, LOCAL_ER_VALIDATOR, P, authority, base, baseProgram, pushBasePrices, ensureSetup,
   er, fundedKeypair, lamports, programFor, randomSeed, runCrank, sha256, sleep, until, waitHome,
 } from './common.ts';
 
@@ -87,7 +87,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
     d = await baseProgram.account.duel.fetch(duel);
     assert.equal(d.status, 4, 'finished and back on Solana');
     assert.ok(d.entryPrice.gtn(0) && d.exitPrice.gtn(0));
-    assert.equal(d.pnlBps[0].toNumber(), -d.pnlBps[1].toNumber(), 'same coin, opposite sides, same leverage: mirrored P&L');
+    assert.equal(d.pnlBps[0].toNumber() + d.pnlBps[1].toNumber(), 0, 'same coin, opposite sides, same leverage: mirrored P&L');
 
     const [ca, cb, ct] = await Promise.all([lamports(a.publicKey), lamports(b.publicKey), lamports(treasury.publicKey)]);
     await baseProgram.methods.settleDuel().accountsPartial({ duel, vault, creator: a.publicKey, joiner: b.publicKey, creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury: treasury.publicKey }).rpc();
@@ -176,13 +176,15 @@ describe('clans: group trading by vote, then clan vs clan', () => {
     assert.equal(await lamports(P.vault(war)), 2 * warStake, 'both war stakes escrowed');
     await assert.rejects(programFor(member).methods.withdrawChest(new BN(1000)).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), chest: P.chest(clanA) }).rpc(), /WarLocked/);
 
-    await commitFeeds(); // base-layer copy of the live price for Solana-side reads
-    await programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0) }).rpc();
+    await pushBasePrices(); // Solana-side copy of the live price
+    // the rollup feed's stale Solana copy (owned by the delegation program) is not a valid price on Solana
+    await assert.rejects(programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0) }).rpc(), /FeedInvalid/);
+    await programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0) }).rpc();
     const pos = await baseProgram.account.clanPosition.fetch(P.position(clanA, 0));
     assert.equal(pos.notional.toNumber(), 1.25 * LAMPORTS_PER_SOL, '50% of the 2.5 SOL chest left after the war stake');
     await sleep(15_000);
-    await commitFeeds();
-    await programFor(capA).methods.closePosition().accountsPartial({ captain: capA.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.feed(0) }).rpc();
+    await pushBasePrices();
+    await programFor(capA).methods.closePosition().accountsPartial({ captain: capA.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.baseFeed(0) }).rpc();
     const closed = await baseProgram.account.clanPosition.fetch(P.position(clanA, 0));
     const ca = await baseProgram.account.clan.fetch(clanA);
     assert.equal(ca.scorePnl.toString(), closed.pnl.toString(), 'the clan score is the realized trade P&L');

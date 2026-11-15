@@ -2,6 +2,8 @@ use anchor_lang::prelude::*;
 
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const FEED_SEED: &[u8] = b"feed";
+/// Never-delegated Solana copy of a coin feed (see `init_base_feed`).
+pub const BASE_FEED_SEED: &[u8] = b"bfeed";
 pub const PLAYER_SEED: &[u8] = b"player";
 pub const DUEL_SEED: &[u8] = b"duel";
 pub const VAULT_SEED: &[u8] = b"vault";
@@ -29,8 +31,8 @@ pub const MAX_CHALLENGE_SECS: i64 = 7 * 86_400;
 
 /// A feed read inside the rollup must be this fresh (the crank pushes about every second).
 pub const MAX_ER_PRICE_AGE: i64 = 15;
-/// A feed read on Solana is the last committed copy; the crank commits it about every 30 s.
-pub const MAX_BASE_PRICE_AGE: i64 = 180;
+/// A feed read on Solana (base feed or oracle) must be this fresh; the crank writes base feeds every ~5 s.
+pub const MAX_BASE_PRICE_AGE: i64 = 30;
 
 pub const ELO_START: i32 = 1_000;
 pub const ELO_K: i32 = 32;
