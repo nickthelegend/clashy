@@ -7,7 +7,7 @@ export function Hero() {
       <div className="hero-copy wrap">
         <Wordmark className="wordmark-xl" size={150} />
         <h1>trade against people, not the house.</h1>
-        <p>Knockout duels, draw-the-line rooms and clan wars on real markets.</p>
+        <p>1v1 knockout duels on any coin, draw-the-line rooms and clan wars, on real markets.</p>
         <div className="cta-pair">
           <a className="btn btn-primary" href="#arena">
             Play the arena

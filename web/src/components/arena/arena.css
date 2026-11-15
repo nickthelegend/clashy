@@ -20,6 +20,10 @@
   border: 1px solid var(--line);
 }
 .seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
   min-width: 56px;
   min-height: 36px;
   border: 0;
@@ -350,4 +354,110 @@
 .result-art {
   mix-blend-mode: screen;
   animation: pop 0.5s var(--ease);
+}
+
+.coin-logo {
+  border-radius: 50%;
+  flex: none;
+  vertical-align: -3px;
+}
+.arena-charts {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  min-height: 340px;
+}
+.arena-charts.single {
+  grid-template-columns: 1fr;
+}
+.pane {
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  background: #050506;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  min-height: 300px;
+}
+.pane.you {
+  border-color: rgba(91, 108, 255, 0.3);
+}
+.pane.opp {
+  border-color: rgba(240, 70, 140, 0.3);
+}
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pane-who {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pane-who.you {
+  color: var(--you-hi);
+}
+.pane-who.opp {
+  color: var(--opp);
+}
+.pane-coin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pane-price {
+  margin-left: auto;
+  font-size: 14px;
+}
+.pane-chart {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.pane-chart .chart-svg {
+  position: absolute;
+  inset: 0;
+}
+.arena-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 18px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.arena-charts .result {
+  border-radius: 18px;
+}
+.prow-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .arena-charts {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .pane {
+    min-height: 220px;
+  }
+}
+.prow-pick {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.pane-who {
+  white-space: nowrap;
+}
+.prow {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
 }
