@@ -5,7 +5,7 @@ import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Market, useMajors, useTrending } from '@/data/markets';
 import { Bell, Search } from '@/ui/icons';
-import { Btn, Chips, CoinRow, ErrorLine, IconBtn, Pending, Row, Txt, UnderTabs } from '@/ui/kit';
+import { ART, Btn, Chips, CoinRow, ErrorLine, IconBtn, Pending, Row, Txt, UnderTabs, Wordmark } from '@/ui/kit';
 import { C, S, fmtUsd } from '@/ui/tokens';
 
 type Tab = 'watch' | 'duel' | 'live';
@@ -33,6 +33,7 @@ export default function HomeScreen() {
   const header = (
     <View>
       {/* balance header: needs a wallet, so we say so instead of showing a number */}
+      <Row style={{ marginBottom: 12 }}><Wordmark height={24} /></Row>
       <Row style={{ gap: 10, marginBottom: 14 }}>
         <View style={{ flex: 1 }}>
           <Txt v="small">Balance</Txt>
@@ -74,7 +75,7 @@ export default function HomeScreen() {
       refreshControl={<RefreshControl tintColor={C.muted} refreshing={false} onRefresh={() => { majors.refresh(); trending.refresh(); }} />}
       ListEmptyComponent={
         tab === 'watch' ? <Pending title="Your watchlist is empty" body="Star a coin to keep it here." /> :
-        tab === 'live' ? <Pending title="No live duels" body="Live duels between traders appear here once duels are on chain." /> :
+        tab === 'live' ? <Pending art={ART.duels} title="No live duels" body="Live duels between traders appear here once duels are on chain." /> :
         majors.loading || trending.loading ? <Txt v="small" style={{ paddingVertical: 20, textAlign: 'center' }}>Loading live prices…</Txt> : undefined
       }
       renderItem={({ item: m }) => (

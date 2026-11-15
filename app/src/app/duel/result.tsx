@@ -3,8 +3,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Crown } from '@/ui/icons';
-import { Btn, Card, Row, Txt } from '@/ui/kit';
+import { ART, Art, Btn, Card, Row, Txt } from '@/ui/kit';
 import { C, S, fmtUsd } from '@/ui/tokens';
 
 export default function Result() {
@@ -21,9 +20,7 @@ export default function Result() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top + 40, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Animated.View style={[{ alignItems: 'center' }, pop]}>
-        <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: won ? 'rgba(91,108,255,0.18)' : C.s1, alignItems: 'center', justifyContent: 'center' }}>
-          <Crown size={56} color={won ? C.brandSoft : C.dim} />
-        </View>
+        <View style={{ opacity: won ? 1 : 0.55 }}><Art src={p.reason === 'ko' ? ART.ko : ART.crown} size={180} radius={36} /></View>
         <Txt v="small" style={{ marginTop: 18 }}>{p.reason === 'ko' ? 'Knockout' : p.reason === 'cash' ? 'Cashed out' : 'Bell'} · {p.secs}s · practice</Txt>
         <Txt v="title" style={{ fontSize: 44, marginTop: 6 }}>{title}</Txt>
         <Txt v="title" color={flat ? C.muted : pnl > 0 ? C.up : C.down} style={{ fontSize: 40, marginTop: 4 }}>{flat ? '' : pnl > 0 ? '+' : '−'}{fmtUsd(Math.abs(pnl))}</Txt>

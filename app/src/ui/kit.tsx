@@ -193,9 +193,30 @@ export const CoinRow = ({ symbol, name, image, price, change, sub, hot, onPress,
 );
 
 /** Honest state for anything that needs the Clashy program or a wallet. */
-export const Pending = ({ title, body, action, onAction }: { title: string; body: string; action?: string; onAction?: () => void }) => (
+export const ART = {
+  duels: require('../../assets/art/empty-duels.webp'),
+  clan: require('../../assets/art/empty-clan.webp'),
+  bell: require('../../assets/art/empty-notifications.webp'),
+  offline: require('../../assets/art/empty-offline.webp'),
+  crown: require('../../assets/art/crown.webp'),
+  ko: require('../../assets/art/ko-burst.webp'),
+  tileDuel: require('../../assets/art/tile-duel.webp'),
+  tileWar: require('../../assets/art/tile-war.webp'),
+  wordmark: require('../../assets/art/wordmark.png'),
+};
+/** Art is rendered on pure black, so it sits on a black tile inside grey cards. */
+export const Art = ({ src, size = 96, radius = 18 }: { src: number; size?: number; radius?: number }) => (
+  <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#000', overflow: 'hidden' }}>
+    <Image source={src} style={{ width: size, height: size }} contentFit="cover" />
+  </View>
+);
+export const Wordmark = ({ height = 26 }: { height?: number }) => (
+  <Image source={ART.wordmark} style={{ height, width: height * (1280 / 300) }} contentFit="contain" />
+);
+
+export const Pending = ({ title, body, action, onAction, art }: { title: string; body: string; action?: string; onAction?: () => void; art?: number }) => (
   <Card style={{ alignItems: 'center', paddingVertical: 22, gap: 6 }}>
-    <Swords size={26} color={C.dim} />
+    {art ? <Art src={art} size={92} /> : <Swords size={26} color={C.dim} />}
     <Txt v="h2" style={{ textAlign: 'center' }}>{title}</Txt>
     <Txt v="small" style={{ textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
     {action ? <Btn title={action} kind="ghost" h={38} onPress={onAction} style={{ marginTop: 6 }} /> : null}
