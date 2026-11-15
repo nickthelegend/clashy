@@ -1,24 +1,11 @@
 import { StoreBadges } from './StoreBadges'
 
-// fomo's closing scene: a big centred line over orbiting faces, then the CTA pair.
-const OUTER = ['racer', 'hood', 'bot', 'gladiator', 'cat']
-const INNER = ['shark', 'bull', 'ghost']
-
+// The closing scene (fomo's slot for its crowd photo): two hooded rivals face off across a price line,
+// a big centred line over them, then the CTA and the store badges.
 export function DownloadCTA() {
   return (
     <section className="closing" id="download">
-      <div className="orbit o1" aria-hidden="true">
-        {OUTER.map((n, k) => {
-          const a = (k / OUTER.length) * Math.PI * 2 - 0.4
-          return <img key={n} src={`/art/av-${n}.webp`} alt="" width="64" height="64" loading="lazy" style={{ left: `calc(50% + ${Math.cos(a) * 50}% - 32px)`, top: `calc(50% + ${Math.sin(a) * 50}% - 32px)` }} />
-        })}
-      </div>
-      <div className="orbit o2" aria-hidden="true">
-        {INNER.map((n, k) => {
-          const a = (k / INNER.length) * Math.PI * 2 + 0.5
-          return <img key={n} src={`/art/av-${n}.webp`} alt="" width="52" height="52" loading="lazy" style={{ left: `calc(50% + ${Math.cos(a) * 50}% - 26px)`, top: `calc(50% + ${Math.sin(a) * 50}% - 26px)` }} />
-        })}
-      </div>
+      <img className="closing-bg" src="/art/faceoff.webp" alt="" width="1600" height="1067" loading="lazy" aria-hidden="true" />
       <div className="wrap closing-copy reveal">
         <h2>
           a trading game

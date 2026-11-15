@@ -346,3 +346,8 @@
     gap: 10px;
   }
 }
+
+.result-art {
+  mix-blend-mode: screen;
+  animation: pop 0.5s var(--ease);
+}

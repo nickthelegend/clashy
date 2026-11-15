@@ -1,11 +1,11 @@
+import { Wordmark } from './Wordmark'
+
 // fomo.family's hero: giant lowercase wordmark, one line, one sub line, a CTA pair, then one cinematic object.
 export function Hero() {
   return (
     <section className="hero" id="top">
       <div className="hero-copy wrap">
-        <div className="wordmark-xl" aria-hidden="true">
-          clashy
-        </div>
+        <Wordmark className="wordmark-xl" size={150} />
         <h1>trade against people, not the house.</h1>
         <p>Knockout duels, draw-the-line rooms and clan wars on real markets.</p>
         <div className="cta-pair">

@@ -9,18 +9,21 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
 > **Made before kickoff.** The marketing website (`web/`) and the 3D art (`assets/`) were made on Nov 15, 2026, before
 > the Solana Blitz v10 kickoff on Nov 20. No game code, programs or app code exist yet; those start at kickoff.
 
-Nothing on the website is live. The duel chart and the Draw the Line pad on the site use simulated price paths and say
-so on the page; store badges are marked "coming".
+Nothing for money is live. The website's **Arena** is a free Knockout Duel demo on **real prices** (Binance public
+spot trades): you pick long or short against a demo bot, with no wallet, money or chain involved. The page says so
+next to the widget. Store badges are marked "coming".
 
 ## Layout
 
 | Path | What |
 |---|---|
 | `web/` | Marketing site (Vite + React + TypeScript). `npm install && npm run dev` |
-| `assets/web/` | 3D objects for the site (webp) and the OG card |
-| `assets/mobile/` | App icon (1024 PNG + webp), splash, onboarding hero, 8 trader avatars, 4 clan crests, win crown, 3 mode tiles, 2 empty states |
+| `assets/brand/` | Wordmark (SVG, outlined paths, plus a PNG) |
+| `assets/web/` | Site art: hero, face-off, arena and OG scenes plus 8 objects |
+| `assets/mobile/` | App icon (1024 PNG + webp), splash, onboarding, matchmaking, 8 avatars, 4 crests, crown, KO burst, 3 mode tiles, 4 empty states, 4 badges |
+| `assets/gallery.html` | Every asset on one page (`gallery.jpg` is a capture) |
 | `assets/SOURCES.md` | How each image was made (ChatGPT conversation links and prompts) |
-| `docs/ART-3D.md` | The 3D art kit: material, palette, banned subjects |
+| `docs/ART-3D.md` | The "duel light" art kit and the wordmark |
 | `scripts/convert-art.sh` | Turns the raw ChatGPT PNGs into the webp sets and the site's sized copies |
 
 ## Website
@@ -32,13 +35,19 @@ npm run dev      # http://localhost:5173
 npm run build && npm run lint
 ```
 
-Sections: hero (3D swords on a moving grid floor), "your opponent is a person, not a pool", how a Knockout Duel works
-(simulated duel with both knockout lines on one chart), the modes, a playable Draw the Line pad (simulated price),
-servers and chat, built on MagicBlock (ER, Private ER, VRF, session keys), an honest comparison with house-pool apps
-such as REKT, and the app download block (stores marked "coming").
+Layout follows fomo.family's page order with Clashy's own brand:
+1. Hero: the sliced wordmark, a line, two CTAs, the duel-light swords.
+2. **Arena:** a live Knockout Duel demo on real prices (`web/src/components/arena/`): SOL, BTC or ETH; long or short at
+   250×, 500× or 1000×; both knockout lines on one chart; a 60 s bell; this browser's record.
+3. Six feature cards (leaderboard, knockout duels, draw the line, clan wars, servers, MagicBlock).
+4. An honest comparison with house-pool apps such as REKT.
+5. Closing CTA over the face-off scene, then the footer.
 
-Brand: night navy `#07071A`, indigo `#5B6CFF` (you), pink `#F0468C` (the opponent); Supreme (Fontshare) and Space Mono,
-matching the approved app design comp.
+Reusable components live in `web/src/components`: Nav, Hero, Wordmark, SectionHead, FeatureCard/FeatureGrid,
+ArenaWidget, LeaderboardStrip, CompareStrip, DownloadCTA, StoreBadges, Money, Footer.
+
+Theme: v12, matching the app. Pure black `#000`, surfaces `#111113`/`#1C1C1F`, Inter, indigo `#5B6CFF` (you), pink
+`#F0468C` (your rival), green `#30D158` / red `#FF453A` for long and short.
 
 ## Credits
 
