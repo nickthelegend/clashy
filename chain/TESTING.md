@@ -6,7 +6,7 @@ Every on-chain test runs against real validators: the real Clashy program, Magic
 | Suite | Command | Count | Last result |
 |---|---|---|---|
 | Program unit tests (math, chest shares, price scaling) | `cargo test -p clashy --lib` | 11 | 11 pass (Nov 16, 2026) |
-| End-to-end on the local MagicBlock stack | `npx tsx --test --test-concurrency=1 tests/clashy.test.ts` | 5 | 5 pass in 137 s on a fresh stack (Nov 16, 2026); log `.localnet/e2e-last.log` |
+| End-to-end on the local MagicBlock stack | `npx tsx --test --test-concurrency=1 tests/clashy.test.ts` | 5 | 5 pass in 147 s on a fresh stack after the security fixes (Nov 16, 2026); log `.localnet/e2e-last.log` |
 | Mainnet-fork trade on Phoenix | `npx tsx scripts/fork-trade.ts 1` | 1 | sold 1 SOL for 54.660103 USDC, book expected 54.660103 |
 | App on-chain duel, two browser tabs | Playwright: two contexts on `/onchain` | 5 duels | all settled, no errors; the latest coin rolled by MagicBlock VRF (Nov 16, 2026) |
 | App on-chain clan, two browser tabs | Playwright: two contexts on `/onchain-clan` | 1 full flow | create, join, deposit, propose, vote, execute, close; no errors (Nov 16, 2026) |
@@ -41,6 +41,15 @@ npx tsx scripts/crank.ts          # only needed for the app; the tests run their
 
 Running the crank for the app caught a real limit: the MagicBlock rollup sponsors only 10 commits per delegated account, which broke
 the crank's 30-second feed commits after five minutes. Solana-side reads now use base feeds (see README).
+
+## Attack tests
+
+Inside the suites above: an outsider cannot delegate a rolled duel (`NotPlayer`); an open challenge cannot be
+delegated (`WrongStatus`); a matched duel cannot be aborted inside its setup window (`NotExpired`); a forged VRF
+callback is refused; nobody can deposit into a clan mid-war (`WarLocked`); a non-captain cannot close a position
+before the war window ends (`NotCaptain`); a war stake over half the chest is refused (`WarStakeTooBig`); the rollup
+feed's stale Solana copy is refused as a price. Not covered by a test: the 10-minute `abort_duel` payout and the
+1-hour lobby cancel (both need the clock to pass).
 
 ## Mainnet fork
 

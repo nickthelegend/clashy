@@ -60,6 +60,30 @@ mainnet unless `CLASHY_MAINNET_GO=yes`. The crank then runs as a service with th
 **Mainnet fork.** `bash scripts/forknet.sh` clones Phoenix and its SOL/USDC market from mainnet into a local validator
 on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bids of that fork.
 
+## Security
+
+An independent review of the fund paths (Nov 16) found three high, three medium and five low issues. Fixed, with
+attack tests where a test can reach them:
+
+- **Delegation lock (high).** Anyone could push any duel or tournament into the rollup, freezing its escrow. Now only a
+  rolled duel with both picks revealed (by one of its players) or an open, coin-rolled tournament with 2+ players (by
+  its creator) can be delegated, and only to the admin-pinned validator.
+- **Buying into a war (high).** Deposits mid-war mispriced shares and let an outsider take the pot. Deposits now wait
+  for the war to settle.
+- **Parked losing trades (high).** Only closed trades counted in a war, so a captain could hedge and leave the losing
+  leg open. Both clans must be flat at accept and at settle, positions open only inside the window, and anyone can
+  close a clan's positions after it.
+- **Stuck duels and lobbies (medium).** `abort_duel` refunds a matched duel that never reaches the rollup within
+  10 minutes (or forfeits it to the only player who revealed). Anyone can cancel a tournament lobby after an hour.
+- **1-lamport griefing (medium).** Final refunds and full cash-outs sweep the vault instead of paying fixed amounts.
+- **Low:** pick hashes bind the duel and player (no copying a rival's hash), Solana-side trades read one price source,
+  withdrawals wait for open votes (no voting twice with the same money), and unexecuted votes can be closed.
+
+**Trust that remains:** the crank key sets every price (bounded only by freshness checks); the closing price of a duel
+is the feed at the first check after the bell (up to 15 s old); the treasury must hold at least the rent minimum or a
+small rake fails. Mainnet should move duel pricing to MagicBlock's pricing oracle accounts, which `read_price` already
+accepts.
+
 ## Status
 
 - **Local MagicBlock stack: works end to end.** 5/5 end-to-end and 10/10 unit tests pass (see [TESTING.md](TESTING.md)).
