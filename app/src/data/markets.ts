@@ -53,6 +53,9 @@ type DsPair = {
   priceChange?: { h24?: number }; volume?: { h24?: number }; info?: { imageUrl?: string };
 };
 
+/** DexScreener's CDN takes size params; ask for a small icon instead of the 800 px default. */
+export const smallIcon = (u?: string) => (u ? u.replace(/width=\d+&height=\d+&quality=\d+/, 'width=96&height=96&quality=80') : u);
+
 const pairToMarket = (p: DsPair): Market => ({
   id: p.baseToken.address,
   symbol: p.baseToken.symbol,
@@ -62,7 +65,7 @@ const pairToMarket = (p: DsPair): Market => ({
   change24h: p.priceChange?.h24 ?? 0,
   marketCap: p.marketCap ?? p.fdv,
   volume24h: p.volume?.h24,
-  image: p.info?.imageUrl,
+  image: smallIcon(p.info?.imageUrl),
   createdAt: p.pairCreatedAt,
 });
 

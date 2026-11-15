@@ -16,4 +16,5 @@ for f in hero-duo coins-pile clan-banner; do sips -s format png -Z 1100 "$WEBSRC
 sips -s format png -Z 900 "$WEBSRC/phone-hand.webp" --out "$OUT/phone-hand.png" >/dev/null
 python3 "$HERE/scripts/screen-mask.py" "$WEBSRC/phone-hand.webp" "$OUT/screen-mask.png"
 cp "$HERE/../assets/brand/wordmark.svg" "$OUT/wordmark.svg"
+python3 "$HERE/scripts/optimize.py" art >/dev/null 2>&1 || true
 echo "synced $(ls "$OUT" | wc -l | tr -d ' ') files into public/a ($(du -sh "$OUT" | cut -f1))"
