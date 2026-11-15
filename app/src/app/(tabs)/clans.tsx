@@ -1,46 +1,70 @@
-// Clans: how many clans exist, then the list. Tapping one opens its chat room full screen.
+// Clans (Nick's pick K2): your clan as a hero card, search, discover clans to join. Tapping a clan opens its room.
 import { router } from 'expo-router';
-import { FlatList, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SETUP_REASON, useClans } from '@/data/clans';
-import { ART, Art, Btn, Pending, Press, Row, Txt } from '@/ui/kit';
-import { C, R, S } from '@/ui/tokens';
+import { Search } from '@/ui/icons';
+import { ART, Art, Btn, IconBtn, Pending, Press, Row, SearchBar, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
+import { C, F, R, S } from '@/ui/tokens';
 
 export default function Clans() {
   const insets = useSafeAreaInsets();
   const clans = useClans();
-  const list = clans.status === 'ready' ? clans.data : [];
+  const loading = useFirstLoad();
+  const [q, setQ] = useState('');
+  const [searching, setSearching] = useState(false);
+  const live = clans.status === 'ready';
+  const list = live ? clans.data.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase())) : [];
+
   return (
-    <FlatList
-      style={{ flex: 1, backgroundColor: C.bg }}
-      contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}
-      data={list}
-      keyExtractor={(c) => c.id}
-      ListHeaderComponent={
-        <View style={{ marginBottom: 12 }}>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Txt v="title">Clans</Txt>
-            <Btn title="Create" kind="ghost" h={34} disabled={clans.status !== 'ready'} />
-          </Row>
-          <Txt v="small" style={{ marginTop: 4 }}>
-            {clans.status === 'ready' ? `${list.length} clan${list.length === 1 ? '' : 's'} · tap one to open its chat room` : 'Clan count appears when clans go live'}
-          </Txt>
-        </View>
-      }
-      ListEmptyComponent={<Pending art={ART.clan} title={clans.status === 'ready' ? 'No clans yet' : 'Setup required: clans'} body={SETUP_REASON} />}
-      ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-      renderItem={({ item: c }) => (
-        <Press onPress={() => router.push({ pathname: '/clan/[id]', params: { id: c.id } })} style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 10 }}>
-          <Row style={{ gap: 12 }}>
-            <Art src={ART.crest} size={52} radius={14} />
-            <View style={{ flex: 1 }}>
-              <Txt v="label">{c.name}</Txt>
-              <Txt v="small" style={{ marginTop: 2 }}>{c.members} members · {c.online} online{c.warRecord ? ` · ${c.warRecord}` : ''}</Txt>
-            </View>
-            <Txt v="small" color={C.brandSoft}>Open</Txt>
-          </Row>
-        </Press>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+      <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
+        <Txt v="title">Clans</Txt>
+        <Row style={{ gap: 8 }}>
+          <IconBtn size={36} onPress={() => setSearching((s) => !s)}><Search size={17} color={C.ink} /></IconBtn>
+          <Btn title="Create" h={36} disabled={!live} />
+        </Row>
+      </Row>
+      {searching ? <View style={{ marginBottom: 12 }}><SearchBar value={q} onChange={setQ} placeholder="Search clans" /></View> : null}
+
+      {/* your clan hero */}
+      <LinearGradient colors={['#2A33A8', '#5B6CFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 16 }}>
+        <Row style={{ gap: 12 }}>
+          <Art src={ART.crest} size={60} radius={16} />
+          <View style={{ flex: 1 }}>
+            <Txt v="small" color="#D6DBFF" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.6 }}>YOUR CLAN</Txt>
+            <Txt v="h2" color="#fff" style={{ marginTop: 2 }}>{live ? 'Pick a crew' : 'No clan yet'}</Txt>
+            <Txt v="small" color="#DDE1FF" style={{ marginTop: 2 }}>Chat, push the pot, fight a war every week.</Txt>
+          </View>
+        </Row>
+        <Row style={{ gap: 8, marginTop: 14 }}>
+          <Btn title="Create a clan" kind="white" style={{ flex: 1 }} disabled={!live} />
+          <Btn title="Find one" kind="ghost" style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.16)' }} onPress={() => setSearching(true)} />
+        </Row>
+      </LinearGradient>
+
+      <Row style={{ justifyContent: 'space-between', marginTop: 20, marginBottom: 6 }}>
+        <Txt v="h2">Discover</Txt>
+        <Txt v="small">{live ? `${clans.data.length} clans` : 'Count appears at launch'}</Txt>
+      </Row>
+      {loading ? (
+        <SkeletonRows n={5} square />
+      ) : !live ? (
+        <Pending art={ART.clan} title="Setup required: clans" body={SETUP_REASON} />
+      ) : list.length === 0 ? (
+        <Pending art={ART.clan} title={q ? 'No clans match' : 'No clans yet'} body="Be the first: create a clan and invite your friends." />
+      ) : (
+        list.map((c) => (
+          <Press key={c.id} onPress={() => router.push({ pathname: '/clan/[id]', params: { id: c.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 }}>
+            <Art src={ART.crest} size={46} radius={13} />
+            <View style={{ flex: 1 }}><Txt v="label">{c.name}</Txt><Txt v="small" style={{ marginTop: 2 }}>{c.members} members · {c.online} online</Txt></View>
+            <Btn title="Join" kind="ghost" h={34} />
+          </Press>
+        ))
       )}
-    />
+      <View style={{ height: 1, marginTop: 4, borderRadius: R.sm }} />
+    </ScrollView>
   );
 }

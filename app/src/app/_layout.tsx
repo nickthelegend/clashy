@@ -21,6 +21,8 @@ export default function Root() {
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="clan/[id]" />
+          <Stack.Screen name="chat/[id]" />
+          <Stack.Screen name="leaderboard" />
           <Stack.Screen name="duel/amount" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="duel/live" options={{ gestureEnabled: false }} />
           <Stack.Screen name="duel/result" options={{ gestureEnabled: false, animation: 'fade' }} />
