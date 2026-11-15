@@ -1,7 +1,7 @@
 // Home: fomo / pump.fun anatomy. Balance header, biggest duels, "Duel a coin" list with ⚔ on every row.
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Market, useMajors, useTrending } from '@/data/markets';
 import { Bell, Search } from '@/ui/icons';
@@ -43,12 +43,20 @@ export default function HomeScreen() {
         <IconBtn><Bell size={18} color={C.ink} /></IconBtn>
       </Row>
 
-      <Txt v="small" style={{ marginBottom: 8 }}>⚔ Biggest duels this week</Txt>
-      <View style={{ marginBottom: 16 }}>
-        <Pending title="No duels yet" body="Duels go live when the Clashy program is deployed on MagicBlock. Until then, try a free practice duel on a live price." action="Practice duel on SOL" onAction={() => router.push({ pathname: '/duel/amount', params: { id: 'SOL' } })} />
-      </View>
+      <Pressable onPress={() => router.push({ pathname: '/duel/amount', params: { id: 'SOL' } })} style={{ backgroundColor: C.s1, borderRadius: 18, padding: 16, marginBottom: 16, overflow: 'hidden' }}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Txt v="small">Knockout duel · 60s</Txt>
+          <View style={{ backgroundColor: C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={C.ink} style={{ fontSize: 11 }}>Practice open</Txt></View>
+        </Row>
+        <Txt v="title" style={{ marginTop: 8 }}>Duel anyone.</Txt>
+        <Txt v="small" style={{ marginTop: 4, lineHeight: 18 }}>You pick any coin. They pick theirs. Best % in 60 seconds takes the pot.</Txt>
+        <Row style={{ gap: 8, marginTop: 14 }}>
+          <Btn title="Find a duel" h={40} style={{ flex: 1 }} onPress={() => router.push({ pathname: '/duel/amount', params: { id: 'SOL' } })} />
+          <Btn title="Challenge a friend" kind="ghost" h={40} style={{ flex: 1 }} onPress={() => router.push('/wallet')} />
+        </Row>
+      </Pressable>
 
-      <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'watch', label: 'Watchlist' }, { key: 'duel', label: 'Duel a coin' }, { key: 'live', label: 'Live duels' }]} />
+      <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'watch', label: 'Watchlist' }, { key: 'duel', label: 'Markets' }, { key: 'live', label: 'Live duels' }]} />
       {tab === 'duel' ? (
         <Chips<Filter> value={filter} onChange={setFilter} items={[{ key: 'trending', label: 'Trending' }, { key: 'majors', label: 'Majors' }, { key: 'new', label: 'New' }, { key: 'gainers', label: 'Top gainers' }]} />
       ) : null}

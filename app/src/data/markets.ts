@@ -18,10 +18,11 @@ export type Market = {
 const CB = 'https://api.exchange.coinbase.com';
 const DS = 'https://api.dexscreener.com';
 
-export const MAJORS: { id: string; product: string; name: string }[] = [
-  { id: 'SOL', product: 'SOL-USD', name: 'Solana' },
-  { id: 'BTC', product: 'BTC-USD', name: 'Bitcoin' },
-  { id: 'ETH', product: 'ETH-USD', name: 'Ethereum' },
+// Real logos (CoinGecko's public asset CDN).
+export const MAJORS: { id: string; product: string; name: string; image: string }[] = [
+  { id: 'SOL', product: 'SOL-USD', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
+  { id: 'BTC', product: 'BTC-USD', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
+  { id: 'ETH', product: 'ETH-USD', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
 ];
 
 async function json<T>(url: string): Promise<T> {
@@ -35,7 +36,7 @@ export async function fetchMajor(id: string): Promise<Market> {
   if (!m) throw new Error(`Unknown market ${id}`);
   const s = await json<{ open: string; last: string; volume: string }>(`${CB}/products/${m.product}/stats`);
   const last = Number(s.last), open = Number(s.open);
-  return { id, symbol: id, name: m.name, kind: 'major', price: last, change24h: ((last - open) / open) * 100, volume24h: Number(s.volume) * last };
+  return { id, symbol: id, name: m.name, kind: 'major', image: m.image, price: last, change24h: ((last - open) / open) * 100, volume24h: Number(s.volume) * last };
 }
 
 /** 1-minute closes, oldest first. Coinbase returns [time, low, high, open, close, volume], newest first. */
