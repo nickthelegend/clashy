@@ -460,3 +460,89 @@
 .prow {
   grid-template-columns: 40px minmax(0, 1fr) auto;
 }
+
+/* quick match: one coin rolled for both players */
+.roll {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 14px 6px 12px;
+  border-radius: 14px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+}
+.roll.spinning {
+  border-color: rgba(255, 201, 74, 0.55);
+}
+.roll-k {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.roll-q {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--s3);
+  font-weight: 700;
+  color: var(--gold, #ffc94a);
+}
+.roll-coin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 17px;
+}
+.roll-stage {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  min-height: 300px;
+  padding: 24px;
+  border-radius: 18px;
+  background: #050506;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.roll-stage p {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 500;
+}
+.roll-coins {
+  display: flex;
+  gap: 18px;
+}
+.roll-coins img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  opacity: 0.45;
+  transition: opacity 0.12s, transform 0.12s;
+}
+.roll-coins img.on {
+  opacity: 1;
+  transform: translateY(-6px) scale(1.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .roll-coins img {
+    transition: none;
+  }
+}
+@media (max-width: 900px) {
+  .roll-stage {
+    min-height: 220px;
+  }
+  .roll-coins img {
+    width: 52px;
+    height: 52px;
+  }
+}

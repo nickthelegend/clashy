@@ -34,21 +34,22 @@ const CARDS: Card[] = [
   {
     n: '02',
     label: 'The arena',
-    title: 'Five ways to fight.',
-    body: 'Knockout duels, Draw the line, Royale, Bounty and Clan war. All on live prices.',
+    title: 'Six ways to fight.',
+    body: 'Knockout duels on one rolled coin, Coin clash, Draw the line, Royale, Bounty and Clan war. All on live prices.',
     bg: '#5B6CFF',
     ink: '#fff',
     ui: (
       <div className="ui-modes">
         {[
           ['duel', 'Knockout duel'],
+          ['clash', 'Coin clash'],
           ['line', 'Draw the line'],
           ['royale', 'Royale'],
           ['bounty', 'Bounty'],
           ['war', 'Clan war'],
         ].map(([t, n]) => (
           <div key={t} className="ui-mode">
-            <img src={`/art/tile-${t}.webp`} alt="" width="72" height="72" />
+            <img src={t === 'clash' ? '/art/coins-pile.webp' : `/art/tile-${t}.webp`} alt="" width="72" height="72" />
             <span>{n}</span>
           </div>
         ))}
@@ -116,7 +117,7 @@ const CARDS: Card[] = [
         <div className="msg">
           <img src="/art/av-shark.webp" alt="" width="30" height="30" />
           <p>
-            <b>rexx</b> me. 60 seconds, any coin
+            <b>rexx</b> me. 60 seconds, let the coin roll
           </p>
         </div>
         <div className="ui-stickers">

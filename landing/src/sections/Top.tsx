@@ -96,8 +96,8 @@ export function Hero() {
           the <Tile src="/art/crown.webp" bg="#FFC94A" delay={0.45} /> house.
         </h1>
         <motion.p className="hero-sub" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}>
-          Clashy turns trading into a game you play against people. Pick a rival, pick your coin, and the best % in sixty
-          seconds takes the pot.
+          Clashy turns trading into a game you play against people. Get matched, a coin is rolled for you both, you pick long
+          or short, and the best % in sixty seconds takes the pot.
         </motion.p>
         <motion.div className="hero-ctas" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.6 }}>
           <a className="btn btn-primary" href="#arena">
@@ -123,7 +123,6 @@ export function Hero() {
 // players and the pot are a design sample and the card says so.
 function HeroCard() {
   const sol = useLivePrice(MARKETS[0])
-  const btc = useLivePrice(MARKETS[1])
   const reduce = useReducedMotion()
   return (
     <motion.div className="hcard-stage" initial={reduce ? false : { opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
@@ -136,30 +135,30 @@ function HeroCard() {
       <div className="hcard">
         <div className="hcard-top">
           <span className="chip">
-            <img src="/art/tile-duel.webp" alt="" width="20" height="20" /> knockout duel · 60 s
+            <img src="/art/tile-duel.webp" alt="" width="20" height="20" /> knockout duel · quick match
           </span>
-          <span className="sample">Design sample · live prices</span>
+          <span className="sample">Design sample · live price</span>
         </div>
-        <h3 className="hcard-title">Your SOL vs their BTC. Who moves more?</h3>
+        <h3 className="hcard-title">SOL rolled for both of you. Long or short?</h3>
         <div className="hcard-who">
           <img src="/art/av-nova.webp" alt="" width="26" height="26" />
           <img src="/art/av-shark.webp" alt="" width="26" height="26" />
           <span>
-            <b>you</b> vs <b>rexx</b> · $20 each
+            <b>you</b> vs <b>rexx</b> · $20 each · 60 s
           </span>
         </div>
         <div className="hcard-picks">
           <div className="pick on">
             <span>
-              <img src="/coins/sol.webp" alt="" width="18" height="18" /> ▲ Long SOL
+              <img src="/coins/sol.webp" alt="" width="18" height="18" /> you · ▲ Long
             </span>
             {sol.price != null ? <Money value={sol.price} decimals={2} /> : <span className="cents">…</span>}
           </div>
           <div className="pick">
             <span>
-              <img src="/coins/btc.webp" alt="" width="18" height="18" /> ▼ Short BTC
+              <img src="/coins/sol.webp" alt="" width="18" height="18" /> rexx · ▼ Short
             </span>
-            {btc.price != null ? <Money value={btc.price} decimals={0} /> : <span className="cents">…</span>}
+            <span className="cents">same coin</span>
           </div>
           <div className="hcard-pot">
             <b>+$38.80</b>
