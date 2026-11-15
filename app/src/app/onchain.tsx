@@ -18,13 +18,24 @@ import { BackBtn, Btn, Card, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
-type Tx = { sig: string; layer: 'Solana' | 'Rollup'; label: string; ms: number };
+type Tx = { sig: string; layer: 'Solana' | 'Rollup'; label: string; ms: number; n?: number };
 type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
 const STAKE_SOL = 0.1;
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
 const explorer = (sig: string, layer: Tx['layer']) =>
   `https://explorer.solana.com/tx/${sig}?cluster=custom&customUrl=${encodeURIComponent(layer === 'Rollup' ? NET.er : NET.base)}`;
 const secretKey = (duel: PublicKey) => `clashy:chain:secret:${duel.toBase58()}`;
+
+/** Readable error: the Anchor error message or the failing program log, not web3's generic wrapper. */
+function errText(e: unknown): string {
+  const x = e as { error?: { errorMessage?: string }; logs?: string[]; transactionLogs?: string[]; transactionMessage?: string; message?: string };
+  if (x?.error?.errorMessage) return x.error.errorMessage;
+  const logs = x?.logs ?? x?.transactionLogs ?? [];
+  const hit = logs.find((l) => /Error Message:|failed:|insufficient/i.test(l));
+  if (hit) return hit.replace(/^Program log: (AnchorError.*?Error Message: )?/, '');
+  if (x?.transactionMessage) return x.transactionMessage;
+  return String(x?.message ?? e).split('\n')[0];
+}
 
 export default function OnChainDuel() {
   const insets = useSafeAreaInsets();
@@ -42,7 +53,15 @@ export default function OnChainDuel() {
   const progs = kp ? programs(kp) : null;
   const inflight = useRef(new Set<string>());
 
-  const log = (t: Tx) => setTxs((x) => [t, ...x].slice(0, 30));
+  // repeated rollup checks fold into one row (latest signature, count, average latency)
+  const log = (t: Tx) => setTxs((x) => {
+    const top = x[0];
+    if (top && top.label === t.label && top.layer === t.layer && t.label === 'Check duel') {
+      const n = (top.n ?? 1) + 1;
+      return [{ ...t, n, ms: Math.round((top.ms * (n - 1) + t.ms) / n) }, ...x.slice(1)];
+    }
+    return [t, ...x].slice(0, 30);
+  });
   /** Solana transaction via Anchor; latency measured to confirmation. */
   const onBase = useCallback(async (label: string, run: () => Promise<string>) => {
     const t0 = Date.now();
@@ -72,7 +91,7 @@ export default function OnChainDuel() {
   const guard = (name: string, fn: () => Promise<unknown>) => async () => {
     if (busy) return;
     setBusy(name); setErr(undefined);
-    try { await fn(); Haptics.selectionAsync(); } catch (e) { setErr((e as Error).message.split('\n')[0]); } finally { setBusy(null); }
+    try { await fn(); Haptics.selectionAsync(); } catch (e) { setErr(errText(e)); } finally { setBusy(null); }
   };
 
   // wallet + player account
@@ -110,7 +129,13 @@ export default function OnChainDuel() {
       const once = async (tag: string, fn: () => Promise<unknown>) => {
         if (inflight.current.has(tag)) return;
         inflight.current.add(tag);
-        try { await fn(); } catch (e) { setErr((e as Error).message.split('\n')[0]); inflight.current.delete(tag); }
+        try { await fn(); } catch (e) {
+          inflight.current.delete(tag);
+          // the other device often wins a race (both may settle); only a failure that left the duel where it was is real
+          const now = await readDuel(progs.base, active).catch(() => null);
+          if (now && (now.status !== d.status || now.onEr !== d.onEr || now.seedsRevealed !== d.seedsRevealed || now.picksRevealed !== d.picksRevealed)) return;
+          setErr(errText(e));
+        }
       };
       // MATCHED: reveal my roll seed (local stack has no VRF oracle; devnet/mainnet roll with MagicBlock VRF)
       if (d.status === 1 && sec && !(d.seedsRevealed & (1 << me))) {
@@ -241,7 +266,7 @@ export default function OnChainDuel() {
           <Card style={{ padding: 16 }}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Txt v="label">Duel {short(duel.key.toBase58())}</Txt>
-              <Txt v="small" color={duel.onEr ? C.brandSoft : C.muted}>{duel.onEr ? 'Live on the rollup' : 'On Solana'} · {DUEL_STATUS[duel.status]}</Txt>
+              <Txt v="small" color={duel.onEr ? C.brandSoft : C.muted}>{duel.onEr ? 'On the rollup' : 'On Solana'} · {DUEL_STATUS[duel.status]}</Txt>
             </Row>
             {duel.status === 0 ? (
               <View style={{ alignItems: 'center', marginTop: 10 }}>
@@ -285,8 +310,8 @@ export default function OnChainDuel() {
       {txs.length === 0 ? <Txt v="small">Every action here is a real transaction. They show up here with their layer, latency and an explorer link.</Txt> : txs.map((t) => (
         <Pressable key={t.sig} onPress={() => Linking.openURL(explorer(t.sig, t.layer))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.line }}>
           <View style={{ backgroundColor: t.layer === 'Rollup' ? 'rgba(91,108,255,0.18)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={t.layer === 'Rollup' ? C.brandSoft : C.ink} style={{ fontSize: 11 }}>{t.layer}</Txt></View>
-          <View style={{ flex: 1 }}><Txt v="small" color={C.ink}>{t.label}</Txt><Txt v="small" style={{ fontSize: 11 }}>{short(t.sig)}</Txt></View>
-          <Txt v="small" color={t.ms < 200 ? C.up : C.muted}>{t.ms} ms</Txt>
+          <View style={{ flex: 1 }}><Txt v="small" color={C.ink}>{t.label}{t.n ? ` ×${t.n}` : ''}</Txt><Txt v="small" style={{ fontSize: 11 }}>{short(t.sig)}</Txt></View>
+          <Txt v="small" color={t.ms < 200 ? C.up : C.muted}>{t.n ? 'avg ' : ''}{t.ms} ms</Txt>
         </Pressable>
       ))}
     </ScrollView>

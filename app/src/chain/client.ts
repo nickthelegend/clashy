@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as anchor from '@coral-xyz/anchor';
 import { BN, Program } from '@coral-xyz/anchor';
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
 import idl from './idl.json';
 import type { Clashy } from './idl-types';
 
@@ -34,8 +34,23 @@ export async function loadWallet(): Promise<Keypair> {
   return kp;
 }
 
+/** anchor.Wallet is Node-only, so the app signs with its own minimal keypair wallet. */
+function keypairWallet(kp: Keypair) {
+  const sign = <T extends Transaction | VersionedTransaction>(tx: T): T => {
+    if (tx instanceof VersionedTransaction) tx.sign([kp]);
+    else tx.partialSign(kp);
+    return tx;
+  };
+  return {
+    publicKey: kp.publicKey,
+    payer: kp,
+    signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T) => sign(tx),
+    signAllTransactions: async <T extends Transaction | VersionedTransaction>(txs: T[]) => txs.map(sign),
+  };
+}
+
 export function programs(kp: Keypair) {
-  const w = new anchor.Wallet(kp);
+  const w = keypairWallet(kp);
   return {
     base: new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, w, { commitment: 'confirmed' })),
     er: new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(er, w, { commitment: 'confirmed' })),

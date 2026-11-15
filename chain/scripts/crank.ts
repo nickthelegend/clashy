@@ -13,10 +13,12 @@ process.on('SIGINT', () => { stop = true; });
 while (!stop) {
   const t0 = Date.now();
   try {
-    const px = await pushPrices();
+    // commitFeeds pushes first; a second identical push in the same blockhash would be a duplicate tx
     if (n % 30 === 0) {
-      await commitFeeds();
+      const px = await commitFeeds();
       console.log(`${new Date().toISOString()} pushed ${px.map((p) => (Number(p) / 1e6).toFixed(2)).join(' / ')} · committed to Solana`);
+    } else {
+      await pushPrices();
     }
   } catch (e) {
     console.error(`${new Date().toISOString()} crank error: ${(e as Error).message.split('\n')[0]}`);
