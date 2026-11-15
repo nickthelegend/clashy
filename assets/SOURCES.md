@@ -26,7 +26,7 @@ background". Avatars added one shared character-family line. Word stickers spell
   2400×600. It fits objects onto exact square or landing canvases.
 
 ## Files
-- **assets/mobile (97):**
+- **assets/mobile (103):**
   - app-icon-1024.png and app-icon.webp: the sliced "c" from the wordmark, white on black with the indigo→pink cut, rendered from assets/brand/app-icon.svg (options A–D in assets/brand/options/icon-*)
   - splash, onboarding, onboard-1..3, matchmaking, radar, vs
   - crown, ko-burst, win-trophy, ko-skull, draw-handshake, confetti
@@ -34,6 +34,7 @@ background". Avatars added one shared character-family line. Word stickers spell
   - crest-* (9), tile-* (5), badge-* (6), sticker-* (8), medal-1..3, rank-bronze…rank-legend (6, old tiers)
   - rank-1..10: the 10 degen tiers, 1024×1024 transparent, no words (the app shows the names): 1 Exit Liquidity, 2 Paper Hands, 3 Bagholder, 4 Dip Buyer, 5 Ape, 6 Degen, 7 Diamond Hands, 8 Chad, 9 Whale, 10 The House
   - empty-* (8), banner-* (5), profile-banner
+  - game art for Diamond Hands, Double or Nothing and Daily Cup: tile-diamond, tile-double, tile-cup (1024 transparent) and banner-diamond, banner-double, banner-cup (1600×900 on black)
 - **assets/desktop:** hero-home (2400×600), rail-live, sidebar-battle.
 - **assets/web:**
   - scenes: hero-scene, faceoff, arena, og
