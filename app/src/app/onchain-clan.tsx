@@ -17,7 +17,7 @@ import { Art, BackBtn, Btn, CRESTS, Card, Chips, ErrorLine, LiveDot, Row, Tag, T
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
-type ClanView = { key: PublicKey; name: string; captain: PublicKey; crest: number; members: number; chest: number; shares: number; score: number; proposals: number; war: PublicKey };
+type ClanView = { key: PublicKey; name: string; captain: PublicKey; crest: number; members: number; chest: number; shares: number; openVotes: number; positionsOpen: number; score: number; proposals: number; war: PublicKey };
 type PropView = { key: PublicKey; id: number; proposer: PublicKey; coin: number; side: number; lev: number; sizeBps: number; yes: number; no: number; deadline: number; status: number; myVote: boolean };
 type WarView = { key: PublicKey; a: PublicKey; b: PublicKey; nonce: number; stake: number; startTs: number; endTs: number; baseA: number; baseB: number; chestA: number; chestB: number; returnBps: number[]; status: number; winner: number };
 type PosView = { key: PublicKey; id: number; coin: number; side: number; lev: number; notional: number; entry: number; exit: number; pnl: number; open: boolean; closedAt: number };
@@ -66,7 +66,7 @@ export default function OnchainClan() {
     const load = async () => {
       try {
         const toView = (key: PublicKey, c: any): ClanView => ({
-          key, name: clanName(c.name), captain: c.captain, crest: c.crest, members: c.members, chest: Number(c.chest), shares: Number(c.shares),
+          key, name: clanName(c.name), captain: c.captain, crest: c.crest, members: c.members, chest: Number(c.chest), shares: Number(c.shares), openVotes: c.openVotes, positionsOpen: c.positionsOpen,
           score: Number(c.scorePnl), proposals: Number(c.proposals), war: c.war,
         });
         const all = (await progs.base.account.clan.all()).map((a) => toView(a.publicKey, a.account));
@@ -135,9 +135,9 @@ export default function OnchainClan() {
     await onBase(`Propose ${what}`, () => progs!.base.methods.propose(+coin, +dir, +lev, +size, new BN(VOTE_SECS)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), proposal: prop }).rpc());
   });
   const vote = (p: PropView, yes: boolean) => guard(`vote-${p.id}`, () => onBase(`Vote ${yes ? 'yes' : 'no'} on #${p.id}`, () => progs!.base.methods.vote(yes).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), proposal: p.key, vote: P.vote(p.key, kp!.publicKey) }).rpc()))();
-  const execute = (p: PropView) => guard(`exec-${p.id}`, () => onBase(`Execute #${p.id} at the oracle price`, () => progs!.base.methods.executeProposal().accountsPartial({ captain: kp!.publicKey, clan: mine!.key, proposal: p.key, position: P.position(mine!.key, p.id), price: P.baseFeed(p.coin) }).rpc()))();
-  const reject = (p: PropView) => guard(`rej-${p.id}`, () => onBase(`Close failed vote #${p.id}`, () => progs!.base.methods.rejectProposal().accountsPartial({ proposal: p.key }).rpc()))();
-  const closePos = (p: PosView) => guard(`close-${p.id}`, () => onBase(`Close position #${p.id}`, () => progs!.base.methods.closePosition().accountsPartial({ captain: kp!.publicKey, clan: mine!.key, position: p.key, price: P.baseFeed(p.coin) }).rpc()))();
+  const execute = (p: PropView) => guard(`exec-${p.id}`, () => onBase(`Execute #${p.id} at the oracle price`, () => progs!.base.methods.executeProposal().accountsPartial({ captain: kp!.publicKey, clan: mine!.key, proposal: p.key, position: P.position(mine!.key, p.id), price: P.baseFeed(p.coin), war: warLocked ? mine!.war : null }).rpc()))();
+  const reject = (p: PropView) => guard(`rej-${p.id}`, () => onBase(`Close failed vote #${p.id}`, () => progs!.base.methods.rejectProposal().accountsPartial({ clan: mine!.key, proposal: p.key }).rpc()))();
+  const closePos = (p: PosView) => guard(`close-${p.id}`, () => onBase(`Close position #${p.id}`, () => progs!.base.methods.closePosition().accountsPartial({ closer: kp!.publicKey, clan: mine!.key, position: p.key, price: P.baseFeed(p.coin), war: warLocked ? mine!.war : null }).rpc()))();
 
   const byKey = (k: PublicKey) => clans.find((c) => c.key.equals(k));
   const declare = guard('declare', async () => {
@@ -158,6 +158,7 @@ export default function OnchainClan() {
       .accountsPartial({ clanA: w.a, clanB: w.b, chestA: P.chest(w.a), chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key), treasury: cfg.treasury }).rpc());
   })();
   const activeWars = wars.filter((w) => w.status <= 1);
+  const warOver = activeWars.some((w) => w.status === 1 && now >= w.endTs);
   const pastWars = wars.filter((w) => w.status === 2).slice(0, 3);
   const rivals = clans.filter((c) => mine && !c.key.equals(mine.key) && c.war.equals(PublicKey.default) && (!rivalQ.trim() || c.name.toLowerCase().includes(rivalQ.trim().toLowerCase()))).slice(0, 6);
 
@@ -220,7 +221,7 @@ export default function OnchainClan() {
                 <View style={{ flex: 1 }}>
                   <Row style={{ gap: 8 }}><Txt v="title">{mine.name}</Txt>{captain ? <Tag text="Captain" color={C.brand} /> : null}</Row>
                   <Txt v="small">{mine.members} member{mine.members === 1 ? '' : 's'} · captain {short(mine.captain.toBase58())}</Txt>
-                  {warLocked ? <Txt v="small" color={C.opp}>At war · withdrawals locked until it settles</Txt> : null}
+                  {warLocked ? <Txt v="small" color={C.opp}>At war · deposits and cash-outs wait until it settles</Txt> : mine.openVotes > 0 ? <Txt v="small" color={C.muted}>Cash-outs wait until open votes close</Txt> : null}
                 </View>
               </Row>
               <Row style={{ marginTop: 14, gap: 8 }}>
@@ -234,7 +235,7 @@ export default function OnchainClan() {
                 <Btn title="Deposit 0.1" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.1)} />
                 <Btn title="Deposit 0.5" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.5)} />
                 {myShares > 0
-                  ? <Btn title="Cash out" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked} onPress={withdraw} />
+                  ? <Btn title="Cash out" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked || mine.openVotes > 0} onPress={withdraw} />
                   : !captain ? <Btn title="Leave" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={leave} /> : null}
               </Row>
               <Txt v="small" style={{ marginTop: 8 }}>{myShares ? `You put in ${sol(myDeposit)} SOL; your shares are worth ${sol(mine.shares ? Math.floor((myShares * mine.chest) / mine.shares) : 0)} SOL now. Votes count by shares.` : 'Deposit to get chest shares and a vote. Shares pay out pro rata, so war wins and losses are shared.'}</Txt>
@@ -256,7 +257,7 @@ export default function OnchainClan() {
             const left = Math.max(0, Math.ceil(p.deadline - now));
             const total = p.yes + p.no;
             const passed = p.yes > p.no && (left === 0 || p.yes * 2 > mine.shares);
-            const failed = left === 0 && p.yes <= p.no;
+            const failed = (left === 0 && p.yes <= p.no) || now > p.deadline + 3600;
             return (
               <Card key={p.key.toBase58()} style={{ marginBottom: 8, padding: 14 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
@@ -275,9 +276,9 @@ export default function OnchainClan() {
                       <Btn title="Vote no" kind="short" h={40} style={{ flex: 1 }} disabled={!!busy || myShares === 0} onPress={() => vote(p, false)} />
                     </>
                   ) : p.myVote ? <Txt v="small" color={C.brandSoft}>You voted.</Txt> : null}
-                  {passed && captain ? <Btn title="Execute at oracle price" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => execute(p)} /> : null}
-                  {passed && !captain ? <Txt v="small" color={C.up}>Passed · waiting for the captain</Txt> : null}
-                  {failed ? <Btn title="Close failed vote" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => reject(p)} /> : null}
+                  {passed && captain && !failed ? <Btn title="Execute at oracle price" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => execute(p)} /> : null}
+                  {passed && !captain && !failed ? <Txt v="small" color={C.up}>Passed · waiting for the captain</Txt> : null}
+                  {failed ? <Btn title={p.yes > p.no ? 'Close expired vote' : 'Close failed vote'} kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => reject(p)} /> : null}
                 </Row>
                 {myShares === 0 && !p.myVote && left > 0 ? <Txt v="small" style={{ marginTop: 6 }}>Deposit to get a vote.</Txt> : null}
               </Card>
@@ -297,7 +298,7 @@ export default function OnchainClan() {
                 <Txt v="small">{sol(p.notional)} SOL notional · entry ${p.entry.toFixed(2)} → {p.open ? (px ? `now $${px.toFixed(2)}` : 'price loading') : `exit $${p.exit.toFixed(2)}`}</Txt>
                 <Row style={{ justifyContent: 'space-between', marginTop: 8 }}>
                   <Txt v="title" color={live >= 0 ? C.up : C.down}>{signed(Math.round(live))}</Txt>
-                  {p.open && captain ? <Btn title="Close at oracle price" kind="white" h={40} disabled={!!busy} onPress={() => closePos(p)} /> : null}
+                  {p.open && (captain || warOver) ? <Btn title="Close at oracle price" kind="white" h={40} disabled={!!busy} onPress={() => closePos(p)} /> : null}
                 </Row>
                 {p.open ? <Txt v="small" style={{ marginTop: 4 }}>Live P&L at the rollup price; booked to the clan score at close.</Txt> : null}
               </Card>
@@ -338,7 +339,9 @@ export default function OnchainClan() {
                       <Txt v="title" color={rThem >= 0 ? C.up : C.down}>{rThem >= 0 ? '+' : ''}{(rThem / 100).toFixed(2)}%</Txt>
                     </Row>
                     <Txt v="small" style={{ marginTop: 4 }}>Return on each starting chest from closed trades · pot {sol(w.stake * 2)} SOL · {left ? `${left >= 3600 ? `${(left / 3600).toFixed(1)} h` : `${left} s`} left` : 'over'}</Txt>
-                    {left === 0 ? <Btn title="Settle the war" kind="white" h={44} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => settleWar(w)} /> : null}
+                    {left === 0 ? (A && B && (A.positionsOpen > 0 || B.positionsOpen > 0)
+                      ? <Txt v="small" color={C.opp} style={{ marginTop: 8 }}>Window over. Every open position must be closed (anyone can now) before the war settles.</Txt>
+                      : <Btn title="Settle the war" kind="white" h={44} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => settleWar(w)} />) : null}
                   </>
                 )}
               </Card>

@@ -215,7 +215,8 @@ export default function OnChainDuel() {
     const raw = await AsyncStorage.getItem(secretKey(active));
     const sec: Secrets = raw ? JSON.parse(raw) : { seed: [] };
     const salt = random32();
-    const hash = await sha256(new Uint8Array([side]), new Uint8Array(new Uint16Array([lev]).buffer), salt);
+    // the program binds the hash to this duel and this player, so a rival cannot copy it
+    const hash = await sha256(active.toBytes(), kp.publicKey.toBytes(), new Uint8Array([side]), new Uint8Array(new Uint16Array([lev]).buffer), salt);
     await AsyncStorage.setItem(secretKey(active), JSON.stringify({ ...sec, salt: [...salt], side, lev } satisfies Secrets));
     await onBase('Commit sealed pick', () => progs.base.methods.commitPick([...hash]).accountsPartial({ signer: kp.publicKey, duel: active }).rpc());
   })();

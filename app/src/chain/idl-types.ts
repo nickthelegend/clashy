@@ -14,6 +14,110 @@ export type Clashy = {
   },
   "instructions": [
     {
+      "name": "abortDuel",
+      "docs": [
+        "Anyone can end a duel that matched but never reached the rollup within DUEL_SETUP_SECS (a seed,",
+        "pick or VRF answer never came). If both picks were committed and only one player revealed, the",
+        "other forfeits: the revealer takes the pot minus rake. Otherwise both stakes are refunded."
+      ],
+      "discriminator": [
+        207,
+        7,
+        124,
+        8,
+        239,
+        20,
+        114,
+        226
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true
+        },
+        {
+          "name": "joiner",
+          "writable": true
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "acceptWar",
       "discriminator": [
         135,
@@ -271,7 +375,7 @@ export type Clashy = {
       ],
       "accounts": [
         {
-          "name": "creator",
+          "name": "signer",
           "signer": true
         },
         {
@@ -535,7 +639,10 @@ export type Clashy = {
       ],
       "accounts": [
         {
-          "name": "captain",
+          "name": "closer",
+          "docs": [
+            "The captain, or anyone once the clan's war window is over."
+          ],
           "signer": true
         },
         {
@@ -569,6 +676,13 @@ export type Clashy = {
         },
         {
           "name": "price"
+        },
+        {
+          "name": "war",
+          "docs": [
+            "The clan's war, needed when someone other than the captain closes."
+          ],
+          "optional": true
         }
       ],
       "args": []
@@ -1116,6 +1230,24 @@ export type Clashy = {
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "bufferDuel",
           "writable": true,
           "pda": {
@@ -1508,6 +1640,24 @@ export type Clashy = {
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "bufferTournament",
           "writable": true,
           "pda": {
@@ -1853,6 +2003,13 @@ export type Clashy = {
         },
         {
           "name": "price"
+        },
+        {
+          "name": "war",
+          "docs": [
+            "The clan's war, required while it is at war."
+          ],
+          "optional": true
         },
         {
           "name": "systemProgram",
@@ -2917,6 +3074,10 @@ export type Clashy = {
       ],
       "accounts": [
         {
+          "name": "clan",
+          "writable": true
+        },
+        {
           "name": "proposal",
           "writable": true
         }
@@ -3457,6 +3618,56 @@ export type Clashy = {
               8
             ]
           }
+        }
+      ]
+    },
+    {
+      "name": "setErValidator",
+      "docs": [
+        "Pins the rollup validator duels and tournaments are delegated to."
+      ],
+      "discriminator": [
+        205,
+        97,
+        243,
+        133,
+        57,
+        39,
+        134,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "validator",
+          "type": "pubkey"
         }
       ]
     },
@@ -4797,6 +5008,21 @@ export type Clashy = {
       "code": 6048,
       "name": "notEnoughShares",
       "msg": "Not enough chest shares"
+    },
+    {
+      "code": 6049,
+      "name": "noValidator",
+      "msg": "The rollup validator is not configured"
+    },
+    {
+      "code": 6050,
+      "name": "positionsOpen",
+      "msg": "Close every clan position first"
+    },
+    {
+      "code": 6051,
+      "name": "voteOpen",
+      "msg": "Withdrawals wait until the clan's open votes close"
     }
   ],
   "types": [
@@ -4853,6 +5079,13 @@ export type Clashy = {
           },
           {
             "name": "positionsOpen",
+            "type": "u16"
+          },
+          {
+            "name": "openVotes",
+            "docs": [
+              "Proposals still open. Withdrawals wait until they close, so one deposit cannot vote twice."
+            ],
             "type": "u16"
           },
           {
@@ -5020,6 +5253,13 @@ export type Clashy = {
             "docs": [
               "The MagicBlock VRF oracle queue coin rolls go to: the base queue on devnet and mainnet, or",
               "MagicBlock's test queue on a local stack running their `vrf-oracle`."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "erValidator",
+            "docs": [
+              "The MagicBlock rollup validator duels and tournaments may be delegated to (set by the admin)."
             ],
             "type": "pubkey"
           }
@@ -5211,6 +5451,13 @@ export type Clashy = {
           {
             "name": "vaultBump",
             "type": "u8"
+          },
+          {
+            "name": "matchedAt",
+            "docs": [
+              "When the joiner matched; after DUEL_SETUP_SECS a duel stuck before the rollup can be aborted."
+            ],
+            "type": "i64"
           }
         ]
       }
@@ -5579,6 +5826,13 @@ export type Clashy = {
           {
             "name": "vaultBump",
             "type": "u8"
+          },
+          {
+            "name": "createdAt",
+            "docs": [
+              "Lobby opened; after TOUR_LOBBY_SECS anyone can cancel an unstarted tournament (full refunds)."
+            ],
+            "type": "i64"
           }
         ]
       }

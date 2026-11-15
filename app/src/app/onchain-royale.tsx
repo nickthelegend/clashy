@@ -127,7 +127,7 @@ export default function OnchainRoyale() {
   const goLive = guard('live', () => onBase('Hand it to the rollup', () => progs!.base.methods.delegateTournament(tour!.creator, new BN(tour!.nonce))
     .accountsPartial({ payer: kp!.publicKey, tournament: active! }).remainingAccounts([{ pubkey: NET.erValidator, isSigner: false, isWritable: false }]).rpc()));
   const cancel = guard('cancel', async () => {
-    await onBase('Cancel · refund every entry', () => progs!.base.methods.cancelTournament().accountsPartial({ creator: kp!.publicKey, tournament: active!, vault: P.vault(active!) })
+    await onBase('Cancel · refund every entry', () => progs!.base.methods.cancelTournament().accountsPartial({ signer: kp!.publicKey, tournament: active!, vault: P.vault(active!) })
       .remainingAccounts(tour!.players.map((p) => ({ pubkey: p, isSigner: false, isWritable: true }))).rpc());
     await setActiveTour(null);
   });
