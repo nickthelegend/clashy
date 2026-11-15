@@ -52,6 +52,9 @@ export default function OnChainDuel() {
   const [busy, setBusy] = useState<string | null>(null);
   const progs = kp ? programs(kp) : null;
   const inflight = useRef(new Set<string>());
+  /** When this device first saw the duel matched (for the VRF fallback timer). */
+  const matchedAt = useRef<number | null>(null);
+  const [vrf, setVrf] = useState<{ queue: PublicKey; required: boolean } | null>(null);
 
   // repeated rollup checks fold into one row (latest signature, count, average latency)
   const log = (t: Tx) => setTxs((x) => {
@@ -137,9 +140,24 @@ export default function OnChainDuel() {
           setErr(errText(e));
         }
       };
-      // MATCHED: reveal my roll seed (local stack has no VRF oracle; devnet/mainnet roll with MagicBlock VRF)
-      if (d.status === 1 && sec && !(d.seedsRevealed & (1 << me))) {
-        await once(`seed-${me}`, () => onBase('Reveal roll seed', () => progs.base.methods.revealSeed(sec.seed).accountsPartial({ signer: kp.publicKey, duel: active }).rpc()));
+      // MATCHED: the creator asks MagicBlock VRF to roll the coin; its oracle answers the callback.
+      // Only if VRF is not required and no answer came within 15 s do both players reveal their seeds.
+      if (d.status === 1) {
+        matchedAt.current ??= Date.now();
+        let cfg = vrf;
+        if (!cfg) {
+          const c = await progs.base.account.config.fetch(P.config);
+          cfg = { queue: c.vrfQueue, required: c.vrfRequired };
+          setVrf(cfg);
+        }
+        if (me === 0 && !d.vrfPending) {
+          await once('vrf', () => onBase('Request VRF roll', () => progs.base.methods.requestCoinRoll([...random32()]).accountsPartial({ payer: kp.publicKey, duel: active, oracleQueue: cfg.queue }).rpc()));
+        }
+        if (!cfg.required && sec && !(d.seedsRevealed & (1 << me)) && Date.now() - matchedAt.current > 15_000) {
+          await once(`seed-${me}`, () => onBase('Reveal roll seed (VRF fallback)', () => progs.base.methods.revealSeed(sec.seed).accountsPartial({ signer: kp.publicKey, duel: active }).rpc()));
+        }
+      } else {
+        matchedAt.current = null;
       }
       // ROLLED: once both picks are committed, reveal mine
       if (d.status === 2 && sec?.salt && d.picksCommitted === 0b11 && !(d.picksRevealed & (1 << me))) {
@@ -276,10 +294,11 @@ export default function OnChainDuel() {
                 {me === 0 ? <Btn title="Cancel and refund" kind="ghost" style={{ marginTop: 10 }} disabled={!!busy} onPress={cancel} /> : null}
               </View>
             ) : duel.status === 1 ? (
-              <Txt v="small" style={{ marginTop: 10 }}>Matched. Rolling the coin: both players reveal their committed seeds (MagicBlock VRF on devnet/mainnet)…</Txt>
+              <Txt v="small" style={{ marginTop: 10 }}>{duel.vrfPending ? 'Matched. MagicBlock VRF is rolling the coin for both of you…' : 'Matched. Asking MagicBlock VRF for the coin…'}</Txt>
             ) : duel.status === 2 ? (
               <View style={{ marginTop: 10 }}>
                 <Txt v="title">{sym} rolled</Txt>
+                <Txt v="small" color={C.brandSoft}>{duel.seedsRevealed === 0b11 ? 'Rolled from both players\' seeds (VRF fallback)' : 'Rolled by MagicBlock VRF'}</Txt>
                 <Txt v="small">Pick a side. It stays sealed (commit-reveal) until both of you lock.</Txt>
                 {me >= 0 && !(duel.picksCommitted & (1 << me)) ? (
                   <Row style={{ gap: 10, marginTop: 12 }}>

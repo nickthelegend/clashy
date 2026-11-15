@@ -9,7 +9,7 @@ import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, LAMPORTS_PER_SOL, NET, P, PublicKey, TOUR_STATUS, priceOf, readTour, type TourView,
+  BN, COIN_SYMBOLS, LAMPORTS_PER_SOL, NET, P, PublicKey, TOUR_STATUS, priceOf, random32, readTour, type TourView,
 } from '@/chain/client';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { ClayLoop } from '@/ui/clay';
@@ -19,6 +19,7 @@ import { useDeskColumn } from '@/ui/layout';
 import { C, S } from '@/ui/tokens';
 
 const ACTIVE = 'clashy:chain:tour';
+const NO_COIN = 255;
 const ENTRY_SOL = 0.05;
 const ROUND_SECS = 10;
 const MAX_ROUNDS = 10;
@@ -38,8 +39,7 @@ export default function OnchainRoyale() {
   const [now, setNow] = useState(Date.now() / 1000);
   const inflight = useRef(new Set<string>());
 
-  // host form
-  const [coin, setCoin] = useState<'0' | '1' | '2'>('1');
+  // host form (the coin is rolled by MagicBlock VRF once the Royale is created)
   const [seats, setSeats] = useState<'2' | '4' | '8' | '16'>('4');
   const [lives, setLives] = useState<'1' | '2' | '3'>('2');
 
@@ -112,10 +112,12 @@ export default function OnchainRoyale() {
   const host = guard('host', async () => {
     const nonce = Date.now();
     const key = P.tour(kp!.publicKey, nonce);
-    await onBase(`Host a Royale · ${COIN_SYMBOLS[+coin]}`, () => progs!.base.methods
-      .createTournament(new BN(nonce), new BN(ENTRY_SOL * LAMPORTS_PER_SOL), +seats, +coin, +lives, MAX_ROUNDS, ROUND_SECS)
+    await onBase('Host a Royale', () => progs!.base.methods
+      .createTournament(new BN(nonce), new BN(ENTRY_SOL * LAMPORTS_PER_SOL), +seats, NO_COIN, +lives, MAX_ROUNDS, ROUND_SECS)
       .accountsPartial({ creator: kp!.publicKey, tournament: key, vault: P.vault(key) }).rpc());
     await onBase('Join · escrow entry', () => progs!.base.methods.joinTournament().accountsPartial({ player: kp!.publicKey, tournament: key, vault: P.vault(key) }).rpc());
+    const cfg = await progs!.base.account.config.fetch(P.config);
+    await onBase('Request VRF coin', () => progs!.base.methods.requestTournamentCoin([...random32()]).accountsPartial({ payer: kp!.publicKey, tournament: key, oracleQueue: cfg.vrfQueue }).rpc());
     await setActiveTour(key);
   });
   const join = (t: TourView) => guard(`join-${t.nonce}`, async () => {
@@ -133,7 +135,7 @@ export default function OnchainRoyale() {
 
   const me = tour && kp ? tour.players.findIndex((p) => p.equals(kp.publicKey)) : -1;
   const isHost = !!(tour && kp && tour.creator.equals(kp.publicKey));
-  const sym = tour && tour.coin < 3 ? COIN_SYMBOLS[tour.coin] : '…';
+  const sym = tour && tour.coin < 3 ? COIN_SYMBOLS[tour.coin] : 'VRF…';
   const left = tour ? Math.max(0, tour.roundStartedAt + tour.roundSecs - now) : 0;
   const move = tour && price ? price - tour.roundPrice : 0;
   const ready = hasPlayer && (bal ?? 0) >= ENTRY_SOL + 0.02;
@@ -168,10 +170,8 @@ export default function OnchainRoyale() {
           <Card style={{ padding: 14 }}>
             <Row style={{ gap: 12, marginBottom: 10 }}>
               <Art src={ART.tileRoyale} size={64} radius={16} />
-              <Txt v="small" style={{ flex: 1 }}>Every {ROUND_SECS} s, call {COIN_SYMBOLS[+coin]} up or down. A wrong call or no call costs a life. Up to {MAX_ROUNDS} rounds; whoever has the most lives left splits the pot.</Txt>
+              <Txt v="small" style={{ flex: 1 }}>MagicBlock VRF rolls one coin for everyone. Every {ROUND_SECS} s, call it up or down. A wrong call or no call costs a life. Up to {MAX_ROUNDS} rounds; whoever has the most lives left splits the pot.</Txt>
             </Row>
-            <Txt v="small" style={{ marginBottom: 4 }}>Coin{NET.airdrop ? ' (you pick on the local stack; VRF rolls it on devnet and mainnet)' : ''}</Txt>
-            <Chips items={COIN_SYMBOLS.map((s, i) => ({ key: String(i) as '0' | '1' | '2', label: s }))} value={coin} onChange={setCoin} />
             <Txt v="small" style={{ marginBottom: 4 }}>Seats</Txt>
             <Chips items={(['2', '4', '8', '16'] as const).map((k) => ({ key: k, label: k }))} value={seats} onChange={setSeats} />
             <Txt v="small" style={{ marginBottom: 4 }}>Lives</Txt>
@@ -186,7 +186,7 @@ export default function OnchainRoyale() {
             <Card key={t.key.toBase58()} style={{ marginBottom: 8, padding: 12 }}>
               <Row style={{ gap: 10 }}>
                 <View style={{ flex: 1 }}>
-                  <Txt v="label">{COIN_SYMBOLS[t.coin] ?? 'VRF coin'} · {t.count}/{t.maxPlayers} seats · {t.startLives} ♥</Txt>
+                  <Txt v="label">{t.coin < 3 ? COIN_SYMBOLS[t.coin] : 'Coin rolling'} · {t.count}/{t.maxPlayers} seats · {t.startLives} ♥</Txt>
                   <Txt v="small">Entry {(t.entry / LAMPORTS_PER_SOL).toFixed(2)} SOL · host {short(t.creator.toBase58())}</Txt>
                 </View>
                 {kp && t.players.some((p) => p.equals(kp.publicKey))
@@ -211,10 +211,10 @@ export default function OnchainRoyale() {
 
             {tour.status === 0 ? (
               <>
-                <Txt v="small" style={{ marginTop: 12 }}>{tour.onEr ? 'On the rollup · starting…' : isHost ? (tour.count >= 2 ? 'Everyone in? Hand it to the rollup to start round 1.' : 'Waiting for at least one more player. Join from a second device or tab.') : 'Waiting for the host to start.'}</Txt>
+                <Txt v="small" style={{ marginTop: 12 }}>{tour.coin >= 3 ? 'MagicBlock VRF is rolling the coin…' : `Rolled by MagicBlock VRF: ${sym}. `}{tour.onEr ? 'On the rollup · starting…' : isHost ? (tour.count >= 2 ? 'Everyone in? Hand it to the rollup to start round 1.' : 'Waiting for at least one more player. Join from a second device or tab.') : 'Waiting for the host to start.'}</Txt>
                 {isHost && !tour.onEr ? (
                   <Row style={{ gap: 8, marginTop: 10 }}>
-                    <Btn title={busy === 'live' ? 'Starting…' : 'Start on the rollup'} style={{ flex: 1 }} disabled={!!busy || tour.count < 2} onPress={goLive} />
+                    <Btn title={busy === 'live' ? 'Starting…' : 'Start on the rollup'} style={{ flex: 1 }} disabled={!!busy || tour.count < 2 || tour.coin >= 3} onPress={goLive} />
                     <Btn title="Cancel" kind="ghost" style={{ flex: 0.6 }} disabled={!!busy} onPress={cancel} />
                   </Row>
                 ) : null}
