@@ -102,6 +102,8 @@ async function stills(b) {
   await go('/game/diamond'); await snap('diamond', 4000); await p.getByText('Buy and hold').click(); await snap('diamond-hold', 11000);
   await go('/game/cup'); await snap('cup');
   await go('/game/war'); await snap('war', 4000);
+  await go('/clan/chest'); await p.waitForTimeout(2500); await p.getByText('Propose a trade', { exact: true }).click(); await p.getByText(/^Propose long SOL/).click(); await p.getByText('Vote yes').click(); await snap('chest', 900);
+  await go('/game/skirmish'); await p.waitForTimeout(3000); await snap('skirmish', 400);
   await go('/game/bounty'); await p.getByText('My poster').click(); await snap('bounty', 1500);
   await go('/ranked'); await snap('ranked', 4200);
   await go('/leaderboard'); await p.mouse.wheel(0, 900); await snap('ranks', 1200);

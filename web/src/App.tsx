@@ -247,6 +247,8 @@ const RAIL: Game[] = [
   { k: 'Ranked', who: 'Any game · ten ranks', t: 'The queue picks the game.', b: 'VRF rolls Knockout, Draw the line or Royale. Climb from Exit Liquidity to The House.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: true },
   { k: 'Daily Cup', who: 'Everyone · one run a day', t: 'One coin. One shot.', b: 'The coin of the day for everyone. One scored run. New cup at 00:00 UTC.', c: '#FF8A4C', art: 'tile-cup.png', shot: 'cup', live: true },
   { k: 'Coin clash', who: '1 v 1 · each picks a coin', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#AEB6FF', art: 'ko-burst.png', shot: 'clash', live: true },
+  { k: 'Clan Skirmish', who: 'Clan vs clan · best of 5', t: 'Make the clan\'s call.', b: 'A coin is rolled each round. Your clan goes long or short. First clan to 3 rounds wins.', c: '#FF8A4C', art: 'crest-flame.png', shot: 'skirmish', live: true },
+  { k: 'Clan Chest', who: 'Trade as a group', t: 'The pot moves by vote.', b: 'Anyone proposes a trade on the clan pot. The clan votes. The captain executes it live.', c: '#FFD66B', art: 'crown.png', shot: 'chest', live: true },
   { k: 'Clan war', who: 'Clan vs clan · one week', t: 'Bring the group chat.', b: 'Every coin is a tile on the map. Beat the other clan on it to own it.', c: '#30D158', art: 'clan-banner.png', shot: 'war', live: false },
   { k: 'Bounty', who: 'Open · one week', t: 'Put a price on your head.', b: 'Stake a reward on your week. Hunters pay to try and beat it.', c: '#5AC8FA', art: 'tile-bounty.png', shot: 'bounty', live: false },
 ];
@@ -283,8 +285,8 @@ function Rail() {
   const intro = (
     <div className="rail-intro">
       <span className="kicker">The games</span>
-      <h2 className="h-l" style={{ marginTop: 14 }}>Ten ways to<br />beat someone.</h2>
-      <p className="lead" style={{ marginTop: 18 }}>Every card is the real app: clips recorded from it, playing on live prices. Eight are playable today as practice.</p>
+      <h2 className="h-l" style={{ marginTop: 14 }}>Twelve ways to<br />beat someone.</h2>
+      <p className="lead" style={{ marginTop: 18 }}>Every card is the real app: clips recorded from it, playing on live prices. Ten are playable today as practice.</p>
     </div>
   );
   if (!wide) {
