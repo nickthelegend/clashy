@@ -9,6 +9,23 @@ const POSTER = (f: string) => `/v/${f}.webp`;
 
 /** A real gameplay clip recorded from the app. Loads nothing until near the viewport, plays only while visible,
  *  and stays on its poster frame for people who prefer reduced motion. */
+/** A Higgsfield clay loop (assets/video/web). Black backgrounds drop out with mix-blend-mode: lighten.
+ *  Loads near the viewport, plays only while visible, poster under reduced motion. */
+function ClayLoop({ name, className, eager, loop = true }: { name: string; className?: string; eager?: boolean; loop?: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { if (v.preload === 'none') v.preload = 'auto'; v.play().catch(() => {}); } else if (loop) v.pause();
+    }, { rootMargin: '200px 0px' });
+    io.observe(v);
+    return () => io.disconnect();
+  }, [loop]);
+  return <video ref={ref} className={`clay ${className ?? ''}`} src={`/clay/${name}.mp4`} poster={`/clay/${name}.webp`} muted loop={loop} playsInline preload={eager ? 'auto' : 'none'} aria-hidden="true" />;
+}
+
 function Clip({ name, label }: { name: string; label?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -123,7 +140,9 @@ function Hero() {
           <a className="cta-ghost" href="#how"><span className="cta-play">▶</span>See how it works</a>
         </motion.div>
         <motion.div className="hero2-stage" style={{ y: artY }}>
-          <motion.img className="hero2-art" fetchPriority="high" width={1100} height={770} src={A('hero-duo.png')} alt="Two clay traders face off over a price chart" initial={{ opacity: 0, scale: 0.9, y: 60 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1.2, ease, delay: 0.6 }} />
+          <motion.div className="hero2-art hero2-video" initial={{ opacity: 0, scale: 0.9, y: 60 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1.2, ease, delay: 0.6 }} role="img" aria-label="Two clay traders face off over a price chart">
+            <ClayLoop name="hero-duo-loop" eager />
+          </motion.div>
           <LiveCard />
         </motion.div>
       </div>
@@ -237,15 +256,15 @@ function How() {
 }
 
 /* ───────── games rail: every game, its clay piece and the real screen (or a clip) ───────── */
-type Game = { k: string; who: string; t: string; b: string; c: string; art: string; clip?: string; shot?: string; live: boolean };
+type Game = { k: string; who: string; t: string; b: string; c: string; art: string; loop?: string; clip?: string; shot?: string; live: boolean };
 const RAIL: Game[] = [
-  { k: 'Knockout duel', who: '1 v 1 · quick match · 60 s', t: 'One coin. One winner.', b: 'Matched in seconds. VRF rolls one coin for both of you. Long or short, survive the knockout line.', c: '#5B6CFF', art: 'tile-duel.png', clip: 'duel', live: true },
+  { k: 'Knockout duel', who: '1 v 1 · quick match · 60 s', t: 'One coin. One winner.', b: 'Matched in seconds. VRF rolls one coin for both of you. Long or short, survive the knockout line.', c: '#5B6CFF', loop: 'tile-duel-loop', art: 'tile-duel.png', clip: 'duel', live: true },
   { k: 'Double or Nothing', who: 'After any win', t: 'Let it ride.', b: 'Roll the whole pot into the next duel. ×2, ×4, ×8… one loss ends the streak.', c: '#FFC94A', art: 'tile-double.png', shot: 'result-win', live: true },
-  { k: 'Royale', who: '5–20 players · 10 s rounds', t: 'Last one standing.', b: 'Up or down every 10 seconds. The whole screen is the button. Wrong call costs a heart.', c: '#F0468C', art: 'tile-royale.png', clip: 'royale', live: true },
-  { k: 'Diamond Hands', who: 'Hold as long as you dare', t: 'Sell before it catches you.', b: 'Buy with leverage and hold. A knockout trails your peak. Your score is what you sell at.', c: '#5AC8FA', art: 'tile-diamond.png', clip: 'diamond', live: true },
-  { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#B49BFF', art: 'tile-line.png', clip: 'line', live: true },
+  { k: 'Royale', who: '5–20 players · 10 s rounds', t: 'Last one standing.', b: 'Up or down every 10 seconds. The whole screen is the button. Wrong call costs a heart.', c: '#F0468C', loop: 'tile-royale-loop', art: 'tile-royale.png', clip: 'royale', live: true },
+  { k: 'Diamond Hands', who: 'Hold as long as you dare', t: 'Sell before it catches you.', b: 'Buy with leverage and hold. A knockout trails your peak. Your score is what you sell at.', c: '#5AC8FA', loop: 'tile-diamond-loop', art: 'tile-diamond.png', clip: 'diamond', live: true },
+  { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#B49BFF', loop: 'tile-line-loop', art: 'tile-line.png', clip: 'line', live: true },
   { k: 'Ranked', who: 'Any game · ten ranks', t: 'The queue picks the game.', b: 'VRF rolls Knockout, Draw the line or Royale. Climb from Exit Liquidity to The House.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: true },
-  { k: 'Daily Cup', who: 'Everyone · one run a day', t: 'One coin. One shot.', b: 'The coin of the day for everyone. One scored run. New cup at 00:00 UTC.', c: '#FF8A4C', art: 'tile-cup.png', shot: 'cup', live: true },
+  { k: 'Daily Cup', who: 'Everyone · one run a day', t: 'One coin. One shot.', b: 'The coin of the day for everyone. One scored run. New cup at 00:00 UTC.', c: '#FF8A4C', loop: 'tile-cup-loop', art: 'tile-cup.png', shot: 'cup', live: true },
   { k: 'Coin clash', who: '1 v 1 · each picks a coin', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#AEB6FF', art: 'ko-burst.png', shot: 'clash', live: true },
   { k: 'Clan Skirmish', who: 'Clan vs clan · best of 5', t: 'Make the clan\'s call.', b: 'A coin is rolled each round. Your clan goes long or short. First clan to 3 rounds wins.', c: '#FF8A4C', art: 'crest-flame.png', shot: 'skirmish', live: true },
   { k: 'Clan Chest', who: 'Trade as a group', t: 'The pot moves by vote.', b: 'Anyone proposes a trade on the clan pot. The clan votes. The captain executes it live.', c: '#FFD66B', art: 'crown.png', shot: 'chest', live: true },
@@ -256,7 +275,9 @@ function RailCard({ c }: { c: Game }) {
   return (
     <motion.article className="gcard2" style={{ ['--c' as string]: c.c }} whileHover="hov" initial="rest" animate="rest">
       <div className="gcard2-head">
-        <motion.img src={A(c.art)} alt="" width={72} height={72} loading="lazy" decoding="async" variants={{ rest: { rotate: 0, scale: 1 }, hov: { rotate: -8, scale: 1.12 } }} transition={{ type: 'spring', stiffness: 260, damping: 14 }} />
+        <motion.div className="gcard2-art" variants={{ rest: { rotate: 0, scale: 1 }, hov: { rotate: -8, scale: 1.12 } }} transition={{ type: 'spring', stiffness: 260, damping: 14 }}>
+          {c.loop ? <ClayLoop name={c.loop} /> : <img src={A(c.art)} alt="" width={72} height={72} loading="lazy" decoding="async" />}
+        </motion.div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <span className={`pill ${c.live ? 'pill-live' : 'pill-soon'}`}>{c.live ? <><span className="dot" />Playable now</> : 'At launch'}</span>
           <div className="gcard-k" style={{ marginTop: 6 }}>{c.k}</div>
@@ -524,6 +545,7 @@ function Statement() {
     <section className="statement" ref={ref}>
       <div className="wrap statement-grid">
         <div>
+          <Reveal><div className="clanwar-band"><ClayLoop name="clan-war-loop" /></div></Reveal>
           <Reveal><h2 className="statement-h">The house always wins.<br /><span className="grad">So we removed it.</span></h2></Reveal>
           <Reveal delay={0.08}><p className="lead" style={{ marginTop: 24 }}>Casinos, perp exchanges and prediction apps put you against the house. In Clashy the other side is a person you can see: your friend, your rival, the other clan.</p></Reveal>
           <Reveal delay={0.14}>
@@ -568,6 +590,7 @@ function Final() {
   return (
     <section className="final2">
       <div className="wrap" style={{ textAlign: 'center' }}>
+        <Reveal><div className="final-win"><ClayLoop name="win-loop" /></div></Reveal>
         <Reveal><h2 className="final2-h">Find your rival.<br /><span className="grad">Make the first call.</span></h2></Reveal>
         <Reveal delay={0.1}><p className="lead" style={{ margin: '24px auto 0' }}>Coming to iOS, Android, the Solana dApp Store and the web. The practice games already run on live prices.</p></Reveal>
         <Reveal delay={0.15}><div className="hero-cta" style={{ justifyContent: 'center' }}><a className="cta" href="#race">Race two coins now <span className="cta-arrow"><Arrow /></span></a></div></Reveal>

@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { ClayLoop } from '@/ui/clay';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -40,7 +41,7 @@ export default function Result() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 16, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Animated.View style={[{ alignItems: 'center' }, pop]}>
-        {won ? <WinBurst src={ART.winTrophy} size={180} /> : (
+        {won ? <ClayLoop name="win" size={230} /> : p.reason === 'ko' ? <ClayLoop name="ko" size={210} loop={false} /> : (
           <Shake trigger={hit} style={{ width: 252, height: 216, alignItems: 'center', justifyContent: 'center' }}>
             <WinBurst src={p.reason === 'ko' || !flat ? ART.koSkull : ART.draw} size={170} burst={false} />
           </Shake>

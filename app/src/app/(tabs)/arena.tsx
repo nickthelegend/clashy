@@ -1,4 +1,5 @@
 // Arena (Nick's pick A6): swipe between game modes, one huge Battle button. Any coin is picked inside the game.
+import { ClayLoop, type ClayName } from '@/ui/clay';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -28,6 +29,8 @@ const MODES: Mode[] = [
   { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true },
   { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, banner: ART.bannerBounty, live: false },
 ];
+/** Higgsfield clay loops for the games that have one. */
+const LOOPS: Record<string, ClayName | undefined> = { ko: 'duel', royale: 'royale', diamond: 'diamond', line: 'line', cup: 'cup', skirmish: 'war', war: 'war' };
 const STAKES = [5, 10, 20, 50];
 /** Opens a mode's game. Practice modes play on live prices; Clan war and Bounty open their preview screens. */
 const play = (key: string, stake: number) => {
@@ -134,7 +137,7 @@ function ArenaPhone() {
             <Txt v="small" style={{ marginTop: 4 }}>{m.who}</Txt>
           </View>
           <Animated.View key={m.key} entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={{ alignItems: 'center', marginTop: 22 }}>
-            <Bob amp={10} ms={1500}><Art src={m.art} size={220} radius={44} /></Bob>
+            {LOOPS[m.key] ? <ClayLoop name={LOOPS[m.key]!} size={240} style={{ borderRadius: 44 }} /> : <Bob amp={10} ms={1500}><Art src={m.art} size={220} radius={44} /></Bob>}
             <Txt v="small" color="#B9B9C2" style={{ textAlign: 'center', marginTop: 16, lineHeight: 19, maxWidth: 300 }}>{m.line}</Txt>
           </Animated.View>
           <Row style={{ gap: 6, justifyContent: 'center', marginTop: 16 }}>

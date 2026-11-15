@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 // Home (Nick's pick, Nov 15): H2 live stories on top, H4 one-time "Play now" card, H5 posts feed.
 // No coins, no holdings. Stories and posts come from the social backend; until it's live they show honest empty states.
+import { ClayLoop } from '@/ui/clay';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -61,7 +62,7 @@ export default function HomeScreen() {
               <Txt v="title" color="#fff" style={{ marginTop: 4, fontSize: desk ? 34 : undefined }}>Play now</Txt>
               <Txt v="small" color="#DDE1FF" style={{ marginTop: 2 }}>Practice a knockout duel on a live price.</Txt>
             </View>
-            {desk ? <Image source={ART.bannerDuel} style={{ width: 240, height: 135, borderRadius: 14 }} contentFit="cover" /> : <Art src={ART.tileDuel} size={72} radius={18} />}
+            {desk ? <ClayLoop name="hero" width={260} height={146} style={{ borderRadius: 14 }} /> : <ClayLoop name="duel" size={78} style={{ borderRadius: 18 }} />}
           </Row>
           <Row style={{ gap: 8, marginTop: 14 }}>
             <Btn title="Find a duel" kind="white" style={{ flex: 1 }} icon={<Bolt size={16} color="#000" />} onPress={() => router.push('/duel/match')} />
