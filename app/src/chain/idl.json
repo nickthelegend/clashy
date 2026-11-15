@@ -1,0 +1,5553 @@
+{
+  "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS",
+  "metadata": {
+    "name": "clashy",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Clashy: PvP trading games (knockout duels, clans, clan wars, tournaments) on MagicBlock Ephemeral Rollups"
+  },
+  "instructions": [
+    {
+      "name": "accept_war",
+      "discriminator": [
+        135,
+        176,
+        251,
+        103,
+        14,
+        85,
+        2,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "clan_a"
+        },
+        {
+          "name": "clan_b",
+          "writable": true
+        },
+        {
+          "name": "chest_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan_b"
+              }
+            ]
+          }
+        },
+        {
+          "name": "war",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  97,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war.clan_a",
+                "account": "War"
+              },
+              {
+                "kind": "account",
+                "path": "war.clan_b",
+                "account": "War"
+              },
+              {
+                "kind": "account",
+                "path": "war.nonce",
+                "account": "War"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "call_round",
+      "docs": [
+        "ER, player: calls up (1) or down (2) for the current round. Can be changed until the bell."
+      ],
+      "discriminator": [
+        190,
+        161,
+        11,
+        20,
+        67,
+        35,
+        86,
+        21
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "signer": true
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "dir",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "cancel_duel",
+      "docs": [
+        "Refunds an unmatched duel: the creator any time, anyone after expiry. No rake."
+      ],
+      "discriminator": [
+        83,
+        124,
+        224,
+        237,
+        235,
+        44,
+        38,
+        57
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_tournament",
+      "docs": [
+        "Creator cancels an unstarted tournament; remaining accounts are every player's wallet in join order."
+      ],
+      "discriminator": [
+        249,
+        227,
+        133,
+        5,
+        9,
+        142,
+        29,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_war",
+      "docs": [
+        "The declaring captain withdraws an unaccepted war; the stake goes back to the chest."
+      ],
+      "discriminator": [
+        187,
+        60,
+        84,
+        73,
+        129,
+        19,
+        220,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "clan_a",
+          "writable": true
+        },
+        {
+          "name": "chest_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan_a"
+              }
+            ]
+          }
+        },
+        {
+          "name": "war",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  97,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war.clan_a",
+                "account": "War"
+              },
+              {
+                "kind": "account",
+                "path": "war.clan_b",
+                "account": "War"
+              },
+              {
+                "kind": "account",
+                "path": "war.nonce",
+                "account": "War"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "check_duel",
+      "docs": [
+        "ER, permissionless (a crank or either player): scores both sides at the live price. When",
+        "someone is knocked out or the clock runs out, the duel finishes, is committed and goes home."
+      ],
+      "discriminator": [
+        80,
+        53,
+        189,
+        167,
+        56,
+        85,
+        219,
+        49
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_position",
+      "docs": [
+        "Captain closes a clan position at the oracle price; the P&L feeds the clan's score."
+      ],
+      "discriminator": [
+        123,
+        134,
+        81,
+        0,
+        49,
+        68,
+        98,
+        98
+      ],
+      "accounts": [
+        {
+          "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan",
+          "writable": true,
+          "relations": [
+            "position"
+          ]
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "price"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "coin_roll_callback",
+      "docs": [
+        "VRF callback (only the VRF program can call it): picks the coin from the duel's pool."
+      ],
+      "discriminator": [
+        245,
+        14,
+        83,
+        54,
+        90,
+        243,
+        243,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "vrf_program_identity",
+          "docs": [
+            "Scoped VRF identity PDA, bound to this program. Its presence as a signer proves",
+            "the callback was issued by the VRF program for this program."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "commit_feed",
+      "docs": [
+        "Crank-only, inside the ER: commits the feed so Solana-side reads (clans) stay fresh."
+      ],
+      "discriminator": [
+        58,
+        248,
+        246,
+        46,
+        141,
+        119,
+        243,
+        101
+      ],
+      "accounts": [
+        {
+          "name": "crank",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "feed",
+          "writable": true
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "commit_pick",
+      "docs": [
+        "Seals a pick: hash = sha256(side || leverage_le || salt)."
+      ],
+      "discriminator": [
+        65,
+        84,
+        23,
+        115,
+        143,
+        214,
+        142,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_clan",
+      "discriminator": [
+        89,
+        254,
+        237,
+        205,
+        249,
+        101,
+        142,
+        223
+      ],
+      "accounts": [
+        {
+          "name": "founder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "founder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "chest",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "founder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "crest",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "create_tournament",
+      "discriminator": [
+        158,
+        137,
+        233,
+        231,
+        73,
+        132,
+        191,
+        68
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "entry",
+          "type": "u64"
+        },
+        {
+          "name": "max_players",
+          "type": "u8"
+        },
+        {
+          "name": "coin",
+          "type": "u8"
+        },
+        {
+          "name": "start_lives",
+          "type": "u8"
+        },
+        {
+          "name": "max_rounds",
+          "type": "u16"
+        },
+        {
+          "name": "round_secs",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "declare_war",
+      "discriminator": [
+        184,
+        73,
+        169,
+        200,
+        244,
+        124,
+        29,
+        116
+      ],
+      "accounts": [
+        {
+          "name": "captain",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "clan_a",
+          "writable": true
+        },
+        {
+          "name": "clan_b"
+        },
+        {
+          "name": "chest_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan_a"
+              }
+            ]
+          }
+        },
+        {
+          "name": "war",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  97,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan_a"
+              },
+              {
+                "kind": "account",
+                "path": "clan_b"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "stake",
+          "type": "u64"
+        },
+        {
+          "name": "duration",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "delegate_duel",
+      "docs": [
+        "Hands the duel to the ER once both picks are revealed."
+      ],
+      "discriminator": [
+        126,
+        33,
+        7,
+        30,
+        154,
+        115,
+        199,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "buffer_duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "creator",
+          "type": "pubkey"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "delegate_feed",
+      "discriminator": [
+        60,
+        208,
+        248,
+        25,
+        136,
+        243,
+        106,
+        82
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "buffer_feed",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "feed"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_feed",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "feed"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_feed",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "feed"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "feed",
+          "writable": true
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "coin",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "delegate_tournament",
+      "discriminator": [
+        7,
+        240,
+        38,
+        122,
+        244,
+        230,
+        168,
+        10
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "buffer_tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "creator",
+          "type": "pubkey"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deposit_chest",
+      "discriminator": [
+        228,
+        31,
+        135,
+        71,
+        209,
+        121,
+        72,
+        9
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "clan",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "chest",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "execute_proposal",
+      "docs": [
+        "Captain executes a passed proposal at the oracle price: opens a scored clan position.",
+        "Passed = more yes than no, and either the window closed or yes holds a chest majority."
+      ],
+      "discriminator": [
+        186,
+        60,
+        116,
+        133,
+        108,
+        128,
+        111,
+        28
+      ],
+      "accounts": [
+        {
+          "name": "captain",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan",
+          "writable": true,
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "proposal",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  115,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "proposal.id",
+                "account": "Proposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_feed",
+      "discriminator": [
+        203,
+        50,
+        143,
+        146,
+        170,
+        34,
+        46,
+        93
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "feed",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "coin",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "init_player",
+      "discriminator": [
+        114,
+        27,
+        219,
+        144,
+        50,
+        15,
+        228,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "rake_bps",
+          "type": "u16"
+        },
+        {
+          "name": "vrf_required",
+          "type": "bool"
+        },
+        {
+          "name": "crank",
+          "type": "pubkey"
+        },
+        {
+          "name": "treasury",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "join_clan",
+      "discriminator": [
+        218,
+        113,
+        190,
+        239,
+        4,
+        91,
+        106,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "join_duel",
+      "discriminator": [
+        7,
+        247,
+        76,
+        103,
+        101,
+        139,
+        254,
+        61
+      ],
+      "accounts": [
+        {
+          "name": "joiner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "joiner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "seed_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "join_tournament",
+      "discriminator": [
+        77,
+        21,
+        212,
+        206,
+        77,
+        82,
+        124,
+        31
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "leave_clan",
+      "docs": [
+        "Leaves the clan. Withdraw your deposit first; the captain leaves last."
+      ],
+      "discriminator": [
+        44,
+        213,
+        211,
+        174,
+        100,
+        163,
+        85,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "open_duel",
+      "docs": [
+        "Opens a duel and escrows the creator's stake. With a short expiry it is a quick-match",
+        "ticket; with a long one it is an open challenge on the board."
+      ],
+      "discriminator": [
+        57,
+        46,
+        157,
+        124,
+        71,
+        205,
+        196,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "stake",
+          "type": "u64"
+        },
+        {
+          "name": "pool_mask",
+          "type": "u8"
+        },
+        {
+          "name": "len_secs",
+          "type": "u32"
+        },
+        {
+          "name": "expires_in",
+          "type": "i64"
+        },
+        {
+          "name": "seed_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "process_undelegation",
+      "discriminator": [
+        196,
+        28,
+        41,
+        206,
+        48,
+        37,
+        51,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "base_account",
+          "writable": true
+        },
+        {
+          "name": "buffer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  110,
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  101,
+                  45,
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_account"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                181,
+                183,
+                0,
+                225,
+                242,
+                87,
+                58,
+                192,
+                204,
+                6,
+                34,
+                1,
+                52,
+                74,
+                207,
+                151,
+                184,
+                53,
+                6,
+                235,
+                140,
+                229,
+                25,
+                152,
+                204,
+                98,
+                126,
+                24,
+                147,
+                128,
+                167,
+                62
+              ]
+            }
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "account_seeds",
+          "type": {
+            "vec": "bytes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "propose",
+      "docs": [
+        "Group trading: a member proposes a trade on the chest."
+      ],
+      "discriminator": [
+        93,
+        253,
+        82,
+        168,
+        118,
+        33,
+        102,
+        90
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "clan.proposals",
+                "account": "Clan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "coin",
+          "type": "u8"
+        },
+        {
+          "name": "dir",
+          "type": "u8"
+        },
+        {
+          "name": "lev",
+          "type": "u16"
+        },
+        {
+          "name": "size_bps",
+          "type": "u16"
+        },
+        {
+          "name": "vote_secs",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "push_price",
+      "docs": [
+        "Crank-only. Works on Solana and inside the ER (where the feed is delegated)."
+      ],
+      "discriminator": [
+        113,
+        238,
+        232,
+        235,
+        60,
+        71,
+        127,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "crank",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "feed",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "reject_proposal",
+      "docs": [
+        "Anyone can close a proposal that failed once its window is over."
+      ],
+      "discriminator": [
+        114,
+        162,
+        164,
+        82,
+        191,
+        11,
+        102,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "proposal",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "request_coin_roll",
+      "docs": [
+        "Asks MagicBlock VRF (base-layer queue) to roll the coin for both players."
+      ],
+      "discriminator": [
+        148,
+        63,
+        220,
+        108,
+        189,
+        232,
+        207,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_queue",
+          "writable": true
+        },
+        {
+          "name": "program_identity",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vrf_program",
+          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
+        },
+        {
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "caller_seed",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "request_tournament_coin",
+      "docs": [
+        "Asks MagicBlock VRF to roll the tournament's coin (required on devnet / mainnet)."
+      ],
+      "discriminator": [
+        73,
+        255,
+        240,
+        125,
+        234,
+        139,
+        39,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_queue",
+          "writable": true
+        },
+        {
+          "name": "program_identity",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vrf_program",
+          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
+        },
+        {
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "caller_seed",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "resolve_round",
+      "docs": [
+        "ER, permissionless after the bell: wrong or missing calls lose a life. When one player (or",
+        "none) is left, or the last round ends, the tournament finishes and goes back to Solana."
+      ],
+      "discriminator": [
+        165,
+        114,
+        237,
+        158,
+        1,
+        36,
+        70,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "reveal_pick",
+      "discriminator": [
+        31,
+        183,
+        41,
+        226,
+        204,
+        19,
+        57,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "dir",
+          "type": "u8"
+        },
+        {
+          "name": "lev",
+          "type": "u16"
+        },
+        {
+          "name": "salt",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "reveal_seed",
+      "docs": [
+        "Local fallback when no VRF oracle runs: both players reveal the seeds they committed at",
+        "open/join and the coin comes from sha256(seed_a || seed_b). Refused when VRF is required."
+      ],
+      "discriminator": [
+        196,
+        119,
+        194,
+        112,
+        156,
+        211,
+        239,
+        105
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "seed",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_coin",
+      "docs": [
+        "Sets coin `index` to read from `feed` (a Clashy PriceFeed or a MagicBlock oracle account)."
+      ],
+      "discriminator": [
+        168,
+        28,
+        55,
+        167,
+        138,
+        7,
+        17,
+        131
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u8"
+        },
+        {
+          "name": "feed",
+          "type": "pubkey"
+        },
+        {
+          "name": "symbol",
+          "type": {
+            "array": [
+              "u8",
+              8
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "settle_duel",
+      "docs": [
+        "Solana: pays the pot (minus rake) to the winner, or refunds both on a tie; updates ratings."
+      ],
+      "discriminator": [
+        148,
+        90,
+        251,
+        130,
+        217,
+        144,
+        190,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true
+        },
+        {
+          "name": "joiner",
+          "writable": true
+        },
+        {
+          "name": "creator_player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "joiner_player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.joiner",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settle_tournament",
+      "docs": [
+        "Solana: players left with the most lives split the pot minus rake. Remaining accounts are",
+        "every player's wallet in join order."
+      ],
+      "discriminator": [
+        106,
+        1,
+        252,
+        206,
+        251,
+        192,
+        194,
+        84
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settle_war",
+      "docs": [
+        "After the window: the clan with the better return (score change over starting chest) takes",
+        "the pot minus rake into its chest; a tie refunds both."
+      ],
+      "discriminator": [
+        165,
+        205,
+        21,
+        245,
+        164,
+        115,
+        160,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "clan_a",
+          "writable": true
+        },
+        {
+          "name": "clan_b",
+          "writable": true
+        },
+        {
+          "name": "chest_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan_a"
+              }
+            ]
+          }
+        },
+        {
+          "name": "chest_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan_b"
+              }
+            ]
+          }
+        },
+        {
+          "name": "war",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  97,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war.clan_a",
+                "account": "War"
+              },
+              {
+                "kind": "account",
+                "path": "war.clan_b",
+                "account": "War"
+              },
+              {
+                "kind": "account",
+                "path": "war.nonce",
+                "account": "War"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "war"
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_duel",
+      "docs": [
+        "ER: sets the entry price from the live feed and starts the clock."
+      ],
+      "discriminator": [
+        188,
+        143,
+        206,
+        111,
+        77,
+        207,
+        62,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_tournament",
+      "docs": [
+        "ER, creator: starts round 1 at the live price."
+      ],
+      "discriminator": [
+        164,
+        168,
+        208,
+        157,
+        43,
+        10,
+        220,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "tournament_coin_callback",
+      "discriminator": [
+        234,
+        45,
+        192,
+        58,
+        153,
+        53,
+        129,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "vrf_program_identity",
+          "docs": [
+            "Scoped VRF identity PDA, bound to this program. Its presence as a signer proves",
+            "the callback was issued by the VRF program for this program."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "rake_bps",
+          "type": "u16"
+        },
+        {
+          "name": "vrf_required",
+          "type": "bool"
+        },
+        {
+          "name": "crank",
+          "type": "pubkey"
+        },
+        {
+          "name": "treasury",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "vote",
+      "docs": [
+        "Votes are weighted by the member's chest deposit; one vote per member per proposal."
+      ],
+      "discriminator": [
+        227,
+        110,
+        155,
+        23,
+        136,
+        126,
+        172,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "clan",
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true
+        },
+        {
+          "name": "vote",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "proposal"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "yes",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_chest",
+      "docs": [
+        "Withdraws your own deposit. Blocked while the clan is at war (the chest backs the war pot)."
+      ],
+      "discriminator": [
+        213,
+        44,
+        156,
+        136,
+        142,
+        235,
+        4,
+        185
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "clan",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "chest",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Clan",
+      "discriminator": [
+        179,
+        33,
+        233,
+        29,
+        6,
+        237,
+        105,
+        241
+      ]
+    },
+    {
+      "name": "ClanPosition",
+      "discriminator": [
+        219,
+        119,
+        0,
+        254,
+        4,
+        113,
+        209,
+        53
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Duel",
+      "discriminator": [
+        126,
+        229,
+        210,
+        60,
+        177,
+        135,
+        124,
+        224
+      ]
+    },
+    {
+      "name": "Member",
+      "discriminator": [
+        54,
+        19,
+        162,
+        21,
+        29,
+        166,
+        17,
+        198
+      ]
+    },
+    {
+      "name": "Player",
+      "discriminator": [
+        205,
+        222,
+        112,
+        7,
+        165,
+        155,
+        206,
+        218
+      ]
+    },
+    {
+      "name": "PriceFeed",
+      "discriminator": [
+        189,
+        103,
+        252,
+        23,
+        152,
+        35,
+        243,
+        156
+      ]
+    },
+    {
+      "name": "Proposal",
+      "discriminator": [
+        26,
+        94,
+        189,
+        187,
+        116,
+        136,
+        53,
+        33
+      ]
+    },
+    {
+      "name": "Tournament",
+      "discriminator": [
+        175,
+        139,
+        119,
+        242,
+        115,
+        194,
+        57,
+        92
+      ]
+    },
+    {
+      "name": "Vote",
+      "discriminator": [
+        96,
+        91,
+        104,
+        57,
+        145,
+        35,
+        172,
+        155
+      ]
+    },
+    {
+      "name": "War",
+      "discriminator": [
+        54,
+        31,
+        229,
+        114,
+        29,
+        29,
+        212,
+        65
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "DuelFinished",
+      "discriminator": [
+        127,
+        102,
+        161,
+        129,
+        33,
+        105,
+        117,
+        116
+      ]
+    },
+    {
+      "name": "DuelSettled",
+      "discriminator": [
+        254,
+        160,
+        50,
+        193,
+        155,
+        112,
+        122,
+        64
+      ]
+    },
+    {
+      "name": "RoundResolved",
+      "discriminator": [
+        204,
+        146,
+        253,
+        187,
+        8,
+        61,
+        75,
+        29
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Only the config authority can do this"
+    },
+    {
+      "code": 6001,
+      "name": "RakeTooHigh",
+      "msg": "Rake is above the 10% cap"
+    },
+    {
+      "code": 6002,
+      "name": "BadCoin",
+      "msg": "Coin index is out of range or not configured"
+    },
+    {
+      "code": 6003,
+      "name": "FeedMismatch",
+      "msg": "Price account does not match the configured feed"
+    },
+    {
+      "code": 6004,
+      "name": "FeedInvalid",
+      "msg": "Price account has the wrong owner or layout"
+    },
+    {
+      "code": 6005,
+      "name": "PriceStale",
+      "msg": "Price is stale"
+    },
+    {
+      "code": 6006,
+      "name": "PriceZero",
+      "msg": "Price must be positive"
+    },
+    {
+      "code": 6007,
+      "name": "StakeTooLow",
+      "msg": "Stake is below the minimum"
+    },
+    {
+      "code": 6008,
+      "name": "BadLength",
+      "msg": "Duel length is out of range"
+    },
+    {
+      "code": 6009,
+      "name": "BadLeverage",
+      "msg": "Leverage is out of range"
+    },
+    {
+      "code": 6010,
+      "name": "BadSide",
+      "msg": "Side must be 1 (long) or 2 (short)"
+    },
+    {
+      "code": 6011,
+      "name": "WrongStatus",
+      "msg": "This step is not allowed in the current status"
+    },
+    {
+      "code": 6012,
+      "name": "Expired",
+      "msg": "The challenge has expired"
+    },
+    {
+      "code": 6013,
+      "name": "NotExpired",
+      "msg": "The challenge has not expired yet"
+    },
+    {
+      "code": 6014,
+      "name": "SelfJoin",
+      "msg": "You cannot join your own duel"
+    },
+    {
+      "code": 6015,
+      "name": "NotPlayer",
+      "msg": "Not a player in this game"
+    },
+    {
+      "code": 6016,
+      "name": "AlreadyDone",
+      "msg": "Already done"
+    },
+    {
+      "code": 6017,
+      "name": "RevealMismatch",
+      "msg": "Reveal does not match the committed hash"
+    },
+    {
+      "code": 6018,
+      "name": "CommitsPending",
+      "msg": "Both players must commit before revealing"
+    },
+    {
+      "code": 6019,
+      "name": "VrfRequired",
+      "msg": "This deployment requires MagicBlock VRF for randomness"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidQueue",
+      "msg": "VRF queue does not match"
+    },
+    {
+      "code": 6021,
+      "name": "VrfInflight",
+      "msg": "A VRF request is already in flight"
+    },
+    {
+      "code": 6022,
+      "name": "EmptyPool",
+      "msg": "Coin pool is empty"
+    },
+    {
+      "code": 6023,
+      "name": "StillRunning",
+      "msg": "The game is still running"
+    },
+    {
+      "code": 6024,
+      "name": "PayoutMismatch",
+      "msg": "Payout account does not match"
+    },
+    {
+      "code": 6025,
+      "name": "BadName",
+      "msg": "Clan name is empty or too long"
+    },
+    {
+      "code": 6026,
+      "name": "AlreadyInClan",
+      "msg": "Already in a clan"
+    },
+    {
+      "code": 6027,
+      "name": "NotInClan",
+      "msg": "Not in this clan"
+    },
+    {
+      "code": 6028,
+      "name": "NotCaptain",
+      "msg": "Only the clan captain can do this"
+    },
+    {
+      "code": 6029,
+      "name": "ChestTooLow",
+      "msg": "Not enough in the clan chest"
+    },
+    {
+      "code": 6030,
+      "name": "WarLocked",
+      "msg": "The chest is locked by an active war"
+    },
+    {
+      "code": 6031,
+      "name": "BadVoteWindow",
+      "msg": "Vote window is out of range"
+    },
+    {
+      "code": 6032,
+      "name": "VotingClosed",
+      "msg": "Voting is closed"
+    },
+    {
+      "code": 6033,
+      "name": "VotingOpen",
+      "msg": "Voting is still open and has no majority yet"
+    },
+    {
+      "code": 6034,
+      "name": "NotPassed",
+      "msg": "The proposal did not pass"
+    },
+    {
+      "code": 6035,
+      "name": "NoWeight",
+      "msg": "You need a chest deposit to vote"
+    },
+    {
+      "code": 6036,
+      "name": "BadSize",
+      "msg": "Size must be between 1 and 100 percent"
+    },
+    {
+      "code": 6037,
+      "name": "SelfWar",
+      "msg": "A clan cannot war itself"
+    },
+    {
+      "code": 6038,
+      "name": "BadWarLength",
+      "msg": "War length is out of range"
+    },
+    {
+      "code": 6039,
+      "name": "WarNotOver",
+      "msg": "The war has not ended"
+    },
+    {
+      "code": 6040,
+      "name": "TourFull",
+      "msg": "Tournament is full"
+    },
+    {
+      "code": 6041,
+      "name": "AlreadyJoined",
+      "msg": "Already joined"
+    },
+    {
+      "code": 6042,
+      "name": "TooFewPlayers",
+      "msg": "Need at least two players"
+    },
+    {
+      "code": 6043,
+      "name": "RoundRunning",
+      "msg": "Round is still running"
+    },
+    {
+      "code": 6044,
+      "name": "RoundOver",
+      "msg": "Round is over; wait for it to resolve"
+    },
+    {
+      "code": 6045,
+      "name": "Eliminated",
+      "msg": "You are out of this tournament"
+    },
+    {
+      "code": 6046,
+      "name": "Overflow",
+      "msg": "Math overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "Clan",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                24
+              ]
+            }
+          },
+          {
+            "name": "captain",
+            "type": "pubkey"
+          },
+          {
+            "name": "crest",
+            "type": "u8"
+          },
+          {
+            "name": "members",
+            "type": "u32"
+          },
+          {
+            "name": "chest",
+            "docs": [
+              "Lamports deposited into the chest vault (members' deposits)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "score_pnl",
+            "docs": [
+              "Realized paper P&L of the clan's voted trades, in lamports of notional."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "proposals",
+            "type": "u64"
+          },
+          {
+            "name": "positions_open",
+            "type": "u16"
+          },
+          {
+            "name": "wins",
+            "type": "u32"
+          },
+          {
+            "name": "losses",
+            "type": "u32"
+          },
+          {
+            "name": "war",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "chest_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClanPosition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "clan",
+            "type": "pubkey"
+          },
+          {
+            "name": "proposal",
+            "type": "u64"
+          },
+          {
+            "name": "coin",
+            "type": "u8"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "lev",
+            "type": "u16"
+          },
+          {
+            "name": "notional",
+            "type": "u64"
+          },
+          {
+            "name": "entry_price",
+            "type": "u64"
+          },
+          {
+            "name": "exit_price",
+            "type": "u64"
+          },
+          {
+            "name": "opened_at",
+            "type": "i64"
+          },
+          {
+            "name": "closed_at",
+            "type": "i64"
+          },
+          {
+            "name": "pnl",
+            "type": "i64"
+          },
+          {
+            "name": "open",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Coin",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "feed",
+            "docs": [
+              "Price account for this coin: a Clashy `PriceFeed` (crank-pushed) or a MagicBlock oracle account."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "crank",
+            "docs": [
+              "Pushes prices into Clashy feeds (a keeper reading a public price API)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "rake_bps",
+            "type": "u16"
+          },
+          {
+            "name": "vrf_required",
+            "docs": [
+              "When true (devnet / mainnet), coins are rolled only by MagicBlock VRF.",
+              "When false (local stack without a VRF oracle), a two-party commit-reveal roll is allowed."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "coin_count",
+            "type": "u8"
+          },
+          {
+            "name": "coins",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Coin"
+                  }
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Duel",
+      "docs": [
+        "A 1v1 knockout duel. Stakes sit in the `vault` PDA on Solana; the duel itself is",
+        "delegated to the ER while it is live."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "joiner",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "stake",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "pool_mask",
+            "docs": [
+              "Bitmask over config coins the roll may pick."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "coin",
+            "type": "u8"
+          },
+          {
+            "name": "len_secs",
+            "type": "u32"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "vrf_pending",
+            "type": "bool"
+          },
+          {
+            "name": "randomness",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "seed_hash",
+            "docs": [
+              "Commit-reveal seeds for the local roll (unused when VRF rolls)."
+            ],
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "seed",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "seeds_revealed",
+            "type": "u8"
+          },
+          {
+            "name": "pick_hash",
+            "docs": [
+              "Sealed picks: sha256(side || leverage_le || salt)."
+            ],
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "picks_committed",
+            "type": "u8"
+          },
+          {
+            "name": "side",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "lev",
+            "type": {
+              "array": [
+                "u16",
+                2
+              ]
+            }
+          },
+          {
+            "name": "picks_revealed",
+            "type": "u8"
+          },
+          {
+            "name": "entry_price",
+            "type": "u64"
+          },
+          {
+            "name": "exit_price",
+            "type": "u64"
+          },
+          {
+            "name": "start_ts",
+            "type": "i64"
+          },
+          {
+            "name": "end_ts",
+            "type": "i64"
+          },
+          {
+            "name": "pnl_bps",
+            "docs": [
+              "Leveraged P&L in basis points of stake, per player."
+            ],
+            "type": {
+              "array": [
+                "i64",
+                2
+              ]
+            }
+          },
+          {
+            "name": "ko",
+            "type": "u8"
+          },
+          {
+            "name": "winner",
+            "docs": [
+              "0 none, 1 creator, 2 joiner, 3 tie."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DuelFinished",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "duel",
+            "type": "pubkey"
+          },
+          {
+            "name": "coin",
+            "type": "u8"
+          },
+          {
+            "name": "entry_price",
+            "type": "u64"
+          },
+          {
+            "name": "exit_price",
+            "type": "u64"
+          },
+          {
+            "name": "pnl_bps",
+            "type": {
+              "array": [
+                "i64",
+                2
+              ]
+            }
+          },
+          {
+            "name": "ko",
+            "type": "u8"
+          },
+          {
+            "name": "winner",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DuelSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "duel",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner",
+            "type": "u8"
+          },
+          {
+            "name": "paid",
+            "type": "u64"
+          },
+          {
+            "name": "rake",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Member",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "clan",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "deposit",
+            "type": "u64"
+          },
+          {
+            "name": "joined_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Player",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "rating",
+            "type": "i32"
+          },
+          {
+            "name": "rp",
+            "type": "u32"
+          },
+          {
+            "name": "wins",
+            "type": "u32"
+          },
+          {
+            "name": "losses",
+            "type": "u32"
+          },
+          {
+            "name": "streak",
+            "type": "u16"
+          },
+          {
+            "name": "best_streak",
+            "type": "u16"
+          },
+          {
+            "name": "clan",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceFeed",
+      "docs": [
+        "Clashy-owned price feed. Delegated to the ER and updated about every second by the crank;",
+        "the crank commits it back to Solana periodically so base-layer reads stay fresh."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "coin",
+            "type": "u8"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Proposal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "clan",
+            "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "proposer",
+            "type": "pubkey"
+          },
+          {
+            "name": "coin",
+            "type": "u8"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "lev",
+            "type": "u16"
+          },
+          {
+            "name": "size_bps",
+            "type": "u16"
+          },
+          {
+            "name": "yes",
+            "type": "u64"
+          },
+          {
+            "name": "no",
+            "type": "u64"
+          },
+          {
+            "name": "deadline",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoundResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tournament",
+            "type": "pubkey"
+          },
+          {
+            "name": "round",
+            "type": "u16"
+          },
+          {
+            "name": "start_price",
+            "type": "u64"
+          },
+          {
+            "name": "end_price",
+            "type": "u64"
+          },
+          {
+            "name": "alive",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Tournament",
+      "docs": [
+        "An on-chain Royale: escrowed entries, up/down calls each round on the ER, last one standing."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "entry",
+            "type": "u64"
+          },
+          {
+            "name": "coin",
+            "type": "u8"
+          },
+          {
+            "name": "vrf_pending",
+            "type": "bool"
+          },
+          {
+            "name": "max_players",
+            "type": "u8"
+          },
+          {
+            "name": "count",
+            "type": "u8"
+          },
+          {
+            "name": "players",
+            "type": {
+              "array": [
+                "pubkey",
+                16
+              ]
+            }
+          },
+          {
+            "name": "lives",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "calls",
+            "docs": [
+              "0 no call, 1 up, 2 down, for the current round."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "start_lives",
+            "type": "u8"
+          },
+          {
+            "name": "alive",
+            "type": "u8"
+          },
+          {
+            "name": "round",
+            "type": "u16"
+          },
+          {
+            "name": "max_rounds",
+            "type": "u16"
+          },
+          {
+            "name": "round_secs",
+            "type": "u32"
+          },
+          {
+            "name": "round_price",
+            "type": "u64"
+          },
+          {
+            "name": "round_started_at",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Vote",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proposal",
+            "type": "pubkey"
+          },
+          {
+            "name": "voter",
+            "type": "pubkey"
+          },
+          {
+            "name": "yes",
+            "type": "bool"
+          },
+          {
+            "name": "weight",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "War",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "clan_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "clan_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "stake",
+            "type": "u64"
+          },
+          {
+            "name": "duration",
+            "type": "i64"
+          },
+          {
+            "name": "start_ts",
+            "type": "i64"
+          },
+          {
+            "name": "end_ts",
+            "type": "i64"
+          },
+          {
+            "name": "base_a",
+            "type": "i64"
+          },
+          {
+            "name": "base_b",
+            "type": "i64"
+          },
+          {
+            "name": "chest_a",
+            "type": "u64"
+          },
+          {
+            "name": "chest_b",
+            "type": "u64"
+          },
+          {
+            "name": "return_bps",
+            "docs": [
+              "Return in basis points of the starting chest, recorded at settlement."
+            ],
+            "type": {
+              "array": [
+                "i64",
+                2
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "winner",
+            "docs": [
+              "0 none, 1 clan A, 2 clan B, 3 tie."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

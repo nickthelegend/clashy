@@ -34,7 +34,9 @@ pub fn read_price(account: &AccountInfo, expected: &Pubkey, now: i64, max_age: i
     require_keys_eq!(account.key(), *expected, ClashyError::FeedMismatch);
     let data = account.try_borrow_data()?;
     require!(data.len() > 8, ClashyError::FeedInvalid);
-    let (price, ts) = if account.owner == &crate::ID {
+    // On Solana a delegated feed is owned by the delegation program and holds the last committed copy
+    // of our PriceFeed. The key was checked against the configured feed above, so its data is ours.
+    let (price, ts) = if account.owner == &crate::ID || account.owner == &DELEGATION_PROGRAM_ID {
         require!(data[..8] == PriceFeed::DISCRIMINATOR[..], ClashyError::FeedInvalid);
         let feed = PriceFeed::try_deserialize(&mut &data[..]).map_err(|_| error!(ClashyError::FeedInvalid))?;
         (feed.price, feed.updated_at)

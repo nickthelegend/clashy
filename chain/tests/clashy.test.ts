@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import {
-  BN, COINS, Keypair, LAMPORTS_PER_SOL, LOCAL_ER_VALIDATOR, P, authority, base, baseProgram, commitFeeds, ensureSetup,
+  BN, COINS, Keypair, sendEr, LAMPORTS_PER_SOL, LOCAL_ER_VALIDATOR, P, authority, base, baseProgram, commitFeeds, ensureSetup,
   er, fundedKeypair, lamports, programFor, randomSeed, runCrank, sha256, sleep, until, waitHome,
 } from './common.ts';
 
@@ -69,7 +69,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
     const priceAcct = P.feed(d.coin);
 
     const erA = programFor(a, true);
-    const startSig = await erA.methods.startDuel().accountsPartial({ signer: a.publicKey, duel, price: priceAcct }).rpc();
+    const startSig = await sendEr(erA.methods.startDuel().accountsPartial({ signer: a.publicKey, duel, price: priceAcct }), a);
     assert.ok(startSig, 'start_duel landed on the rollup');
     // check every 2 s until the bell (30 s) or a knockout; the duel then commits and undelegates itself
     let checks = 0;
@@ -77,7 +77,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
       await sleep(2000);
       const live = erA.coder.accounts.decode('duel', (await er.getAccountInfo(duel))!.data);
       if (live.status !== 3) break;
-      await erA.methods.checkDuel().accountsPartial({ payer: a.publicKey, duel, price: priceAcct }).rpc().catch((e) => {
+      await sendEr(erA.methods.checkDuel().accountsPartial({ payer: a.publicKey, duel, price: priceAcct }), a).catch((e) => {
         if (!String(e).includes('WrongStatus')) throw e;
       });
       checks++;
@@ -219,16 +219,16 @@ describe('tournament: an on-chain Royale', () => {
 
     await programFor(host).methods.delegateTournament(host.publicKey, new BN(nonce)).accountsPartial({ payer: host.publicKey, tournament: tour }).remainingAccounts(validatorMeta).rpc();
     await until('tournament on the rollup', 30_000, () => er.getAccountInfo(tour));
-    await programFor(host, true).methods.startTournament().accountsPartial({ signer: host.publicKey, tournament: tour, price: P.feed(1) }).rpc();
+    await sendEr(programFor(host, true).methods.startTournament().accountsPartial({ signer: host.publicKey, tournament: tour, price: P.feed(1) }), host);
 
     // every round: player 0 calls up, player 1 calls down, player 2 stays silent (always loses a life)
     for (let round = 0; round < 3; round++) {
       const t = programFor(host, true).coder.accounts.decode('tournament', (await er.getAccountInfo(tour))!.data);
       if (t.status !== 1) break;
-      await programFor(ps[0], true).methods.callRound(1).accountsPartial({ player: ps[0].publicKey, tournament: tour }).rpc().catch(() => {});
-      await programFor(ps[1], true).methods.callRound(2).accountsPartial({ player: ps[1].publicKey, tournament: tour }).rpc().catch(() => {});
+      await sendEr(programFor(ps[0], true).methods.callRound(1).accountsPartial({ player: ps[0].publicKey, tournament: tour }), ps[0]).catch(() => {});
+      await sendEr(programFor(ps[1], true).methods.callRound(2).accountsPartial({ player: ps[1].publicKey, tournament: tour }), ps[1]).catch(() => {});
       await sleep(7000);
-      await programFor(host, true).methods.resolveRound().accountsPartial({ payer: host.publicKey, tournament: tour, price: P.feed(1) }).rpc();
+      await sendEr(programFor(host, true).methods.resolveRound().accountsPartial({ payer: host.publicKey, tournament: tour, price: P.feed(1) }), host);
     }
     await waitHome(tour, 90_000);
     const t = await baseProgram.account.tournament.fetch(tour);

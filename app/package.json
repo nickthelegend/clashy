@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/ui": "~58.0.28",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.14.0",
+    "@solana/web3.js": "^1.98.4",
+    "buffer": "^6.0.3",
     "expo": "~58.0.25",
     "expo-blur": "~58.0.6",
     "expo-constants": "~58.0.16",

@@ -89,6 +89,31 @@ export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
   });
 }
 
+/** Sends on the rollup and polls for the result: its websocket confirmations are slow or absent,
+ *  so Anchor's `.rpc()` would hang. Throws with the program logs when the transaction fails. */
+export async function sendEr(builder: { transaction(): Promise<Transaction> }, signer: Keypair): Promise<string> {
+  const tx = await builder.transaction();
+  tx.feePayer = signer.publicKey;
+  tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
+  tx.sign(signer);
+  let sig: string;
+  try {
+    sig = await er.sendRawTransaction(tx.serialize());
+  } catch (e) {
+    const logs = (e as { logs?: string[] }).logs ?? [];
+    throw new Error(`rollup rejected the transaction: ${(e as Error).message}\n${logs.join('\n')}`);
+  }
+  const status = await until(`rollup confirmation of ${sig.slice(0, 10)}`, 30_000, async () => {
+    const [st] = (await er.getSignatureStatuses([sig])).value;
+    return st && (st.confirmationStatus === 'confirmed' || st.confirmationStatus === 'finalized') ? st : null;
+  });
+  if (status.err) {
+    const landed = await er.getTransaction(sig, { commitment: 'confirmed', maxSupportedTransactionVersion: 0 });
+    throw new Error(`rollup transaction failed ${JSON.stringify(status.err)}\n${(landed?.meta?.logMessages ?? []).join('\n')}`);
+  }
+  return sig;
+}
+
 /** Idempotent setup: config (no VRF on the local stack), three Clashy feeds with live prices, delegated to the ER. */
 export async function ensureSetup(treasury: PublicKey) {
   const cfg = await base.getAccountInfo(P.config);
@@ -118,7 +143,7 @@ export async function ensureSetup(treasury: PublicKey) {
 /** Crank: pushes live Coinbase prices into the delegated feeds on the rollup. Returns the prices pushed. */
 export async function pushPrices(): Promise<bigint[]> {
   const prices = await Promise.all(COINS.map((c) => coinbasePrice(c.product)));
-  await Promise.all(prices.map((p, i) => erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }).rpc()));
+  await Promise.all(prices.map((p, i) => sendEr(erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority)));
   return prices;
 }
 
@@ -126,7 +151,7 @@ export async function pushPrices(): Promise<bigint[]> {
 export async function commitFeeds() {
   const before = await Promise.all(COINS.map((_, i) => baseProgram.account.priceFeed.fetch(P.feed(i)).catch(() => null)));
   await pushPrices();
-  for (let i = 0; i < COINS.length; i++) await erProgram.methods.commitFeed().accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }).rpc();
+  for (let i = 0; i < COINS.length; i++) await sendEr(erProgram.methods.commitFeed().accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority);
   for (let i = 0; i < COINS.length; i++) {
     await until(`feed ${i} committed to Solana`, 60_000, async () => {
       const info = await base.getAccountInfo(P.feed(i));
