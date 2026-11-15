@@ -1,23 +1,19 @@
-# Clashy art kit: "duel light"
+# Clashy art kit: "bold sticker" (v5, final)
 
-Clashy's own look (v4, Nov 15 2026; replaces the rejected chrome set). Every image is one subject made of black
-obsidian glass and dark satin metal, lit from two sides at once: **indigo `#5B6CFF` from the left (you)** and **hot
-pink `#F0468C` from the right (your rival)**. The two colours meet on the subject's edges; everything else is deep
-shadow on **pure black `#000000`**, the app and site background (v12 theme). It's the brand idea, you vs them,
-turned into lighting.
+Picked Nov 15, 2026 from six style boards (style 4; Nick asked grokbot new to decide between clay and sticker). It
+replaces the "duel light" set, which was too dark to read at app size. Every asset is a flat, cel-shaded sticker
+that reads at 32 px.
 
-- **Material:** glossy black obsidian glass, dark satin metal, sharp faceted geometry, crisp specular edges.
-- **Light:** strong saturated indigo rim light from the left, hot pink from the right, a faint coloured haze; a
-  white-hot spark where two things clash.
-- **Palette:** `#000000` background, `#5B6CFF` indigo, `#F0468C` pink. No chrome rainbow, no royal blue, no green.
-- **Background:** pure black, never transparent. On dark UI surfaces (`#111113`, `#1C1C1F`) the art is drawn with
-  `mix-blend-mode: screen`, so the black disappears and no box shows.
-- **Faces:** none, except the avatars, which are original characters in obsidian.
-- **Subjects:** crossed swords, a knockout coin, trophy, shield, crown, stopwatch, market cube, stylus and line,
-  war banner, crests, badges, face-off and arena scenes.
-- **Banned:** text, letters, numbers, logos, real brands, Clash of Clans visuals, fomo.family's photo style.
+- **Shape:** chunky, slightly toy-like original designs; one subject per sticker.
+- **Line:** a thick dark navy outline `#14143A` around every shape.
+- **Colour:** flat fills with exactly one hard shadow tone and one small white highlight. Indigo `#5B6CFF` (you),
+  hot pink `#F0468C` (your rival), gold `#FFC83D` for rewards, white.
+- **Border:** a thick clean white sticker border is the outer edge of every sticker.
+- **Background:** real alpha (transparent PNG/WebP). Scenes, the splash, onboarding and the profile banner sit on black
+  or navy. `scripts/convert-art.sh` converts. ChatGPT sometimes paints a fake checkerboard or black behind a sticker;
+  `clean.py` in the generation run strips it and redraws the white border (see SOURCES.md).
+- **Text:** none, except the chat reaction stickers (KO!, GG, REKT, LFG, FADE ME), each checked for spelling.
+- **Banned:** real logos and brands, Clash of Clans or any other game's characters, fomo.family's art.
 
-**Wordmark (final, Nick picked option A "Slice" on Nov 15; the alternatives are in `assets/brand/options/`):** `web/src/components/Wordmark.tsx` and `assets/brand/wordmark*.svg`. "clashy" in Archivo black italic at 125% width (not used by any other
-product), sliced once on a shallow diagonal. The halves are knocked apart and the cut glows indigo into pink.
-
-Style line used in every prompt: see `assets/SOURCES.md`.
+**Wordmark (final, option A "Slice", picked Nov 15; alternatives in `assets/brand/options/`):**
+`web/src/components/Wordmark.tsx` and `assets/brand/wordmark*.svg`.
