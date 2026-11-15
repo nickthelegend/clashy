@@ -27,7 +27,7 @@ background". Avatars added one shared character-family line. Word stickers spell
 
 ## Files
 - **assets/mobile (97):**
-  - app-icon-1024.png and app-icon.webp: the sliced "c" from the wordmark on the indigo→pink gradient, rendered from assets/brand/app-icon.svg (options A–D in assets/brand/options/icon-*)
+  - app-icon-1024.png and app-icon.webp: the sliced "c" from the wordmark, white on black with the indigo→pink cut, rendered from assets/brand/app-icon.svg (options A–D in assets/brand/options/icon-*)
   - splash, onboarding, onboard-1..3, matchmaking, radar, vs
   - crown, ko-burst, win-trophy, ko-skull, draw-handshake, confetti
   - 20 avatar-*
