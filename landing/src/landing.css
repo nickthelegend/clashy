@@ -156,7 +156,7 @@
   position: relative;
   width: min(640px, 100%);
   margin: 72px auto 0;
-  padding-bottom: 260px;
+  padding-bottom: 380px;
 }
 .hcard-back {
   position: absolute;
@@ -165,30 +165,19 @@
   top: 60px;
   bottom: 0;
   border-radius: 34px;
-  background: linear-gradient(140deg, #5b6cff 0%, #8a5bff 50%, #f0468c 100%);
+  background:
+    radial-gradient(60% 55% at 50% 70%, rgba(255, 255, 255, 0.28), transparent 70%),
+    linear-gradient(140deg, #5b6cff 0%, #8a5bff 50%, #f0468c 100%);
   overflow: hidden;
 }
 .hcard-duo {
   position: absolute;
   left: 50%;
-  bottom: -18%;
-  width: 110%;
+  bottom: -2%;
+  width: 88%;
   max-width: none;
+  height: auto;
   translate: -50% 0;
-}
-.hcard-glass {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 62%;
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  display: flex;
-  align-items: flex-end;
-  padding: 26px 30px;
-}
-.hcard-mark {
-  color: rgba(255, 255, 255, 0.55);
 }
 .hcard {
   position: relative;
@@ -1205,7 +1194,7 @@
     padding-top: 120px;
   }
   .hcard-stage {
-    padding-bottom: 170px;
+    padding-bottom: 210px;
     margin-top: 48px;
   }
   .hcard-back {

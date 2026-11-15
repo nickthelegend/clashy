@@ -128,9 +128,6 @@ function HeroCard() {
     <motion.div className="hcard-stage" initial={reduce ? false : { opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
       <div className="hcard-back" aria-hidden="true">
         <img className="hcard-duo" src="/art/hero-duo.webp" alt="" width="2000" height="1400" />
-        <div className="hcard-glass">
-          <Wordmark size={84} className="hcard-mark" />
-        </div>
       </div>
       <div className="hcard">
         <div className="hcard-top">
