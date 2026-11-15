@@ -1,102 +1,99 @@
-import { AnimatePresence, MotionConfig, motion, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, MotionConfig, motion, useMotionValueEvent, useScroll, useTransform, type MotionValue } from 'motion/react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { MAJORS, fetchLast, fetchMajor, fetchTrending, fmtPct, fmtUsd, usePoll, type Coin, type MajorId } from './lib/markets';
 
 const A = (f: string) => `/a/${f}`;
 const SHOT = (f: string) => `/shots/${f}.png`;
 const ease = [0.22, 1, 0.36, 1] as const;
-const AVATARS = ['cat', 'shark', 'gladiator', 'nova', 'punk', 'panda', 'alien', 'monkey', 'wizard', 'dog', 'cyborg', 'dragon', 'skater', 'tiger', 'ghost', 'bull', 'racer', 'hood', 'bot', 'beanie'];
 
-const Reveal = ({ children, delay = 0, y = 36, className, style }: { children: ReactNode; delay?: number; y?: number; className?: string; style?: React.CSSProperties }) => (
-  <motion.div className={className} style={style} initial={{ opacity: 0, y }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.8, ease, delay }}>
+function useIsWide(min = 960) {
+  const [w, setW] = useState(() => typeof window === 'undefined' || window.innerWidth >= min);
+  useEffect(() => { const f = () => setW(window.innerWidth >= min); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, [min]);
+  return w;
+}
+
+const Reveal = ({ children, delay = 0, y = 32, className, style }: { children: ReactNode; delay?: number; y?: number; className?: string; style?: React.CSSProperties }) => (
+  <motion.div className={className} style={style} initial={{ opacity: 0, y }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease, delay }}>
     {children}
   </motion.div>
 );
+const Arrow = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 
-/* ───────── nav ───────── */
+/* ───────── floating pill nav ───────── */
 function Nav() {
   const { scrollY } = useScroll();
   const [solid, setSolid] = useState(false);
-  useMotionValueEvent(scrollY, 'change', (v) => setSolid(v > 24));
+  useMotionValueEvent(scrollY, 'change', (v) => setSolid(v > 40));
   return (
-    <motion.header className={`nav ${solid ? 'solid' : ''}`} initial={{ y: -80 }} animate={{ y: 0 }} transition={{ duration: 0.7, ease }}>
-      <div className="wrap nav-in">
-        <a href="#top" aria-label="Clashy home"><img src={A('wordmark.svg')} alt="clashy" style={{ height: 26 }} /></a>
-        <nav className="nav-links" aria-label="Sections">
-          <a href="#games">Games</a><a href="#race">Live race</a><a href="#how">How it works</a><a href="#clans">Clans</a><a href="#tech">Tech</a>
-        </nav>
-        <div className="spacer" />
-        <a className="btn btn-w btn-sm" href="#race">Try a live race</a>
-      </div>
+    <motion.header className="pillnav-wrap" initial={{ y: -90, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, ease, delay: 0.1 }}>
+      <nav className={`pillnav ${solid ? 'solid' : ''}`} aria-label="Main">
+        <a href="#top" aria-label="Clashy home" className="pillnav-logo"><img src={A('wordmark.svg')} alt="clashy" /></a>
+        <span className="pillnav-sep" />
+        <a href="#how" className="pillnav-link">How it works</a>
+        <a href="#crew" className="pillnav-link">Games</a>
+        <a href="#race" className="pillnav-link">Live race</a>
+        <a href="#race" className="pill-cta">Play now</a>
+      </nav>
     </motion.header>
   );
 }
 
-/* ───────── hero ───────── */
-function Floater({ src, size, x, y, mx, my, depth, delay, rot = 0 }: { src: string; size: number; x: string; y: string; mx: MotionValue<number>; my: MotionValue<number>; depth: number; delay: number; rot?: number }) {
-  const tx = useTransform(mx, (v) => v * depth);
-  const ty = useTransform(my, (v) => v * depth);
+/* ───────── hero: headline with clay tiles inside the words ───────── */
+const Tile = ({ src, bg, delay, rot }: { src: string; bg: string; delay: number; rot: number }) => (
+  <motion.span className="htile" style={{ background: bg }} initial={{ scale: 0, rotate: rot * 3 }} animate={{ scale: 1, rotate: rot }} transition={{ type: 'spring', stiffness: 260, damping: 14, delay }} whileHover={{ rotate: 0, scale: 1.08 }}>
+    <img src={A(src)} alt="" />
+  </motion.span>
+);
+const W = ({ children, d }: { children: ReactNode; d: number }) => (
+  <span className="hw"><motion.span style={{ display: 'inline-block' }} initial={{ y: '110%' }} animate={{ y: 0 }} transition={{ duration: 0.9, ease, delay: d }}>{children}</motion.span></span>
+);
+
+function LiveCard() {
+  const majors = usePoll(() => Promise.all([fetchMajor('SOL'), fetchMajor('BTC')]), 6000);
+  const [sol, btc] = majors.data ?? [];
+  const lead = sol && btc ? (sol.change24h >= btc.change24h ? 0 : 1) : -1;
   return (
-    <motion.div className="float" style={{ left: x, top: y, x: tx, y: ty, width: size }} initial={{ opacity: 0, scale: 0.4, rotate: rot - 20 }} animate={{ opacity: 1, scale: 1, rotate: rot }} transition={{ type: 'spring', stiffness: 120, damping: 12, delay }}>
-      <motion.img src={src} alt="" width={size} height={size} animate={{ y: [0, -14, 0] }} transition={{ duration: 4 + depth * 3, repeat: Infinity, ease: 'easeInOut' }} />
+    <motion.div className="livecard" initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease, delay: 1.1 }}>
+      <div className="livecard-top"><span className="pill pill-live"><span className="dot" />Live prices</span><span className="xs">Coinbase · 24h</span></div>
+      <div className="livecard-q">Who is having the better day?</div>
+      {majors.error && !sol ? <div className="xs" style={{ color: 'var(--dn)' }}>Price feed: {majors.error}</div> : (
+        <div className="livecard-row">
+          {[sol, btc].map((c, i) => (
+            <a key={i} href="#race" className={`livecard-side ${lead === i ? 'lead' : ''}`}>
+              <img src={MAJORS[i].image} alt="" width={28} height={28} />
+              <div><div className="livecard-sym">{i === 0 ? 'SOL' : 'BTC'}</div><div className="xs">{c ? fmtUsd(c.price) : '…'}</div></div>
+              <div className="livecard-pct" style={{ color: c && c.change24h < 0 ? 'var(--dn)' : 'var(--up)' }}>{c ? fmtPct(c.change24h) : ''}</div>
+            </a>
+          ))}
+        </div>
+      )}
+      <div className="livecard-foot"><span className="xs">Race them live for 60 seconds</span><a href="#race" className="xs" style={{ color: 'var(--b2)', fontWeight: 650 }}>Start →</a></div>
     </motion.div>
   );
 }
 
 function Hero() {
-  const mx = useSpring(useMotionValue(0), { stiffness: 60, damping: 16 });
-  const my = useSpring(useMotionValue(0), { stiffness: 60, damping: 16 });
-  const onMove = (e: React.MouseEvent) => {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    mx.set(((e.clientX - r.left) / r.width - 0.5) * 60);
-    my.set(((e.clientY - r.top) / r.height - 0.5) * 60);
-  };
   const { scrollY } = useScroll();
-  const stageY = useTransform(scrollY, [0, 700], [0, 70]);
-  const words = ['Trade', 'against', 'people,'];
+  const artY = useTransform(scrollY, [0, 800], [0, -60]);
   return (
-    <section className="hero" id="top" onMouseMove={onMove}>
-      <div className="hero-glow" />
-      <div className="wrap hero-grid">
-        <div>
-          <motion.div className="pill pill-live" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}>
-            <span className="dot" /> Practice games live on real prices
-          </motion.div>
-          <h1 className="h-xl" style={{ marginTop: 22 }}>
-            {words.map((w, i) => (
-              <span key={w} style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'top', marginRight: '0.22em', paddingBottom: '0.12em', marginBottom: '-0.12em' }}>
-                <motion.span style={{ display: 'inline-block' }} initial={{ y: '105%' }} animate={{ y: 0 }} transition={{ duration: 0.9, ease, delay: 0.25 + i * 0.09 }}>{w}</motion.span>
-              </span>
-            ))}
-            <br />
-            <span style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'top', paddingBottom: '0.12em', marginBottom: '-0.12em' }}>
-              <motion.span className="grad" style={{ display: 'inline-block', paddingBottom: '0.06em' }} initial={{ y: '105%' }} animate={{ y: 0 }} transition={{ duration: 0.9, ease, delay: 0.55 }}>not the house.</motion.span>
-            </span>
-          </h1>
-          <motion.p className="lead" style={{ marginTop: 26 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75, duration: 0.8, ease }}>
-            Clashy is a PvP trading game on Solana. Knockout duels, draw-the-line rooms, royales and week-long clan wars. You pick any coin, they pick theirs, best move wins.
-          </motion.p>
-          <motion.div className="hero-cta" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.8, ease }}>
-            <a className="btn btn-b" href="#race">Race two coins now</a>
-            <a className="btn btn-g" href="#games">See the games</a>
-          </motion.div>
-          <motion.div className="hero-note" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1 }}>
-            <div style={{ display: 'flex', flex: 'none' }}>{AVATARS.slice(0, 5).map((a, i) => <img key={a} src={A(`avatar-${a}.png`)} alt="" width={30} height={30} style={{ borderRadius: '50%', background: '#111', marginLeft: i ? -8 : 0, boxShadow: '0 0 0 2px #000' }} />)}</div>
-            <span className="sm">Built for MagicBlock Solana Blitz v10 · iOS, Android and web</span>
-          </motion.div>
-        </div>
-
-        <motion.div className="stage" style={{ y: stageY }}>
-          <motion.div className="phone" style={{ right: '4%', top: 30, rotate: 7 }} initial={{ opacity: 0, x: 80, rotate: 18 }} animate={{ opacity: 1, x: 0, rotate: 7 }} transition={{ duration: 1.1, ease, delay: 0.45 }}>
-            <img className="screen" src={SHOT('arena')} alt="Clashy Arena screen" />
-          </motion.div>
-          <motion.div className="phone" style={{ left: '6%', top: 70, rotate: -6, zIndex: 2 }} initial={{ opacity: 0, y: 120, rotate: -16 }} animate={{ opacity: 1, y: 0, rotate: -6 }} transition={{ duration: 1.1, ease, delay: 0.3 }}>
-            <img className="screen" src={SHOT('duel')} alt="A live knockout duel in Clashy" />
-          </motion.div>
-          <Floater src={A('vs.png')} size={130} x="40%" y="36%" mx={mx} my={my} depth={0.9} delay={1.0} rot={-8} />
-          <Floater src={A('win-trophy.png')} size={150} x="68%" y="68%" mx={mx} my={my} depth={0.6} delay={1.15} rot={10} />
-          <Floater src={A('crown.png')} size={110} x="0%" y="2%" mx={mx} my={my} depth={0.45} delay={1.25} rot={-14} />
-          <Floater src={A('ko-skull.png')} size={96} x="-6%" y="74%" mx={mx} my={my} depth={0.75} delay={1.35} rot={-6} />
+    <section className="hero2" id="top">
+      <div className="hero2-glow" />
+      <div className="wrap" style={{ textAlign: 'center' }}>
+        <h1 className="hero2-h">
+          <W d={0.2}>Trade</W> <Tile src="avatar-cat.png" bg="#5B6CFF" delay={0.55} rot={-8} /> <W d={0.28}>against</W><br />
+          <W d={0.36}>people,</W> <Tile src="vs.png" bg="#F0468C" delay={0.7} rot={7} /> <W d={0.44}>not</W><br />
+          <W d={0.52}>the</W> <Tile src="crown.png" bg="#FFC94A" delay={0.85} rot={-6} /> <W d={0.6}><span className="grad">house.</span></W>
+        </h1>
+        <motion.p className="lead" style={{ margin: '28px auto 0', textAlign: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8, ease }}>
+          Clashy is a PvP trading game on Solana. You pick any coin, they pick theirs, best move wins. Duels, royales, rooms and week-long clan wars.
+        </motion.p>
+        <motion.div className="hero-cta" style={{ justifyContent: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95, duration: 0.8, ease }}>
+          <a className="cta" href="#race">Race two coins now <span className="cta-arrow"><Arrow /></span></a>
+          <a className="cta-ghost" href="#how"><span className="cta-play">▶</span>See how it works</a>
+        </motion.div>
+        <motion.div className="hero2-stage" style={{ y: artY }}>
+          <motion.img className="hero2-art" src={A('hero-duo.png')} alt="Two clay traders face off over a price chart" initial={{ opacity: 0, scale: 0.9, y: 60 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1.2, ease, delay: 0.7 }} />
+          <LiveCard />
         </motion.div>
       </div>
     </section>
@@ -118,7 +115,7 @@ function Ticker() {
     </div>
   ));
   return (
-    <div className="ticker" aria-label="Live prices: Coinbase and DexScreener">
+    <div className="ticker" aria-label="Live prices from Coinbase and DexScreener">
       <motion.div className="ticker-track" animate={{ x: ['0%', '-50%'] }} transition={{ duration: items.length * 3.2, ease: 'linear', repeat: Infinity }}>
         {row('a')}{row('b')}
       </motion.div>
@@ -126,55 +123,145 @@ function Ticker() {
   );
 }
 
-/* ───────── manifesto (scroll-lit words) ───────── */
-function Word({ w, i, n, p }: { w: string; i: number; n: number; p: MotionValue<number> }) {
-  const o = useTransform(p, [i / n, (i + 1) / n], [0.14, 1]);
-  return <motion.span style={{ opacity: o }}>{w}</motion.span>;
-}
-function Manifesto() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.45'] });
-  const text = 'Every casino, every perp exchange, every prediction app puts you against the house. Clashy puts you against people. Your friends. Your rivals. Your clan.';
-  const words = text.split(' ');
+/* ───────── how it works: pinned phone, step tabs, callouts ───────── */
+const STEPS = [
+  { tab: 'Pick', icon: 'tile-duel.png', n: '01 · Pick', t: 'Pick any coin.', b: 'SOL, BTC, ETH or the newest Solana memecoin. Your opponent picks their own. Set a stake and leverage.', shot: 'amount', chips: ['Any coin, on both sides', 'Stake $5 to $50', '25×, 50× or 100× leverage'] },
+  { tab: 'Duel', icon: 'vs.png', n: '02 · Duel', t: 'Sixty seconds. Live.', b: 'Both lines race from 0% on the same clock. Your health bar drains as you get close to your knockout line.', shot: 'duel', chips: ['Live price every second', 'Health bars, fighting-game style', 'Cash out any time'] },
+  { tab: 'Win', icon: 'win-trophy.png', n: '03 · Win', t: 'Best % takes the pot.', b: 'Touch your knockout line and you are out. Survive and beat their move at the bell, and the pot is yours.', shot: 'royale', chips: ['Settled on Solana', 'No house on the other side', 'Rematch in one tap'] },
+  { tab: 'Climb', icon: 'crown.png', n: '04 · Climb', t: 'Climb the season.', b: 'Every win moves you up the ladder, Bronze to Legend. Medals for the top of every season.', shot: 'leaderboard', chips: ['Six rank tiers', 'Season medals', 'Friends-only boards'] },
+];
+function StepCallout({ s }: { s: (typeof STEPS)[number] }) {
   return (
-    <section className="sec">
-      <div className="wrap" ref={ref}>
-        <p className="manifesto">{words.map((w, i) => <Word key={i} w={w} i={i} n={words.length} p={scrollYProgress} />)}</p>
+    <div className="callout">
+      <img src={A(s.icon)} alt="" className="callout-ic" />
+      <div><div className="xs" style={{ color: '#6b6b76' }}>{s.n}</div><div className="callout-t">{s.t}</div><p className="callout-b">{s.b}</p></div>
+    </div>
+  );
+}
+function How() {
+  const wide = useIsWide();
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  const [i, setI] = useState(0);
+  useMotionValueEvent(scrollYProgress, 'change', (v) => setI(Math.min(STEPS.length - 1, Math.max(0, Math.floor(v * STEPS.length * 0.999)))));
+  const s = STEPS[i];
+  const head = (
+    <div className="how-head">
+      <h2 className="h-l">Pick a coin. Duel a person.<br />Take the pot.</h2>
+      <p className="lead" style={{ margin: '14px auto 0', color: '#E4E7FF' }}>Four moves, about a minute. Every screen here is the real app.</p>
+    </div>
+  );
+  if (!wide) {
+    return (
+      <section className="how" id="how">
+        <div className="wrap" style={{ padding: '96px 16px' }}>
+          {head}
+          {STEPS.map((x) => (
+            <Reveal key={x.tab} style={{ marginTop: 48 }}>
+              <div className="phone-sm"><img src={SHOT(x.shot)} alt={x.t} loading="lazy" /></div>
+              <StepCallout s={x} />
+            </Reveal>
+          ))}
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="how" id="how" ref={ref} style={{ height: `${STEPS.length * 85 + 60}vh` }}>
+      <div className="how-pin">
+        {head}
+        <div className="how-stage">
+          <div className="how-chips">
+            <AnimatePresence mode="wait">
+              <motion.div key={s.tab} initial="h" animate="v" exit="h" variants={{ v: { transition: { staggerChildren: 0.07 } } }}>
+                {s.chips.map((c) => (
+                  <motion.div key={c} className="chip-check" variants={{ h: { opacity: 0, x: -20 }, v: { opacity: 1, x: 0 } }}><span className="chip-tick">✓</span>{c}</motion.div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className="how-phone">
+            <div className="phone how-device">
+              <div style={{ aspectRatio: '390 / 844' }} />
+              <AnimatePresence mode="popLayout">
+                <motion.img key={s.shot} className="how-screen" src={SHOT(s.shot)} alt={s.t} initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5, ease }} />
+              </AnimatePresence>
+            </div>
+            <div className="seg">
+              {STEPS.map((x, k) => (
+                <span key={x.tab} className={`seg-i ${k === i ? 'on' : ''}`}>{k === i ? <motion.span layoutId="seg" className="seg-bg" transition={{ type: 'spring', stiffness: 400, damping: 32 }} /> : null}<span style={{ position: 'relative' }}>{x.tab}</span></span>
+              ))}
+            </div>
+          </div>
+          <div className="how-callout">
+            <span className="how-line"><span className="how-knob" /></span>
+            <AnimatePresence mode="wait">
+              <motion.div key={s.tab} initial={{ opacity: 0, y: 20, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.45, ease }}>
+                <StepCallout s={s} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ───────── games ───────── */
-const GAMES = [
-  { k: 'ko', cls: 'g-ko', title: 'Knockout duel', who: '1 v 1 · 60 seconds', body: 'You pick any coin, they pick theirs. Leverage up. Touch your knockout line and you are out. Best % at the bell takes the pot.', banner: 'banner-duel.jpg', live: true, shot: 'duel' },
-  { k: 'line', cls: 'g-line', title: 'Draw the line', who: '3–10 players', body: 'Draw the next 60 seconds with your finger. The real price draws over everyone. Closest line wins the room.', banner: 'banner-line.jpg', live: true },
-  { k: 'royale', cls: 'g-royale', title: 'Royale', who: '5–20 players · 10 s rounds', body: 'Up or down, every 10 seconds. Wrong call costs a life. Last one standing.', banner: 'banner-royale.jpg', live: true },
-  { k: 'war', cls: 'g-war', title: 'Clan war', who: 'Clan vs clan · one week', body: 'Every coin is a tile on the map. Beat the other clan on it to own it.', banner: 'banner-war.jpg', live: false },
-  { k: 'bounty', cls: 'g-bounty', title: 'Bounty', who: 'Open · one week', body: 'Put a price on your head. Hunters pay to try and beat your week.', banner: 'banner-bounty.jpg', live: false },
+/* ───────── games rail: vertical scroll drives it sideways ───────── */
+const RAIL = [
+  { k: '01 · Knockout duel', t: 'One minute. One winner.', b: 'You pick any coin, they pick theirs. Leverage up, survive the knockout line, best % takes the pot.', bg: '#8E9AFF', ink: '#0B0E3A', art: 'tile-duel.png', shot: 'duel' },
+  { k: '02 · Draw the line', t: 'Draw the next minute.', b: 'Trace where the price goes with your finger. The real price draws over everyone. Closest line wins.', bg: '#FF8DBB', ink: '#3A0B1E', art: 'tile-line.png', shot: 'line' },
+  { k: '03 · Royale', t: 'Up or down. Last one standing.', b: 'A call every 10 seconds. Wrong call costs a life. The whole screen is the button.', bg: '#FFD66B', ink: '#3A2A00', art: 'tile-royale.png', shot: 'royale' },
+  { k: '04 · Clan war', t: 'Bring the group chat.', b: 'Clan vs clan for a week. Every coin is a tile on the map. Beat the other clan on it to own it.', bg: '#7FE3A0', ink: '#08321A', art: 'clan-banner.png', shot: 'war' },
+  { k: '05 · Bounty', t: 'Put a price on your head.', b: 'Stake a reward on your week. Hunters pay to try and beat it. Survive and keep it all.', bg: '#8FD3FF', ink: '#062A3D', art: 'tile-bounty.png', shot: 'bounty' },
+  { k: '06 · Your record', t: 'Bronze to Legend.', b: 'Six rank tiers, season medals and a record that is yours. Friends-only boards too.', bg: '#FFB38A', ink: '#3A1606', art: 'win-trophy.png', shot: 'leaderboard' },
 ];
-function Games() {
+function RailCard({ c }: { c: (typeof RAIL)[number] }) {
   return (
-    <section className="sec" id="games">
-      <div className="wrap">
-        <div className="sec-head">
-          <Reveal><span className="kicker">The games</span></Reveal>
-          <Reveal delay={0.05}><h2 className="h-l">Five ways to beat<br />someone today.</h2></Reveal>
-        </div>
-        <div className="bento">
-          {GAMES.map((g, i) => (
-            <motion.article key={g.k} className={`card ${g.cls}`} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease, delay: (i % 3) * 0.08 }} whileHover="hover">
-              <motion.div className="art" variants={{ hover: { scale: 1.06 } }} transition={{ duration: 0.6, ease }}><img src={A(g.banner)} alt="" loading="lazy" /></motion.div>
-              {g.shot ? <motion.img className="shot" src={SHOT(g.shot)} alt={`${g.title} screen`} loading="lazy" variants={{ hover: { y: -10, rotate: -2 } }} transition={{ type: 'spring', stiffness: 200, damping: 18 }} /> : null}
-              <div className="card-body">
-                <span className={`pill ${g.live ? 'pill-live' : 'pill-soon'}`} style={{ alignSelf: 'flex-start' }}>{g.live ? <><span className="dot" />Practice live</> : 'Opens at launch'}</span>
-                <h3 className="h-m">{g.title}</h3>
-                <span className="xs" style={{ color: '#c9c9d2' }}>{g.who}</span>
-                <p className="sm" style={{ color: '#c9c9d2', maxWidth: 440 }}>{g.body}</p>
-              </div>
-            </motion.article>
-          ))}
-        </div>
+    <motion.article className="rcard" style={{ background: c.bg, color: c.ink }} whileHover="hov">
+      <div className="rcard-k">{c.k}</div>
+      <h3 className="rcard-t">{c.t}</h3>
+      <p className="rcard-b">{c.b}</p>
+      <div className="rcard-media">
+        <motion.img className="rcard-art" src={A(c.art)} alt="" loading="lazy" variants={{ hov: { rotate: -6, scale: 1.06 } }} transition={{ type: 'spring', stiffness: 220, damping: 14 }} />
+        <motion.div className="rcard-phone" variants={{ hov: { y: -14 } }} transition={{ type: 'spring', stiffness: 220, damping: 18 }}><img src={SHOT(c.shot)} alt={`${c.t} screen`} loading="lazy" /></motion.div>
+      </div>
+    </motion.article>
+  );
+}
+function Rail() {
+  const wide = useIsWide();
+  const ref = useRef<HTMLElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const [dist, setDist] = useState(0);
+  useLayoutEffect(() => {
+    const m = () => { if (track.current) setDist(Math.max(0, track.current.scrollWidth - window.innerWidth + 48)); };
+    m(); window.addEventListener('resize', m); return () => window.removeEventListener('resize', m);
+  }, [wide]);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  const x = useTransform(scrollYProgress, [0, 1], [0, -dist]);
+  const intro = (
+    <div className="rail-intro">
+      <span className="kicker">The games</span>
+      <h2 className="h-l" style={{ marginTop: 14 }}>Better with<br />your crew.</h2>
+      <p className="lead" style={{ marginTop: 18 }}>Five games, one record. Duel a friend, call a royale, go to war with your clan.</p>
+    </div>
+  );
+  if (!wide) {
+    return (
+      <section className="sec" id="crew">
+        <div className="wrap">{intro}</div>
+        <div className="rail-native">{RAIL.map((c) => <RailCard key={c.k} c={c} />)}</div>
+      </section>
+    );
+  }
+  return (
+    <section id="crew" ref={ref} style={{ height: `${RAIL.length * 55 + 100}vh` }}>
+      <div className="rail-pin">
+        <motion.div className="rail-track" ref={track} style={{ x }}>
+          {intro}
+          {RAIL.map((c) => <RailCard key={c.k} c={c} />)}
+        </motion.div>
       </div>
     </section>
   );
@@ -210,15 +297,14 @@ function Race() {
 
   const pa = sa.map((v) => ((v - sa[0]) / sa[0]) * 100), pb = sb.map((v) => ((v - sb[0]) / sb[0]) * 100);
   const lastA = pa[pa.length - 1] ?? 0, lastB = pb[pb.length - 1] ?? 0;
-  const W = 800, H = 380;
+  const CW = 800, CH = 380;
   const mn = Math.min(0, ...pa, ...pb), mx = Math.max(0, ...pa, ...pb), span = Math.max(0.04, mx - mn);
   const lo = mn - span * 0.3, hi = mx + span * 0.3;
-  const X = (i: number) => 20 + (i / LEN) * (W - 70);
-  const Y = (v: number) => 20 + (1 - (v - lo) / (hi - lo)) * (H - 40);
+  const X = (i: number) => 20 + (i / LEN) * (CW - 70);
+  const Y = (v: number) => 20 + (1 - (v - lo) / (hi - lo)) * (CH - 40);
   const d = (s: number[]) => s.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
   const img = (id: MajorId) => MAJORS.find((m) => m.id === id)!.image;
   const winner = lastA === lastB ? null : lastA > lastB ? a : b;
-
   const Picker = ({ v, set, other, label }: { v: MajorId; set: (x: MajorId) => void; other: MajorId; label: string }) => (
     <div>
       <div className="xs" style={{ marginBottom: 8 }}>{label}</div>
@@ -226,9 +312,9 @@ function Race() {
     </div>
   );
   return (
-    <section className="sec" id="race" style={{ paddingTop: 40 }}>
+    <section className="sec" id="race">
       <div className="wrap">
-        <div className="sec-head">
+        <div className="sec-head" style={{ textAlign: 'center', alignItems: 'center' }}>
           <Reveal><span className="kicker">Live, right now</span></Reveal>
           <Reveal delay={0.05}><h2 className="h-l">Race two coins.<br /><span style={{ color: 'var(--mu)' }}>Real prices. 60 seconds.</span></h2></Reveal>
         </div>
@@ -253,16 +339,16 @@ function Race() {
             {err ? <div className="xs" style={{ color: 'var(--dn)' }}>Price feed: {err}</div> : <div className="xs">Coinbase Exchange ticker, every second. No money, no sign-up. In the app, the other coin is picked by a real opponent.</div>}
           </div>
           <div className="race-chart">
-            <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0 }}>
-              <line x1="0" x2={W} y1={Y(0)} y2={Y(0)} stroke="#26262c" strokeDasharray="4 6" vectorEffect="non-scaling-stroke" />
+            <svg viewBox={`0 0 ${CW} ${CH}`} width="100%" height="100%" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0 }}>
+              <line x1="0" x2={CW} y1={Y(0)} y2={Y(0)} stroke="#26262c" strokeDasharray="4 6" vectorEffect="non-scaling-stroke" />
               {pb.length > 1 ? <><path d={d(pb)} stroke="var(--p)" strokeOpacity=".25" strokeWidth="10" fill="none" vectorEffect="non-scaling-stroke" /><path d={d(pb)} stroke="var(--p)" strokeWidth="3" fill="none" vectorEffect="non-scaling-stroke" /></> : null}
               {pa.length > 1 ? <><path d={d(pa)} stroke="var(--b)" strokeOpacity=".3" strokeWidth="11" fill="none" vectorEffect="non-scaling-stroke" /><path d={d(pa)} stroke="var(--b2)" strokeWidth="3.2" fill="none" vectorEffect="non-scaling-stroke" /></> : null}
             </svg>
-            {pa.length ? <img src={img(a)} alt="" width={30} height={30} style={{ position: 'absolute', left: `${(X(pa.length - 1) / W) * 100}%`, top: `${(Y(lastA) / H) * 100}%`, transform: 'translate(-50%,-50%)', borderRadius: '50%', boxShadow: '0 0 0 3px #000, 0 0 0 5px var(--b)', transition: 'left 1s linear, top 1s linear' }} /> : null}
-            {pb.length ? <img src={img(b)} alt="" width={30} height={30} style={{ position: 'absolute', left: `${(X(pb.length - 1) / W) * 100}%`, top: `${(Y(lastB) / H) * 100}%`, transform: 'translate(-50%,-50%)', borderRadius: '50%', boxShadow: '0 0 0 3px #000, 0 0 0 5px var(--p)', transition: 'left 1s linear, top 1s linear' }} /> : null}
+            {pa.length ? <img src={img(a)} alt="" width={30} height={30} className="race-dot" style={{ left: `${(X(pa.length - 1) / CW) * 100}%`, top: `${(Y(lastA) / CH) * 100}%`, boxShadow: '0 0 0 3px #000, 0 0 0 5px var(--b)' }} /> : null}
+            {pb.length ? <img src={img(b)} alt="" width={30} height={30} className="race-dot" style={{ left: `${(X(pb.length - 1) / CW) * 100}%`, top: `${(Y(lastB) / CH) * 100}%`, boxShadow: '0 0 0 3px #000, 0 0 0 5px var(--p)' }} /> : null}
             {run === 'idle' ? (
-              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-                <div><motion.img src={A('vs.png')} alt="" width={120} height={120} style={{ margin: '0 auto' }} animate={{ rotate: [-4, 4, -4] }} transition={{ duration: 3, repeat: Infinity }} /><div className="sm" style={{ marginTop: 10 }}>Pick two coins and start. Both lines race from 0%.</div></div>
+              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 16 }}>
+                <div><motion.img src={A('coins-pile.png')} alt="" style={{ width: 'min(360px, 66vw)', margin: '0 auto' }} animate={{ y: [0, -10, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }} /><div className="sm" style={{ marginTop: 6 }}>Pick two coins and start. Both lines race from 0%.</div></div>
               </div>
             ) : null}
           </div>
@@ -272,111 +358,39 @@ function Race() {
   );
 }
 
-/* ───────── how a duel works (pinned phone) ───────── */
-const STEPS = [
-  { t: 'Pick any coin.', b: 'SOL, BTC, ETH or the newest Solana memecoin. Your opponent picks their own. Set your stake and leverage.', shot: 'amount' },
-  { t: 'Sixty seconds. Live.', b: 'Both lines race from 0% on the same clock. Health bars drain as you get close to your knockout line.', shot: 'duel' },
-  { t: 'Best % takes the pot.', b: 'Get knocked out and you are done early. Survive and beat their move at the bell, and the pot is yours.', shot: 'royale' },
-  { t: 'Climb the season.', b: 'Every win moves you up the ladder, Bronze to Legend. Medals and badges for the top of each season.', shot: 'leaderboard' },
-];
-function Story() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start center', 'end center'] });
-  const [i, setI] = useState(0);
-  useMotionValueEvent(scrollYProgress, 'change', (v) => setI(Math.min(STEPS.length - 1, Math.max(0, Math.floor(v * STEPS.length)))));
-  const bar = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+/* ───────── statement with the clay hand holding the real app ───────── */
+const HAND_SHOTS = ['home', 'arena', 'duel', 'royale', 'line', 'war'];
+function HandPhone({ y }: { y?: MotionValue<number> }) {
+  const [k, setK] = useState(0);
+  useEffect(() => { const h = setInterval(() => setK((x) => (x + 1) % HAND_SHOTS.length), 2600); return () => clearInterval(h); }, []);
   return (
-    <section className="sec" id="how">
-      <div className="wrap">
-        <div className="sec-head">
-          <Reveal><span className="kicker">How a duel works</span></Reveal>
-          <Reveal delay={0.05}><h2 className="h-l">One minute.<br />One winner.</h2></Reveal>
-        </div>
-        <div className="story" ref={ref}>
-          <div className="story-pin">
-            <div style={{ position: 'relative' }}>
-              <div className="phone" style={{ position: 'relative' }}>
-                <div style={{ aspectRatio: '390 / 844' }} />
-                <AnimatePresence mode="popLayout">
-                  <motion.div key={STEPS[i].shot} className="layer" initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5, ease }}>
-                    <img src={SHOT(STEPS[i].shot)} alt={STEPS[i].t} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-              <div style={{ position: 'absolute', left: -28, top: 40, bottom: 40, width: 3, borderRadius: 3, background: '#1c1c21' }}>
-                <motion.div style={{ height: bar, width: 3, borderRadius: 3, background: 'var(--b)' }} />
-              </div>
-            </div>
-          </div>
-          <div className="story-steps">
-            {STEPS.map((s, k) => (
-              <motion.div key={s.t} className="step" animate={{ opacity: k === i ? 1 : 0.28 }} transition={{ duration: 0.4 }}>
-                <div className="step-n" style={{ background: k === i ? 'var(--b)' : undefined }}>{k + 1}</div>
-                <h3 className="h-m">{s.t}</h3>
-                <p className="lead">{s.b}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+    <motion.div className="hand" style={{ y }}>
+      <img src={A('phone-hand.png')} alt="A hand holding a phone running Clashy" />
+      <div className="hand-screen">
+        <AnimatePresence mode="popLayout">
+          <motion.img key={HAND_SHOTS[k]} src={SHOT(HAND_SHOTS[k])} alt="" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5, ease }} />
+        </AnimatePresence>
       </div>
-    </section>
+    </motion.div>
   );
 }
-
-/* ───────── clans ───────── */
-function Clans() {
-  const ref = useRef<HTMLDivElement>(null);
+function Statement() {
+  const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const y1 = useTransform(scrollYProgress, [0, 1], [50, -50]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [-30, 30]);
-  const feats = [
-    { img: 'crest-flame.png', t: 'Monthly seasons', b: 'Clans climb a season ladder. Every month resets the race.' },
-    { img: 'crest-wolf.png', t: 'Week-long wars', b: 'Clan vs clan. Each coin is a tile. Most tiles wins the chest.' },
-    { img: 'crest-crown.png', t: 'Pot votes', b: 'The clan pot only trades by vote. Captains execute what passes.' },
-    { img: 'crest-skull.png', t: 'Bounties', b: 'Put a price on your head, or hunt someone else’s.' },
-  ];
+  const y = useTransform(scrollYProgress, [0, 1], [90, -50]);
   return (
-    <section className="sec" id="clans" ref={ref}>
-      <div className="wrap clans">
+    <section className="statement" ref={ref}>
+      <div className="wrap statement-grid">
         <div>
-          <Reveal><span className="kicker">Clans</span></Reveal>
-          <Reveal delay={0.05}><h2 className="h-l" style={{ marginTop: 16 }}>Bring your<br />whole group chat.</h2></Reveal>
-          <Reveal delay={0.1}><p className="lead" style={{ marginTop: 20 }}>Start a clan, push a shared pot and go to war every week. Chat, call trades and vote on what the pot does next.</p></Reveal>
-          <div className="feat">
-            {feats.map((f, k) => (
-              <Reveal key={f.t} delay={0.05 * k}><div><img src={A(f.img)} alt="" loading="lazy" /><div className="h-s" style={{ fontSize: 17 }}>{f.t}</div><p className="sm" style={{ marginTop: 4 }}>{f.b}</p></div></Reveal>
-            ))}
-          </div>
+          <Reveal><h2 className="statement-h">The house always wins.<br /><span className="grad">So we removed it.</span></h2></Reveal>
+          <Reveal delay={0.08}><p className="lead" style={{ marginTop: 24 }}>Casinos, perp exchanges and prediction apps put you against the house. In Clashy the other side is a person you can see: your friend, your rival, the other clan.</p></Reveal>
+          <Reveal delay={0.14}>
+            <ul className="vs-list">
+              {[['Who you play', 'A person, never the house'], ['Your coin', 'Any coin, on both sides'], ['Your crew', 'Duels, clans, wars and bounties built in'], ['Speed', 'Every tick on a MagicBlock Ephemeral Rollup']].map(([k, v]) => <li key={k}><span className="xs">{k}</span><span>{v}</span></li>)}
+            </ul>
+          </Reveal>
         </div>
-        <div className="clans-phones">
-          <motion.div className="phone" style={{ left: '2%', top: 20, rotate: -5, y: y1 }}><img className="screen" src={SHOT('war')} alt="Clan war map" loading="lazy" /></motion.div>
-          <motion.div className="phone" style={{ right: '2%', top: 90, rotate: 6, y: y2 }}><img className="screen" src={SHOT('bounty')} alt="Bounty wanted poster" loading="lazy" /></motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ───────── vs the house ───────── */
-function VsHouse() {
-  const rows = [
-    ['Who you play against', 'The house, a market maker, the pool', 'A person you can see'],
-    ['Who wins when you lose', 'The platform', 'Your opponent'],
-    ['Your coin', 'Whatever the venue lists', 'Any coin, on both sides'],
-    ['Friends', 'Screenshots in a group chat', 'Duels, clans, wars and bounties built in'],
-    ['Speed', 'Wait for blocks', 'Every tick on a MagicBlock Ephemeral Rollup'],
-  ];
-  return (
-    <section className="sec" style={{ paddingTop: 40 }}>
-      <div className="wrap">
-        <div className="sec-head">
-          <Reveal><span className="kicker">Why it is different</span></Reveal>
-          <Reveal delay={0.05}><h2 className="h-l">The house always wins.<br /><span className="grad">So we removed it.</span></h2></Reveal>
-        </div>
-        <Reveal className="vs-table">
-          <div className="vs-row"><div className="xs">&nbsp;</div><div className="xs">Casinos, perps, prediction apps</div><div className="xs" style={{ color: 'var(--b2)' }}>Clashy</div></div>
-          {rows.map((r) => <div className="vs-row" key={r[0]}><div className="sm" style={{ color: 'var(--ink)' }}>{r[0]}</div><div className="sm">{r[1]}</div><div>{r[2]}</div></div>)}
-        </Reveal>
+        <HandPhone y={y} />
       </div>
     </section>
   );
@@ -395,44 +409,50 @@ function Tech() {
       <div className="wrap">
         <div className="sec-head">
           <Reveal><span className="kicker">Under the hood</span></Reveal>
-          <Reveal delay={0.05}><h2 className="h-l">Real time,<br />on Solana.</h2></Reveal>
+          <Reveal delay={0.05}><h2 className="h-l">Real time, on Solana.</h2></Reveal>
           <Reveal delay={0.1}><p className="lead">The on-chain program is being built during MagicBlock Solana Blitz v10. Until it ships, the practice games run on live prices with no money.</p></Reveal>
         </div>
         <div className="tech">
-          {t.map((x, k) => (
-            <Reveal key={x.t} delay={k * 0.07}><div><span className="num">0{k + 1}</span><h3 className="h-s">{x.t}</h3><p className="sm">{x.b}</p></div></Reveal>
-          ))}
+          {t.map((x, k) => <Reveal key={x.t} delay={k * 0.07}><div><span className="num">0{k + 1}</span><h3 className="h-s">{x.t}</h3><p className="sm">{x.b}</p></div></Reveal>)}
         </div>
       </div>
     </section>
   );
 }
 
-/* ───────── final ───────── */
+/* ───────── final CTA + clay footer grid ───────── */
 function Final() {
-  const row = useMemo(() => [...AVATARS, ...AVATARS], []);
+  const cells: (string | null)[] = ['avatar-nova.png', null, 'crest-flame.png', null, null, 'avatar-tiger.png', null, 'medal-1.png', null, 'avatar-panda.png', null, null, 'crest-wolf.png', null, 'avatar-dragon.png', null, 'rank-diamond.png', null, null, 'avatar-skater.png'];
+  const tint = ['#5B6CFF', '#F0468C', '#FFC94A', '#30D158', '#8FD3FF', '#FF8A4C'];
   return (
-    <section className="final">
-      <motion.div className="av-row" animate={{ x: ['0%', '-50%'] }} transition={{ duration: 40, ease: 'linear', repeat: Infinity }} style={{ marginBottom: 56 }}>
-        {row.map((a, i) => <img key={i} src={A(`avatar-${a}.png`)} alt="" loading="lazy" />)}
-      </motion.div>
-      <div className="wrap">
-        <Reveal><h2 className="h-xl">Duel <span className="grad">anyone.</span></h2></Reveal>
-        <Reveal delay={0.1}><p className="lead" style={{ margin: '24px auto 0' }}>Coming to iOS, Android, the Solana dApp Store and the web. Practice games already run on live prices.</p></Reveal>
-        <Reveal delay={0.15}>
-          <div className="hero-cta" style={{ justifyContent: 'center' }}>
-            <a className="btn btn-b" href="#race">Race two coins now</a>
-            <span className="btn btn-g" aria-disabled="true">App Store · soon</span>
-            <span className="btn btn-g" aria-disabled="true">Google Play · soon</span>
+    <section className="final2">
+      <div className="wrap final2-grid">
+        <Reveal><h2 className="final2-h">Find your rival.<br /><span className="grad">Make the first call.</span></h2></Reveal>
+        <Reveal delay={0.1}>
+          <div className="final2-side">
+            <p className="lead">Clashy is coming to iOS, Android, the Solana dApp Store and the web. The practice games already run on live prices.</p>
+            <div className="hero-cta"><a className="cta" href="#race">Race two coins now <span className="cta-arrow"><Arrow /></span></a></div>
+            <div className="xs" style={{ marginTop: 14 }}>App Store and Google Play · coming soon</div>
           </div>
         </Reveal>
       </div>
-      <div className="wrap">
-        <footer className="foot" style={{ marginTop: 120 }}>
-          <img src={A('wordmark.svg')} alt="clashy" style={{ height: 22 }} />
+      <footer className="fgrid">
+        <div className="fgrid-cells">
+          {cells.map((c, i) => (
+            <motion.div key={i} className="fcell" style={{ background: c ? tint[i % tint.length] : undefined }} initial={{ opacity: 0, scale: 0.6 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ type: 'spring', stiffness: 200, damping: 16, delay: (i % 10) * 0.04 }}>
+              {c ? <img src={A(c)} alt="" loading="lazy" /> : null}
+            </motion.div>
+          ))}
+        </div>
+        <div className="wrap fgrid-bar">
+          <img src={A('wordmark.svg')} alt="clashy" style={{ height: 30 }} />
+          <div className="fgrid-links">
+            <div><span className="xs">PLAY</span><a href="#how">How it works</a><a href="#crew">Games</a><a href="#race">Live race</a></div>
+            <div><span className="xs">BUILT ON</span><a href="#tech">MagicBlock</a><a href="#tech">Solana</a></div>
+          </div>
           <span className="xs">© 2026 Clashy · in development · prices from Coinbase Exchange and DexScreener</span>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </section>
   );
 }
@@ -444,12 +464,10 @@ export default function App() {
       <main>
         <Hero />
         <Ticker />
-        <Manifesto />
-        <Games />
+        <How />
+        <Rail />
         <Race />
-        <Story />
-        <Clans />
-        <VsHouse />
+        <Statement />
         <Tech />
         <Final />
       </main>
