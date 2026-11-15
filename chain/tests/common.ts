@@ -3,7 +3,7 @@
 // Prices are real: the crank reads Coinbase Exchange's public ticker and pushes it on chain.
 import * as anchor from '@coral-xyz/anchor';
 import { BN, Program } from '@coral-xyz/anchor';
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Clashy } from '../target/types/clashy.ts';
@@ -39,6 +39,7 @@ const le64 = (n: number | bigint) => new BN(n.toString()).toArrayLike(Buffer, 'l
 export const P = {
   config: pda(Buffer.from('config')),
   feed: (coin: number) => pda(Buffer.from('feed'), Buffer.from([coin])),
+  baseFeed: (coin: number) => pda(Buffer.from('bfeed'), Buffer.from([coin])),
   player: (owner: PublicKey) => pda(Buffer.from('player'), owner.toBuffer()),
   duel: (creator: PublicKey, nonce: number | bigint) => pda(Buffer.from('duel'), creator.toBuffer(), le64(nonce)),
   vault: (of: PublicKey) => pda(Buffer.from('vault'), of.toBuffer()),
@@ -135,6 +136,13 @@ export async function ensureSetup(treasury: PublicKey) {
       await baseProgram.methods.delegateFeed(i).accountsPartial({ authority: authority.publicKey, feed }).remainingAccounts([{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }]).rpc();
     }
   }
+  // never-delegated Solana copies for Solana-side reads (clan trades)
+  for (let i = 0; i < COINS.length; i++) {
+    if (!(await base.getAccountInfo(P.baseFeed(i)))) {
+      await baseProgram.methods.initBaseFeed(i).accountsPartial({ authority: authority.publicKey, feed: P.baseFeed(i) }).rpc();
+    }
+  }
+  await pushBasePrices();
   // the rollup clones delegated feeds on first use
   for (let i = 0; i < COINS.length; i++) await until(`feed ${i} on the rollup`, 30_000, () => er.getAccountInfo(P.feed(i)));
   return (await baseProgram.account.config.fetch(P.config));
@@ -147,19 +155,12 @@ export async function pushPrices(): Promise<bigint[]> {
   return prices;
 }
 
-/** Crank: commits the feeds to Solana and waits until the base copies are fresh. */
-export async function commitFeeds() {
-  const before = await Promise.all(COINS.map((_, i) => baseProgram.account.priceFeed.fetch(P.feed(i)).catch(() => null)));
-  const px = await pushPrices();
-  for (let i = 0; i < COINS.length; i++) await sendEr(erProgram.methods.commitFeed().accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority);
-  for (let i = 0; i < COINS.length; i++) {
-    await until(`feed ${i} committed to Solana`, 60_000, async () => {
-      const info = await base.getAccountInfo(P.feed(i));
-      if (!info) return null;
-      const f = baseProgram.coder.accounts.decode('priceFeed', info.data);
-      return f.updatedAt.toNumber() > (before[i]?.updatedAt.toNumber() ?? 0) ? f : null;
-    });
-  }
+/** Crank: writes live prices into the Solana-side base feeds, all coins in one transaction. */
+export async function pushBasePrices(prices?: bigint[]): Promise<bigint[]> {
+  const px = prices ?? (await Promise.all(COINS.map((c) => coinbasePrice(c.product))));
+  const ixs = await Promise.all(px.map((p, i) => baseProgram.methods.pushBasePrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.baseFeed(i) }).instruction()));
+  const tx = new Transaction().add(...ixs);
+  await sendAndConfirmTransaction(base, tx, [authority], { commitment: 'confirmed' });
   return px;
 }
 

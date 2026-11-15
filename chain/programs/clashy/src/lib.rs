@@ -98,6 +98,19 @@ fn coin_feed(config: &Config, coin: u8) -> Result<Pubkey> {
     Ok(config.coins[coin as usize].feed)
 }
 
+/// Reads a coin's price on Solana (not in the rollup). The rollup feeds are delegated, so Solana reads the
+/// crank's never-delegated base feed for the coin, or the coin's configured feed when that is an oracle
+/// account (MagicBlock pricing oracle) that lives on Solana.
+fn solana_price(config: &Config, coin: u8, account: &AccountInfo, now: i64) -> Result<u64> {
+    let configured = coin_feed(config, coin)?;
+    let expected = if account.key() == configured {
+        configured
+    } else {
+        Pubkey::find_program_address(&[BASE_FEED_SEED, &[coin]], &crate::ID).0
+    };
+    price::read_price(account, &expected, now, MAX_BASE_PRICE_AGE)
+}
+
 /// Finishes a live duel at `price`: records exit, P&L, knockouts and the winner.
 fn finish_duel(duel: &mut Duel, price: u64, now: i64) {
     duel.exit_price = price;
@@ -227,16 +240,24 @@ pub mod clashy {
         Ok(())
     }
 
-    /// Crank-only, inside the ER: commits the feed so Solana-side reads (clans) stay fresh.
-    pub fn commit_feed(ctx: Context<CommitFeed>) -> Result<()> {
-        ctx.accounts.feed.exit(&crate::ID)?;
-        MagicIntentBundleBuilder::new(
-            ctx.accounts.crank.to_account_info(),
-            ctx.accounts.magic_context.to_account_info(),
-            ctx.accounts.magic_program.to_account_info(),
-        )
-        .commit(&[ctx.accounts.feed.to_account_info()])
-        .build_and_invoke()?;
+    /// A never-delegated copy of a coin's feed on Solana, for Solana-side reads (clan trades).
+    /// MagicBlock sponsors only a few commits per delegated account, so the rollup feeds are not
+    /// committed back; the crank writes this account directly instead.
+    pub fn init_base_feed(ctx: Context<InitBaseFeed>, coin: u8) -> Result<()> {
+        let f = &mut ctx.accounts.feed;
+        f.coin = coin;
+        f.price = 0;
+        f.updated_at = 0;
+        f.bump = ctx.bumps.feed;
+        Ok(())
+    }
+
+    /// Crank-only, on Solana.
+    pub fn push_base_price(ctx: Context<PushBasePrice>, price: u64) -> Result<()> {
+        require!(price > 0, ClashyError::PriceZero);
+        let f = &mut ctx.accounts.feed;
+        f.price = price;
+        f.updated_at = Clock::get()?.unix_timestamp;
         Ok(())
     }
 
@@ -623,8 +644,7 @@ pub mod clashy {
         require!(p.status == proposal_status::OPEN, ClashyError::WrongStatus);
         require!(p.yes > p.no, ClashyError::NotPassed);
         require!(now > p.deadline || (p.yes as u128) * 2 > chest as u128, ClashyError::VotingOpen);
-        let feed = coin_feed(&ctx.accounts.config, p.coin)?;
-        let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_BASE_PRICE_AGE)?;
+        let price = solana_price(&ctx.accounts.config, p.coin, &ctx.accounts.price.to_account_info(), now)?;
         let notional = (chest as u128 * p.size_bps as u128 / BPS as u128) as u64;
         require!(notional > 0, ClashyError::ChestTooLow);
         let pos = &mut ctx.accounts.position;
@@ -657,8 +677,7 @@ pub mod clashy {
         let now = Clock::get()?.unix_timestamp;
         let pos = &ctx.accounts.position;
         require!(pos.open, ClashyError::WrongStatus);
-        let feed = coin_feed(&ctx.accounts.config, pos.coin)?;
-        let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_BASE_PRICE_AGE)?;
+        let price = solana_price(&ctx.accounts.config, pos.coin, &ctx.accounts.price.to_account_info(), now)?;
         let pnl = math::position_pnl(pos.notional, pos.entry_price, price, pos.side, pos.lev);
         let pos = &mut ctx.accounts.position;
         pos.exit_price = price;
@@ -1065,14 +1084,24 @@ pub struct DelegateFeed<'info> {
     pub feed: AccountInfo<'info>,
 }
 
-#[commit]
 #[derive(Accounts)]
-pub struct CommitFeed<'info> {
+#[instruction(coin: u8)]
+pub struct InitBaseFeed<'info> {
     #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Account<'info, Config>,
+    #[account(init, payer = authority, space = 8 + PriceFeed::INIT_SPACE, seeds = [BASE_FEED_SEED, &[coin]], bump)]
+    pub feed: Account<'info, PriceFeed>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct PushBasePrice<'info> {
     pub crank: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump, constraint = config.crank == crank.key() @ ClashyError::Unauthorized)]
     pub config: Account<'info, Config>,
-    #[account(mut, seeds = [FEED_SEED, &[feed.coin]], bump = feed.bump)]
+    #[account(mut, seeds = [BASE_FEED_SEED, &[feed.coin]], bump = feed.bump)]
     pub feed: Account<'info, PriceFeed>,
 }
 
