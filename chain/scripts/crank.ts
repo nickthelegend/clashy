@@ -5,9 +5,17 @@
 // It also does first-time setup (config, feeds, delegation) on a fresh stack.
 //
 //   npx tsx scripts/crank.ts          (Ctrl-C to stop)
-import { authority, ensureSetup, fundedKeypair, pushBasePrices, pushPrices, sleep } from '../tests/common.ts';
+import { BASE_URL, IS_LOCAL, PublicKey, authority, ensureSetup, fundedKeypair, pushBasePrices, pushPrices, sleep } from '../tests/common.ts';
 
-const cfg = await ensureSetup((await fundedKeypair(1)).publicKey);
+// Off the local stack the rake goes to CLASHY_TREASURY; locally a fresh faucet-funded key is fine.
+const treasury = process.env.CLASHY_TREASURY ? new PublicKey(process.env.CLASHY_TREASURY)
+  : IS_LOCAL ? (await fundedKeypair(1)).publicKey
+  : (() => { throw new Error(`Setup required: set CLASHY_TREASURY (rake wallet) to run against ${BASE_URL}`); })();
+const cfg = await ensureSetup(treasury);
+if (process.argv.includes('--setup-only')) {
+  console.log(`setup done on ${BASE_URL} · vrf required ${cfg.vrfRequired} · queue ${cfg.vrfQueue.toBase58()} · ${cfg.coinCount} coins`);
+  process.exit(0);
+}
 console.log(`crank up · treasury ${cfg.treasury.toBase58()} · crank ${authority.publicKey.toBase58()} · ${cfg.coinCount} coins`);
 let n = 0;
 let stop = false;

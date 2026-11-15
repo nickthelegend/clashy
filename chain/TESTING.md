@@ -71,6 +71,6 @@ Each run: about 30 rollup checks at an average of ~10 ms each; the Solana steps 
 ## Not covered
 
 - **VRF on devnet/mainnet:** proven locally with MagicBlock's `vrf-oracle`; their hosted oracles are untested until the
-  devnet deploy (BLOCKED on ~6 devnet SOL).
+  devnet deploy (BLOCKED on ~12.5 devnet SOL).
 - **Devnet and mainnet:** not deployed.
 - **Clan positions on a real venue:** clan trades are scored at the oracle price, not filled on Phoenix.
