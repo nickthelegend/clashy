@@ -17,7 +17,8 @@ import { ScrollView } from 'react-native';
 
 type Mode = { key: string; title: string; who: string; line: string; art: number; banner: number; live: boolean };
 const MODES: Mode[] = [
-  { key: 'ko', title: 'Knockout duel', who: '1 v 1 · any coin · 60 s', line: 'You pick any coin, they pick theirs. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
+  { key: 'ko', title: 'Knockout duel', who: '1 v 1 · quick match · 60 s', line: 'Quick match a rival. VRF rolls one coin for both of you. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
+  { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, banner: ART.bannerDuel, live: true },
   { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, banner: ART.bannerLine, live: true },
   { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, banner: ART.bannerWar, live: false },
   { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true },
@@ -30,6 +31,7 @@ const play = (key: string, stake: number) => {
   else if (key === 'royale') router.push('/game/royale');
   else if (key === 'war') router.push('/game/war');
   else if (key === 'bounty') router.push('/game/bounty');
+  else if (key === 'ko') router.push({ pathname: '/duel/match', params: { stake: String(stake) } });
   else router.push({ pathname: '/duel/amount', params: { id: 'SOL', stake: String(stake) } });
 };
 

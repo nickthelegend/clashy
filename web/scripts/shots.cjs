@@ -15,10 +15,12 @@ async function run(b, vp, prefix, only) {
   const snap = async (name, wait = 2500) => { await p.waitForTimeout(wait); await p.screenshot({ path: `${OUT}/${prefix}${name}.png` }); console.log('shot', prefix + name); };
   if (want('arena')) { await p.goto(B + '/arena', { waitUntil: 'networkidle' }); await snap('arena'); }
   if (want('home')) { await p.goto(B + '/', { waitUntil: 'networkidle' }); await snap('home'); }
-  if (want('amount') || want('duel')) {
-    await p.goto(B + '/duel/amount?id=SOL&stake=20', { waitUntil: 'networkidle' });
-    if (want('amount')) await snap('amount', 3000); else await p.waitForTimeout(3000);
-    await p.getByText('Start practice duel').click(); await snap('duel', 14000);
+  if (want('amount')) { await p.goto(B + '/duel/amount?id=SOL&stake=20', { waitUntil: 'networkidle' }); await snap('amount', 3000); }
+  if (want('match') || want('duel')) {
+    // Knockout duel = quick match: the coin is rolled, then you pick a side
+    await p.goto(B + '/duel/match?stake=20', { waitUntil: 'networkidle' });
+    if (want('match')) await snap('match', 5500); else await p.waitForTimeout(5500);
+    await p.getByText('Long ▲').click(); await snap('duel', 14000);
   }
   if (want('royale')) {
     await p.goto(B + '/game/royale', { waitUntil: 'networkidle' }); await p.waitForTimeout(3500);
@@ -38,7 +40,7 @@ async function run(b, vp, prefix, only) {
 (async () => {
   const b = await chromium.launch({ channel: 'chrome', headless: true });
   const onlyHand = process.argv.includes('--hand');
-  if (!onlyHand) await run(b, { width: 390, height: 844 }, '');
+  if (!onlyHand) await run(b, { width: 390, height: 844 }, '', ['arena', 'home', 'amount', 'match', 'duel', 'royale', 'line', 'war', 'bounty', 'leaderboard']);
   await run(b, { width: 390, height: 687 }, 'hand-', ['home', 'arena', 'duel', 'royale', 'line', 'war']);
   await b.close();
 })();

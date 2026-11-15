@@ -9,16 +9,17 @@ import { ART, Btn, Card, Row, Txt } from '@/ui/kit';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
 export default function Result() {
-  const p = useLocalSearchParams<{ id: string; reason: string; pnl: string; symbol: string; side: string; lev: string; secs: string; entry: string; exit: string; rival?: string; rivalPct?: string; myPct?: string }>();
+  const p = useLocalSearchParams<{ id: string; reason: string; pnl: string; symbol: string; side: string; lev: string; secs: string; entry: string; exit: string; rival?: string; rivalPct?: string; myPct?: string; mode?: string }>();
+  const quick = p.mode === 'quick';
   const insets = useSafeAreaInsets();
   const col = useDeskColumn();
   const pnl = Number(p.pnl);
   const hasRival = p.rival !== undefined && p.rivalPct !== undefined && p.myPct !== undefined;
   const myPct = Number(p.myPct ?? 0), rPct = Number(p.rivalPct ?? 0);
   // practice duels are won against the rival coin's leveraged %, not just by being green
-  const won = p.reason !== 'ko' && (hasRival ? myPct > rPct : pnl > 0);
-  const flat = p.reason !== 'ko' && (hasRival ? Math.abs(myPct - rPct) < 0.05 : Math.abs(pnl) < 0.005);
-  const title = p.reason === 'ko' ? 'Knocked out.' : flat ? 'Dead heat.' : won ? 'You won.' : 'You lost.';
+  const won = p.reason === 'theirko' || (p.reason !== 'ko' && (hasRival ? myPct > rPct : pnl > 0));
+  const flat = p.reason !== 'ko' && p.reason !== 'theirko' && (hasRival ? Math.abs(myPct - rPct) < 0.05 : Math.abs(pnl) < 0.005);
+  const title = p.reason === 'ko' ? 'Knocked out.' : p.reason === 'theirko' ? 'KO! You won.' : flat ? 'Dead heat.' : won ? 'You won.' : 'You lost.';
   const s = useSharedValue(0.6);
   useEffect(() => { s.value = withSpring(1, { damping: 9, stiffness: 140 }); }, [s]);
   const pop = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
@@ -33,11 +34,11 @@ export default function Result() {
             <WinBurst src={p.reason === 'ko' || !flat ? ART.koSkull : ART.draw} size={170} burst={false} />
           </Shake>
         )}
-        <Txt v="small" style={{ marginTop: 6 }}>{p.reason === 'ko' ? 'Knockout' : p.reason === 'cash' ? 'Cashed out' : 'Bell'} · {p.secs}s · practice</Txt>
+        <Txt v="small" style={{ marginTop: 6 }}>{p.reason === 'ko' ? 'Knockout' : p.reason === 'theirko' ? 'Rival knocked out' : p.reason === 'cash' ? 'Cashed out' : 'Bell'} · {p.secs}s · {quick ? `quick match on ${p.symbol}` : 'coin clash'} · practice</Txt>
         <Txt v="title" style={{ fontSize: 44, marginTop: 6 }}>{title}</Txt>
         {hasRival && p.reason !== 'ko' ? (
           <>
-            <CountUp to={Math.abs(myPct - rPct)} ms={1100} format={(v) => `${myPct - rPct >= 0 ? '+' : '−'}${v.toFixed(1)}% vs ${p.rival}`} style={{ fontFamily: F.bold, fontSize: 40, letterSpacing: -1.2, color: flat ? C.muted : won ? C.up : C.down, marginTop: 4 }} />
+            <CountUp to={Math.abs(myPct - rPct)} ms={1100} format={(v) => `${myPct - rPct >= 0 ? '+' : '−'}${v.toFixed(1)}% ${quick ? 'vs your rival' : `vs ${p.rival}`}`} style={{ fontFamily: F.bold, fontSize: quick ? 32 : 40, letterSpacing: -1.2, textAlign: 'center', color: flat ? C.muted : won ? C.up : C.down, marginTop: 4 }} />
             <Txt v="small" style={{ marginTop: 4 }}>Practice P&L {pnl >= 0 ? '+' : '−'}{fmtUsd(Math.abs(pnl))} · no money moved</Txt>
           </>
         ) : (
@@ -52,12 +53,12 @@ export default function Result() {
       {hasRival ? (
         <Row style={{ gap: 8, marginTop: 10 }}>
           <Card style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: won ? C.brand : 'transparent' }}><Txt v="num" color={myPct >= 0 ? C.up : C.down}>{myPct >= 0 ? '+' : ''}{myPct.toFixed(1)}%</Txt><Txt v="small">You · {p.symbol}</Txt></Card>
-          <Card style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: !won && !flat && p.reason !== 'ko' ? C.opp : 'transparent' }}><Txt v="num" color={rPct >= 0 ? C.up : C.down}>{rPct >= 0 ? '+' : ''}{rPct.toFixed(1)}%</Txt><Txt v="small">Rival coin · {p.rival}</Txt></Card>
+          <Card style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: !won && !flat && p.reason !== 'ko' ? C.opp : 'transparent' }}><Txt v="num" color={rPct >= 0 ? C.up : C.down}>{rPct >= 0 ? '+' : ''}{rPct.toFixed(1)}%</Txt><Txt v="small">{quick ? 'Practice rival' : `Rival coin · ${p.rival}`}</Txt></Card>
         </Row>
       ) : null}
-      <Card style={{ marginTop: 10 }}><Txt v="small" style={{ lineHeight: 18 }}>Practice duels race your pick against a rival coin on live prices, with no money. Real duels are against people and settle a pot between two players on Solana via a MagicBlock rollup.</Txt></Card>
+      <Card style={{ marginTop: 10 }}><Txt v="small" style={{ lineHeight: 18 }}>{quick ? 'Practice quick match: one rolled coin, a practice rival on the other side, live prices, no money. Real quick matches pair you with a person, roll the coin with MagicBlock VRF and settle the pot on Solana.' : 'Practice coin clash: your coin races a rival coin on live prices, with no money. Real clashes are against people and settle the pot on Solana via a MagicBlock rollup.'}</Txt></Card>
       <View style={{ flex: 1 }} />
-      <Btn title="Duel again" kind="white" onPress={() => router.replace({ pathname: '/duel/amount', params: { id: p.id ?? 'SOL' } })} />
+      <Btn title="Duel again" kind="white" onPress={() => (quick ? router.replace('/duel/match') : router.replace({ pathname: '/duel/amount', params: { id: p.id ?? 'SOL' } }))} />
       <Btn title="Back to home" kind="ghost" style={{ marginTop: 10 }} onPress={() => router.dismissTo('/')} />
     </View>
   );
