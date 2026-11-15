@@ -59,8 +59,12 @@ written after the Nov 20 kickoff against the venues' public SDKs.
 - **Jurisdictions.** Phoenix and MagicBlock's Private ER both screen at ingress; check from Nick's location on day 1.
 - **Hackathon rule.** Blitz says ordinary transfers and swaps don't count. The real orders are not the entry; the ER
   duel engine around them is (VRF roll, sealed picks, 10 Hz scoring, settlement). Keep that front and centre.
-- **Money rule.** Rehearse everything on a mainnet fork (Surfpool or a validator with cloned accounts, as XORR does).
-  Real funds only for the final recording, with the smallest stakes the venues allow.
+- **Money rule (decided by Nick, Nov 15):** "real trades on fork, real funds only for recording" and "we gotta be
+  mainnet before we do". So:
+  1. build and rehearse every real trade on a mainnet fork (Surfpool or a validator with cloned accounts);
+  2. deploy the program on Solana mainnet and the MagicBlock mainnet ER before recording and submitting;
+  3. use real funds only in the recorded duels, with the smallest stakes the venues allow;
+  4. public real-money play is a separate switch (geofence + player protection), off for Blitz.
 
 ## Revenue
 - 3% rake on every pot (2% Clashy, 1% clan or server creator).

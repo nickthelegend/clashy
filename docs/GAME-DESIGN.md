@@ -2,7 +2,10 @@
 
 Status: design (Nov 15 2026), for Nick's ask: "the best game design possible, with cool matchmaking". Builds on
 [REAL-TRADES.md](REAL-TRADES.md) (venues and money) and [MINI-GAMES.md](MINI-GAMES.md) (the game list).
-Open decisions for Nick: clashy.md questions 5 (memes / XORR code) and 8 (mainnet or fork for Blitz).
+Decided (Nick, Nov 15, clashy.md Q8): build and rehearse real trades on a mainnet fork, then deploy the program on
+Solana mainnet and the MagicBlock mainnet ER before recording and submitting ("we gotta be mainnet"). Real funds only
+in the recorded duels; public real-money play is a separate switch (geofence + player protection).
+Still open: clashy.md question 5 (memes / XORR code).
 
 ## 1. Pillars
 1. **People, not the house.** Every game has a human on the other side. Clashy only takes a rake.
