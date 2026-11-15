@@ -6,6 +6,8 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion
 
 type Card = { n: string; label: string; title: string; body: string; bg: string; ink: string; ui: React.ReactNode }
 
+const RANKS = ['Exit Liquidity', 'Paper Hands', 'Bagholder', 'Dip Buyer', 'Ape', 'Degen', 'Diamond Hands', 'Chad', 'Whale', 'The House']
+
 const CARDS: Card[] = [
   {
     n: '01',
@@ -84,15 +86,15 @@ const CARDS: Card[] = [
   {
     n: '04',
     label: 'Your rank',
-    title: 'Climb six tiers.',
-    body: 'Every duel moves your rating. Bronze to Legend, reset each season.',
+    title: 'Climb ten tiers.',
+    body: 'From Exit Liquidity to The House. Every duel moves your rank; it resets each season.',
     bg: '#C9C2FF',
     ink: '#16123a',
     ui: (
       <div className="ui-ranks">
-        {['bronze', 'silver', 'gold', 'platinum', 'diamond', 'legend'].map((r, i) => (
-          <div key={r} className="ui-rank" style={{ transform: `translateY(${-i * 10}px)` }}>
-            <img src={`/art/rank-${r}.webp`} alt="" width="64" height="64" />
+        {RANKS.map((r, i) => (
+          <div key={r} className={`ui-rank${i === 9 ? ' top' : ''}`}>
+            <img src={`/art/rank-${i + 1}.webp`} alt="" width="64" height="64" />
             <span>{r}</span>
           </div>
         ))}
