@@ -38,7 +38,10 @@ export default function Arena() {
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top + 8, paddingHorizontal: S.gutter }}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Txt v="title">Arena</Txt>
-        <View style={{ backgroundColor: C.upBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Txt v="small" color={C.up} style={{ fontSize: 11.5 }}>Practice open</Txt></View>
+        <Row style={{ gap: 8 }}>
+          <View style={{ backgroundColor: C.upBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Txt v="small" color={C.up} style={{ fontSize: 11.5 }}>Practice open</Txt></View>
+          <Btn title="Ranks" kind="ghost" h={32} onPress={() => router.push('/leaderboard')} />
+        </Row>
       </Row>
 
       <GestureDetector gesture={swipe}>

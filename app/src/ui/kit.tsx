@@ -1,12 +1,12 @@
 // Clashy styled components. Every screen is built only from these.
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { ReactNode, useEffect } from 'react';
-import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { ReactNode, useEffect, useState } from 'react';
+import { Pressable, StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { C, F, R, fmtPct } from './tokens';
-import { Back, Swords } from './icons';
+import { Back, Search as SearchIcon, Swords } from './icons';
 
 /* ---------- type ---------- */
 type TxtVariant = 'hero' | 'title' | 'h2' | 'body' | 'label' | 'small' | 'num';
@@ -236,4 +236,45 @@ export const ErrorLine = ({ msg, onRetry }: { msg: string; onRetry?: () => void 
     <Txt v="small" style={{ flex: 1 }}>{msg}</Txt>
     {onRetry ? <Pressable onPress={onRetry}><Txt v="small" color={C.ink}>Retry</Txt></Pressable> : null}
   </Row>
+);
+
+/* ---------- skeleton loading ---------- */
+const Pulse = ({ children }: { children: ReactNode }) => {
+  const o = useSharedValue(0.45);
+  useEffect(() => { o.value = withRepeat(withTiming(1, { duration: 750 }), -1, true); }, [o]);
+  const a = useAnimatedStyle(() => ({ opacity: o.value }));
+  return <Animated.View style={a}>{children}</Animated.View>;
+};
+export const Bone = ({ w, h = 12, r = 6, style }: { w: number | `${number}%`; h?: number; r?: number; style?: StyleProp<ViewStyle> }) => (
+  <View style={[{ width: w, height: h, borderRadius: r, backgroundColor: C.s2 }, style]} />
+);
+/** List skeleton: avatar + two lines + meta, n rows. */
+export const SkeletonRows = ({ n = 5, square }: { n?: number; square?: boolean }) => (
+  <Pulse>
+    {Array.from({ length: n }).map((_, i) => (
+      <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
+        <Bone w={48} h={48} r={square ? 14 : 24} />
+        <View style={{ flex: 1, gap: 8 }}>
+          <Bone w={`${55 - (i % 3) * 10}%`} h={13} />
+          <Bone w={`${80 - (i % 2) * 15}%`} h={11} />
+        </View>
+        <Bone w={34} h={11} />
+      </View>
+    ))}
+  </Pulse>
+);
+/** Briefly true on mount, so screens show a skeleton before their first data. */
+export const useFirstLoad = (ms = 700) => {
+  const [l, setL] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setL(false), ms); return () => clearTimeout(t); }, [ms]);
+  return l;
+};
+
+/* ---------- search ---------- */
+export const SearchBar = ({ value, onChange, placeholder }: { value: string; onChange: (s: string) => void; placeholder: string }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: R.md, backgroundColor: C.s1, paddingHorizontal: 12 }}>
+    <SearchIcon size={16} color={C.muted} />
+    <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={C.muted} autoCapitalize="none" autoCorrect={false}
+      style={{ flex: 1, color: C.ink, fontFamily: F.medium, fontSize: 14 }} />
+  </View>
 );

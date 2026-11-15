@@ -4,7 +4,7 @@ import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 import type { TabTriggerSlotProps } from 'expo-router/ui';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Chat, Crown, Home, Shield, Swords } from '@/ui/icons';
+import { Chat, Home, Shield, Swords, User } from '@/ui/icons';
 import { C } from '@/ui/tokens';
 
 type TB = Omit<TabTriggerSlotProps, 'ref'> & { icon: (c: string) => React.ReactNode; center?: boolean };
@@ -29,17 +29,17 @@ export default function TabsLayout() {
       <TabSlot style={{ flex: 1 }} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: Math.max(insets.bottom, 10), backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line }}>
         <TabTrigger name="index" asChild><TabBtn icon={(c) => <Home size={24} color={c} />} /></TabTrigger>
-        <TabTrigger name="feed" asChild><TabBtn icon={(c) => <Chat size={24} color={c} />} /></TabTrigger>
+        <TabTrigger name="chats" asChild><TabBtn icon={(c) => <Chat size={24} color={c} />} /></TabTrigger>
         <TabTrigger name="arena" asChild><TabBtn center icon={(c) => <Swords size={22} color={c} />} /></TabTrigger>
         <TabTrigger name="clans" asChild><TabBtn icon={(c) => <Shield size={24} color={c} />} /></TabTrigger>
-        <TabTrigger name="rank" asChild><TabBtn icon={(c) => <Crown size={24} color={c} />} /></TabTrigger>
+        <TabTrigger name="profile" asChild><TabBtn icon={(c) => <User size={24} color={c} />} /></TabTrigger>
       </View>
       <TabList style={{ display: 'none' }}>
         <TabTrigger name="index" href="/" />
-        <TabTrigger name="feed" href="/feed" />
+        <TabTrigger name="chats" href="/chats" />
         <TabTrigger name="arena" href="/arena" />
         <TabTrigger name="clans" href="/clans" />
-        <TabTrigger name="rank" href="/rank" />
+        <TabTrigger name="profile" href="/profile" />
       </TabList>
     </Tabs>
   );

@@ -48,3 +48,6 @@ export const Bolt = ({ size, color = '#fff' }: P) => (
 export const Del = ({ size, color = '#fff' }: P) => (
   <Svg {...base(size)} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" /><Path d="m18 9-6 6M12 9l6 6" /></Svg>
 );
+export const User = ({ size, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2.1} strokeLinecap="round"><Circle cx="12" cy="8" r="4" /><Path d="M4 21a8 8 0 0 1 16 0" /></Svg>
+);
