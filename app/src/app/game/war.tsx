@@ -110,7 +110,11 @@ export default function ClanWar() {
       ) : tab === 'feed' ? (
         <Pending art={ART.tileWar} title="Setup required: war feed" body={`Every member's trade lands here with its effect on the pot. ${SETUP_REASON}`} />
       ) : (
-        <Pending art={ART.crown} title="Setup required: pot votes" body={`The clan pot only trades by vote: a member proposes, the clan votes, captains execute. ${SETUP_REASON}`} />
+        <View style={{ gap: 10 }}>
+          <Pending art={ART.crown} title="Pot votes: practice now" body="The clan pot only trades by vote: a member proposes, the clan votes, captains execute. Try it on a practice chest; real votes run on chain at the Blitz kickoff." />
+          <Btn title="Open the practice Clan Chest" kind="white" onPress={() => router.push('/clan/chest')} />
+          <Btn title="Practice a Clan Skirmish" kind="ghost" onPress={() => router.push('/game/skirmish')} />
+        </View>
       )}
     </ScrollView>
   );

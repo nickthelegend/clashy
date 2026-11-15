@@ -22,6 +22,8 @@ const MODES: Mode[] = [
   { key: 'diamond', title: 'Diamond Hands', who: 'Solo now · rooms at launch · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true },
   { key: 'cup', title: 'Daily Cup', who: 'Everyone · one run a day', line: 'One coin of the day for everyone. One shot at Draw the line. New cup at 00:00 UTC.', art: ART.tileCup, banner: ART.bannerCup, live: true },
   { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, banner: ART.bannerLine, live: true },
+  { key: 'skirmish', title: 'Clan Skirmish', who: 'Clan vs clan · best of 5', line: 'Each round rolls a coin. Make your clan\'s call. First clan to 3 rounds wins.', art: ART.tileWar, banner: ART.bannerWar, live: true },
+  { key: 'chest', title: 'Clan Chest', who: 'Trade as a group', line: 'Propose a trade on the clan pot, vote, and the captain executes it on the live price.', art: ART.crown, banner: ART.bannerWar, live: true },
   { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, banner: ART.bannerWar, live: false },
   { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true },
   { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, banner: ART.bannerBounty, live: false },
@@ -32,6 +34,8 @@ const play = (key: string, stake: number) => {
   if (key === 'line') router.push('/game/line');
   else if (key === 'royale') router.push('/game/royale');
   else if (key === 'war') router.push('/game/war');
+  else if (key === 'skirmish') router.push('/game/skirmish');
+  else if (key === 'chest') router.push('/clan/chest');
   else if (key === 'diamond') router.push('/game/diamond');
   else if (key === 'cup') router.push('/game/cup');
   else if (key === 'bounty') router.push('/game/bounty');
