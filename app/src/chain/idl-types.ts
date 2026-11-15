@@ -3461,6 +3461,54 @@ export type Clashy = {
       ]
     },
     {
+      "name": "setVrfQueue",
+      "docs": [
+        "Points coin rolls at another MagicBlock VRF queue (it must be owned by the VRF program)."
+      ],
+      "discriminator": [
+        202,
+        97,
+        92,
+        18,
+        245,
+        254,
+        206,
+        102
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "queue"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "settleDuel",
       "docs": [
         "Solana: pays the pot (minus rake) to the winner, or refunds both on a tie; updates ratings."
@@ -4966,6 +5014,14 @@ export type Clashy = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "vrfQueue",
+            "docs": [
+              "The MagicBlock VRF oracle queue coin rolls go to: the base queue on devnet and mainnet, or",
+              "MagicBlock's test queue on a local stack running their `vrf-oracle`."
+            ],
+            "type": "pubkey"
           }
         ]
       }
