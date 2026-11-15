@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pending, Txt, UnderTabs } from '@/ui/kit';
+import { ART, Pending, Txt, UnderTabs } from '@/ui/kit';
 import { C, S } from '@/ui/tokens';
 
 type Tab = 'callouts' | 'following' | 'clans';
@@ -15,6 +15,7 @@ export default function Feed() {
       <Txt v="title" style={{ marginBottom: 12 }}>Feed</Txt>
       <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'callouts', label: 'Callouts' }, { key: 'following', label: 'Following' }, { key: 'clans', label: 'Clans' }]} />
       <Pending
+        art={ART.bell}
         title={tab === 'callouts' ? 'No callouts yet' : tab === 'following' ? "You're not following anyone" : 'No clan posts'}
         body="Posts carry a real duel result or an open challenge you can accept. They arrive with the on-chain duel program."
         action="Practice a duel"

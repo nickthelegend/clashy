@@ -1,6 +1,6 @@
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Card, Pending, Row, Txt } from '@/ui/kit';
+import { ART, Card, Pending, Row, Txt } from '@/ui/kit';
 import { C, S } from '@/ui/tokens';
 
 const STEPS = [
@@ -15,7 +15,7 @@ export default function Clan() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, gap: 12 }}>
       <Txt v="title">Clan wars</Txt>
-      <Pending title="You're not in a clan" body="Clans and weekly wars open with the on-chain program at the Blitz kickoff." />
+      <Pending art={ART.clan} title="You're not in a clan" body="Clans and weekly wars open with the on-chain program at the Blitz kickoff." />
       <Txt v="h2" style={{ marginTop: 6 }}>How a war works</Txt>
       {STEPS.map(([t, b], i) => (
         <Card key={t}>

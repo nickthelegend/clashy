@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isMajor, useCandles, useMarket } from '@/data/markets';
-import { BackBtn, Btn, Card, ChangePill, ErrorLine, Pending, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { ART, BackBtn, Btn, Card, ChangePill, ErrorLine, Pending, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { C, S, fmtUsd } from '@/ui/tokens';
 
 const Stat = ({ k, v }: { k: string; v: string }) => (
@@ -50,7 +50,7 @@ export default function Coin() {
           <View style={{ marginBottom: 12 }}><Pending title="Chart for this coin" body="Live price and stats come from DexScreener. Candle history for Solana tokens arrives with our own price indexer." /></View>
         )}
         <Txt v="h2" style={{ marginBottom: 8 }}>Top duelists</Txt>
-        <Pending title="No duels on this coin yet" body="Players who picked this coin in their duels will rank here." />
+        <Pending art={ART.duels} title="No duels on this coin yet" body="Players who picked this coin in their duels will rank here." />
       </ScrollView>
       <Row style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: insets.bottom + 12, gap: 10 }}>
         <Btn title="Duel with it · long" kind="long" style={{ flex: 1 }} onPress={() => duel('long')} disabled={!d} />
