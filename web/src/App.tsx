@@ -263,7 +263,7 @@ const RAIL: Game[] = [
   { k: 'Royale', who: '5–20 players · 10 s rounds', t: 'Last one standing.', b: 'Up or down every 10 seconds. The whole screen is the button. Wrong call costs a heart.', c: '#F0468C', loop: 'tile-royale-loop', art: 'tile-royale.png', clip: 'royale', live: true },
   { k: 'Diamond Hands', who: 'Hold as long as you dare', t: 'Sell before it catches you.', b: 'Buy with leverage and hold. A knockout trails your peak. Your score is what you sell at.', c: '#5AC8FA', loop: 'tile-diamond-loop', art: 'tile-diamond.png', clip: 'diamond', live: true },
   { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#B49BFF', loop: 'tile-line-loop', art: 'tile-line.png', clip: 'line', live: true },
-  { k: 'Ranked', who: 'Any game · ten ranks', t: 'The queue picks the game.', b: 'VRF rolls Knockout, Draw the line or Royale. Climb from Exit Liquidity to The House.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: true },
+  { k: 'Ranked', who: 'Any game · ten ranks', t: 'The queue picks the game.', b: 'The queue rolls Knockout, Draw the line or Royale. Climb from Exit Liquidity to The House.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: true },
   { k: 'Daily Cup', who: 'Everyone · one run a day', t: 'One coin. One shot.', b: 'The coin of the day for everyone. One scored run. New cup at 00:00 UTC.', c: '#FF8A4C', loop: 'tile-cup-loop', art: 'tile-cup.png', shot: 'cup', live: true },
   { k: 'Coin clash', who: '1 v 1 · each picks a coin', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#AEB6FF', art: 'ko-burst.png', shot: 'clash', live: true },
   { k: 'Clan Skirmish', who: 'Clan vs clan · best of 5', t: 'Make the clan\'s call.', b: 'A coin is rolled each round. Your clan goes long or short. First clan to 3 rounds wins.', c: '#FF8A4C', art: 'crest-flame.png', shot: 'skirmish', live: true },
@@ -364,7 +364,7 @@ function RealFights() {
   const steps = [
     { n: '01', t: 'Pick your pot', b: 'Set a pot range or go all in. Your stake goes into a Solana escrow before the game starts.', art: 'coins-pile.png' },
     { n: '02', t: 'One coin, rolled', b: 'You get matched, and MagicBlock VRF rolls the coin for both of you. Nobody chooses it.', art: 'vs.png' },
-    { n: '03', t: 'Sealed picks, live fight', b: 'Long or short stays sealed in a Private Ephemeral Rollup until both lock. Then every tick is scored live on the rollup.', art: 'ko-burst.png' },
+    { n: '03', t: 'Sealed picks, live fight', b: 'Long or short stays sealed (commit-reveal) until both of you lock. Then the duel moves to a MagicBlock rollup and is scored live.', art: 'ko-burst.png' },
     { n: '04', t: 'Settled on Solana', b: 'The winner takes the pot minus 3%. The result is committed to Solana with a receipt anyone can check.', art: 'win-trophy.png' },
   ];
   const receipt = ['Entry fill', 'Exit fill', 'Size and leverage', 'Trading P&L', 'Venue fees', 'Funding', 'Pot (after 3% rake)', 'Net'];
@@ -563,9 +563,9 @@ function Statement() {
 /* ───────── tech ───────── */
 function Tech() {
   const t = [
-    { t: 'Ephemeral Rollups', b: 'Every duel runs on a MagicBlock rollup: price ticks, knockouts and settlement in real time, then committed to Solana.' },
-    { t: 'Private rollups', b: 'Your coin pick stays sealed inside a TEE until both players lock in. Nobody copies your call.' },
-    { t: 'Verifiable randomness', b: 'Fair matchmaking and the random coin in Royale come from on-chain VRF, so nobody can rig a room.' },
+    { t: 'Ephemeral Rollups', b: 'Every duel and Royale runs on a MagicBlock rollup: live checks and knockouts in about 10 ms, then committed back and settled on Solana.' },
+    { t: 'Sealed picks', b: 'Your long or short is a hash on chain until both players lock in, then both reveal. Nobody copies your call.' },
+    { t: 'Verifiable randomness', b: 'The coin in every duel and Royale comes from MagicBlock VRF, and only its oracle can answer, so nobody can rig a room.' },
     { t: 'Session keys', b: 'Approve once, play the whole session. No wallet pop-up in the middle of a 60-second duel.' },
   ];
   return (
@@ -574,7 +574,7 @@ function Tech() {
         <div className="sec-head">
           <Reveal><span className="kicker">Under the hood</span></Reveal>
           <Reveal delay={0.05}><h2 className="h-l">Real time, on Solana.</h2></Reveal>
-          <Reveal delay={0.1}><p className="lead">The on-chain program is being built during MagicBlock Solana Blitz v10. Until it ships, the practice games run on live prices with no money.</p></Reveal>
+          <Reveal delay={0.1}><p className="lead">The on-chain program already runs duels, Royales, clan chests and clan wars end to end on a local MagicBlock stack with VRF. Mainnet comes next; until then the practice games run on live prices with no money.</p></Reveal>
         </div>
         <div className="tech">
           {t.map((x, k) => <Reveal key={x.t} delay={k * 0.07}><div><span className="num">0{k + 1}</span><h3 className="h-s">{x.t}</h3><p className="sm">{x.b}</p></div></Reveal>)}
