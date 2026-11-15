@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_SETUP, useMyProfile } from '@/data/social';
 import { Crown } from '@/ui/icons';
-import { ART, Art, Btn, Card, Pending, Row, Txt, UnderTabs } from '@/ui/kit';
+import { ART, Art, BADGES, Btn, Card, Pending, Row, Txt, UnderTabs } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
 
 type Tab = 'duels' | 'callouts' | 'badges';
@@ -57,12 +57,15 @@ export default function ProfileTab() {
         <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'duels', label: 'Duels' }, { key: 'callouts', label: 'Callouts' }, { key: 'badges', label: 'Badges' }]} />
       </View>
       {tab === 'badges' ? (
-        <Row style={{ gap: 8, flexWrap: 'wrap' }}>
-          {[ART.crown, ART.ko, ART.tileDuel, ART.tileWar].map((a, i) => (
-            <View key={i} style={{ opacity: 0.35 }}><Art src={a} size={76} radius={18} /></View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {BADGES.map((b) => (
+            <View key={b.key} style={{ width: '47%', backgroundColor: C.s1, borderRadius: 18, padding: 12, alignItems: 'center' }}>
+              <View style={{ opacity: ready ? 1 : 0.4 }}><Art src={b.src} size={96} radius={20} /></View>
+              <Txt v="label" style={{ marginTop: 8 }}>{b.label}</Txt>
+              <Txt v="small" style={{ marginTop: 2 }}>{ready ? 'Earned' : 'Locked'}</Txt>
+            </View>
           ))}
-          <Txt v="small" style={{ marginTop: 6 }}>Badges unlock as you win duels and wars.</Txt>
-        </Row>
+        </View>
       ) : (
         <Pending art={tab === 'duels' ? ART.duels : ART.bell} title={tab === 'duels' ? 'No duels yet' : 'No callouts yet'} body={ready ? 'Your record shows here.' : SOCIAL_SETUP} />
       )}

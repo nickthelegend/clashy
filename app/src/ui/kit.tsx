@@ -118,10 +118,11 @@ export const Chips = <K extends string>({ items, value, onChange, light }: { ite
 
 /* ---------- avatars & token art ---------- */
 const AV = [['#5B6CFF', '#C9D0FF'], ['#F0468C', '#FFC1DA'], ['#FFB547', '#FFE3B0'], ['#30D158', '#B9F2CC'], ['#8E7BFF', '#E6DCFF']];
-export const Avatar = ({ name, size = 38, uri, ring }: { name: string; size?: number; uri?: string; ring?: string }) => {
+export const Avatar = ({ name, size = 38, uri, ring, sticker = true }: { name: string; size?: number; uri?: string; ring?: string; sticker?: boolean }) => {
   const i = [...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) % AV.length;
   const border = ring ? { borderWidth: 2.5, borderColor: ring } : null;
   if (uri) return <Image source={{ uri }} style={[{ width: size, height: size, borderRadius: size / 2 }, border]} contentFit="cover" />;
+  if (sticker) return <Image source={stickerFor(name)} style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#000' }, border]} contentFit="cover" />;
   return (
     <View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: AV[i][0], alignItems: 'center', justifyContent: 'center' }, border]}>
       <Text style={{ fontFamily: F.bold, fontSize: size * 0.36, color: '#07071A' }}>{name.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase()}</Text>
@@ -211,7 +212,30 @@ export const ART = {
   tileLine: require('../../assets/art/tile-line.webp'),
   crest: require('../../assets/art/crest-moon.webp'),
   wordmark: require('../../assets/art/wordmark.png'),
+  onboarding: require('../../assets/art/onboarding.webp'),
+  matchmaking: require('../../assets/art/matchmaking.webp'),
 };
+/** Sticker sets. Same filenames as assets/mobile, so a new art pass upgrades the whole app on re-copy. */
+export const AVATARS = [
+  require('../../assets/art/avatar-racer.webp'), require('../../assets/art/avatar-hood.webp'),
+  require('../../assets/art/avatar-bot.webp'), require('../../assets/art/avatar-gladiator.webp'),
+  require('../../assets/art/avatar-cat.webp'), require('../../assets/art/avatar-shark.webp'),
+  require('../../assets/art/avatar-bull.webp'), require('../../assets/art/avatar-ghost.webp'),
+];
+export const CRESTS = [
+  require('../../assets/art/crest-moon.webp'), require('../../assets/art/crest-bolt.webp'),
+  require('../../assets/art/crest-flame.webp'), require('../../assets/art/crest-star.webp'),
+];
+export const BADGES: { key: string; label: string; src: number }[] = [
+  { key: 'top10', label: 'Season top 10', src: require('../../assets/art/badge-top10.webp') },
+  { key: 'streak', label: '9 win streak', src: require('../../assets/art/badge-streak.webp') },
+  { key: '500', label: '500 duels', src: require('../../assets/art/badge-500.webp') },
+  { key: 'captain', label: 'Clan captain', src: require('../../assets/art/badge-captain.webp') },
+];
+const hash = (s: string) => [...s].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+/** Every player gets a default sticker avatar picked from their name; a real profile picture overrides it. */
+export const stickerFor = (name: string) => AVATARS[hash(name) % AVATARS.length];
+export const crestFor = (name: string) => CRESTS[hash(name) % CRESTS.length];
 /** Art is rendered on pure black, so it sits on a black tile inside grey cards. */
 export const Art = ({ src, size = 96, radius = 18 }: { src: number; size?: number; radius?: number }) => (
   <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#000', overflow: 'hidden' }}>
