@@ -33,6 +33,7 @@ export default function Root() {
           <Stack.Screen name="chat/[id]" />
           <Stack.Screen name="leaderboard" />
           <Stack.Screen name="ranked" />
+          <Stack.Screen name="onchain" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/line" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/royale" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/war" />

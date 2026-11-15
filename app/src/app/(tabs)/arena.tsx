@@ -18,6 +18,7 @@ import { ScrollView } from 'react-native';
 
 type Mode = { key: string; title: string; who: string; line: string; art: number; banner?: number; live: boolean };
 const MODES: Mode[] = [
+  { key: 'onchain', title: 'On-chain duel', who: 'Real escrow · Solana + MagicBlock rollup', line: 'The real program: stakes in escrow, a rolled coin, sealed picks, scored live on a MagicBlock rollup and settled on Solana.', art: ART.tileDuel, live: true },
   { key: 'ko', title: 'Knockout duel', who: '1 v 1 · quick match · 60 s', line: 'Quick match a rival. VRF rolls one coin for both of you. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
   { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, live: true },
   { key: 'diamond', title: 'Diamond Hands', who: 'Solo now · rooms at launch · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true },
@@ -39,6 +40,7 @@ const play = (key: string, stake: number) => {
   if (key === 'line') router.push('/game/line');
   else if (key === 'royale') router.push('/game/royale');
   else if (key === 'war') router.push('/game/war');
+  else if (key === 'onchain') router.push('/onchain');
   else if (key === 'streak') router.push('/game/streak');
   else if (key === 'snipe') router.push('/game/snipe');
   else if (key === 'skirmish') router.push('/game/skirmish');
