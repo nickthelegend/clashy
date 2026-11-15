@@ -4,27 +4,30 @@
 Draw the Line rooms and monthly Clan Wars, with every move on a MagicBlock Ephemeral Rollup and settlement on Solana.
 Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finance).
 
-## Status: in development
+## Status: in development, local chain only
 
-> **Made before kickoff.** The marketing website (`web/`) and the 3D art (`assets/`) were made on Nov 15, 2026, before
-> the Solana Blitz v10 kickoff on Nov 20. No game code, programs or app code exist yet; those start at kickoff.
+> **Made before kickoff.** The website, art, app and on-chain program were written Nov 15–16, 2026, before the Solana
+> Blitz v10 kickoff on Nov 20. Code written before kickoff may not be eligible; check the event rules before submitting.
 
-Nothing for money is live. The website's **Arena** is a free Knockout Duel demo on **real prices** (Binance public
-spot trades): you pick long or short against a demo bot, with no wallet, money or chain involved. The page says so
-next to the widget. Store badges are marked "coming".
+- **On-chain:** the Anchor program runs end to end on a local MagicBlock stack (Solana validator + Ephemeral Rollup):
+  escrowed knockout duels, sealed picks, live scoring on the rollup, settlement with rake and Elo, clans with vote-run
+  chest trades, clan wars and Royale tournaments. 5/5 end-to-end and 9/9 unit tests pass. See
+  [chain/README.md](chain/README.md) and [chain/TESTING.md](chain/TESTING.md).
+- **Not deployed** to devnet or mainnet. MagicBlock VRF is written but unproven until a devnet deploy (BLOCKED on
+  devnet SOL). No real money moves anywhere.
+- **App:** the practice games run on live prices with no money. The **On-chain duel** screen plays real duels on the
+  local stack with a device test wallet.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `web/` | Marketing site (Vite + React + TypeScript). `npm install && npm run dev` |
-| `assets/brand/` | Wordmark (SVG, outlined paths, plus a PNG) |
-| `assets/web/` | Site art: hero, face-off, arena and OG scenes plus 8 objects |
-| `assets/mobile/` | App icon (1024 PNG + webp), splash, onboarding, matchmaking, 8 avatars, 4 crests, crown, KO burst, 3 mode tiles, 4 empty states, 4 badges |
-| `assets/gallery.html` | Every asset on one page (`gallery.jpg` is a capture) |
-| `assets/SOURCES.md` | How each image was made (ChatGPT conversation links and prompts) |
-| `docs/ART-3D.md` | The "duel light" art kit and the wordmark |
-| `scripts/convert-art.sh` | Turns the raw ChatGPT PNGs into the webp sets and the site's sized copies |
+| `app/` | Expo app (iOS, Android, web): duels, 9 practice games, clans, ranks, chat, and the On-chain duel screen |
+| `chain/` | Anchor program `clashy`, local MagicBlock stack launcher, price crank, mainnet-fork Phoenix trade, tests |
+| `web/` | Landing page (Vite + React + motion) |
+| `landing/` | Second landing page variant with the clay animation clips |
+| `assets/` | Brand, 3D/clay art and clay animation clips (`assets/SOURCES.md` says how each was made) |
+| `docs/` | Game design, mini-games, real-trades plan, art kit |
 
 ## Website
 
