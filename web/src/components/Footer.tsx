@@ -1,4 +1,5 @@
 import { StoreBadges } from './StoreBadges'
+import { Wordmark } from './Wordmark'
 
 const COLS: [string, [string, string][]][] = [
   ['Play', [['Arena (free demo)', '#arena'], ['Knockout duels', '#features'], ['Draw the line', '#features'], ['Clan wars', '#features']]],
@@ -11,8 +12,8 @@ export function Footer() {
       <div className="wrap">
         <div className="foot">
           <div className="foot-brand">
-            <a className="wordmark-md" href="#top">
-              clashy
+            <a className="wordmark-md" href="#top" aria-label="clashy home">
+              <Wordmark size={34} />
             </a>
             <p>trade against people, not the house.</p>
             <StoreBadges size="sm" />

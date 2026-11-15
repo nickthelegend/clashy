@@ -233,7 +233,8 @@ function ResultCard({ result, onAgain }: { result: Result; onAgain: () => void }
           : 'Dead even at the bell.'
   return (
     <div className={`result ${result.winner}`} role="status">
-      {result.winner === 'you' && result.how !== 'void' && <img src="/art/crown.webp" alt="" width="88" height="88" />}
+      {result.how === 'ko' && <img className="result-art" src="/art/ko-burst.webp" alt="" width="120" height="120" />}
+      {result.how === 'bell' && result.winner === 'you' && <img className="result-art" src="/art/crown.webp" alt="" width="110" height="110" />}
       <b>{title}</b>
       <span className="num">
         you {fmtPct(result.you)} · rival {fmtPct(result.rival)} · {Math.round(result.at / 1000)} s

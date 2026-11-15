@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { StoreBadges } from './StoreBadges'
+import { Wordmark } from './Wordmark'
 
 const LINKS = [
   ['Arena', '#arena'],
@@ -20,8 +21,8 @@ export function Nav() {
     <header className={`nav${scrolled ? ' scrolled' : ''}`}>
       <div className="nav-in">
         <a className="wordmark-sm" href="#top" aria-label="clashy home">
-          <img src="/art/icon-128.webp" alt="" width="28" height="28" />
-          clashy
+          <img src="/art/icon-128.webp" alt="" width="30" height="30" />
+          <Wordmark size={22} />
         </a>
         <nav className="nav-links" aria-label="Sections">
           {LINKS.map(([l, h]) => (

@@ -62,7 +62,8 @@ export default function App() {
       <main id="main">
         <Hero />
 
-        <section className="section" id="arena">
+        <section className="section arena-sec" id="arena">
+          <img className="arena-bg" src="/art/arena.webp" alt="" width="1600" height="1067" loading="lazy" aria-hidden="true" />
           <div className="wrap">
             <SectionHead
               center
@@ -95,7 +96,7 @@ export default function App() {
               </FeatureCard>
               <FeatureCard label="Knockout duels" title="1v1 anyone. last one standing takes the pot" art="/art/ko-coin.webp" />
               <FeatureCard label="Draw the line" title="draw the next minute. closest line wins" art="/art/pencil-line.webp" />
-              <FeatureCard label="Clan wars" title="your clan vs theirs, a new war every week" note="Design sample">
+              <FeatureCard label="Clan wars" title="your clan vs theirs, a new war every week" note="Design sample" art="/art/flag.webp">
                 <div className="tug">
                   <div className="tug-crests">
                     <img src="/art/crest-moon.webp" alt="" width="56" height="56" loading="lazy" />

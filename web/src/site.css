@@ -25,6 +25,12 @@
   max-width: 1440px;
   margin: 0 auto;
 }
+.wordmark {
+  display: block;
+  width: auto;
+  color: var(--ink);
+  overflow: visible;
+}
 .wordmark-sm {
   display: flex;
   align-items: center;
@@ -130,15 +136,12 @@
   align-items: center;
 }
 .wordmark-xl {
-  font-size: clamp(96px, 15vw, 200px);
-  font-weight: 700;
-  letter-spacing: -0.07em;
-  line-height: 0.9;
-  background: linear-gradient(180deg, #ffffff 10%, #b8bdff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  padding: 0 0.04em 0.06em;
+  height: clamp(84px, 13vw, 168px);
+  width: auto;
+  max-width: 92vw;
+  color: #fff;
+  overflow: visible;
+  filter: drop-shadow(0 10px 40px rgba(91, 108, 255, 0.25));
 }
 .hero h1 {
   font-size: clamp(24px, 2.6vw, 34px);
@@ -355,9 +358,14 @@
   gap: 12px;
   justify-items: center;
 }
+.feat-art,
+.blend {
+  mix-blend-mode: screen;
+}
 .feat-art {
   width: 200px;
   height: 200px;
+  max-height: 34vw;
   object-fit: contain;
   transition: transform 0.6s var(--ease);
 }
@@ -583,11 +591,10 @@
   gap: 32px;
 }
 .wordmark-md {
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -0.06em;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
   color: var(--ink);
-  text-decoration: none;
 }
 .foot-brand {
   display: grid;
@@ -720,4 +727,48 @@
   .footer {
     padding-bottom: 100px;
   }
+}
+
+/* duel-light art is rendered on black: screen-blend it into dark surfaces so no box shows */
+.lb-empty img,
+.tug-crests img,
+.msg img,
+.orbit img,
+.prow img,
+.rival-note img,
+.result img {
+  mix-blend-mode: screen;
+  background: none !important;
+}
+
+.closing-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -3;
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent);
+}
+.closing::before {
+  z-index: -2;
+}
+.arena-sec {
+  isolation: isolate;
+  overflow: hidden;
+}
+.arena-bg {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  translate: -50% 0;
+  width: min(1500px, 180vw);
+  height: auto;
+  z-index: -1;
+  opacity: 0.6;
+  -webkit-mask-image: radial-gradient(55% 50% at 50% 40%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(55% 50% at 50% 40%, #000 40%, transparent 100%);
+  pointer-events: none;
 }
