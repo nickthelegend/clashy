@@ -22,10 +22,12 @@ const MODES: Mode[] = [
   { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, live: false },
 ];
 const STAKES = [5, 10, 20, 50];
-/** Opens a mode's game. Draw the line and Royale have solo practice; the knockout duel goes through the stake screen. */
+/** Opens a mode's game. Practice modes play on live prices; Clan war and Bounty open their preview screens. */
 const play = (key: string, stake: number) => {
   if (key === 'line') router.push('/game/line');
   else if (key === 'royale') router.push('/game/royale');
+  else if (key === 'war') router.push('/game/war');
+  else if (key === 'bounty') router.push('/game/bounty');
   else router.push({ pathname: '/duel/amount', params: { id: 'SOL', stake: String(stake) } });
 };
 
@@ -34,7 +36,7 @@ function ArenaDesk() {
   const [i, setI] = useState(0);
   const [stake, setStake] = useState(20);
   const m = MODES[i];
-  const battle = () => { if (m.live) play(m.key, stake); };
+  const battle = () => play(m.key, stake);
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 16 }}>
@@ -71,8 +73,8 @@ function ArenaDesk() {
           {STAKES.map((v) => <Btn key={v} title={`$${v}`} h={38} kind={stake === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setStake(v)} />)}
         </Row>
         <View style={{ flex: 1 }} />
-        <Btn title={m.live ? 'Battle' : 'Coming soon'} h={60} disabled={!m.live} icon={<Swords size={20} color="#fff" />} style={{ borderRadius: 18 }} onPress={battle} />
-        <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>{m.live ? 'Practice on a live price · real duels open at the Blitz kickoff' : 'This mode opens after launch'}</Txt>
+        <Btn title={m.live ? 'Battle' : 'See how it works'} h={60} kind={m.live ? 'brand' : 'white'} icon={m.live ? <Swords size={20} color="#fff" /> : undefined} style={{ borderRadius: 18 }} onPress={battle} />
+        <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>{m.live ? 'Practice on a live price · real duels open at the Blitz kickoff' : 'Preview on live coins · wars and bounties open at the Blitz kickoff'}</Txt>
       </View>
     </View>
   );
@@ -91,7 +93,6 @@ function ArenaPhone() {
   const go = (d: number) => { Haptics.selectionAsync(); setI((x) => (x + d + MODES.length) % MODES.length); };
   const swipe = Gesture.Pan().activeOffsetX([-24, 24]).onEnd((e) => { runOnJS(go)(e.translationX < 0 ? 1 : -1); });
   const battle = () => {
-    if (!m.live) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     play(m.key, stake);
   };
@@ -133,10 +134,10 @@ function ArenaPhone() {
         ))}
       </Row>
       <Btn
-        title={m.live ? 'Battle' : 'Coming soon'}
+        title={m.live ? 'Battle' : 'See how it works'}
         h={60}
-        disabled={!m.live}
-        icon={<Swords size={20} color="#fff" />}
+        kind={m.live ? 'brand' : 'white'}
+        icon={m.live ? <Swords size={20} color="#fff" /> : undefined}
         style={{ borderRadius: 18, marginBottom: 14 }}
         onPress={battle}
       />

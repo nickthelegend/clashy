@@ -34,6 +34,8 @@ export default function Root() {
           <Stack.Screen name="leaderboard" />
           <Stack.Screen name="game/line" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/royale" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="game/war" />
+          <Stack.Screen name="game/bounty" />
           <Stack.Screen name="duel/amount" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen name="duel/live" options={{ gestureEnabled: false }} />
           <Stack.Screen name="duel/result" options={{ gestureEnabled: false, animation: 'fade' }} />

@@ -1,4 +1,4 @@
-// Draw the line (practice): draw the next 60 s of a coin, then the real price draws over your line.
+// Draw the line (practice, neon finish of style L2): draw the next 60 s of a coin, then the real price draws over your line.
 // Score = how closely the real path follows yours. Live Coinbase prices, no money.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -143,15 +143,15 @@ export default function DrawTheLine() {
       <View style={{ flexDirection: desk ? 'row' : 'column', gap: 14, flex: desk ? undefined : 1 }}>
         <View>
           <GestureDetector gesture={pan}>
-            <View style={{ width: W, height: H, borderRadius: R.lg, backgroundColor: C.s1, overflow: 'hidden' }}>
+            <View style={{ width: W, height: H, borderRadius: R.lg, backgroundColor: '#060609', overflow: 'hidden', borderWidth: 1, borderColor: '#1A1A22' }}>
               <Svg width={W} height={H}>
-                <Defs><LinearGradient id="fut" x1="0" y1="0" x2="1" y2="0"><Stop offset="0" stopColor={C.brand} stopOpacity={0.1} /><Stop offset="1" stopColor={C.brand} stopOpacity={0.02} /></LinearGradient></Defs>
+                <Defs><LinearGradient id="fut" x1="0" y1="0" x2="1" y2="0"><Stop offset="0" stopColor={C.brand} stopOpacity={0.16} /><Stop offset="1" stopColor={C.brand} stopOpacity={0.03} /></LinearGradient></Defs>
                 <Rect x={xNow} y={0} width={W - xNow} height={H} fill="url(#fut)" />
-                {[0.25, 0.5, 0.75].map((f) => <Line key={f} x1={0} x2={W} y1={H * f} y2={H * f} stroke="#1E1E22" />)}
+                {[0.25, 0.5, 0.75].map((f) => <Line key={f} x1={0} x2={W} y1={H * f} y2={H * f} stroke="#14141B" />)}
                 <Line x1={xNow} x2={xNow} y1={0} y2={H} stroke="#3A3A42" strokeDasharray="4 5" />
                 {histPath ? <Path d={histPath} stroke={C.ink} strokeWidth={2} fill="none" /> : null}
-                {userPath ? <Path d={userPath} stroke={C.brand} strokeWidth={4} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : null}
-                {realPath ? <Path d={realPath} stroke={C.ink} strokeWidth={2.4} fill="none" strokeLinejoin="round" /> : null}
+                {userPath ? <><Path d={userPath} stroke={C.brand} strokeOpacity={0.28} strokeWidth={14} fill="none" strokeLinecap="round" strokeLinejoin="round" /><Path d={userPath} stroke="#7C8AFF" strokeWidth={4} fill="none" strokeLinecap="round" strokeLinejoin="round" /></> : null}
+                {realPath ? <><Path d={realPath} stroke="#fff" strokeOpacity={0.22} strokeWidth={10} fill="none" strokeLinejoin="round" /><Path d={realPath} stroke="#fff" strokeWidth={2.8} fill="none" strokeLinejoin="round" /></> : null}
               </Svg>
               <View style={{ position: 'absolute', left: 10, top: 8 }}><Txt v="small">{last ? `${coin} ${fmtUsd(last)}` : 'Loading price…'}</Txt></View>
               <View style={{ position: 'absolute', left: xNow + 8, top: 8 }}><Txt v="small" color={C.brandSoft}>{phase === 'warm' ? `Warming up ${Math.min(ticks.length, 8)}/8` : phase === 'draw' ? 'Draw here →' : 'Next 60 s'}</Txt></View>
