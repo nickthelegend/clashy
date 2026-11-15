@@ -1774,7 +1774,7 @@ export type Clashy = {
       "name": "executeProposal",
       "docs": [
         "Captain executes a passed proposal at the oracle price: opens a scored clan position.",
-        "Passed = more yes than no, and either the window closed or yes holds a chest majority."
+        "Passed = more yes than no, and either the window closed or yes holds over half of all shares."
       ],
       "discriminator": [
         186,
@@ -4139,7 +4139,7 @@ export type Clashy = {
     {
       "name": "vote",
       "docs": [
-        "Votes are weighted by the member's chest deposit; one vote per member per proposal."
+        "Votes are weighted by the member's chest shares; one vote per member per proposal."
       ],
       "discriminator": [
         227,
@@ -4233,7 +4233,8 @@ export type Clashy = {
     {
       "name": "withdrawChest",
       "docs": [
-        "Withdraws your own deposit. Blocked while the clan is at war (the chest backs the war pot)."
+        "Redeems `shares` of your chest shares for their pro-rata part of the chest, so war wins and",
+        "losses are shared by every member whatever order they leave in. Blocked while at war."
       ],
       "discriminator": [
         213,
@@ -4311,7 +4312,7 @@ export type Clashy = {
       ],
       "args": [
         {
-          "name": "amount",
+          "name": "shares",
           "type": "u64"
         }
       ]
@@ -4738,6 +4739,16 @@ export type Clashy = {
       "code": 6046,
       "name": "overflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6047,
+      "name": "warStakeTooBig",
+      "msg": "A war can stake at most half the chest"
+    },
+    {
+      "code": 6048,
+      "name": "notEnoughShares",
+      "msg": "Not enough chest shares"
     }
   ],
   "types": [
@@ -4770,7 +4781,14 @@ export type Clashy = {
           {
             "name": "chest",
             "docs": [
-              "Lamports deposited into the chest vault (members' deposits)."
+              "Lamports in the chest vault: members' deposits, minus war stakes lost, plus war pots won."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "docs": [
+              "Total chest shares held by members. A share is worth `chest / shares` lamports."
             ],
             "type": "u64"
           },
@@ -5221,6 +5239,16 @@ export type Clashy = {
           },
           {
             "name": "deposit",
+            "docs": [
+              "Lamports this member put in, net of withdrawals (cost basis, for display)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "docs": [
+              "Chest shares: withdrawals pay `shares * chest / clan.shares`, and votes weigh by shares."
+            ],
             "type": "u64"
           },
           {

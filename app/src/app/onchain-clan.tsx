@@ -1,26 +1,35 @@
 // On-chain clan: a shared chest on Solana, trades proposed by any member, votes weighted by each member's
 // deposit, and the captain executing passed votes at the live oracle price. Positions are scored at the
 // oracle price (paper P&L on the chest's notional); the P&L is the clan's score in clan wars.
+// Wars: a captain stakes part of the chest against a rival clan; the rival captain accepts with the same
+// stake; when the window ends the clan with the better return takes the pot (minus rake) into its chest.
+import { Buffer } from 'buffer';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, LAMPORTS_PER_SOL, NET, P, PublicKey, base, byClan, clanName, pnlBps, priceOf,
+  BN, COIN_SYMBOLS, LAMPORTS_PER_SOL, NET, P, PROGRAM_ID, PublicKey, base, byClan, clanName, pnlBps, priceOf,
 } from '@/chain/client';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { Art, BackBtn, Btn, CRESTS, Card, Chips, ErrorLine, LiveDot, Row, Tag, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
-type ClanView = { key: PublicKey; name: string; captain: PublicKey; crest: number; members: number; chest: number; score: number; proposals: number; war: PublicKey };
+type ClanView = { key: PublicKey; name: string; captain: PublicKey; crest: number; members: number; chest: number; shares: number; score: number; proposals: number; war: PublicKey };
 type PropView = { key: PublicKey; id: number; proposer: PublicKey; coin: number; side: number; lev: number; sizeBps: number; yes: number; no: number; deadline: number; status: number; myVote: boolean };
+type WarView = { key: PublicKey; a: PublicKey; b: PublicKey; nonce: number; stake: number; startTs: number; endTs: number; baseA: number; baseB: number; chestA: number; chestB: number; returnBps: number[]; status: number; winner: number };
 type PosView = { key: PublicKey; id: number; coin: number; side: number; lev: number; notional: number; entry: number; exit: number; pnl: number; open: boolean; closedAt: number };
 
+/** Vote tallies are in chest shares, shown as a share of the whole chest. */
+const pct = (part: number, total: number) => `${total ? Math.round((part / total) * 100) : 0}%`;
 const sol = (l: number) => (l / LAMPORTS_PER_SOL).toFixed(l % 1e7 === 0 ? 2 : 4);
 const signed = (l: number) => `${l >= 0 ? '+' : '−'}${(Math.abs(l) / LAMPORTS_PER_SOL).toFixed(4)} SOL`;
 const VOTE_SECS = 60;
+const WAR_STAKE_SOL = 0.1;
+const WAR_LENGTHS = [{ key: '120', label: '2 min' }, { key: '3600', label: '1 hour' }, { key: '86400', label: '1 day' }] as const;
+const retBps = (score: number, base: number, chest: number) => (chest ? ((score - base) * 10_000) / chest : 0);
 
 export default function OnchainClan() {
   const insets = useSafeAreaInsets();
@@ -31,11 +40,16 @@ export default function OnchainClan() {
   const [clans, setClans] = useState<ClanView[]>([]);
   const [mine, setMine] = useState<ClanView | null>(null);
   const [myDeposit, setMyDeposit] = useState(0);
+  const [myShares, setMyShares] = useState(0);
   const [props, setProps] = useState<PropView[]>([]);
   const [positions, setPositions] = useState<PosView[]>([]);
   const [prices, setPrices] = useState<(number | null)[]>([null, null, null]);
   const [now, setNow] = useState(Date.now() / 1000);
   const [loadErr, setLoadErr] = useState<string>();
+  const [wars, setWars] = useState<WarView[]>([]);
+  const [rival, setRival] = useState<string>('');
+  const [rivalQ, setRivalQ] = useState('');
+  const [warLen, setWarLen] = useState<'120' | '3600' | '86400'>('120');
 
   // create form
   const [name, setName] = useState('');
@@ -52,7 +66,7 @@ export default function OnchainClan() {
     const load = async () => {
       try {
         const toView = (key: PublicKey, c: any): ClanView => ({
-          key, name: clanName(c.name), captain: c.captain, crest: c.crest, members: c.members, chest: Number(c.chest),
+          key, name: clanName(c.name), captain: c.captain, crest: c.crest, members: c.members, chest: Number(c.chest), shares: Number(c.shares),
           score: Number(c.scorePnl), proposals: Number(c.proposals), war: c.war,
         });
         const all = (await progs.base.account.clan.all()).map((a) => toView(a.publicKey, a.account));
@@ -65,15 +79,24 @@ export default function OnchainClan() {
         setMine(my);
         setPrices(px);
         setLoadErr(undefined);
-        if (!my) { setProps([]); setPositions([]); setMyDeposit(0); return; }
-        const [m, ps, pos] = await Promise.all([
+        if (!my) { setProps([]); setPositions([]); setMyDeposit(0); setMyShares(0); return; }
+        const [m, ps, pos, warsA, warsB] = await Promise.all([
           progs.base.account.member.fetch(P.member(my.key, kp.publicKey)).catch(() => null),
           progs.base.account.proposal.all(byClan(my.key)),
           progs.base.account.clanPosition.all(byClan(my.key)),
+          progs.base.account.war.all([{ memcmp: { offset: 8, bytes: my.key.toBase58() } }]),
+          progs.base.account.war.all([{ memcmp: { offset: 40, bytes: my.key.toBase58() } }]),
         ]);
         const votes = await base.getMultipleAccountsInfo(ps.map((p) => P.vote(p.publicKey, kp.publicKey)));
         if (!alive) return;
         setMyDeposit(m ? Number(m.deposit) : 0);
+        setMyShares(m ? Number(m.shares) : 0);
+        setWars([...warsA, ...warsB].map((w) => ({
+          key: w.publicKey, a: w.account.clanA, b: w.account.clanB, nonce: Number(w.account.nonce), stake: Number(w.account.stake),
+          startTs: Number(w.account.startTs), endTs: Number(w.account.endTs), baseA: Number(w.account.baseA), baseB: Number(w.account.baseB),
+          chestA: Number(w.account.chestA), chestB: Number(w.account.chestB), returnBps: w.account.returnBps.map((x: BN) => Number(x)),
+          status: w.account.status, winner: w.account.winner,
+        })).sort((x, y) => y.nonce - x.nonce));
         setProps(ps.map((p, i) => ({
           key: p.publicKey, id: Number(p.account.id), proposer: p.account.proposer, coin: p.account.coin, side: p.account.side, lev: p.account.lev,
           sizeBps: p.account.sizeBps, yes: Number(p.account.yes), no: Number(p.account.no), deadline: Number(p.account.deadline), status: p.account.status, myVote: !!votes[i],
@@ -104,7 +127,7 @@ export default function OnchainClan() {
   });
   const join = (c: ClanView) => guard(`join-${c.name}`, () => onBase(`Join ${c.name}`, () => progs!.base.methods.joinClan().accountsPartial({ wallet: kp!.publicKey, clan: c.key, member: P.member(c.key, kp!.publicKey) }).rpc()))();
   const deposit = (amt: number) => guard(`dep-${amt}`, () => onBase(`Deposit ${amt} SOL to the chest`, () => progs!.base.methods.depositChest(new BN(amt * LAMPORTS_PER_SOL)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), chest: P.chest(mine!.key) }).rpc()))();
-  const withdraw = guard('withdraw', () => onBase('Withdraw my deposit', () => progs!.base.methods.withdrawChest(new BN(myDeposit)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), chest: P.chest(mine!.key) }).rpc()));
+  const withdraw = guard('withdraw', () => onBase('Cash out my shares', () => progs!.base.methods.withdrawChest(new BN(myShares)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), chest: P.chest(mine!.key) }).rpc()));
   const leave = guard('leave', () => onBase(`Leave ${mine!.name}`, () => progs!.base.methods.leaveClan().accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey) }).rpc()));
   const propose = guard('propose', async () => {
     const prop = P.proposal(mine!.key, mine!.proposals);
@@ -116,6 +139,28 @@ export default function OnchainClan() {
   const reject = (p: PropView) => guard(`rej-${p.id}`, () => onBase(`Close failed vote #${p.id}`, () => progs!.base.methods.rejectProposal().accountsPartial({ proposal: p.key }).rpc()))();
   const closePos = (p: PosView) => guard(`close-${p.id}`, () => onBase(`Close position #${p.id}`, () => progs!.base.methods.closePosition().accountsPartial({ captain: kp!.publicKey, clan: mine!.key, position: p.key, price: P.baseFeed(p.coin) }).rpc()))();
 
+  const byKey = (k: PublicKey) => clans.find((c) => c.key.equals(k));
+  const declare = guard('declare', async () => {
+    const b = clans.find((c) => c.name === rival);
+    if (!b) throw new Error('Pick a rival clan');
+    const nonce = Date.now();
+    const war = PublicKey.findProgramAddressSync([Buffer.from('war'), mine!.key.toBuffer(), b.key.toBuffer(), new BN(nonce).toArrayLike(Buffer, 'le', 8)], PROGRAM_ID)[0];
+    await onBase(`Declare war on ${b.name}`, () => progs!.base.methods.declareWar(new BN(nonce), new BN(WAR_STAKE_SOL * LAMPORTS_PER_SOL), new BN(+warLen))
+      .accountsPartial({ captain: kp!.publicKey, clanA: mine!.key, clanB: b.key, chestA: P.chest(mine!.key), war, vault: P.vault(war) }).rpc());
+  });
+  const acceptWar = (w: WarView) => guard(`accept-${w.nonce}`, () => onBase(`Accept war from ${byKey(w.a)?.name ?? 'rival'}`, () => progs!.base.methods.acceptWar()
+    .accountsPartial({ captain: kp!.publicKey, clanA: w.a, clanB: w.b, chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key) }).rpc()))();
+  const cancelWar = (w: WarView) => guard(`cancelwar-${w.nonce}`, () => onBase('Withdraw the declaration', () => progs!.base.methods.cancelWar()
+    .accountsPartial({ captain: kp!.publicKey, clanA: w.a, chestA: P.chest(w.a), war: w.key, vault: P.vault(w.key) }).rpc()))();
+  const settleWar = (w: WarView) => guard(`settlewar-${w.nonce}`, async () => {
+    const cfg = await progs!.base.account.config.fetch(P.config);
+    await onBase('Settle the war', () => progs!.base.methods.settleWar()
+      .accountsPartial({ clanA: w.a, clanB: w.b, chestA: P.chest(w.a), chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key), treasury: cfg.treasury }).rpc());
+  })();
+  const activeWars = wars.filter((w) => w.status <= 1);
+  const pastWars = wars.filter((w) => w.status === 2).slice(0, 3);
+  const rivals = clans.filter((c) => mine && !c.key.equals(mine.key) && c.war.equals(PublicKey.default) && (!rivalQ.trim() || c.name.toLowerCase().includes(rivalQ.trim().toLowerCase()))).slice(0, 6);
+
   const openProps = props.filter((p) => p.status === 0);
   const pastProps = props.filter((p) => p.status !== 0).slice(0, 4);
 
@@ -123,7 +168,7 @@ export default function OnchainClan() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 30 }}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">Clan chest</Txt><Txt v="small">{NET.label} · votes weighted by deposit</Txt></View>
+        <View style={{ flex: 1 }}><Txt v="h2">Clan chest</Txt><Txt v="small">{NET.label} · votes weighted by chest shares</Txt></View>
         <Row style={{ gap: 6 }}><LiveDot color={C.up} /><Txt v="small" color={C.up}>On chain</Txt></Row>
       </Row>
 
@@ -179,7 +224,7 @@ export default function OnchainClan() {
                 </View>
               </Row>
               <Row style={{ marginTop: 14, gap: 8 }}>
-                {[['Chest · SOL', sol(mine.chest), C.ink], ['Your share', mine.chest ? `${((myDeposit / mine.chest) * 100).toFixed(0)}%` : '0%', C.brandSoft], ['Score · SOL', `${mine.score >= 0 ? '+' : '−'}${(Math.abs(mine.score) / LAMPORTS_PER_SOL).toFixed(4)}`, mine.score >= 0 ? C.up : C.down]].map(([k, v, c]) => (
+                {[['Chest · SOL', sol(mine.chest), C.ink], ['Your share', mine.shares ? `${((myShares / mine.shares) * 100).toFixed(0)}%` : '0%', C.brandSoft], ['Score · SOL', `${mine.score >= 0 ? '+' : '−'}${(Math.abs(mine.score) / LAMPORTS_PER_SOL).toFixed(4)}`, mine.score >= 0 ? C.up : C.down]].map(([k, v, c]) => (
                   <View key={k} style={{ flex: 1, backgroundColor: C.s2, borderRadius: 12, padding: 10 }}>
                     <Txt v="small" lines={1}>{k}</Txt><Txt v="label" color={c} lines={1}>{v}</Txt>
                   </View>
@@ -188,11 +233,11 @@ export default function OnchainClan() {
               <Row style={{ marginTop: 12, gap: 8 }}>
                 <Btn title="Deposit 0.1" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.1)} />
                 <Btn title="Deposit 0.5" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.5)} />
-                {myDeposit > 0
-                  ? <Btn title="Withdraw" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked} onPress={withdraw} />
+                {myShares > 0
+                  ? <Btn title="Cash out" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked} onPress={withdraw} />
                   : !captain ? <Btn title="Leave" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={leave} /> : null}
               </Row>
-              <Txt v="small" style={{ marginTop: 8 }}>You put in {sol(myDeposit)} SOL. Your vote counts by that amount.</Txt>
+              <Txt v="small" style={{ marginTop: 8 }}>{myShares ? `You put in ${sol(myDeposit)} SOL; your shares are worth ${sol(mine.shares ? Math.floor((myShares * mine.chest) / mine.shares) : 0)} SOL now. Votes count by shares.` : 'Deposit to get chest shares and a vote. Shares pay out pro rata, so war wins and losses are shared.'}</Txt>
             </Card>
           </Animated.View>
 
@@ -203,14 +248,14 @@ export default function OnchainClan() {
             <Chips items={(['2', '5', '10', '20'] as const).map((k) => ({ key: k, label: `${k}×` }))} value={lev} onChange={setLev} />
             <Chips items={[{ key: '2500', label: '25% of chest' }, { key: '5000', label: '50%' }, { key: '10000', label: '100%' }]} value={size} onChange={setSize} />
             <Btn title={busy === 'propose' ? 'Proposing…' : `Put it to a vote · ${VOTE_SECS} s`} kind={dir === '1' ? 'long' : 'short'} disabled={!!busy || mine.chest === 0} onPress={propose} />
-            <Txt v="small" style={{ marginTop: 8 }}>{mine.chest === 0 ? 'Deposit first: an empty chest has nothing to trade.' : `Passes with more yes than no, early once yes holds over half the chest. Size: ${sol((mine.chest * +size) / 10_000)} SOL notional.`}</Txt>
+            <Txt v="small" style={{ marginTop: 8 }}>{mine.chest === 0 ? 'Deposit first: an empty chest has nothing to trade.' : `Passes with more yes than no, early once yes holds over half of all shares. Size: ${sol((mine.chest * +size) / 10_000)} SOL notional.`}</Txt>
           </Card>
 
           <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Votes</Txt>
           {openProps.length === 0 ? <Card style={{ padding: 14 }}><Txt v="small">No open votes. Propose a trade above.</Txt></Card> : openProps.map((p) => {
             const left = Math.max(0, Math.ceil(p.deadline - now));
             const total = p.yes + p.no;
-            const passed = p.yes > p.no && (left === 0 || p.yes * 2 > mine.chest);
+            const passed = p.yes > p.no && (left === 0 || p.yes * 2 > mine.shares);
             const failed = left === 0 && p.yes <= p.no;
             return (
               <Card key={p.key.toBase58()} style={{ marginBottom: 8, padding: 14 }}>
@@ -222,19 +267,19 @@ export default function OnchainClan() {
                 <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: C.s2, marginTop: 10 }}>
                   <View style={{ flex: total ? p.yes : 0, backgroundColor: C.up }} /><View style={{ flex: total ? p.no : 1, backgroundColor: total ? C.down : C.s2 }} />
                 </View>
-                <Txt v="small" style={{ marginTop: 6 }}>Yes {sol(p.yes)} SOL · No {sol(p.no)} SOL · chest {sol(mine.chest)} SOL</Txt>
+                <Txt v="small" style={{ marginTop: 6 }}>Yes {pct(p.yes, mine.shares)} · No {pct(p.no, mine.shares)} of all chest shares · early pass over 50%</Txt>
                 <Row style={{ gap: 8, marginTop: 10 }}>
                   {!p.myVote && left > 0 ? (
                     <>
-                      <Btn title="Vote yes" kind="long" h={40} style={{ flex: 1 }} disabled={!!busy || myDeposit === 0} onPress={() => vote(p, true)} />
-                      <Btn title="Vote no" kind="short" h={40} style={{ flex: 1 }} disabled={!!busy || myDeposit === 0} onPress={() => vote(p, false)} />
+                      <Btn title="Vote yes" kind="long" h={40} style={{ flex: 1 }} disabled={!!busy || myShares === 0} onPress={() => vote(p, true)} />
+                      <Btn title="Vote no" kind="short" h={40} style={{ flex: 1 }} disabled={!!busy || myShares === 0} onPress={() => vote(p, false)} />
                     </>
                   ) : p.myVote ? <Txt v="small" color={C.brandSoft}>You voted.</Txt> : null}
                   {passed && captain ? <Btn title="Execute at oracle price" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => execute(p)} /> : null}
                   {passed && !captain ? <Txt v="small" color={C.up}>Passed · waiting for the captain</Txt> : null}
                   {failed ? <Btn title="Close failed vote" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => reject(p)} /> : null}
                 </Row>
-                {myDeposit === 0 && !p.myVote && left > 0 ? <Txt v="small" style={{ marginTop: 6 }}>Deposit to get a vote.</Txt> : null}
+                {myShares === 0 && !p.myVote && left > 0 ? <Txt v="small" style={{ marginTop: 6 }}>Deposit to get a vote.</Txt> : null}
               </Card>
             );
           })}
@@ -259,6 +304,66 @@ export default function OnchainClan() {
             );
           })}
           {pastProps.length ? <Txt v="small" style={{ marginTop: 4 }}>Past votes: {pastProps.map((p) => `#${p.id} ${p.status === 1 ? 'executed' : 'failed'}`).join(' · ')}</Txt> : null}
+
+          <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Clan war</Txt>
+          {activeWars.map((w) => {
+            const weA = w.a.equals(mine.key);
+            const A = byKey(w.a); const B = byKey(w.b);
+            const us = weA ? A : B; const them = weA ? B : A;
+            const left = Math.max(0, Math.ceil(w.endTs - now));
+            const rUs = us ? (weA ? retBps(us.score, w.baseA, w.chestA) : retBps(us.score, w.baseB, w.chestB)) : 0;
+            const rThem = them ? (weA ? retBps(them.score, w.baseB, w.chestB) : retBps(them.score, w.baseA, w.chestA)) : 0;
+            return (
+              <Card key={w.key.toBase58()} style={{ marginBottom: 8, padding: 14 }}>
+                <Row style={{ gap: 12 }}>
+                  {us ? <Art src={CRESTS[us.crest % CRESTS.length]} size={44} radius={12} /> : null}
+                  <Txt v="label" style={{ flex: 1, textAlign: 'center' }} color={C.opp}>VS</Txt>
+                  {them ? <Art src={CRESTS[them.crest % CRESTS.length]} size={44} radius={12} /> : null}
+                </Row>
+                <Row style={{ justifyContent: 'space-between', marginTop: 6 }}>
+                  <Txt v="small" color={C.ink}>{us?.name ?? 'us'}</Txt><Txt v="small" color={C.ink}>{them?.name ?? short((weA ? w.b : w.a).toBase58())}</Txt>
+                </Row>
+                {w.status === 0 ? (
+                  <>
+                    <Txt v="small" style={{ marginTop: 8 }}>{weA ? `Declared · ${sol(w.stake)} SOL staked from our chest · waiting for ${them?.name ?? 'them'} to accept` : `${them?.name ?? 'A clan'} declared war · stake ${sol(w.stake)} SOL from each chest`}</Txt>
+                    {captain ? (weA
+                      ? <Btn title="Withdraw the declaration" kind="ghost" h={40} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => cancelWar(w)} />
+                      : <Btn title={`Accept · stake ${sol(w.stake)} SOL`} h={44} style={{ marginTop: 10 }} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => acceptWar(w)} />)
+                      : <Txt v="small" style={{ marginTop: 6 }}>Your captain decides.</Txt>}
+                  </>
+                ) : (
+                  <>
+                    <Row style={{ justifyContent: 'space-between', marginTop: 10 }}>
+                      <Txt v="title" color={rUs >= 0 ? C.up : C.down}>{rUs >= 0 ? '+' : ''}{(rUs / 100).toFixed(2)}%</Txt>
+                      <Txt v="title" color={rThem >= 0 ? C.up : C.down}>{rThem >= 0 ? '+' : ''}{(rThem / 100).toFixed(2)}%</Txt>
+                    </Row>
+                    <Txt v="small" style={{ marginTop: 4 }}>Return on each starting chest from closed trades · pot {sol(w.stake * 2)} SOL · {left ? `${left >= 3600 ? `${(left / 3600).toFixed(1)} h` : `${left} s`} left` : 'over'}</Txt>
+                    {left === 0 ? <Btn title="Settle the war" kind="white" h={44} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => settleWar(w)} /> : null}
+                  </>
+                )}
+              </Card>
+            );
+          })}
+          {activeWars.length === 0 ? (
+            captain ? (
+              <Card style={{ padding: 14 }}>
+                <Txt v="small" style={{ marginBottom: 6 }}>Stake {WAR_STAKE_SOL} SOL from the chest against a rival (at most half the chest). Best return from closed trades over the window takes the pot.</Txt>
+                <View style={{ backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 42, justifyContent: 'center', marginBottom: 8 }}>
+                  <TextInput value={rivalQ} onChangeText={setRivalQ} placeholder="Find a rival clan" placeholderTextColor={C.muted} autoCorrect={false} autoCapitalize="none"
+                    style={{ color: C.ink, fontFamily: F.medium, fontSize: 14 }} />
+                </View>
+                {rivals.length ? <Chips items={rivals.map((c) => ({ key: c.name, label: c.name }))} value={rival} onChange={setRival} /> : <Txt v="small" style={{ marginBottom: 8 }}>{rivalQ ? 'No clan by that name is free to fight.' : `No other clans on ${NET.label} yet.`}</Txt>}
+                <Chips items={WAR_LENGTHS.map((l) => ({ key: l.key, label: l.label }))} value={warLen} onChange={setWarLen} />
+                <Btn title={busy === 'declare' ? 'Declaring…' : rival ? `Declare war on ${rival}` : 'Pick a rival'} kind="short" disabled={!!busy || !rival || mine.chest < 2 * WAR_STAKE_SOL * LAMPORTS_PER_SOL} onPress={declare} />
+              </Card>
+            ) : <Card style={{ padding: 14 }}><Txt v="small">No war right now. Your captain can declare one.</Txt></Card>
+          ) : null}
+          {pastWars.map((w) => {
+            const weA = w.a.equals(mine.key);
+            const won = (w.winner === 1 && weA) || (w.winner === 2 && !weA);
+            const them = byKey(weA ? w.b : w.a);
+            return <Txt key={w.key.toBase58()} v="small" style={{ marginTop: 6 }} color={w.winner === 3 ? C.muted : won ? C.up : C.down}>{w.winner === 3 ? 'Tied' : won ? 'Won' : 'Lost'} vs {them?.name ?? 'rival'} · {(w.returnBps[weA ? 0 : 1] / 100).toFixed(2)}% vs {(w.returnBps[weA ? 1 : 0] / 100).toFixed(2)}%</Txt>;
+          })}
         </>
       )}
 

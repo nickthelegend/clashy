@@ -1768,7 +1768,7 @@
       "name": "execute_proposal",
       "docs": [
         "Captain executes a passed proposal at the oracle price: opens a scored clan position.",
-        "Passed = more yes than no, and either the window closed or yes holds a chest majority."
+        "Passed = more yes than no, and either the window closed or yes holds over half of all shares."
       ],
       "discriminator": [
         186,
@@ -4133,7 +4133,7 @@
     {
       "name": "vote",
       "docs": [
-        "Votes are weighted by the member's chest deposit; one vote per member per proposal."
+        "Votes are weighted by the member's chest shares; one vote per member per proposal."
       ],
       "discriminator": [
         227,
@@ -4227,7 +4227,8 @@
     {
       "name": "withdraw_chest",
       "docs": [
-        "Withdraws your own deposit. Blocked while the clan is at war (the chest backs the war pot)."
+        "Redeems `shares` of your chest shares for their pro-rata part of the chest, so war wins and",
+        "losses are shared by every member whatever order they leave in. Blocked while at war."
       ],
       "discriminator": [
         213,
@@ -4305,7 +4306,7 @@
       ],
       "args": [
         {
-          "name": "amount",
+          "name": "shares",
           "type": "u64"
         }
       ]
@@ -4732,6 +4733,16 @@
       "code": 6046,
       "name": "Overflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6047,
+      "name": "WarStakeTooBig",
+      "msg": "A war can stake at most half the chest"
+    },
+    {
+      "code": 6048,
+      "name": "NotEnoughShares",
+      "msg": "Not enough chest shares"
     }
   ],
   "types": [
@@ -4764,7 +4775,14 @@
           {
             "name": "chest",
             "docs": [
-              "Lamports deposited into the chest vault (members' deposits)."
+              "Lamports in the chest vault: members' deposits, minus war stakes lost, plus war pots won."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "docs": [
+              "Total chest shares held by members. A share is worth `chest / shares` lamports."
             ],
             "type": "u64"
           },
@@ -5215,6 +5233,16 @@
           },
           {
             "name": "deposit",
+            "docs": [
+              "Lamports this member put in, net of withdrawals (cost basis, for display)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "shares",
+            "docs": [
+              "Chest shares: withdrawals pay `shares * chest / clan.shares`, and votes weigh by shares."
+            ],
             "type": "u64"
           },
           {
