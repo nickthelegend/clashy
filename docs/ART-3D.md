@@ -17,7 +17,7 @@ turned into lighting.
   war banner, crests, badges, face-off and arena scenes.
 - **Banned:** text, letters, numbers, logos, real brands, Clash of Clans visuals, fomo.family's photo style.
 
-**Wordmark:** `web/src/components/Wordmark.tsx`. "clashy" in Archivo black italic at 125% width (not used by any other
+**Wordmark (final, Nick picked option A "Slice" on Nov 15; the alternatives are in `assets/brand/options/`):** `web/src/components/Wordmark.tsx` and `assets/brand/wordmark*.svg`. "clashy" in Archivo black italic at 125% width (not used by any other
 product), sliced once on a shallow diagonal. The halves are knocked apart and the cut glows indigo into pink.
 
 Style line used in every prompt: see `assets/SOURCES.md`.
