@@ -9,7 +9,7 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
 | Program id | `FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS` (keypair in `.keys/`, gitignored) |
 | Rollup | MagicBlock Ephemeral Rollup: duels and tournaments are delegated, scored there every check, and committed back |
 | Randomness | MagicBlock VRF (base queue `Cuj97ggr…`) rolls the coin. With `vrf_required = true` the local commit-reveal fallback is refused |
-| Prices | A crank pushes live Coinbase prices into Clashy `PriceFeed` accounts on the rollup every second and commits them to Solana every 30 s. The program also accepts MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout) |
+| Prices | A crank pushes live Coinbase prices into delegated `PriceFeed` accounts on the rollup every second (duels, tournaments), and into never-delegated base feeds on Solana every 5 s (clan trades; one transaction for all coins). The program also accepts MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout) |
 | Deployed | Local MagicBlock stack only. Devnet and mainnet: **not deployed** (see Status) |
 
 ## What the program does
@@ -41,7 +41,7 @@ war window wins.
 ```bash
 npm install
 bash scripts/localnet.sh            # base :8999 + MagicBlock ER :7799, deploys the program (CLASHY_RESET=1 for genesis)
-npx tsx scripts/crank.ts            # live prices: push every 1 s, commit every 30 s
+npx tsx scripts/crank.ts            # live prices: rollup every 1 s, Solana base feeds every 5 s
 npx tsx --test --test-concurrency=1 tests/clashy.test.ts
 ```
 
@@ -61,6 +61,9 @@ on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bi
   devnet SOL; the faucet rate-limited the airdrop.
 - **Mainnet: not deployed.** Needs real SOL: the 870 KB program is 4.42 SOL rent-exempt (`solana rent 870000`), more if deployed with upgrade headroom, plus an equal temporary buffer during the deploy that is refunded, and Nick's
   go-ahead. Real money stays off until then.
+- **Why base feeds:** MagicBlock sponsors only 10 commits per delegated account ("sponsored commit limit exceeded …
+  current commit nonce 10 reached the limit of 10"), so committing the rollup feeds back to Solana every 30 s stopped
+  after 10 commits. Duels and tournaments commit once, when they finish, so they are not affected.
 - **Clan trades are paper.** They are scored at the oracle price. The Phoenix swap on the fork is a standalone script,
   not called from the chest.
 - **Phoenix spot is too thin for duels.** On the fork, best bid 60.03 against a ~71 market; selling 1 SOL filled at
