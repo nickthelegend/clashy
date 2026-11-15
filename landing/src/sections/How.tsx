@@ -8,9 +8,9 @@ import { MARKETS, useLivePrice } from '../components/arena/useLivePrice'
 // The phone's blank screen sits at 31.14% / 8.67% / 44.5% x 62.56% of phone-hand.webp.
 
 const STEPS = [
-  { k: 'Pick', t: 'Pick a rival.', d: 'Quick match a stranger or call out a friend from chat. Anyone, anywhere, any time.' },
-  { k: 'Decide', t: 'Pick your coin and side.', d: "SOL, BTC, ETH or any coin you like. Long or short, your leverage. Your rival picks their own." },
-  { k: 'Battle', t: 'Sixty seconds. Best % wins.', d: 'Both charts live on one screen. Hit your knockout line and you are out. The pot settles on Solana.' },
+  { k: 'Match', t: 'Get matched.', d: 'Hit quick match and meet a stranger in seconds, or call out a friend from chat.' },
+  { k: 'Roll', t: 'One coin. Pick your side.', d: 'MagicBlock VRF rolls one coin for both of you. You each get ten seconds to go long or short and set your leverage.' },
+  { k: 'Battle', t: 'Sixty seconds. Best % wins.', d: 'One chart, both knockout lines. Hit yours and you are out. The pot settles on Solana.' },
 ]
 
 export function How() {
@@ -22,7 +22,7 @@ export function How() {
     <section id="how" className="how">
       <div className="wrap how-head">
         <h2>
-          Pick a rival. Pick a coin.
+          Get matched. Roll a coin.
           <br />
           Duel it out.
         </h2>
@@ -92,7 +92,7 @@ function ScreenPick() {
   ]
   return (
     <div className="ps-pad">
-      <div className="ps-h">Find a rival</div>
+      <div className="ps-h">Find a duel</div>
       <div className="ps-q">⚡ Quick match</div>
       {people.map(([a, n, w]) => (
         <div className="ps-row" key={n}>
@@ -110,25 +110,15 @@ function ScreenPick() {
 
 function ScreenDecide() {
   const sol = useLivePrice(MARKETS[0])
-  const btc = useLivePrice(MARKETS[1])
-  const eth = useLivePrice(MARKETS[2])
-  const rows: [string, string, number | null][] = [
-    ['sol', 'SOL', sol.price],
-    ['btc', 'BTC', btc.price],
-    ['eth', 'ETH', eth.price],
-  ]
   return (
     <div className="ps-pad">
-      <div className="ps-h">Your coin</div>
-      {rows.map(([id, l, p], i) => (
-        <div className={`ps-row coin${i === 0 ? ' on' : ''}`} key={id}>
-          <img src={`/coins/${id}.webp`} alt="" width="30" height="30" />
-          <div>
-            <b>{l}</b>
-            <span>{p != null ? <Money value={p} decimals={p > 1000 ? 0 : 2} /> : 'loading…'}</span>
-          </div>
-        </div>
-      ))}
+      <div className="ps-h">Coin rolled</div>
+      <div className="ps-roll">
+        <img src="/coins/sol.webp" alt="" width="56" height="56" />
+        <b>SOL</b>
+        <span>{sol.price != null ? <Money value={sol.price} decimals={2} /> : 'loading…'}</span>
+        <em>MagicBlock VRF · same coin for both</em>
+      </div>
       <div className="ps-sides">
         <span className="long">▲ Long</span>
         <span>▼ Short</span>
@@ -138,6 +128,7 @@ function ScreenDecide() {
         <span className="on">500×</span>
         <span>1000×</span>
       </div>
+      <span className="ps-note">0:08 left to pick · no pick = long</span>
     </div>
   )
 }
@@ -148,8 +139,8 @@ function ScreenBattle() {
     <div className="ps-pad">
       <div className="ps-clock">0:42</div>
       {[
-        ['nova', 'you · SOL long', 64, '+64%', 'up'],
-        ['shark', 'rexx · BTC short', 22, '−22%', 'down'],
+        ['nova', 'you · long SOL', 64, '+64%', 'up'],
+        ['shark', 'rexx · short SOL', 22, '−64%', 'down'],
       ].map(([a, n, w, v, c]) => (
         <div className="ps-bar" key={n as string}>
           <img src={`/art/av-${a}.webp`} alt="" width="30" height="30" />

@@ -16,8 +16,8 @@ export function ArenaSection() {
           <span className="label you">Free demo · live prices</span>
           <h2>Try a duel. Right now.</h2>
           <p>
-            Pick your coin and your side against a demo bot that picks its own. Best % in sixty seconds wins. No wallet, no
-            money: practice on real prices.
+            A quick match against a practice rival. One coin is rolled for you both, you pick long or short, and the rival
+            takes the other side. Best % in sixty seconds wins. No wallet, no money: practice on real prices.
           </p>
         </motion.div>
         <motion.div {...r}>

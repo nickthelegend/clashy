@@ -480,6 +480,32 @@
   width: 90px;
   margin: 4px auto 0;
 }
+.ps-roll {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  background: var(--s2);
+  border: 1px solid rgba(255, 201, 74, 0.45);
+  text-align: center;
+}
+.ps-roll img {
+  border-radius: 50%;
+  margin-bottom: 4px;
+}
+.ps-roll b {
+  font-size: 15px;
+}
+.ps-roll span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.ps-roll em {
+  font-style: normal;
+  font-size: 9.5px;
+  color: var(--muted);
+}
 .ps-note {
   text-align: center;
   color: var(--muted);
@@ -1204,7 +1230,8 @@
   .floatnav-sep {
     margin: 0 4px;
   }
-  .hcard-top .sample {
-    display: none;
+  .hcard-top {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 }
