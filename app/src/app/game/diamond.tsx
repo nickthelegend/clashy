@@ -113,7 +113,7 @@ export default function DiamondHands() {
       ) : (
         <Card style={{ padding: 16 }}>
           <Row style={{ gap: 12 }}>
-            <Art src={ART.crown} size={64} radius={0} />
+            <Art src={ART.tileDiamond} size={72} radius={0} />
             <View style={{ flex: 1 }}><Txt v="h2">Hold as long as you dare</Txt><Txt v="small" style={{ marginTop: 2, lineHeight: 18 }}>You buy {coin} at {lev}× at GO. Your score is your P&L when you sell. Give back {GIVEBACK} pts from your peak and you are knocked out. Max 3 minutes.</Txt></View>
           </Row>
           <Row style={{ gap: 8, marginTop: 14 }}>{LEVS.map((v) => <Btn key={v} title={`${v}×`} h={38} kind={lev === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setLev(v)} />)}</Row>

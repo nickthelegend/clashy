@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { CountUp, FX, Hit, Shake, WinBurst } from '@/ui/fx';
-import { ART, Btn, Card, Row, Txt } from '@/ui/kit';
+import { ART, Art, Btn, Card, Row, Txt } from '@/ui/kit';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
 export default function Result() {
@@ -72,7 +72,7 @@ export default function Result() {
       {quick && won ? (
         <Animated.View entering={FadeInDown.delay(500).springify().damping(13)} style={{ borderRadius: 22, padding: 14, marginBottom: 10, backgroundColor: '#1A1206', borderWidth: 1.5, borderColor: 'rgba(255,201,74,0.5)' }}>
           <Row style={{ gap: 10 }}>
-            <Image source={FX.fire} style={{ width: 40, height: 40 }} contentFit="contain" />
+            <Art src={ART.tileDouble} size={56} radius={0} />
             <View style={{ flex: 1 }}>
               <Txt v="label" color="#FFC94A">Double or Nothing</Txt>
               <Txt v="small">Streak {streak + 1}. Roll the whole pot into the next duel: win and it doubles, lose and the streak is gone.</Txt>

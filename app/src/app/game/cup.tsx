@@ -56,7 +56,7 @@ export default function DailyCup() {
       </Row>
 
       <Animated.View entering={FadeInDown.springify().damping(14)} style={{ borderRadius: 28, padding: 18, backgroundColor: '#14120A', borderWidth: 1.5, borderColor: 'rgba(255,201,74,0.4)', alignItems: 'center' }}>
-        <Bob amp={8} ms={1400}><Art src={ART.winTrophy} size={150} radius={0} /></Bob>
+        <Bob amp={8} ms={1400}><Art src={ART.tileCup} size={170} radius={0} /></Bob>
         <Txt v="small" style={{ fontFamily: F.semi, letterSpacing: 1, fontSize: 11, marginTop: 6 }}>TODAY'S COIN</Txt>
         <Row style={{ gap: 10, marginTop: 6 }}>
           <TokenArt symbol={coin} uri={m.image} size={36} />

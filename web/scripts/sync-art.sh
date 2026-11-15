@@ -8,7 +8,7 @@ conv() { sips -s format png -Z "$2" "$SRC/$1.webp" --out "$OUT/$1.png" >/dev/nul
 jpg() { sips -s format jpeg -s formatOptions 78 -Z "$2" "$SRC/$1.webp" --out "$OUT/$1.jpg" >/dev/null; }  # opaque art only
 rm -f "$OUT"/*
 for f in banner-duel banner-line banner-war banner-royale banner-bounty; do jpg $f 1100; done
-for f in win-trophy vs crown ko-burst ko-skull confetti radar tile-duel tile-line tile-war tile-royale tile-bounty; do conv $f 420; done
+for f in win-trophy vs crown ko-burst ko-skull confetti radar tile-duel tile-line tile-war tile-royale tile-bounty tile-diamond tile-double tile-cup; do conv $f 420; done
 for f in $(cd "$SRC" && ls avatar-*.webp crest-*.webp rank-*.webp medal-*.webp sticker-*.webp | sed 's/\.webp$//'); do conv $f 160; done
 # landing-only clay pieces from assets/web
 WEBSRC="$HERE/../assets/web"
