@@ -3,6 +3,7 @@ import { ArenaWidget } from '../components/arena/ArenaWidget'
 import { LeaderboardStrip } from '../components/LeaderboardStrip'
 import { StoreBadges } from '../components/StoreBadges'
 import { Wordmark } from '../components/Wordmark'
+import { ClayLoop } from '../components/ClayLoop'
 
 const rise = { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-80px' }, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
 
@@ -34,12 +35,12 @@ export function ArenaSection() {
 
 // "Stop fighting the house": the message, then every game mode as a card on a slow rail.
 // Banner art is clay on black; mix-blend lighten lets each card's tint show through the black.
-const MODES: { art: string; name: string; line: string; tint: string; tag: string }[] = [
+const MODES: { art: string; name: string; line: string; tint: string; tag: string; video?: string }[] = [
   { art: 'duel', name: 'Knockout duel', line: 'One rolled coin. Long or short. First KO loses.', tint: '#1a1c4a', tag: 'Free practice above' },
   { art: 'royale', name: 'Royale', line: 'Up to 50 players. The worst P&L is out each round.', tint: '#3a1230', tag: 'Coming' },
   { art: 'diamond', name: 'Diamond hands', line: 'Hold longer than everyone. Sell before the dump.', tint: '#10284a', tag: 'Coming' },
   { art: 'double', name: 'Double or nothing', line: 'Won? Let the whole pot ride into the next duel.', tint: '#3a2a0c', tag: 'Coming' },
-  { art: 'war', name: 'Clan war', line: "Your clan's chest against theirs, all week.", tint: '#2a1440', tag: 'Coming' },
+  { art: 'war', name: 'Clan war', line: "Your clan's chest against theirs, all week.", tint: '#2a1440', tag: 'Coming', video: 'clan-war-loop' },
   { art: 'line', name: 'Draw the line', line: 'Draw the next minute. The closest line wins.', tint: '#1a1c4a', tag: 'Coming' },
   { art: 'cup', name: 'Daily cup', line: 'One run, any time today. Top 20% get paid.', tint: '#3a2a0c', tag: 'Coming' },
   { art: 'bounty', name: 'Bounty', line: "Beat a top player's week and take the bounty.", tint: '#3a1230', tag: 'Coming' },
@@ -48,7 +49,11 @@ const MODES: { art: string; name: string; line: string; tint: string; tag: strin
 function ModeCard({ m }: { m: (typeof MODES)[number] }) {
   return (
     <article className="mode" style={{ background: m.tint }}>
-      <img src={`/art/banner-${m.art}.webp`} alt="" width="1600" height="900" loading="lazy" />
+      {m.video ? (
+        <ClayLoop name={m.video} className="mode-vid" />
+      ) : (
+        <img src={`/art/banner-${m.art}.webp`} alt="" width="1600" height="900" loading="lazy" />
+      )}
       <div className="mode-tx">
         <div className="mode-top">
           <h3>{m.name}</h3>

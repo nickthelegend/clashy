@@ -664,7 +664,8 @@
   gap: 8px;
 }
 .ui-mode {
-  background: rgba(255, 255, 255, 0.14);
+  background: #15163d;
+  color: #fff;
   border-radius: 16px;
   padding: 8px;
   display: grid;
@@ -674,10 +675,15 @@
   font-weight: 700;
   text-align: center;
 }
-.ui-mode img {
+.ui-mode img,
+.ui-mode video {
   width: 64px;
   height: 64px;
   object-fit: contain;
+}
+.callout-vid {
+  width: 56px;
+  height: 56px;
 }
 .ui-streak {
   background: rgba(255, 255, 255, 0.55);
@@ -976,6 +982,12 @@
   border-radius: 26px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mode-vid {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
 }
 .mode img {
   display: block;

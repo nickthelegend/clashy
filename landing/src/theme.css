@@ -208,3 +208,10 @@ h3 {
     transition: none !important;
   }
 }
+
+/* clay video loops are rendered on black; lighten drops the black onto dark surfaces */
+.clay-vid {
+  mix-blend-mode: lighten;
+  object-fit: contain;
+  display: block;
+}
