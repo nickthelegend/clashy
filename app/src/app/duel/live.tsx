@@ -22,7 +22,7 @@ const EMOTES = ['ko', 'gg', 'lfg', 'fade-me'];
 type Phase = 'intro' | 'count' | 'live';
 
 export default function Live() {
-  const p = useLocalSearchParams<{ id: string; side: string; stake: string; lev: string; entry: string; symbol: string; mode?: string; image?: string }>();
+  const p = useLocalSearchParams<{ id: string; side: string; stake: string; lev: string; entry: string; symbol: string; mode?: string; image?: string; streak?: string }>();
   const quick = p.mode === 'quick';
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(980);
@@ -64,7 +64,7 @@ export default function Live() {
     done.current = true;
     Haptics.notificationAsync(reason === 'ko' ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success);
     const final = reason === 'ko' ? -stake : Math.max(-stake, pnl);
-    router.replace({ pathname: '/duel/result', params: { reason, mode: quick ? 'quick' : 'clash', pnl: String(final), id: p.id, symbol: p.symbol, side, lev: String(lev), secs: String(LEN - left), entry: String(entry), exit: String(last), rival: quick ? `practice rival (${rivalSide})` : rivalId, rivalPct: rPct.toFixed(2), myPct: myPct.toFixed(2) } });
+    router.replace({ pathname: '/duel/result', params: { reason, mode: quick ? 'quick' : 'clash', streak: p.streak ?? '0', stake: String(stake), pnl: String(final), id: p.id, symbol: p.symbol, side, lev: String(lev), secs: String(LEN - left), entry: String(entry), exit: String(last), rival: quick ? `practice rival (${rivalSide})` : rivalId, rivalPct: rPct.toFixed(2), myPct: myPct.toFixed(2) } });
   }, [stake, pnl, p.id, p.symbol, side, lev, left, entry, last, rivalId, rPct, myPct, quick, rivalSide]);
 
   useEffect(() => {

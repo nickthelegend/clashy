@@ -26,8 +26,9 @@ function randomIndex(n: number) {
 }
 
 export default function QuickMatch() {
-  const p = useLocalSearchParams<{ stake?: string }>();
+  const p = useLocalSearchParams<{ stake?: string; streak?: string }>();
   const stake = Number(p.stake ?? 20);
+  const streak = Number(p.streak ?? 0); // Double or Nothing chain length so far
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(620);
   const { width } = useWindowDimensions();
@@ -70,7 +71,7 @@ export default function QuickMatch() {
   const go = (s: 'long' | 'short') => {
     if (!picked) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.replace({ pathname: '/duel/live', params: { mode: 'quick', id: picked.id, symbol: picked.symbol, image: picked.image ?? '', side: s, stake: String(stake), lev: String(lev), entry: String(picked.price) } });
+    router.replace({ pathname: '/duel/live', params: { mode: 'quick', streak: String(streak), id: picked.id, symbol: picked.symbol, image: picked.image ?? '', side: s, stake: String(stake), lev: String(lev), entry: String(picked.price) } });
   };
   useEffect(() => { if (phase === 'pick' && left <= 0) go(side ?? 'long'); }); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -78,7 +79,7 @@ export default function QuickMatch() {
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 12 }}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">Knockout duel</Txt><Txt v="small">Quick match · ${stake} · 60 s</Txt></View>
+        <View style={{ flex: 1 }}><Txt v="h2">{streak ? `Double or Nothing · ×${2 ** streak}` : 'Knockout duel'}</Txt><Txt v="small">Quick match · ${stake} · 60 s{streak ? ` · streak ${streak}` : ''}</Txt></View>
         <View style={{ backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 }}><Txt v="small" color={C.ink}>Practice</Txt></View>
       </Row>
 
