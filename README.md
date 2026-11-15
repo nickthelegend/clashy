@@ -13,10 +13,10 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
   escrowed knockout duels, sealed picks, live scoring on the rollup, settlement with rake and Elo, clans with vote-run
   chest trades, clan wars and Royale tournaments. 5/5 end-to-end and 9/9 unit tests pass. See
   [chain/README.md](chain/README.md) and [chain/TESTING.md](chain/TESTING.md).
-- **Not deployed** to devnet or mainnet. MagicBlock VRF is written but unproven until a devnet deploy (BLOCKED on
-  devnet SOL). No real money moves anywhere.
-- **App:** the practice games run on live prices with no money. The **On-chain duel** screen plays real duels on the
-  local stack with a device test wallet.
+- **MagicBlock VRF rolls every coin**, proven locally with MagicBlock's own `vrf-oracle`.
+- **Not deployed** to devnet or mainnet (devnet BLOCKED on devnet SOL). No real money moves anywhere.
+- **App:** the practice games run on live prices with no money. Three screens play the real program on the local
+  stack with a device test wallet: **On-chain duel**, **On-chain Royale** and **On-chain clan** (chest, votes, wars).
 
 ## Layout
 
