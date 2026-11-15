@@ -202,6 +202,8 @@ export const ART = {
   ko: require('../../assets/art/ko-burst.webp'),
   tileDuel: require('../../assets/art/tile-duel.webp'),
   tileWar: require('../../assets/art/tile-war.webp'),
+  tileLine: require('../../assets/art/tile-line.webp'),
+  crest: require('../../assets/art/crest-moon.webp'),
   wordmark: require('../../assets/art/wordmark.png'),
 };
 /** Art is rendered on pure black, so it sits on a black tile inside grey cards. */
