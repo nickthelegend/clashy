@@ -11,7 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { MAJORS } from '@/data/markets';
 import { useTicks } from '@/data/ticks';
-import { Countdown, CountUp, WinBurst } from '@/ui/fx';
+import { Countdown, CountUp, FX, Hit, WinBurst } from '@/ui/fx';
+import { Image } from 'expo-image';
 import { ART } from '@/ui/kit';
 import { BackBtn, Btn, Card, LiveDot, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
@@ -126,7 +127,10 @@ export default function DrawTheLine() {
         ) : phase === 'live' || phase === 'done' ? (
           <Txt v="title" color={score !== null && score >= 70 ? C.up : C.ink} style={{ fontSize: 40, marginTop: 4 }}>{score ?? '–'}%</Txt>
         ) : (
-          <Txt v="small" color="#B9B9C2" style={{ marginTop: 6, lineHeight: 18 }}>Drag across the right side to draw where {coin} goes in the next 60 s. Lock it, then the real price draws over your line.</Txt>
+          <>
+            <Image source={FX.pencil} style={{ width: 84, height: 84, alignSelf: 'center' }} contentFit="contain" />
+            <Txt v="small" color="#B9B9C2" style={{ marginTop: 6, lineHeight: 18 }}>Drag across the right side to draw where {coin} goes in the next 60 s. Lock it, then the real price draws over your line.</Txt>
+          </>
         )}
         {best !== null ? <Txt v="small" style={{ marginTop: 6 }}>Your best: {best}%</Txt> : null}
       </Card>
@@ -173,6 +177,7 @@ export default function DrawTheLine() {
         </View>
         {side}
       </View>
+      <Hit k={phase === 'done' && score !== null && score >= 80 ? 1 : 0} src={FX.perfect} />
       {phase === 'count' ? <Countdown onDone={go} /> : null}
     </View>
   );

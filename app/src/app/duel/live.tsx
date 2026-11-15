@@ -10,7 +10,8 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { MAJORS, fetchLastPrice, isMajor } from '@/data/markets';
-import { Countdown, DangerPulse, Fill, VsIntro, useFloaters } from '@/ui/fx';
+import { Countdown, DangerPulse, FX, Fill, VsIntro, useFloaters } from '@/ui/fx';
+import { Image } from 'expo-image';
 import { Avatar, BackBtn, Btn, ErrorLine, LiveDot, Row, STICKERS, TokenArt, Txt, Art } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
@@ -136,7 +137,7 @@ export default function Live() {
       <Row style={{ gap: 10, marginTop: 12 }}><Fill v={myHp} color={C.brand} skew /><Fill v={rHp} color={C.opp} flip skew /></Row>
       <Row style={{ justifyContent: 'space-between', marginTop: 6 }}>
         <Txt v="small" color={myPct >= 0 ? C.up : C.down}>{myPct >= 0 ? '+' : ''}{myPct.toFixed(1)}%</Txt>
-        <Txt v="small" color={myHp < 0.3 ? C.down : C.muted}>{myHp < 0.3 ? 'Close to your knockout!' : 'HP = distance to your knockout'}</Txt>
+        <Row style={{ gap: 4 }}>{myHp < 0.3 ? <Image source={FX.bolt} style={{ width: 18, height: 18 }} contentFit="contain" /> : null}<Txt v="small" color={myHp < 0.3 ? C.down : C.muted}>{myHp < 0.3 ? 'Close to your knockout!' : 'HP = distance to your knockout'}</Txt></Row>
         <Txt v="small" color={rPct >= 0 ? C.up : C.down}>{rPct >= 0 ? '+' : ''}{rPct.toFixed(1)}%</Txt>
       </Row>
     </View>
@@ -163,7 +164,7 @@ export default function Live() {
     <View style={{ gap: 10, width: desk ? 320 : undefined }}>
       <View style={{ backgroundColor: C.s1, borderRadius: 18, padding: 14, alignItems: 'center' }}>
         <Txt v="small">{leading ? 'You lead by' : 'You trail by'}</Txt>
-        <Animated.View style={bumpSt}><Txt v="hero" color={leading ? C.up : C.down} style={{ fontSize: 40 }}>{leading ? '+' : '−'}{Math.abs(lead).toFixed(1)}%</Txt></Animated.View>
+        <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', gap: 6 }, bumpSt]}>{leading && lead > 0.5 ? <Image source={FX.fire} style={{ width: 38, height: 38 }} contentFit="contain" /> : null}<Txt v="hero" color={leading ? C.up : C.down} style={{ fontSize: 40 }}>{leading ? '+' : '−'}{Math.abs(lead).toFixed(1)}%</Txt></Animated.View>
         <Txt v="small" style={{ textAlign: 'center' }}>Best % at the bell wins. Hit your knockout and you are out.</Txt>
       </View>
       <Row style={{ gap: 8 }}>

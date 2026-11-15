@@ -10,6 +10,15 @@ import Animated, {
 import { ART } from './kit';
 import { C, F } from './tokens';
 
+/** Clay game FX art (assets/mobile/fx, same filenames). */
+export const FX = {
+  n3: require('../../assets/art/fx/fx-3.webp'), n2: require('../../assets/art/fx/fx-2.webp'), n1: require('../../assets/art/fx/fx-1.webp'), go: require('../../assets/art/fx/fx-go.webp'),
+  ko: require('../../assets/art/fx/fx-ko.webp'), safe: require('../../assets/art/fx/fx-safe.webp'), out: require('../../assets/art/fx/fx-out.webp'), perfect: require('../../assets/art/fx/fx-perfect.webp'),
+  heart: require('../../assets/art/fx/fx-heart.webp'), heartBroken: require('../../assets/art/fx/fx-heart-broken.webp'),
+  fire: require('../../assets/art/fx/fx-fire.webp'), bolt: require('../../assets/art/fx/fx-bolt.webp'), coins: require('../../assets/art/fx/fx-coin-burst.webp'), sparkle: require('../../assets/art/fx/fx-sparkle.webp'),
+  round: require('../../assets/art/fx/fx-round.webp'), pencil: require('../../assets/art/fx/fx-pencil-glow.webp'),
+};
+
 /** Full-screen 3-2-1-GO. Calls onDone right after GO. */
 export function Countdown({ from = 3, onDone }: { from?: number; onDone: () => void }) {
   const [n, setN] = useState(from);
@@ -21,13 +30,10 @@ export function Countdown({ from = 3, onDone }: { from?: number; onDone: () => v
     return () => clearTimeout(h);
   }, [n, onDone]);
   if (n < 0) return null;
-  const color = n === 0 ? C.up : n === 3 ? C.brand : n === 2 ? C.opp : '#FFC94A';
   return (
     <Animated.View exiting={FadeOut.duration(200)} pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
       <Animated.View key={n} entering={ZoomIn.springify().damping(9).stiffness(220)}>
-        <Text style={{ fontFamily: F.bold, fontSize: n === 0 ? 120 : 170, lineHeight: n === 0 ? 130 : 180, color, letterSpacing: -6, textShadowColor: color, textShadowRadius: 30, textShadowOffset: { width: 0, height: 0 } }}>
-          {n === 0 ? 'GO!' : n}
-        </Text>
+        <Image source={n === 0 ? FX.go : n === 1 ? FX.n1 : n === 2 ? FX.n2 : FX.n3} style={{ width: n === 0 ? 280 : 220, height: n === 0 ? 280 : 220 }} contentFit="contain" accessibilityLabel={n === 0 ? 'Go' : String(n)} />
       </Animated.View>
     </Animated.View>
   );
@@ -129,13 +135,13 @@ export function DangerPulse({ on }: { on: boolean }) {
 }
 
 /** Big centred hit marker (SAFE / −1 / KO) that pops and fades. Re-keys on `k`. */
-export function Hit({ k, text, color, src }: { k: number; text: string; color: string; src?: number }) {
+export function Hit({ k, text = '', color = C.ink, src }: { k: number; text?: string; color?: string; src?: number }) {
   if (!k) return null;
   return (
     <Animated.View key={k} pointerEvents="none" entering={ZoomIn.springify().damping(8).stiffness(240)} exiting={FadeOut.duration(250)} style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', zIndex: 45 }}>
       <AutoHide ms={900}>
-        {src ? <Image source={src} style={{ width: 150, height: 150 }} contentFit="contain" /> : null}
-        <Text style={{ fontFamily: F.bold, fontSize: 64, color, letterSpacing: -2, textShadowColor: color, textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 }, textAlign: 'center' }}>{text}</Text>
+        {src ? <Image source={src} style={{ width: text ? 150 : 240, height: text ? 150 : 240 }} contentFit="contain" /> : null}
+        {text ? <Text style={{ fontFamily: F.bold, fontSize: 64, color, letterSpacing: -2, textShadowColor: color, textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 }, textAlign: 'center' }}>{text}</Text> : null}
       </AutoHide>
     </Animated.View>
   );
@@ -163,6 +169,7 @@ export function WinBurst({ src, size = 190, burst = true }: { src: number; size?
   const Tst = useAnimatedStyle(() => ({ transform: [{ scale: ts.value }, { translateY: ty.value }] }));
   return (
     <View style={{ width: size * 1.35, height: size * 1.25, alignItems: 'center', justifyContent: 'center' }}>
+      {burst ? <Animated.View style={[{ position: 'absolute' }, Cst]}><Image source={FX.coins} style={{ width: size * 1.35, height: size * 1.2, opacity: 0.9 }} contentFit="contain" /></Animated.View> : null}
       {burst ? <Animated.View style={[{ position: 'absolute' }, Cst]}><Image source={ART.confetti} style={{ width: size * 1.3, height: size * 1.25 }} contentFit="contain" /></Animated.View> : null}
       <Animated.View style={Tst}><Image source={src} style={{ width: size, height: size }} contentFit="contain" /></Animated.View>
     </View>
@@ -191,3 +198,18 @@ export function Fill({ v, color, height = 16, flip, skew }: { v: number; color: 
 
 export const runJS = runOnJS;
 export { FadeIn };
+
+/** Clay ribbon with "Round N", pops in for ~1 s whenever `round` changes. */
+export function RoundBanner({ round }: { round: number }) {
+  if (!round) return null;
+  return (
+    <Animated.View key={round} pointerEvents="none" entering={ZoomIn.springify().damping(10)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, top: '16%', alignItems: 'center', zIndex: 44 }}>
+      <AutoHide ms={1100}>
+        <View style={{ width: 320, height: 120, alignItems: 'center', justifyContent: 'center' }}>
+          <Image source={FX.round} style={{ position: 'absolute', width: 320, height: 120 }} contentFit="contain" />
+          <Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 26, letterSpacing: -0.5, marginTop: -4 }}>Round {round}</Text>
+        </View>
+      </AutoHide>
+    </Animated.View>
+  );
+}

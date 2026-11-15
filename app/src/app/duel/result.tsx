@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
-import { CountUp, Shake, WinBurst } from '@/ui/fx';
+import { CountUp, FX, Hit, Shake, WinBurst } from '@/ui/fx';
 import { ART, Btn, Card, Row, Txt } from '@/ui/kit';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
@@ -60,6 +60,7 @@ export default function Result() {
       <View style={{ flex: 1 }} />
       <Btn title="Duel again" kind="white" onPress={() => (quick ? router.replace('/duel/match') : router.replace({ pathname: '/duel/amount', params: { id: p.id ?? 'SOL' } }))} />
       <Btn title="Back to home" kind="ghost" style={{ marginTop: 10 }} onPress={() => router.dismissTo('/')} />
+      <Hit k={p.reason === 'ko' || p.reason === 'theirko' ? 1 : 0} src={FX.ko} />
     </View>
   );
 }
