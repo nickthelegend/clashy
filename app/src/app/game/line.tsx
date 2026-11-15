@@ -2,7 +2,7 @@
 // Score = how closely the real path follows yours. Live Coinbase prices, no money.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -28,7 +28,9 @@ export default function DrawTheLine() {
   const col = useDeskColumn(900);
   const { desk } = useLayout();
   const { width } = useWindowDimensions();
-  const [coin, setCoin] = useState('SOL');
+  const q = useLocalSearchParams<{ cup?: string; coin?: string }>();
+  const cup = q.cup; // Daily Cup run: coin locked, one scored attempt per day
+  const [coin, setCoin] = useState(q.coin ?? 'SOL');
   const { ticks, last, error } = useTicks(coin, 120);
   const [phase, setPhase] = useState<Phase>('warm');
   const [drawn, setDrawn] = useState<{ x: number; y: number }[]>([]);
@@ -109,6 +111,7 @@ export default function DrawTheLine() {
       setPhase('done');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (score !== null && (best === null || score > best)) { setBest(score); AsyncStorage.setItem(PB_KEY, String(score)).catch(() => {}); }
+      if (cup && score !== null) AsyncStorage.setItem(`clashy:cup:${cup}`, JSON.stringify({ score, coin, at: Date.now() })).catch(() => {});
     }
   }, [phase, left, score, best]);
 
@@ -136,7 +139,7 @@ export default function DrawTheLine() {
       </Card>
       {phase === 'draw' ? <Btn title={covered ? 'Lock my line' : 'Draw to the right edge'} kind="white" disabled={!covered} onPress={start} /> : null}
       {phase === 'draw' && drawn.length ? <Btn title="Clear" kind="ghost" onPress={() => setDrawn([])} /> : null}
-      {phase === 'done' ? <Btn title="Draw again" kind="white" onPress={reset} /> : null}
+      {phase === 'done' ? (cup ? <Btn title="Back to the Daily Cup" kind="white" onPress={() => router.replace('/game/cup')} /> : <Btn title="Draw again" kind="white" onPress={reset} />) : null}
       <Txt v="small" style={{ textAlign: 'center' }}>Practice · live {coin} price · rooms with real players open at the Blitz kickoff</Txt>
     </View>
   );
@@ -145,15 +148,17 @@ export default function DrawTheLine() {
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 12 }}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">Draw the line</Txt><Txt v="small">Practice · 60 s</Txt></View>
+        <View style={{ flex: 1 }}><Txt v="h2">{cup ? 'Daily Cup' : 'Draw the line'}</Txt><Txt v="small">{cup ? `Today's run · ${coin} · one attempt` : 'Practice · 60 s'}</Txt></View>
         {phase === 'live' ? <Row style={{ gap: 6 }}><LiveDot /><Txt v="title" style={{ fontSize: 22 }}>0:{String(Math.max(0, left)).padStart(2, '0')}</Txt></Row> : null}
       </Row>
+      {cup ? null : (
       <Row style={{ gap: 8, marginBottom: 12 }}>
         {MAJORS.map((m) => (
           <Btn key={m.id} title={m.id} h={36} kind={coin === m.id ? 'white' : 'ghost'} style={{ flex: 1 }} disabled={phase === 'live'} onPress={() => setCoin(m.id)}
             icon={<TokenArt symbol={m.id} uri={m.image} size={18} />} />
         ))}
       </Row>
+      )}
       <View style={{ flexDirection: desk ? 'row' : 'column', gap: 14, flex: desk ? undefined : 1 }}>
         <View>
           <GestureDetector gesture={pan}>
