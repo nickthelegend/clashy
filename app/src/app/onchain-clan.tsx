@@ -232,8 +232,8 @@ export default function OnchainClan() {
                 ))}
               </Row>
               <Row style={{ marginTop: 12, gap: 8 }}>
-                <Btn title="Deposit 0.1" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.1)} />
-                <Btn title="Deposit 0.5" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.5)} />
+                <Btn title="+0.1" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.1)} />
+                <Btn title="+0.5" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.5)} />
                 {myShares > 0
                   ? <Btn title="Cash out" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked || mine.openVotes > 0} onPress={withdraw} />
                   : !captain ? <Btn title="Leave" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={leave} /> : null}
@@ -314,6 +314,10 @@ export default function OnchainClan() {
             const left = Math.max(0, Math.ceil(w.endTs - now));
             const rUs = us ? (weA ? retBps(us.score, w.baseA, w.chestA) : retBps(us.score, w.baseB, w.chestB)) : 0;
             const rThem = them ? (weA ? retBps(them.score, w.baseB, w.chestB) : retBps(them.score, w.baseA, w.chestA)) : 0;
+            // our open trades are not booked yet; show what they would add if closed now
+            const openPnl = positions.filter((p) => p.open).reduce((sum, p) => { const px = prices[p.coin]; return sum + (px ? (p.notional * pnlBps(p.entry, px, p.side, p.lev)) / 10_000 : 0); }, 0);
+            const chestStart = weA ? w.chestA : w.chestB;
+            const rUsLive = rUs + (chestStart ? (openPnl * 10_000) / chestStart : 0);
             return (
               <Card key={w.key.toBase58()} style={{ marginBottom: 8, padding: 14 }}>
                 <Row style={{ gap: 12 }}>
@@ -338,7 +342,8 @@ export default function OnchainClan() {
                       <Txt v="title" color={rUs >= 0 ? C.up : C.down}>{rUs >= 0 ? '+' : ''}{(rUs / 100).toFixed(2)}%</Txt>
                       <Txt v="title" color={rThem >= 0 ? C.up : C.down}>{rThem >= 0 ? '+' : ''}{(rThem / 100).toFixed(2)}%</Txt>
                     </Row>
-                    <Txt v="small" style={{ marginTop: 4 }}>Return on each starting chest from closed trades · pot {sol(w.stake * 2)} SOL · {left ? `${left >= 3600 ? `${(left / 3600).toFixed(1)} h` : `${left} s`} left` : 'over'}</Txt>
+                    {Math.abs(rUsLive - rUs) >= 0.5 ? <Txt v="small" color={rUsLive >= 0 ? C.up : C.down}>{rUsLive >= 0 ? '+' : ''}{(rUsLive / 100).toFixed(2)}% if your open trades closed now</Txt> : null}
+                    <Txt v="small" style={{ marginTop: 4 }}>Booked return on each starting chest from closed trades · pot {sol(w.stake * 2)} SOL · {left ? `${left >= 3600 ? `${(left / 3600).toFixed(1)} h` : `${left} s`} left` : 'over'}</Txt>
                     {left === 0 ? (A && B && (A.positionsOpen > 0 || B.positionsOpen > 0)
                       ? <Txt v="small" color={C.opp} style={{ marginTop: 8 }}>Window over. Every open position must be closed (anyone can now) before the war settles.</Txt>
                       : <Btn title="Settle the war" kind="white" h={44} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => settleWar(w)} />) : null}
