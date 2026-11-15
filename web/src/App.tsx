@@ -75,7 +75,7 @@ export default function App() {
                   one duel, sixty seconds.
                 </>
               }
-              sub="Pick long or short on the live price against a demo bot. No wallet and no money: the Arena is practice. In the app your rival is a real person and the pot is real."
+              sub="Pick your coin and your side. Your rival picks theirs. Best % in sixty seconds wins, and whoever hits their knockout line first is out. Free practice against a demo bot on live prices: no wallet, no money. In the app your rival is a real person and the pot is real."
             />
             <div className="reveal">
               <ArenaWidget />
@@ -94,7 +94,7 @@ export default function App() {
               <FeatureCard label="Leaderboard" title="become a legend, top the leaderboard">
                 <LeaderboardStrip compact />
               </FeatureCard>
-              <FeatureCard label="Knockout duels" title="1v1 anyone. last one standing takes the pot" art="/art/ko-coin.webp" />
+              <FeatureCard label="Knockout duels" title="1v1 anyone, any coin. best % takes the pot" art="/art/ko-coin.webp" />
               <FeatureCard label="Draw the line" title="draw the next minute. closest line wins" art="/art/pencil-line.webp" />
               <FeatureCard label="Clan wars" title="your clan vs theirs, a new war every week" note="Design sample" art="/art/flag.webp">
                 <div className="tug">
@@ -127,9 +127,9 @@ export default function App() {
                     </p>
                   </div>
                   <div className="challenge">
-                    <b>⚔ Knockout duel · SOL · 60 s</b>
-                    <span>rexx is short · $20 each</span>
-                    <span className="challenge-btn">Accept · go long</span>
+                    <b>⚔ Knockout duel · 60 s · $20 each</b>
+                    <span>rexx picked SOL short · you pick any coin</span>
+                    <span className="challenge-btn">Accept · pick your coin</span>
                   </div>
                 </div>
               </FeatureCard>

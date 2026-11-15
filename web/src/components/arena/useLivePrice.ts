@@ -22,6 +22,7 @@ export function useLivePrice(market: Market) {
   const [ticks, setTicks] = useState<Tick[]>([])
   const [state, setState] = useState<FeedState>('connecting')
   const [error, setError] = useState<string | null>(null)
+  const [symbol, setSymbol] = useState('')
   const last = useRef<Tick | null>(null)
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export function useLivePrice(market: Market) {
     const buf: Tick[] = []
     last.current = null
     setTicks([])
+    setSymbol('')
     setState('connecting')
     setError(null)
 
@@ -54,6 +56,7 @@ export function useLivePrice(market: Market) {
         if (!alive) return
         rows.forEach((k) => push({ t: k[0], p: Number(k[4]) }))
         setTicks([...buf])
+        setSymbol(market.symbol)
       })
       .catch((e: Error) => alive && setError(`Price history unavailable: ${e.message}`))
 
@@ -87,6 +90,7 @@ export function useLivePrice(market: Market) {
     const iv = setInterval(() => {
       if (!alive) return
       setTicks([...buf])
+      if (buf.length) setSymbol(market.symbol)
       const l = last.current
       if (l && Date.now() - l.t > STALE_MS) setState((s) => (s === 'live' ? 'stale' : s))
       else if (l) setState((s) => (s === 'stale' ? 'live' : s))
@@ -104,5 +108,6 @@ export function useLivePrice(market: Market) {
   }, [market.symbol])
 
   const price = ticks.length ? ticks[ticks.length - 1].p : null
-  return { ticks, price, state, error }
+  // `symbol` says which market `ticks` belong to ('' while switching), so callers never mix two coins
+  return { ticks, price, state, error, symbol }
 }
