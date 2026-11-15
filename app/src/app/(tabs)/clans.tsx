@@ -34,7 +34,7 @@ export default function Clans() {
       {/* your clan hero */}
       <LinearGradient colors={['#2A33A8', '#5B6CFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 16 }}>
         <Row style={{ gap: 12 }}>
-          <Art src={ART.crest} size={60} radius={16} />
+          <Art src={ART.crestCreate} size={60} radius={16} />
           <View style={{ flex: 1 }}>
             <Txt v="small" color="#D6DBFF" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.6 }}>YOUR CLAN</Txt>
             <Txt v="h2" color="#fff" style={{ marginTop: 2 }}>{live ? 'Pick a crew' : 'No clan yet'}</Txt>

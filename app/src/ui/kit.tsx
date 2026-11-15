@@ -210,6 +210,10 @@ export const ART = {
   tileDuel: require('../../assets/art/tile-duel.webp'),
   tileWar: require('../../assets/art/tile-war.webp'),
   tileLine: require('../../assets/art/tile-line.webp'),
+  tileRoyale: require('../../assets/art/tile-royale.webp'),
+  tileBounty: require('../../assets/art/tile-bounty.webp'),
+  crestCreate: require('../../assets/art/crest-create.webp'),
+  banner: require('../../assets/art/profile-banner.webp'),
   crest: require('../../assets/art/crest-moon.webp'),
   wordmark: require('../../assets/art/wordmark.png'),
   onboarding: require('../../assets/art/onboarding.webp'),
@@ -225,21 +229,32 @@ export const AVATARS = [
 export const CRESTS = [
   require('../../assets/art/crest-moon.webp'), require('../../assets/art/crest-bolt.webp'),
   require('../../assets/art/crest-flame.webp'), require('../../assets/art/crest-star.webp'),
+  require('../../assets/art/crest-skull.webp'), require('../../assets/art/crest-wolf.webp'),
+  require('../../assets/art/crest-crown.webp'), require('../../assets/art/crest-rocket.webp'),
 ];
+/** Podium medals, index 0 = gold. */
+export const MEDALS = [require('../../assets/art/medal-1.webp'), require('../../assets/art/medal-2.webp'), require('../../assets/art/medal-3.webp')];
+/** Chat reaction stickers. */
+export const STICKERS: { key: string; src: number }[] = (['ko', 'gg', 'rekt', 'lfg', 'fade-me', 'moon', 'crying', 'crown'] as const).map((key) => ({ key, src: ({
+  ko: require('../../assets/art/sticker-ko.webp'), gg: require('../../assets/art/sticker-gg.webp'), rekt: require('../../assets/art/sticker-rekt.webp'), lfg: require('../../assets/art/sticker-lfg.webp'),
+  'fade-me': require('../../assets/art/sticker-fade-me.webp'), moon: require('../../assets/art/sticker-moon.webp'), crying: require('../../assets/art/sticker-crying.webp'), crown: require('../../assets/art/sticker-crown.webp'),
+} as Record<string, number>)[key] }));
 export const BADGES: { key: string; label: string; src: number }[] = [
   { key: 'top10', label: 'Season top 10', src: require('../../assets/art/badge-top10.webp') },
   { key: 'streak', label: '9 win streak', src: require('../../assets/art/badge-streak.webp') },
   { key: '500', label: '500 duels', src: require('../../assets/art/badge-500.webp') },
   { key: 'captain', label: 'Clan captain', src: require('../../assets/art/badge-captain.webp') },
+  { key: 'first-ko', label: 'First knockout', src: require('../../assets/art/badge-first-ko.webp') },
+  { key: 'giant-slayer', label: 'Giant slayer', src: require('../../assets/art/badge-giant-slayer.webp') },
 ];
 const hash = (s: string) => [...s].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
 /** Every player gets a default sticker avatar picked from their name; a real profile picture overrides it. */
 export const stickerFor = (name: string) => AVATARS[hash(name) % AVATARS.length];
 export const crestFor = (name: string) => CRESTS[hash(name) % CRESTS.length];
-/** Art is rendered on pure black, so it sits on a black tile inside grey cards. */
+/** Sticker art has real transparency, so it sits straight on any surface. */
 export const Art = ({ src, size = 96, radius = 18 }: { src: number; size?: number; radius?: number }) => (
-  <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#000', overflow: 'hidden' }}>
-    <Image source={src} style={{ width: size, height: size }} contentFit="cover" />
+  <View style={{ width: size, height: size, borderRadius: radius, overflow: 'hidden' }}>
+    <Image source={src} style={{ width: size, height: size }} contentFit="contain" />
   </View>
 );
 export const Wordmark = ({ height = 26 }: { height?: number }) => (
