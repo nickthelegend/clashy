@@ -96,4 +96,8 @@ pub enum ClashyError {
     Eliminated,
     #[msg("Math overflow")]
     Overflow,
+    #[msg("A war can stake at most half the chest")]
+    WarStakeTooBig,
+    #[msg("Not enough chest shares")]
+    NotEnoughShares,
 }

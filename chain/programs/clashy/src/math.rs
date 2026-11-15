@@ -91,9 +91,45 @@ pub fn royale_call_ok(call: u8, start: u64, end: u64) -> bool {
     }
 }
 
+/// Shares minted for a deposit of `amount` into a chest worth `chest` with `shares` outstanding.
+/// The first deposit (or any into an empty chest with no shares) mints 1:1.
+pub fn shares_for_deposit(amount: u64, chest: u64, shares: u64) -> Option<u64> {
+    if shares == 0 || chest == 0 {
+        return if shares == 0 { Some(amount) } else { None };
+    }
+    u64::try_from(amount as u128 * shares as u128 / chest as u128).ok()
+}
+
+/// Lamports paid for redeeming `redeem` of `shares` outstanding from a chest worth `chest`.
+pub fn payout_for_shares(redeem: u64, chest: u64, shares: u64) -> u64 {
+    if shares == 0 {
+        return 0;
+    }
+    (redeem as u128 * chest as u128 / shares as u128) as u64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn chest_shares_are_pro_rata() {
+        // two members put in 2 and 1 SOL: 3 SOL, 3e9 shares
+        let s1 = shares_for_deposit(2_000_000_000, 0, 0).unwrap();
+        let s2 = shares_for_deposit(1_000_000_000, 2_000_000_000, s1).unwrap();
+        assert_eq!((s1, s2), (2_000_000_000, 1_000_000_000));
+        // the clan loses a 0.6 SOL war stake: chest 2.4 SOL; each gets 80% back, in any order
+        let chest = 2_400_000_000;
+        let total = s1 + s2;
+        let p2 = payout_for_shares(s2, chest, total);
+        assert_eq!(p2, 800_000_000);
+        assert_eq!(payout_for_shares(s1, chest - p2, total - s2), 1_600_000_000);
+        // a new member after a win pays the higher share price
+        let s3 = shares_for_deposit(1_200_000_000, 3_600_000_000, 3_000_000_000).unwrap();
+        assert_eq!(s3, 1_000_000_000);
+        // an empty chest with shares left cannot take deposits (old shares would dilute them)
+        assert_eq!(shares_for_deposit(1, 0, 5), None);
+    }
 
     #[test]
     fn pnl_long_and_short() {
