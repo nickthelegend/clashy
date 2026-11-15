@@ -33,9 +33,7 @@ done
 for f in $RAW/clashy-mobile-*.png(N); do
   n=${${f:t:r}#clashy-mobile-}
   case $n in
-    app-icon)
-      sips -z 1024 1024 $f --out $M/app-icon-1024.png >/dev/null
-      q $M/app-icon-1024.png -o $M/app-icon.webp ;;
+    app-icon) ;; # the app icon now comes from assets/brand/app-icon.svg (sliced c), not a generated image
     banner-*) cropfit $f $T 1600 900; q $T -o $M/$n.webp ;;
     onboard-*|onboarding|splash) cropfit $f $T 1024 1536; q $T -o $M/$n.webp ;;
     profile-banner) q -resize 1536 0 $f -o $M/$n.webp ;;
