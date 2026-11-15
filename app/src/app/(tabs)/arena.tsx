@@ -107,6 +107,7 @@ function ArenaPhone() {
         <Txt v="title">Arena</Txt>
         <Row style={{ gap: 8 }}>
           <View style={{ backgroundColor: C.upBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Txt v="small" color={C.up} style={{ fontSize: 11.5 }}>Practice open</Txt></View>
+          <Btn title="Ranked" kind="white" h={32} onPress={() => router.push('/ranked')} />
           <Btn title="Ranks" kind="ghost" h={32} onPress={() => router.push('/leaderboard')} />
         </Row>
       </Row>

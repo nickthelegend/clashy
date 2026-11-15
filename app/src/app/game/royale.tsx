@@ -4,11 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { MAJORS, useCandles } from '@/data/markets';
+import { RoyaleLobby } from '@/ui/lobby';
 import { Countdown, CountUp, FX, Hit, RoundBanner, Shake, WinBurst } from '@/ui/fx';
 import { Image } from 'expo-image';
 import { ART } from '@/ui/kit';
@@ -177,7 +178,8 @@ export default function Royale() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 12 }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 24 }}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <BackBtn onPress={() => router.back()} />
         <View style={{ flex: 1 }}><Txt v="h2">Royale</Txt><Txt v="small">Practice · {ROUND} s rounds · {LIVES} lives{survived ? ` · ${survived} right` : ''}</Txt></View>
@@ -201,6 +203,8 @@ export default function Royale() {
         </View>
         {controls}
       </View>
+      {phase === 'ready' || phase === 'over' ? <RoyaleLobby best={best} /> : null}
+    </ScrollView>
       {phase === 'count' ? <Countdown onDone={startRound} /> : null}
       <Hit k={phase === 'over' ? hit.k : 0} src={FX.out} />
     </View>
