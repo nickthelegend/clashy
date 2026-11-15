@@ -15,7 +15,7 @@ const PRESETS = [5, 10, 20, 50];
 const LEVS = [25, 50, 100];
 
 export default function Amount() {
-  const p = useLocalSearchParams<{ id: string; side?: string }>();
+  const p = useLocalSearchParams<{ id: string; side?: string; stake?: string }>();
   const [id, setId] = useState(p.id ?? 'SOL');
   const majors = useMajors();
   const trending = useTrending();
@@ -23,7 +23,7 @@ export default function Amount() {
   const insets = useSafeAreaInsets();
   const m = useMarket(id);
   const [side, setSide] = useState<'long' | 'short'>(p.side === 'short' ? 'short' : 'long');
-  const [amt, setAmt] = useState('20');
+  const [amt, setAmt] = useState(p.stake ?? '20');
   const [lev, setLev] = useState(100);
   const stake = Number(amt || 0);
   const price = m.data?.price;
