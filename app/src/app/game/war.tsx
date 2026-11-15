@@ -1,6 +1,7 @@
 // Clan war (style W2 territory map, with W4 feed and W5 pot votes as tabs).
 // Every hex is a real coin with its live 24h move. Clans own a coin by beating the other clan's return on it.
 // Ownership, the feed and votes need the clan program, so they say so instead of showing made-up clans.
+import { ClayLoop } from '@/ui/clay';
 import { Image } from 'expo-image';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -95,7 +96,7 @@ export default function ClanWar() {
         <BackBtn onPress={() => router.back()} />
         <View style={{ flex: 1 }}><Txt v="h2">Clan war</Txt><Txt v="small">Clan vs clan · one week · live coin map</Txt></View>
       </Row>
-      <Image source={ART.bannerWar} style={{ width: '100%', aspectRatio: 16 / 9, maxHeight: 260, borderRadius: 20, marginBottom: 12 }} contentFit="cover" />
+      <ClayLoop name="war" width="100%" height={desk ? 260 : 200} cover style={{ borderRadius: 20, marginBottom: 12 }} />
       <Row style={{ backgroundColor: C.s1, borderRadius: 20, padding: 12, gap: 10, marginBottom: 12 }}>
         <View style={{ flex: 1, alignItems: 'center' }}><Art src={ART.crestCreate} size={56} radius={0} /><Txt v="label" style={{ marginTop: 4 }}>Your clan</Txt><Txt v="small">Join or create</Txt></View>
         <Bob amp={5} ms={900}><Art src={ART.vs} size={64} radius={0} /></Bob>
