@@ -2,8 +2,29 @@ import { AnimatePresence, MotionConfig, motion, useMotionValueEvent, useScroll, 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { MAJORS, fetchLast, fetchMajor, fetchTrending, fmtPct, fmtUsd, usePoll, type Coin, type MajorId } from './lib/markets';
 
-const A = (f: string) => `/a/${f}`;
-const SHOT = (f: string) => `/shots/${f}.png`;
+const A = (f: string) => `/a/${f.replace(/\.(png|jpg)$/, '.webp')}`;
+const SHOT = (f: string) => `/shots/${f}.webp`;
+const CLIP = (f: string) => `/v/${f}.mp4`;
+const POSTER = (f: string) => `/v/${f}.webp`;
+
+/** A real gameplay clip recorded from the app. Loads nothing until near the viewport, plays only while visible,
+ *  and stays on its poster frame for people who prefer reduced motion. */
+function Clip({ name, label }: { name: string; label?: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { if (v.preload === 'none') v.preload = 'auto'; v.play().catch(() => {}); }
+      else v.pause();
+    }, { rootMargin: '200px 0px' });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return <video ref={ref} className="clip" src={CLIP(name)} poster={POSTER(name)} muted loop playsInline preload="none" aria-label={label ?? `${name} gameplay recorded from the Clashy app`} />;
+}
 const ease = [0.22, 1, 0.36, 1] as const;
 
 function useIsWide(min = 960) {
@@ -31,6 +52,7 @@ function Nav() {
         <span className="pillnav-sep" />
         <a href="#how" className="pillnav-link">How it works</a>
         <a href="#crew" className="pillnav-link">Games</a>
+        <a href="#real" className="pillnav-link">Real fights</a>
         <a href="#race" className="pillnav-link">Live race</a>
         <a href="#race" className="pill-cta">Play now</a>
       </nav>
@@ -101,7 +123,7 @@ function Hero() {
           <a className="cta-ghost" href="#how"><span className="cta-play">▶</span>See how it works</a>
         </motion.div>
         <motion.div className="hero2-stage" style={{ y: artY }}>
-          <motion.img className="hero2-art" src={A('hero-duo.png')} alt="Two clay traders face off over a price chart" initial={{ opacity: 0, scale: 0.9, y: 60 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1.2, ease, delay: 0.6 }} />
+          <motion.img className="hero2-art" fetchPriority="high" width={1100} height={770} src={A('hero-duo.png')} alt="Two clay traders face off over a price chart" initial={{ opacity: 0, scale: 0.9, y: 60 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1.2, ease, delay: 0.6 }} />
           <LiveCard />
         </motion.div>
       </div>
@@ -134,10 +156,10 @@ function Ticker() {
 
 /* ───────── how a duel works: dark, pinned; step list fills as you scroll ───────── */
 const STEPS = [
-  { tab: 'Match', art: 'tile-duel.png', t: 'Quick match. One coin.', b: 'You get matched with a rival and MagicBlock VRF rolls one coin for both of you. Pick long or short and your leverage.', shot: 'match', glow: '#5B6CFF' },
+  { tab: 'Match', art: 'tile-duel.png', t: 'Quick match. One coin.', b: 'You get matched with a rival and MagicBlock VRF rolls one coin for both of you. Pick long or short and your leverage.', shot: 'match-pick', glow: '#5B6CFF' },
   { tab: 'Duel', art: 'vs.png', t: 'Sixty seconds. Live.', b: 'Both lines race from 0% on the same clock. Your health bar drains as you get close to your knockout line.', shot: 'duel', glow: '#F0468C' },
-  { tab: 'Win', art: 'win-trophy.png', t: 'Best % takes the pot.', b: 'Touch your knockout line and you are out. Survive and beat their move at the bell, and the pot is yours.', shot: 'royale', glow: '#FFC94A' },
-  { tab: 'Climb', art: 'crown.png', t: 'Climb the season.', b: 'Every win moves you up the ladder, Bronze to Legend, with medals for the top of every season.', shot: 'leaderboard', glow: '#30D158' },
+  { tab: 'Win', art: 'win-trophy.png', t: 'Best % takes the pot.', b: 'Touch your knockout line and you are out. Survive and beat their move at the bell, and the pot is yours.', shot: 'result-win', glow: '#FFC94A' },
+  { tab: 'Climb', art: 'crown.png', t: 'Climb the season.', b: 'Every ranked win moves you up ten tiers, Exit Liquidity to The House, with medals for the top of every season.', shot: 'ranks', glow: '#30D158' },
 ];
 function How() {
   const wide = useIsWide();
@@ -214,31 +236,36 @@ function How() {
   );
 }
 
-/* ───────── games rail: dark game cards, one clay piece each, scroll drives it sideways ───────── */
-const RAIL = [
-  { k: 'Knockout duel', who: '1 v 1 · quick match', t: 'One coin. One winner.', b: 'VRF rolls one coin for both of you. Long or short, survive the knockout line, best % takes the pot.', c: '#5B6CFF', art: 'tile-duel.png', live: true },
-  { k: 'Coin clash', who: '1 v 1 · each picks', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#B49BFF', art: 'ko-burst.png', live: true },
-  { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#F0468C', art: 'tile-line.png', live: true },
-  { k: 'Royale', who: '5–20 players', t: 'Last one standing.', b: 'Up or down every 10 seconds. Wrong call costs a life. The whole screen is the button.', c: '#FFC94A', art: 'tile-royale.png', live: true },
-  { k: 'Clan war', who: 'Clan vs clan · 1 week', t: 'Bring the group chat.', b: 'Every coin is a tile on the map. Beat the other clan on it to own it.', c: '#30D158', art: 'clan-banner.png', live: false },
-  { k: 'Bounty', who: 'Open · 1 week', t: 'Put a price on your head.', b: 'Stake a reward on your week. Hunters pay to try and beat it.', c: '#5AC8FA', art: 'tile-bounty.png', live: false },
-  { k: 'Your record', who: 'Every season', t: 'Bronze to Legend.', b: 'Six rank tiers, season medals and a record that is yours.', c: '#FF8A4C', art: 'win-trophy.png', live: true },
+/* ───────── games rail: every game, its clay piece and the real screen (or a clip) ───────── */
+type Game = { k: string; who: string; t: string; b: string; c: string; art: string; clip?: string; shot?: string; live: boolean };
+const RAIL: Game[] = [
+  { k: 'Knockout duel', who: '1 v 1 · quick match · 60 s', t: 'One coin. One winner.', b: 'Matched in seconds. VRF rolls one coin for both of you. Long or short, survive the knockout line.', c: '#5B6CFF', art: 'tile-duel.png', clip: 'duel', live: true },
+  { k: 'Double or Nothing', who: 'After any win', t: 'Let it ride.', b: 'Roll the whole pot into the next duel. ×2, ×4, ×8… one loss ends the streak.', c: '#FFC94A', art: 'win-trophy.png', shot: 'result-win', live: true },
+  { k: 'Royale', who: '5–20 players · 10 s rounds', t: 'Last one standing.', b: 'Up or down every 10 seconds. The whole screen is the button. Wrong call costs a heart.', c: '#F0468C', art: 'tile-royale.png', clip: 'royale', live: true },
+  { k: 'Diamond Hands', who: 'Hold as long as you dare', t: 'Sell before it catches you.', b: 'Buy with leverage and hold. A knockout trails your peak. Your score is what you sell at.', c: '#5AC8FA', art: 'crown.png', clip: 'diamond', live: true },
+  { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#B49BFF', art: 'tile-line.png', clip: 'line', live: true },
+  { k: 'Ranked', who: 'Any game · ten ranks', t: 'The queue picks the game.', b: 'VRF rolls Knockout, Draw the line or Royale. Climb from Exit Liquidity to The House.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: true },
+  { k: 'Daily Cup', who: 'Everyone · one run a day', t: 'One coin. One shot.', b: 'The coin of the day for everyone. One scored run. New cup at 00:00 UTC.', c: '#FF8A4C', art: 'medal-1.png', shot: 'cup', live: true },
+  { k: 'Coin clash', who: '1 v 1 · each picks a coin', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#AEB6FF', art: 'ko-burst.png', shot: 'clash', live: true },
+  { k: 'Clan war', who: 'Clan vs clan · one week', t: 'Bring the group chat.', b: 'Every coin is a tile on the map. Beat the other clan on it to own it.', c: '#30D158', art: 'clan-banner.png', shot: 'war', live: false },
+  { k: 'Bounty', who: 'Open · one week', t: 'Put a price on your head.', b: 'Stake a reward on your week. Hunters pay to try and beat it.', c: '#5AC8FA', art: 'tile-bounty.png', shot: 'bounty', live: false },
 ];
-function RailCard({ c }: { c: (typeof RAIL)[number] }) {
+function RailCard({ c }: { c: Game }) {
   return (
-    <motion.article className="gcard" style={{ ['--c' as string]: c.c }} whileHover="hov" initial="rest" animate="rest">
-      <div className="gcard-top">
-        <span className="gcard-k">{c.k}</span>
-        <span className={`pill ${c.live ? 'pill-live' : 'pill-soon'}`}>{c.live ? <><span className="dot" />Practice live</> : 'At launch'}</span>
+    <motion.article className="gcard2" style={{ ['--c' as string]: c.c }} whileHover="hov" initial="rest" animate="rest">
+      <div className="gcard2-head">
+        <motion.img src={A(c.art)} alt="" width={72} height={72} loading="lazy" decoding="async" variants={{ rest: { rotate: 0, scale: 1 }, hov: { rotate: -8, scale: 1.12 } }} transition={{ type: 'spring', stiffness: 260, damping: 14 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span className={`pill ${c.live ? 'pill-live' : 'pill-soon'}`}>{c.live ? <><span className="dot" />Playable now</> : 'At launch'}</span>
+          <div className="gcard-k" style={{ marginTop: 6 }}>{c.k}</div>
+        </div>
       </div>
-      <div className="gcard-art">
-        <motion.img src={A(c.art)} alt="" loading="lazy" variants={{ rest: { y: 0, rotate: 0, scale: 1 }, hov: { y: -12, rotate: -4, scale: 1.05 } }} transition={{ type: 'spring', stiffness: 220, damping: 14 }} />
-      </div>
-      <div className="gcard-body">
-        <div className="xs" style={{ color: 'var(--c)', fontWeight: 650 }}>{c.who}</div>
-        <h3 className="gcard-t">{c.t}</h3>
-        <p className="sm" style={{ color: '#b9b9c2' }}>{c.b}</p>
-      </div>
+      <h3 className="gcard-t" style={{ marginTop: 14 }}>{c.t}</h3>
+      <p className="sm" style={{ color: '#b9b9c2', marginTop: 6 }}>{c.b}</p>
+      <div className="xs" style={{ color: 'var(--c)', fontWeight: 650, marginTop: 8 }}>{c.who}</div>
+      <motion.div className="gcard2-phone" variants={{ rest: { y: 0 }, hov: { y: -16 } }} transition={{ type: 'spring', stiffness: 220, damping: 18 }}>
+        {c.clip ? <Clip name={c.clip} /> : <img src={SHOT(c.shot!)} alt={`${c.k} screen`} loading="lazy" decoding="async" />}
+      </motion.div>
     </motion.article>
   );
 }
@@ -256,8 +283,8 @@ function Rail() {
   const intro = (
     <div className="rail-intro">
       <span className="kicker">The games</span>
-      <h2 className="h-l" style={{ marginTop: 14 }}>Five ways to<br />beat someone.</h2>
-      <p className="lead" style={{ marginTop: 18 }}>Duel a friend, call a royale, go to war with your clan. One record across all of it.</p>
+      <h2 className="h-l" style={{ marginTop: 14 }}>Ten ways to<br />beat someone.</h2>
+      <p className="lead" style={{ marginTop: 18 }}>Every card is the real app: clips recorded from it, playing on live prices. Eight are playable today as practice.</p>
     </div>
   );
   if (!wide) {
@@ -269,12 +296,112 @@ function Rail() {
     );
   }
   return (
-    <section id="crew" ref={ref} style={{ height: `${RAIL.length * 50 + 100}vh` }}>
+    <section id="crew" ref={ref} style={{ height: `${RAIL.length * 42 + 100}vh` }}>
       <div className="rail-pin">
         <motion.div className="rail-track" ref={track} style={{ x }}>
           {intro}
           {RAIL.map((c) => <RailCard key={c.k} c={c} />)}
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────── gameplay: three real clips side by side ───────── */
+function Gameplay() {
+  const items = [
+    { clip: 'duel', t: 'Knockout duel', s: 'Coin roll → VS → live race' },
+    { clip: 'royale', t: 'Royale', s: 'The whole screen is the button' },
+    { clip: 'diamond', t: 'Diamond Hands', s: 'Hold, then sell before the knockout' },
+  ];
+  return (
+    <section className="sec" id="play" style={{ paddingTop: 110 }}>
+      <div className="wrap">
+        <div className="sec-head" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <Reveal><span className="kicker">Recorded from the app</span></Reveal>
+          <Reveal delay={0.05}><h2 className="h-l">No mockups.<br /><span className="grad">This is the game.</span></h2></Reveal>
+          <Reveal delay={0.1}><p className="lead" style={{ margin: '0 auto' }}>Every clip is the Clashy app running on live Coinbase prices. Practice is free today; real pots open on Solana mainnet at launch.</p></Reveal>
+        </div>
+        <div className="play-row">
+          {items.map((it, k) => (
+            <Reveal key={it.clip} delay={k * 0.08} className="play-item">
+              <div className="phone play-phone"><Clip name={it.clip} label={`${it.t} gameplay`} /></div>
+              <div className="h-s" style={{ marginTop: 16, textAlign: 'center' }}>{it.t}</div>
+              <div className="sm" style={{ textAlign: 'center' }}>{it.s}</div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────── real fights: how a real-money game runs and settles ───────── */
+function RealFights() {
+  const steps = [
+    { n: '01', t: 'Pick your pot', b: 'Set a pot range or go all in. Your stake goes into a Solana escrow before the game starts.', art: 'coins-pile.png' },
+    { n: '02', t: 'One coin, rolled', b: 'You get matched, and MagicBlock VRF rolls the coin for both of you. Nobody chooses it.', art: 'vs.png' },
+    { n: '03', t: 'Sealed picks, live fight', b: 'Long or short stays sealed in a Private Ephemeral Rollup until both lock. Then every tick is scored live on the rollup.', art: 'ko-burst.png' },
+    { n: '04', t: 'Settled on Solana', b: 'The winner takes the pot minus 3%. The result is committed to Solana with a receipt anyone can check.', art: 'win-trophy.png' },
+  ];
+  const receipt = ['Entry fill', 'Exit fill', 'Size and leverage', 'Trading P&L', 'Venue fees', 'Funding', 'Pot (after 3% rake)', 'Net'];
+  return (
+    <section className="sec realf" id="real">
+      <div className="wrap">
+        <div className="sec-head">
+          <Reveal><span className="kicker">Real fights</span></Reveal>
+          <Reveal delay={0.05}><h2 className="h-l">Real pots.<br /><span className="grad">Real receipts.</span></h2></Reveal>
+          <Reveal delay={0.1}><p className="lead">How a money game runs once Clashy is live on Solana mainnet. Today the same games are free practice on live prices.</p></Reveal>
+        </div>
+        <div className="realf-grid">
+          <div className="realf-steps">
+            {steps.map((s, k) => (
+              <Reveal key={s.n} delay={k * 0.06}>
+                <div className="realf-step">
+                  <img src={A(s.art)} alt="" width={84} height={84} loading="lazy" decoding="async" />
+                  <div><div className="xs" style={{ color: 'var(--b2)', fontWeight: 700 }}>{s.n}</div><div className="h-s">{s.t}</div><p className="sm" style={{ marginTop: 4 }}>{s.b}</p></div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={0.1}>
+            <div className="receipt">
+              <div className="receipt-head"><span className="h-s">Game receipt</span><span className="pill pill-soon">On chain at launch</span></div>
+              <p className="xs" style={{ margin: '6px 0 14px' }}>Every game ends on a receipt built only from on-chain data. Fees, funding and rake are always shown, never folded into a nicer number.</p>
+              {receipt.map((r) => (
+                <div key={r} className="receipt-row"><span>{r}</span><span className="receipt-dash" /><span className="xs">tx link</span></div>
+              ))}
+              <div className="receipt-foot">
+                {['18+', 'Geofenced', 'Liquidation price shown before All-in', 'Daily loss limit', 'Free practice'].map((t) => <span key={t} className="chip-sm">{t}</span>)}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────── ranks: the ten degen tiers ───────── */
+const TIERS = ['Exit Liquidity', 'Paper Hands', 'Bagholder', 'Dip Buyer', 'Ape', 'Degen', 'Diamond Hands', 'Chad', 'Whale', 'The House'];
+function Ranks() {
+  return (
+    <section className="sec" id="ranks" style={{ paddingTop: 40 }}>
+      <div className="wrap">
+        <div className="sec-head" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <Reveal><span className="kicker">Ranked</span></Reveal>
+          <Reveal delay={0.05}><h2 className="h-l">From Exit Liquidity<br />to <span className="grad">The House.</span></h2></Reveal>
+          <Reveal delay={0.1}><p className="lead" style={{ margin: '0 auto' }}>Ten ranks. Ranked wins earn points, never bought. Reach the top and you are the house.</p></Reveal>
+        </div>
+        <div className="ranks">
+          {TIERS.map((t, k) => (
+            <motion.div key={t} className="rank" initial={{ opacity: 0, y: 40, scale: 0.8 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, margin: '-40px' }} transition={{ type: 'spring', stiffness: 180, damping: 15, delay: k * 0.05 }} whileHover={{ y: -8, scale: 1.06 }}>
+              <img src={A(`rank-${k + 1}.png`)} alt="" width={96} height={96} loading="lazy" decoding="async" />
+              <div className="xs" style={{ color: 'var(--mu)' }}>{k + 1}</div>
+              <div className="rank-t">{t}</div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -465,8 +592,11 @@ export default function App() {
       <main>
         <Hero />
         <Ticker />
+        <Gameplay />
         <How />
         <Rail />
+        <RealFights />
+        <Ranks />
         <Race />
         <Statement />
         <Tech />

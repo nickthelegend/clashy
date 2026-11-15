@@ -31,6 +31,9 @@ export async function fetchLast(id: MajorId): Promise<number> {
 }
 
 type DsPair = { baseToken: { address: string; symbol: string }; priceUsd?: string; priceChange?: { h24?: number }; volume?: { h24?: number }; info?: { imageUrl?: string } };
+/** DexScreener's CDN takes size params; ask for a small icon instead of the 800 px default. */
+export const smallIcon = (u?: string) => (u ? u.replace(/width=\d+&height=\d+&quality=\d+/, 'width=96&height=96&quality=80') : u);
+
 export async function fetchTrending(limit = 14): Promise<Coin[]> {
   const boosts = await json<{ chainId: string; tokenAddress: string }[]>(`${DS}/token-boosts/top/v1`);
   const mints = [...new Set(boosts.filter((b) => b.chainId === 'solana').map((b) => b.tokenAddress))].slice(0, limit);
@@ -38,7 +41,7 @@ export async function fetchTrending(limit = 14): Promise<Coin[]> {
   const pairs = await json<DsPair[]>(`${DS}/tokens/v1/solana/${mints.join(',')}`);
   const best = new Map<string, DsPair>();
   for (const p of pairs) { const prev = best.get(p.baseToken.address); if (!prev || (p.volume?.h24 ?? 0) > (prev.volume?.h24 ?? 0)) best.set(p.baseToken.address, p); }
-  return [...best.values()].map((p) => ({ id: p.baseToken.address, symbol: p.baseToken.symbol, image: p.info?.imageUrl, price: Number(p.priceUsd), change24h: p.priceChange?.h24 ?? 0 })).filter((c) => Number.isFinite(c.price));
+  return [...best.values()].map((p) => ({ id: p.baseToken.address, symbol: p.baseToken.symbol, image: smallIcon(p.info?.imageUrl), price: Number(p.priceUsd), change24h: p.priceChange?.h24 ?? 0 })).filter((c) => Number.isFinite(c.price));
 }
 
 /** Polls `fn` every `ms`. Keeps the last good data and reports the latest error. */
