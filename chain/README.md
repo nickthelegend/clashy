@@ -25,12 +25,15 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
    sides on every call and, on a knockout or at the bell, commits and undelegates back to Solana.
 5. `settle_duel` pays the winner (rake first, so the vault never drops below rent-exempt) and updates Elo and RP.
 
-**Clans.** `create_clan` / `join_clan` / `leave_clan`; members `deposit_chest` / `withdraw_chest`. Group trades go by
-deposit-weighted vote: `propose` → `vote` → captain `execute_proposal` opens a position at the oracle price →
-`close_position` books its P&L to the chest. Positions are scored at the oracle price; they are **not** venue fills.
+**Clans.** `create_clan` / `join_clan` / `leave_clan`. The chest is held as shares: `deposit_chest` mints shares at
+the chest's current value and `withdraw_chest` redeems shares for their pro-rata part, so a war win or loss is shared
+by every member whatever order they leave in. Group trades go by share-weighted vote: `propose` → `vote` → captain
+`execute_proposal` opens a position at the Solana price (early once yes holds over half of all shares) →
+`close_position` books its P&L to the clan score. Positions are scored at the price; they are **not** venue fills.
 
-**Clan wars.** `declare_war` / `accept_war` / `cancel_war` / `settle_war`: the clan with the better chest return over the
-war window wins.
+**Clan wars.** `declare_war` / `accept_war` / `cancel_war` / `settle_war`: both captains stake the same amount from their
+chests (at most half a chest), and when the window ends the clan with the better return from closed trades takes the
+pot minus rake into its chest. A tie refunds both.
 
 **Tournaments (Royale).** Up to 16 players: `create` / `join` / `cancel_tournament`, a VRF coin
 (`request_tournament_coin`), then on the rollup `start_tournament`, `call_round` (each player calls up or down),
@@ -54,8 +57,8 @@ on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bi
 
 ## Status
 
-- **Local MagicBlock stack: works end to end.** 5/5 end-to-end tests and 9/9 unit tests pass (see [TESTING.md](TESTING.md)).
-  Two browser tabs played full duels through the app.
+- **Local MagicBlock stack: works end to end.** 5/5 end-to-end and 10/10 unit tests pass (see [TESTING.md](TESTING.md)).
+  Browser players ran full duels, a clan trade, a clan war and a three-player Royale through the app.
 - **VRF: code only.** The VRF request and callback are written against MagicBlock's SDK, but VRF oracles only run on
   devnet and mainnet, so the local runs use the commit-reveal fallback. **BLOCKED:** a devnet deploy needs about 6
   devnet SOL; the faucet rate-limited the airdrop.
