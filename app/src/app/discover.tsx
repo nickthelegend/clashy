@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { useTrending } from '@/data/markets';
 import { Search } from '@/ui/icons';
 import { BackBtn, CoinRow, ErrorLine, Row, Txt } from '@/ui/kit';
@@ -12,13 +13,14 @@ const MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export default function Discover() {
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const t = useTrending();
   const [q, setQ] = useState('');
   const list = (t.data ?? []).filter((m) => !q || m.symbol.toLowerCase().includes(q.toLowerCase()) || m.name.toLowerCase().includes(q.toLowerCase()));
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: C.bg }}
-      contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 30 }}
+      contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 30 }}
       data={list}
       keyExtractor={(m) => m.id}
       ListHeaderComponent={

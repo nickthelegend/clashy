@@ -9,7 +9,9 @@ import { runOnJS } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Swords } from '@/ui/icons';
 import { ART, Art, Btn, Row, Txt } from '@/ui/kit';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, R, S } from '@/ui/tokens';
+import { useLayout } from '@/ui/layout';
+import { ScrollView } from 'react-native';
 
 type Mode = { key: string; title: string; who: string; line: string; art: number; live: boolean };
 const MODES: Mode[] = [
@@ -21,7 +23,61 @@ const MODES: Mode[] = [
 ];
 const STAKES = [5, 10, 20, 50];
 
+/** Desktop Arena: every game in a grid, the selected one's Battle panel pinned on the right. */
+function ArenaDesk() {
+  const [i, setI] = useState(0);
+  const [stake, setStake] = useState(20);
+  const m = MODES[i];
+  const battle = () => { if (m.live) router.push({ pathname: '/duel/amount', params: { id: 'SOL', stake: String(stake) } }); };
+  return (
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 16 }}>
+        <Row style={{ justifyContent: 'space-between' }}>
+          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Pick a game. Each one lets you play any coin.</Txt></View>
+          <Btn title="Leaderboard" kind="ghost" h={38} onPress={() => router.push('/leaderboard')} />
+        </Row>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+          {MODES.map((g, k) => {
+            const on = k === i;
+            return (
+              <Pressable key={g.key} onPress={() => setI(k)} style={(st) => ({
+                width: 236, backgroundColor: C.s1, borderRadius: R.xl, padding: 14,
+                borderWidth: 1.5, borderColor: on ? C.brand : (st as { hovered?: boolean }).hovered ? '#2A2A30' : 'transparent',
+              })}>
+                <Art src={g.art} size={206} radius={18} />
+                <Row style={{ justifyContent: 'space-between', marginTop: 12 }}>
+                  <Txt v="h2">{g.title}</Txt>
+                  <View style={{ backgroundColor: g.live ? C.upBg : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}><Txt v="small" color={g.live ? C.up : C.muted} style={{ fontSize: 11 }}>{g.live ? 'Practice' : 'Soon'}</Txt></View>
+                </Row>
+                <Txt v="small" style={{ marginTop: 4 }}>{g.who}</Txt>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+      <View style={{ width: 360, borderLeftWidth: 1, borderLeftColor: C.line, padding: 22 }}>
+        <Txt v="small" style={{ fontFamily: F.semi, letterSpacing: 0.8, fontSize: 11 }}>SELECTED MODE</Txt>
+        <Txt v="title" style={{ marginTop: 6 }}>{m.title}</Txt>
+        <Txt v="small" style={{ marginTop: 4 }}>{m.who}</Txt>
+        <Txt v="body" color="#B9B9C2" style={{ marginTop: 14, lineHeight: 21 }}>{m.line}</Txt>
+        <Txt v="small" color={C.ink} style={{ marginTop: 22, marginBottom: 8 }}>Stake</Txt>
+        <Row style={{ gap: 8 }}>
+          {STAKES.map((v) => <Btn key={v} title={`$${v}`} h={38} kind={stake === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setStake(v)} />)}
+        </Row>
+        <View style={{ flex: 1 }} />
+        <Btn title={m.live ? 'Battle' : 'Coming soon'} h={60} disabled={!m.live} icon={<Swords size={20} color="#fff" />} style={{ borderRadius: 18 }} onPress={battle} />
+        <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>{m.live ? 'Practice on a live price · real duels open at the Blitz kickoff' : 'This mode opens after launch'}</Txt>
+      </View>
+    </View>
+  );
+}
+
 export default function Arena() {
+  const { desk } = useLayout();
+  return desk ? <ArenaDesk /> : <ArenaPhone />;
+}
+
+function ArenaPhone() {
   const insets = useSafeAreaInsets();
   const [i, setI] = useState(0);
   const [stake, setStake] = useState(20);

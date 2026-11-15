@@ -2,6 +2,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { isMajor, useCandles, useMarket } from '@/data/markets';
 import { ART, BackBtn, Btn, Card, ChangePill, ErrorLine, Pending, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -13,6 +14,7 @@ const Stat = ({ k, v }: { k: string; v: string }) => (
 export default function Coin() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const { width } = useWindowDimensions();
   const m = useMarket(id);
   const candles = useCandles(id);
@@ -21,7 +23,7 @@ export default function Coin() {
   const duel = (side: 'long' | 'short') => router.push({ pathname: '/duel/amount', params: { id, side } });
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, ...col }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: 120 }}>
         <Row style={{ gap: 10, marginBottom: 12 }}>
           <BackBtn onPress={() => router.back()} />
@@ -43,7 +45,7 @@ export default function Coin() {
         </Row>
         {major ? (
           <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
-            <PriceChart data={candles.data ?? []} w={width - S.gutter * 2} h={230} />
+            <PriceChart data={candles.data ?? []} w={Math.min(width, 760) - S.gutter * 2} h={230} />
             <Txt v="small" style={{ padding: 10, paddingTop: 0 }}>Last 2 hours · 1m candles · Coinbase</Txt>
           </Card>
         ) : (

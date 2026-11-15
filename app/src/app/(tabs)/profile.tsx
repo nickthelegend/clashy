@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_SETUP, useMyProfile } from '@/data/social';
 import { Crown } from '@/ui/icons';
 import { ART, Art, Btn, Card, Pending, Row, Txt, UnderTabs } from '@/ui/kit';
@@ -15,12 +16,13 @@ const Stat = ({ k, v }: { k: string; v: string }) => (
 
 export default function ProfileTab() {
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const me = useMyProfile();
   const [tab, setTab] = useState<Tab>('duels');
   const ready = me.status === 'ready';
   const p = ready ? me.data : undefined;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
       <Row style={{ gap: 14 }}>
         <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
           <Txt v="title" color={C.dim}>?</Txt>

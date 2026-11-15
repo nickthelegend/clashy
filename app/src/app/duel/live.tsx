@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { fetchLastPrice, isMajor } from '@/data/markets';
 import { Btn, Card, ErrorLine, LiveDot, PriceChart, Row, Txt } from '@/ui/kit';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -13,6 +14,7 @@ const LEN = 60;
 export default function Live() {
   const p = useLocalSearchParams<{ id: string; side: string; stake: string; lev: string; entry: string; symbol: string }>();
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const { width } = useWindowDimensions();
   const side = p.side === 'short' ? 'short' : 'long';
   const stake = Number(p.stake), lev = Number(p.lev), entry = Number(p.entry);
@@ -53,7 +55,7 @@ export default function Live() {
 
   const up = pnl >= 0;
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Row style={{ gap: 6 }}><LiveDot /><Txt v="small" color={C.ink}>Practice · {p.symbol} · {lev}×</Txt></Row>
         <Txt v="small">vs the market</Txt>
@@ -63,7 +65,7 @@ export default function Live() {
         <Txt v="small">until the bell</Txt>
       </View>
       <Card style={{ padding: 0, overflow: 'hidden', marginTop: 16 }}>
-        <PriceChart data={ticks} w={width - S.gutter * 2} h={260} koYou={ko} />
+        <PriceChart data={ticks} w={Math.min(width, 760) - S.gutter * 2} h={260} koYou={ko} />
         <Row style={{ justifyContent: 'space-between', padding: 10, paddingTop: 2 }}>
           <Txt v="small" color={C.brandSoft}>Your knockout {fmtUsd(ko)}</Txt>
           <Txt v="small" color={C.ink}>Now {fmtUsd(last)}</Txt>

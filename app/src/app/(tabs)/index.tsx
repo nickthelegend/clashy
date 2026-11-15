@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn, useLayout } from '@/ui/layout';
 import { Bell, Bolt } from '@/ui/icons';
 import { ART, Art, Btn, IconBtn, Pending, Row, Txt, UnderTabs, Wordmark } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
@@ -27,13 +28,15 @@ const Story = ({ label, add, onPress }: { label: string; add?: boolean; onPress?
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const [tab, setTab] = useState<Tab>('foryou');
+  const { desk } = useLayout();
   const [showPlay, setShowPlay] = useState(true); // one-time card; dismissing hides it for this session
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
       <Row style={{ justifyContent: 'space-between', marginBottom: 14 }}>
-        <Wordmark height={24} />
+        {desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         <Row style={{ gap: 8 }}>
           <Btn title="Connect" h={36} onPress={() => router.push('/wallet')} />
           <IconBtn size={36}><Bell size={18} color={C.ink} /></IconBtn>

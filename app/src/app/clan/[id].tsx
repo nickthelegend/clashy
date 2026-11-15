@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { SETUP_REASON, useClan } from '@/data/clans';
 import { ART, Art, Avatar, BackBtn, Btn, Pending, Row, Txt } from '@/ui/kit';
 import { C, F, R, S } from '@/ui/tokens';
@@ -10,13 +11,14 @@ import { C, F, R, S } from '@/ui/tokens';
 export default function ClanRoom() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const room = useClan(id);
   const [draft, setDraft] = useState('');
   const ready = room.status === 'ready';
   const joined = ready && room.data.joined;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg, ...col }}>
       {/* room header */}
       <Row style={{ gap: 10, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
         <BackBtn onPress={() => router.back()} />

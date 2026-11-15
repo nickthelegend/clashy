@@ -1,11 +1,15 @@
 // Custom tab bar: flat black like pump.fun, icons only, raised indigo Arena square in the middle.
 import * as Haptics from 'expo-haptics';
+import { usePathname } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 import type { TabTriggerSlotProps } from 'expo-router/ui';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Chat, Home, Shield, Swords, User } from '@/ui/icons';
 import { C } from '@/ui/tokens';
+import { RightRail, Sidebar } from '@/ui/desk';
+import { pref, useLayout } from '@/ui/layout';
 
 type TB = Omit<TabTriggerSlotProps, 'ref'> & { icon: (c: string) => React.ReactNode; center?: boolean };
 function TabBtn({ icon, isFocused, center, ref: _r, ...props }: TB & { ref?: unknown }) {
@@ -24,6 +28,31 @@ function TabBtn({ icon, isFocused, center, ref: _r, ...props }: TB & { ref?: unk
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { desk, wide } = useLayout();
+  const path = usePathname();
+  const [collapsed, setCollapsed] = useState(() => pref.get('sidebar') === 'collapsed');
+  const toggle = () => setCollapsed((c) => { pref.set('sidebar', c ? 'open' : 'collapsed'); return !c; });
+  const routes = (
+    <TabList style={{ display: 'none' }}>
+      <TabTrigger name="index" href="/" />
+      <TabTrigger name="chats" href="/chats" />
+      <TabTrigger name="arena" href="/arena" />
+      <TabTrigger name="clans" href="/clans" />
+      <TabTrigger name="profile" href="/profile" />
+    </TabList>
+  );
+
+  // Desktop: D1 sidebar (collapses to the D2 icon rail) + main column + right rail on wide screens.
+  if (desk)
+    return (
+      <Tabs style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
+        <Sidebar collapsed={collapsed} onToggle={toggle} />
+        <View style={{ flex: 1 }}><TabSlot style={{ flex: 1 }} /></View>
+        {wide && !path.startsWith('/arena') ? <RightRail /> : null}
+        {routes}
+      </Tabs>
+    );
+
   return (
     <Tabs style={{ flex: 1, backgroundColor: C.bg }}>
       <TabSlot style={{ flex: 1 }} />
@@ -34,13 +63,7 @@ export default function TabsLayout() {
         <TabTrigger name="clans" asChild><TabBtn icon={(c) => <Shield size={24} color={c} />} /></TabTrigger>
         <TabTrigger name="profile" asChild><TabBtn icon={(c) => <User size={24} color={c} />} /></TabTrigger>
       </View>
-      <TabList style={{ display: 'none' }}>
-        <TabTrigger name="index" href="/" />
-        <TabTrigger name="chats" href="/chats" />
-        <TabTrigger name="arena" href="/arena" />
-        <TabTrigger name="clans" href="/clans" />
-        <TabTrigger name="profile" href="/profile" />
-      </TabList>
+      {routes}
     </Tabs>
   );
 }

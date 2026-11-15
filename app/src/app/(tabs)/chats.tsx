@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_SETUP, useChats } from '@/data/social';
 import { Search } from '@/ui/icons';
 import { ART, Avatar, Btn, IconBtn, Pending, Row, SearchBar, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
@@ -14,6 +15,7 @@ const FILTERS: { key: Filter; label: string }[] = [{ key: 'all', label: 'All' },
 
 export default function Chats() {
   const insets = useSafeAreaInsets();
+  const col = useDeskColumn();
   const [f, setF] = useState<Filter>('all');
   const [q, setQ] = useState('');
   const [searching, setSearching] = useState(false);
@@ -22,7 +24,7 @@ export default function Chats() {
   const list = chats.status === 'ready' ? chats.data.filter((c) => (f === 'all' || c.kind === f) && (!q || c.name.toLowerCase().includes(q.toLowerCase()))) : [];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
       <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
         <Txt v="title">Chats</Txt>
         <Row style={{ gap: 8 }}>

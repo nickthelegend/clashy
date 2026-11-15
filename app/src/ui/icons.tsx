@@ -51,3 +51,9 @@ export const Del = ({ size, color = '#fff' }: P) => (
 export const User = ({ size, color = '#fff' }: P) => (
   <Svg {...base(size)} stroke={color} strokeWidth={2.1} strokeLinecap="round"><Circle cx="12" cy="8" r="4" /><Path d="M4 21a8 8 0 0 1 16 0" /></Svg>
 );
+export const WalletI = ({ size, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v3" /><Path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3" /><Path d="M21 10h-5a2 2 0 0 0 0 4h5z" /></Svg>
+);
+export const Collapse = ({ size, color = '#fff', open = true }: P & { open?: boolean }) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 4h18v16H3z" /><Path d="M9 4v16" /><Path d={open ? 'm16 10-2 2 2 2' : 'm14 10 2 2-2 2'} /></Svg>
+);
