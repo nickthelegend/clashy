@@ -2,12 +2,14 @@
 // Every hex is a real coin with its live 24h move. Clans own a coin by beating the other clan's return on it.
 // Ownership, the feed and votes need the clan program, so they say so instead of showing made-up clans.
 import { Image } from 'expo-image';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polygon } from 'react-native-svg';
 import { SETUP_REASON } from '@/data/clans';
+import { Bob } from '@/ui/fx';
 import { useMajors, useTrending, type Market } from '@/data/markets';
 import { ART, Art, BackBtn, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
@@ -56,7 +58,7 @@ export default function ClanWar() {
     <View>
       {coins.length === 0 ? <SkeletonRows n={4} /> : rows.map((row, r) => (
         <Row key={r} style={{ gap, marginLeft: r % 2 ? (hw + gap) / 2 : 0, marginTop: r ? -hw * 0.28 : 0 }}>
-          {row.map((m) => <Hex key={m.id} m={m} w={hw} on={m.id === sel} onPress={() => setSel(m.id === sel ? undefined : m.id)} />)}
+          {row.map((m, k) => <Animated.View key={m.id} entering={ZoomIn.delay((r * 4 + k) * 55).springify().damping(11)}><Hex m={m} w={hw} on={m.id === sel} onPress={() => setSel(m.id === sel ? undefined : m.id)} /></Animated.View>)}
         </Row>
       ))}
       {majors.error || trending.error ? <ErrorLine msg={`Market feed: ${majors.error ?? trending.error}`} onRetry={() => { majors.refresh(); trending.refresh(); }} /> : null}
@@ -96,7 +98,7 @@ export default function ClanWar() {
       <Image source={ART.bannerWar} style={{ width: '100%', aspectRatio: 16 / 9, maxHeight: 260, borderRadius: 20, marginBottom: 12 }} contentFit="cover" />
       <Row style={{ backgroundColor: C.s1, borderRadius: 20, padding: 12, gap: 10, marginBottom: 12 }}>
         <View style={{ flex: 1, alignItems: 'center' }}><Art src={ART.crestCreate} size={56} radius={0} /><Txt v="label" style={{ marginTop: 4 }}>Your clan</Txt><Txt v="small">Join or create</Txt></View>
-        <Art src={ART.vs} size={64} radius={0} />
+        <Bob amp={5} ms={900}><Art src={ART.vs} size={64} radius={0} /></Bob>
         <View style={{ flex: 1, alignItems: 'center' }}><View style={{ opacity: 0.35 }}><Art src={ART.crest} size={56} radius={0} /></View><Txt v="label" style={{ marginTop: 4 }}>Rival clan</Txt><Txt v="small">Matched at war start</Txt></View>
       </Row>
       <View style={{ marginBottom: 12 }}><UnderTabs items={[{ key: 'map', label: 'Map' }, { key: 'feed', label: 'Feed' }, { key: 'votes', label: 'Pot votes' }]} value={tab} onChange={setTab} /></View>

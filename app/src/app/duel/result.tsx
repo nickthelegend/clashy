@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
-import { ART, Art, Btn, Card, Row, Txt } from '@/ui/kit';
-import { C, S, fmtUsd } from '@/ui/tokens';
+import { CountUp, Shake, WinBurst } from '@/ui/fx';
+import { ART, Btn, Card, Row, Txt } from '@/ui/kit';
+import { C, F, S, fmtUsd } from '@/ui/tokens';
 
 export default function Result() {
   const p = useLocalSearchParams<{ id: string; reason: string; pnl: string; symbol: string; side: string; lev: string; secs: string; entry: string; exit: string; rival?: string; rivalPct?: string; myPct?: string }>();
@@ -21,19 +22,22 @@ export default function Result() {
   const s = useSharedValue(0.6);
   useEffect(() => { s.value = withSpring(1, { damping: 9, stiffness: 140 }); }, [s]);
   const pop = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  const [hit, setHit] = useState(0); // shake the skull once it lands
+  useEffect(() => { const h = setTimeout(() => setHit(1), 380); return () => clearTimeout(h); }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 40, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 16, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Animated.View style={[{ alignItems: 'center' }, pop]}>
-        <View style={{ width: 200, height: 200, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
-          {won ? <View style={{ position: 'absolute', top: -40 }}><Art src={ART.confetti} size={240} radius={0} /></View> : null}
-          <View style={{ opacity: won || flat ? 1 : 0.8 }}><Art src={p.reason === 'ko' || (!won && !flat) ? ART.koSkull : flat ? ART.draw : ART.winTrophy} size={180} radius={0} /></View>
-        </View>
-        <Txt v="small" style={{ marginTop: 18 }}>{p.reason === 'ko' ? 'Knockout' : p.reason === 'cash' ? 'Cashed out' : 'Bell'} · {p.secs}s · practice</Txt>
+        {won ? <WinBurst src={ART.winTrophy} size={180} /> : (
+          <Shake trigger={hit} style={{ width: 252, height: 216, alignItems: 'center', justifyContent: 'center' }}>
+            <WinBurst src={p.reason === 'ko' || !flat ? ART.koSkull : ART.draw} size={170} burst={false} />
+          </Shake>
+        )}
+        <Txt v="small" style={{ marginTop: 6 }}>{p.reason === 'ko' ? 'Knockout' : p.reason === 'cash' ? 'Cashed out' : 'Bell'} · {p.secs}s · practice</Txt>
         <Txt v="title" style={{ fontSize: 44, marginTop: 6 }}>{title}</Txt>
         {hasRival && p.reason !== 'ko' ? (
           <>
-            <Txt v="title" color={flat ? C.muted : won ? C.up : C.down} style={{ fontSize: 40, marginTop: 4 }}>{myPct - rPct >= 0 ? '+' : '−'}{Math.abs(myPct - rPct).toFixed(1)}% vs {p.rival}</Txt>
+            <CountUp to={Math.abs(myPct - rPct)} ms={1100} format={(v) => `${myPct - rPct >= 0 ? '+' : '−'}${v.toFixed(1)}% vs ${p.rival}`} style={{ fontFamily: F.bold, fontSize: 40, letterSpacing: -1.2, color: flat ? C.muted : won ? C.up : C.down, marginTop: 4 }} />
             <Txt v="small" style={{ marginTop: 4 }}>Practice P&L {pnl >= 0 ? '+' : '−'}{fmtUsd(Math.abs(pnl))} · no money moved</Txt>
           </>
         ) : (
