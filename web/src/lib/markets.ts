@@ -31,8 +31,8 @@ export async function fetchLast(id: MajorId): Promise<number> {
 }
 
 type DsPair = { baseToken: { address: string; symbol: string }; priceUsd?: string; priceChange?: { h24?: number }; volume?: { h24?: number }; info?: { imageUrl?: string } };
-/** DexScreener's CDN takes size params; ask for a small icon instead of the 800 px default. */
-export const smallIcon = (u?: string) => (u ? u.replace(/width=\d+&height=\d+&quality=\d+/, 'width=96&height=96&quality=80') : u);
+/** DexScreener's CDN only accepts some sizes (64, 128, 256, 800); 128 is sharp on retina and about 3 KB. */
+export const smallIcon = (u?: string) => (u ? u.replace(/width=\d+&height=\d+&quality=\d+/, 'width=128&height=128&quality=80') : u);
 
 export async function fetchTrending(limit = 14): Promise<Coin[]> {
   const boosts = await json<{ chainId: string; tokenAddress: string }[]>(`${DS}/token-boosts/top/v1`);

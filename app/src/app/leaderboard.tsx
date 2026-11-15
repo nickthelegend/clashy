@@ -11,7 +11,9 @@ import { C, F, S } from '@/ui/tokens';
 type Range = '24h' | '7d' | '30d' | 'all';
 const Step = ({ place, h }: { place: 1 | 2 | 3; h: number }) => (
   <View style={{ flex: 1, alignItems: 'center' }}>
-    <View style={{ width: place === 1 ? 64 : 52, height: place === 1 ? 64 : 52, borderRadius: 32, backgroundColor: C.s2, marginBottom: 8 }} />
+    <View style={{ width: place === 1 ? 64 : 52, height: place === 1 ? 64 : 52, borderRadius: 32, borderWidth: 2, borderStyle: 'dashed', borderColor: place === 1 ? 'rgba(255,201,74,0.6)' : '#3A3A42', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+      <Txt v="small" style={{ fontSize: 10 }}>Open</Txt>
+    </View>
     <View style={{ marginBottom: -18, zIndex: 2 }}><Art src={MEDALS[place - 1]} size={place === 1 ? 46 : 38} radius={0} /></View>
     <View style={{ width: '100%', height: h, borderTopLeftRadius: 12, borderTopRightRadius: 12, backgroundColor: place === 1 ? 'rgba(255,201,74,0.18)' : C.s1, alignItems: 'center', justifyContent: 'center' }}>
       <Txt v="title" color={place === 1 ? '#FFC94A' : '#3A3A42'} style={{ fontFamily: F.bold, marginTop: 10 }}>{place}</Txt>

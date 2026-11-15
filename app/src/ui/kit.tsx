@@ -215,6 +215,7 @@ export const ART = {
   tileDiamond: require('../../assets/art/tile-diamond.webp'),
   tileDouble: require('../../assets/art/tile-double.webp'),
   tileCup: require('../../assets/art/tile-cup.webp'),
+  coinsPile: require('../../assets/art/coins-pile.webp'),
   bannerDiamond: require('../../assets/art/banner-diamond.webp'),
   bannerDouble: require('../../assets/art/banner-double.webp'),
   bannerCup: require('../../assets/art/banner-cup.webp'),
