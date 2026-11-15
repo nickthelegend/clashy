@@ -32,11 +32,38 @@ export function ArenaSection() {
   )
 }
 
-// tab.markets' dark "Close 100 tabs. Open one." break, as Clashy's "fight people, not the house"
-export function Break() {
-  const banners = ['duel', 'line', 'war', 'royale', 'bounty']
+// "Stop fighting the house": the message, then every game mode as a card on a slow rail.
+// Banner art is clay on black; mix-blend lighten lets each card's tint show through the black.
+const MODES: { art: string; name: string; line: string; tint: string; tag: string }[] = [
+  { art: 'duel', name: 'Knockout duel', line: 'One rolled coin. Long or short. First KO loses.', tint: '#1a1c4a', tag: 'Free practice above' },
+  { art: 'royale', name: 'Royale', line: 'Up to 50 players. The worst P&L is out each round.', tint: '#3a1230', tag: 'Coming' },
+  { art: 'diamond', name: 'Diamond hands', line: 'Hold longer than everyone. Sell before the dump.', tint: '#10284a', tag: 'Coming' },
+  { art: 'double', name: 'Double or nothing', line: 'Won? Let the whole pot ride into the next duel.', tint: '#3a2a0c', tag: 'Coming' },
+  { art: 'war', name: 'Clan war', line: "Your clan's chest against theirs, all week.", tint: '#2a1440', tag: 'Coming' },
+  { art: 'line', name: 'Draw the line', line: 'Draw the next minute. The closest line wins.', tint: '#1a1c4a', tag: 'Coming' },
+  { art: 'cup', name: 'Daily cup', line: 'One run, any time today. Top 20% get paid.', tint: '#3a2a0c', tag: 'Coming' },
+  { art: 'bounty', name: 'Bounty', line: "Beat a top player's week and take the bounty.", tint: '#3a1230', tag: 'Coming' },
+]
+
+function ModeCard({ m }: { m: (typeof MODES)[number] }) {
   return (
-    <section className="break">
+    <article className="mode" style={{ background: m.tint }}>
+      <img src={`/art/banner-${m.art}.webp`} alt="" width="1600" height="900" loading="lazy" />
+      <div className="mode-tx">
+        <div className="mode-top">
+          <h3>{m.name}</h3>
+          <span className={m.tag === 'Coming' ? 'mode-tag' : 'mode-tag live'}>{m.tag}</span>
+        </div>
+        <p>{m.line}</p>
+      </div>
+    </article>
+  )
+}
+
+export function Break() {
+  const reduce = useReducedMotion()
+  return (
+    <section className="break" id="modes">
       <div className="wrap break-in">
         <h2>
           Stop fighting the house.
@@ -44,14 +71,14 @@ export function Break() {
           <span>Fight your friends.</span>
         </h2>
         <p>
-          Trading arcades put you against a house pool that keeps your loss. On Clashy the other side is a person, the pot sits
-          in Solana escrow, and the winner takes it, minus a 3% rake.
+          Trading arcades put you against a house pool that keeps your loss. On Clashy the other side is a person, the pot
+          sits in Solana escrow, and the winner takes it, minus a 3% rake.
         </p>
       </div>
-      <div className="marquee" aria-hidden="true">
-        <div className="marquee-track">
-          {[...banners, ...banners].map((b, i) => (
-            <img key={i} src={`/art/banner-${b}.webp`} alt="" width="1600" height="900" loading="lazy" />
+      <div className={`modes${reduce ? ' still' : ''}`}>
+        <div className="modes-track">
+          {(reduce ? MODES : [...MODES, ...MODES]).map((m, i) => (
+            <ModeCard key={i} m={m} />
           ))}
         </div>
       </div>
