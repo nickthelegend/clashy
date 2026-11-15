@@ -1279,6 +1279,11 @@
     left: -3%;
     right: -3%;
   }
+  .hcard-vid {
+    inset: auto 0 0 0;
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
   .lb-stats {
     grid-template-columns: repeat(2, 1fr);
   }
