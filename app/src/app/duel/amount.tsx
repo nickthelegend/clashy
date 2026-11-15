@@ -43,17 +43,17 @@ export default function Amount() {
   const start = () => {
     if (!price || !stake) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace({ pathname: '/duel/live', params: { id, side, stake: String(stake), lev: String(lev), entry: String(price), symbol: m.data?.symbol ?? id } });
+    router.replace({ pathname: '/duel/live', params: { mode: 'clash', id, side, stake: String(stake), lev: String(lev), entry: String(price), symbol: m.data?.symbol ?? id } });
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 10 }}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={() => router.back()} />
-        <Txt v="small" style={{ flex: 1 }}>Knockout duel · 60s</Txt>
+        <Txt v="small" style={{ flex: 1 }}>Coin clash · 60s</Txt>
         <View style={{ backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 }}><Txt v="small" color={C.ink}>Practice · free</Txt></View>
       </Row>
-      <Txt v="h2" style={{ marginTop: 14 }}>Duel anyone</Txt>
+      <Txt v="h2" style={{ marginTop: 14 }}>Coin clash</Txt>
       <Txt v="small" style={{ marginTop: 2 }}>You pick any coin, your opponent picks theirs. Best % in 60s wins the pot.</Txt>
       <Txt v="small" color={C.ink} style={{ marginTop: 12, marginBottom: 6 }}>Your pick</Txt>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>

@@ -94,7 +94,7 @@ function Hero() {
           <W d={0.44}><span className="grad">not the house.</span></W>
         </h1>
         <motion.p className="lead" style={{ margin: '26px auto 0', textAlign: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8, ease }}>
-          Clashy is a PvP trading game on Solana. You pick any coin, they pick theirs, best move wins. Duels, royales, rooms and week-long clan wars.
+          Clashy is a PvP trading game on Solana. Quick match a rival, one coin gets rolled, you pick long or short, best move in 60 seconds wins. Duels, royales, rooms and week-long clan wars.
         </motion.p>
         <motion.div className="hero-cta" style={{ justifyContent: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.8, ease }}>
           <a className="cta" href="#race">Race two coins now <span className="cta-arrow"><Arrow /></span></a>
@@ -134,7 +134,7 @@ function Ticker() {
 
 /* ───────── how a duel works: dark, pinned; step list fills as you scroll ───────── */
 const STEPS = [
-  { tab: 'Pick', art: 'tile-duel.png', t: 'Pick any coin.', b: 'SOL, BTC, ETH or the newest Solana memecoin. Your opponent picks their own. Set a stake and leverage.', shot: 'amount', glow: '#5B6CFF' },
+  { tab: 'Match', art: 'tile-duel.png', t: 'Quick match. One coin.', b: 'You get matched with a rival and MagicBlock VRF rolls one coin for both of you. Pick long or short and your leverage.', shot: 'match', glow: '#5B6CFF' },
   { tab: 'Duel', art: 'vs.png', t: 'Sixty seconds. Live.', b: 'Both lines race from 0% on the same clock. Your health bar drains as you get close to your knockout line.', shot: 'duel', glow: '#F0468C' },
   { tab: 'Win', art: 'win-trophy.png', t: 'Best % takes the pot.', b: 'Touch your knockout line and you are out. Survive and beat their move at the bell, and the pot is yours.', shot: 'royale', glow: '#FFC94A' },
   { tab: 'Climb', art: 'crown.png', t: 'Climb the season.', b: 'Every win moves you up the ladder, Bronze to Legend, with medals for the top of every season.', shot: 'leaderboard', glow: '#30D158' },
@@ -216,7 +216,8 @@ function How() {
 
 /* ───────── games rail: dark game cards, one clay piece each, scroll drives it sideways ───────── */
 const RAIL = [
-  { k: 'Knockout duel', who: '1 v 1 · 60 s', t: 'One minute. One winner.', b: 'You pick any coin, they pick theirs. Survive the knockout line, best % takes the pot.', c: '#5B6CFF', art: 'tile-duel.png', live: true },
+  { k: 'Knockout duel', who: '1 v 1 · quick match', t: 'One coin. One winner.', b: 'VRF rolls one coin for both of you. Long or short, survive the knockout line, best % takes the pot.', c: '#5B6CFF', art: 'tile-duel.png', live: true },
+  { k: 'Coin clash', who: '1 v 1 · each picks', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#B49BFF', art: 'ko-burst.png', live: true },
   { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#F0468C', art: 'tile-line.png', live: true },
   { k: 'Royale', who: '5–20 players', t: 'Last one standing.', b: 'Up or down every 10 seconds. Wrong call costs a life. The whole screen is the button.', c: '#FFC94A', art: 'tile-royale.png', live: true },
   { k: 'Clan war', who: 'Clan vs clan · 1 week', t: 'Bring the group chat.', b: 'Every coin is a tile on the map. Beat the other clan on it to own it.', c: '#30D158', art: 'clan-banner.png', live: false },

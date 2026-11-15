@@ -1,5 +1,6 @@
 // Live practice duel (style K5 race + K2 HP bars). VS intro → 3-2-1-GO → 60 s race on live prices.
-// Practice has no human opponent yet: your pick races a rival coin on its live price, same side and leverage.
+// mode=quick (Knockout duel): ONE rolled coin for both; the practice rival takes the other side of your call.
+// mode=clash (Coin clash): each side has its own coin; practice races your pick against a rival coin.
 // Prices are re-based at GO, so the clock and both lines start together. Real 1v1 duels open at the Blitz kickoff.
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,7 +21,8 @@ const EMOTES = ['ko', 'gg', 'lfg', 'fade-me'];
 type Phase = 'intro' | 'count' | 'live';
 
 export default function Live() {
-  const p = useLocalSearchParams<{ id: string; side: string; stake: string; lev: string; entry: string; symbol: string }>();
+  const p = useLocalSearchParams<{ id: string; side: string; stake: string; lev: string; entry: string; symbol: string; mode?: string; image?: string }>();
+  const quick = p.mode === 'quick';
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(980);
   const { desk } = useLayout();
@@ -28,9 +30,12 @@ export default function Live() {
   const side = p.side === 'short' ? 'short' : 'long';
   const dir = side === 'long' ? 1 : -1;
   const stake = Number(p.stake), lev = Number(p.lev);
-  const rivalId = rivalFor(p.id);
-  const rival = MAJORS.find((m) => m.id === rivalId)!;
+  const rivalId = quick ? p.id : rivalFor(p.id);
+  const rivalSide = quick ? (side === 'long' ? 'short' : 'long') : side;
   const me = MAJORS.find((m) => m.id === p.id);
+  const coinImg = me?.image ?? (p.image || undefined);
+  const rival = quick ? { id: p.id, image: coinImg } : MAJORS.find((m) => m.id === rivalId)!;
+  const rivalSym = quick ? p.symbol : rivalId;
 
   const [phase, setPhase] = useState<Phase>('intro');
   const [mine, setMine] = useState<number[]>([]);
@@ -46,25 +51,26 @@ export default function Live() {
   const last = mine[mine.length - 1] ?? entry;
   const myPct = ((last - entry) / entry) * dir * lev * 100;
   const rEntry = theirs[0], rLast = theirs[theirs.length - 1];
-  const rPct = rEntry ? ((rLast - rEntry) / rEntry) * dir * lev * 100 : 0;
+  const rDir = quick ? -dir : dir;
+  const rPct = rEntry ? ((rLast - rEntry) / rEntry) * rDir * lev * 100 : 0;
   const myHp = 1 + myPct / 100;
   const rHp = 1 + rPct / 100;
   const pnl = (stake * myPct) / 100;
   const lead = myPct - rPct;
 
-  const finish = useCallback((reason: 'ko' | 'bell' | 'cash') => {
+  const finish = useCallback((reason: 'ko' | 'theirko' | 'bell' | 'cash') => {
     if (done.current) return;
     done.current = true;
     Haptics.notificationAsync(reason === 'ko' ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success);
     const final = reason === 'ko' ? -stake : Math.max(-stake, pnl);
-    router.replace({ pathname: '/duel/result', params: { reason, pnl: String(final), id: p.id, symbol: p.symbol, side, lev: String(lev), secs: String(LEN - left), entry: String(entry), exit: String(last), rival: rivalId, rivalPct: rPct.toFixed(2), myPct: myPct.toFixed(2) } });
-  }, [stake, pnl, p.id, p.symbol, side, lev, left, entry, last, rivalId, rPct, myPct]);
+    router.replace({ pathname: '/duel/result', params: { reason, mode: quick ? 'quick' : 'clash', pnl: String(final), id: p.id, symbol: p.symbol, side, lev: String(lev), secs: String(LEN - left), entry: String(entry), exit: String(last), rival: quick ? `practice rival (${rivalSide})` : rivalId, rivalPct: rPct.toFixed(2), myPct: myPct.toFixed(2) } });
+  }, [stake, pnl, p.id, p.symbol, side, lev, left, entry, last, rivalId, rPct, myPct, quick, rivalSide]);
 
   useEffect(() => {
     if (phase !== 'live') return;
     const poll = async () => {
       try {
-        const [a, b] = await Promise.all([fetchLastPrice(p.id), fetchLastPrice(rivalId)]);
+        const [a, b] = quick ? await fetchLastPrice(p.id).then((v) => [v, v]) : await Promise.all([fetchLastPrice(p.id), fetchLastPrice(rivalId)]);
         setErr(undefined);
         setMine((t) => [...t.slice(-150), a]);
         setTheirs((t) => [...t.slice(-150), b]);
@@ -74,9 +80,10 @@ export default function Live() {
     const iv = setInterval(poll, isMajor(p.id) ? 1000 : 3000);
     const clock = setInterval(() => setLeft((s) => s - 1), 1000);
     return () => { clearInterval(iv); clearInterval(clock); };
-  }, [phase, p.id, rivalId]);
+  }, [phase, p.id, rivalId, quick]);
 
   useEffect(() => { if (phase === 'live' && mine.length > 1 && myHp <= 0) finish('ko'); });
+  useEffect(() => { if (phase === 'live' && theirs.length > 1 && rHp <= 0 && myHp > 0) finish('theirko'); });
   useEffect(() => { if (phase === 'live' && left <= 0) finish('bell'); });
   useEffect(() => { if (phase === 'live' && left <= 10 && left > 0) Haptics.selectionAsync(); }, [left, phase]);
 
@@ -90,7 +97,7 @@ export default function Live() {
   const W = Math.min(width, desk ? 980 : 560) - S.gutter * 2 - (desk ? 340 : 0);
   const H = Math.max(240, Math.min(desk ? 460 : 400, height - 470));
   const a = mine.map((v) => ((v - entry) / entry) * dir * lev * 100);
-  const b = theirs.map((v) => ((v - rEntry) / rEntry) * dir * lev * 100);
+  const b = theirs.map((v) => ((v - rEntry) / rEntry) * rDir * lev * 100);
   const mn = Math.min(0, ...a, ...b), mx = Math.max(0, ...a, ...b), span = Math.max(4, mx - mn);
   const lo = mn - span * 0.35, hi = mx + span * 0.25;
   const n = Math.max(a.length, b.length, (LEN * 1000) / (isMajor(p.id) ? 1000 : 3000) + 1);
@@ -100,21 +107,21 @@ export default function Live() {
   const tip = (s: number[]) => ({ x: X(Math.max(0, s.length - 1)), y: Y(s[s.length - 1] ?? 0) });
   const ta = tip(a), tb = tip(b);
   const rivalBadge = (size: number) => (
-    <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 3, borderColor: C.opp, alignItems: 'center', justifyContent: 'center', backgroundColor: C.s1 }}><TokenArt symbol={rivalId} uri={rival.image} size={size * 0.68} /></View>
+    quick ? <Avatar name="practice-rival" size={size} ring={C.opp} /> : <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 3, borderColor: C.opp, alignItems: 'center', justifyContent: 'center', backgroundColor: C.s1 }}><TokenArt symbol={rivalId} uri={rival.image} size={size * 0.68} /></View>
   );
 
   const head = (
     <View>
       <Row style={{ justifyContent: 'space-between', marginBottom: 10 }}>
         <BackBtn onPress={() => (phase === 'live' ? finish('cash') : router.back())} />
-        <Row style={{ gap: 6 }}><LiveDot /><Txt v="small" color={C.ink}>Practice · {lev}× {side}</Txt></Row>
+        <Row style={{ gap: 6 }}><LiveDot /><Txt v="small" color={C.ink}>{quick ? `Quick match · ${p.symbol} · ${lev}×` : `Coin clash · ${lev}× ${side}`}</Txt></Row>
         <Txt v="small">${stake} stake</Txt>
       </Row>
       <Row style={{ alignItems: 'flex-start' }}>
         <View style={{ flex: 1 }}>
           <Avatar name="you" size={50} ring={C.brand} />
           <Txt v="label" style={{ marginTop: 6 }}>You</Txt>
-          <Row style={{ gap: 5 }}><TokenArt symbol={p.symbol} uri={me?.image} size={14} /><Txt v="small">{p.symbol}</Txt></Row>
+          <Row style={{ gap: 5 }}><TokenArt symbol={p.symbol} uri={coinImg} size={14} /><Txt v="small">{p.symbol} · {side}</Txt></Row>
         </View>
         <View style={{ alignItems: 'center', paddingTop: 2 }}>
           <Txt v="hero" color={left <= 10 ? C.down : C.ink} style={{ fontSize: 46, lineHeight: 50 }}>{Math.max(0, left)}</Txt>
@@ -122,8 +129,8 @@ export default function Live() {
         </View>
         <View style={{ flex: 1, alignItems: 'flex-end' }}>
           {rivalBadge(50)}
-          <Txt v="label" style={{ marginTop: 6 }}>Rival coin</Txt>
-          <Txt v="small">{rivalId} · same {side}</Txt>
+          <Txt v="label" style={{ marginTop: 6 }}>{quick ? 'Practice rival' : 'Rival coin'}</Txt>
+          <Txt v="small">{rivalSym} · {rivalSide}</Txt>
         </View>
       </Row>
       <Row style={{ gap: 10, marginTop: 12 }}><Fill v={myHp} color={C.brand} skew /><Fill v={rHp} color={C.opp} flip skew /></Row>
@@ -190,8 +197,8 @@ export default function Live() {
         <VsIntro
           left={<Avatar name="you" size={120} ring={C.brand} />}
           right={rivalBadge(120)}
-          leftLabel={`You · ${p.symbol}`}
-          rightLabel={`Rival · ${rivalId}`}
+          leftLabel={quick ? `You · ${side}` : `You · ${p.symbol}`}
+          rightLabel={quick ? `Rival · ${rivalSide}` : `Rival · ${rivalId}`}
           onDone={toCount}
         />
       ) : null}

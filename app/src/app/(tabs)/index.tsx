@@ -64,7 +64,7 @@ export default function HomeScreen() {
             {desk ? <Image source={ART.bannerDuel} style={{ width: 240, height: 135, borderRadius: 14 }} contentFit="cover" /> : <Art src={ART.tileDuel} size={72} radius={18} />}
           </Row>
           <Row style={{ gap: 8, marginTop: 14 }}>
-            <Btn title="Find a duel" kind="white" style={{ flex: 1 }} icon={<Bolt size={16} color="#000" />} onPress={() => router.push('/arena')} />
+            <Btn title="Find a duel" kind="white" style={{ flex: 1 }} icon={<Bolt size={16} color="#000" />} onPress={() => router.push('/duel/match')} />
             <Btn title="Not now" kind="ghost" style={{ flex: 0.6, backgroundColor: 'rgba(255,255,255,0.16)' }} onPress={() => setShowPlay(false)} />
           </Row>
         </View>
