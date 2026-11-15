@@ -43,6 +43,9 @@ what's trending (fresh launches). Venues and money layers: [REAL-TRADES.md](REAL
 | 9 | **Royale** | 10–50 players, same rolled coin, max leverage. Each round, whoever has the worst P&L is out. Last one standing takes the pot. | Phoenix | rounds of 60 s | elimination |
 | 10 | **Clan War** | Clan chests trade together by vote; the clan with the best week takes the war pot. | Phoenix / Jupiter | 1 week | the clan chest |
 | 11 | **Spectator stakes** | People watching a live duel back a side. Parimutuel pool among spectators, separate from the duel pot. | none (pool) | the duel | the side you backed |
+| 12 | **Sprint** (the Bus game) | Everyone aboard the 2-minute Bus trades the same VRF-rolled coin for 3 minutes, any side, any leverage. Top 3 split the pot 60/30/10 (top 1 if fewer than 5). | Phoenix | 3 min | the pot + liquidation |
+| 13 | **Tug of War** | The Bus splits riders into two random teams (VRF). Each team's score is its members' average %. The winning team splits the pot. Your clan badge shows; trash talk is team chat. | Phoenix | 3 min | the pot |
+| 14 | **Daily Cup** | Async: one paid run any time today on a rolled coin; ranked against everyone's runs today; top 20% paid. | Phoenix | 3 min per run | the entry fee + liquidation |
 
 ## Why it's addictive (the loop)
 - **Sessions in under 5 minutes:** quick match, play, rematch, all one thumb.

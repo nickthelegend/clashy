@@ -40,7 +40,7 @@ open app → big FIGHT button (remembers your last pot and game)
 | 0–3 | your division ±1 | inside both ranges | "Finding a rival…" with the live queue count at your pot |
 | 3–8 | ±2 divisions | same | rival cards flip past (real players in the queue) |
 | 8–15 | ±4 divisions | same | "Hot pots right now: $20 (14 waiting), $5 (31)", one tap to switch |
-| 15+ | any | same | Post it as an **open challenge** (stays live, others can take it) and get a push when it's taken |
+| 15+ | any | same | The **empty-queue menu** (section 3.6): the next Bus, the Challenge Board, a Stand-in, or today's Cup |
 
 - Never fake a match. No bots in money games, ever. If no one is there, say so and offer an open challenge, a
   friend link or a hotter pot.
@@ -79,6 +79,51 @@ open app → big FIGHT button (remembers your last pot and game)
   - Rake makes it a losing trade.
 - **Disconnects:** your position lives on the venue with its stop at the KO line, and a session signer limited to
   closing Clashy positions closes it at the bell. Nothing depends on your phone staying online.
+
+### 3.6 When nobody joins
+The worst thing a PvP game can do is leave you staring at a spinner. Clashy never fakes a rival in a money game, so
+it needs real ways to always have a game. After 15 s with no match, one sheet offers four, best first:
+
+| Option | What happens | Why it works with few players |
+|---|---|---|
+| **1. Catch the Bus** | Rooms leave on a timetable: a Royale or Sprint lobby departs every 2 minutes ("next bus in 0:47, 6 aboard"). Whoever is aboard plays; a bus with one passenger refunds them in full. | Batches thin traffic into one game instead of many empty queues. |
+| **2. Post to the Challenge Board** | Your duel becomes a public card: "$20 · rolled coin · 3 min · Degen tier". Your pot sits in escrow. Anyone can take it from the board, a chat or a Blink on X. You can close the app. | It's an order book of duels: challenges wait for takers like limit orders wait for fills. |
+| **3. Hit a Stand-in** | Players who opted in as **Stand-ins** take your duel automatically (details below). | Real people's money, available even when they're asleep. |
+| **4. Play today's Cup** | Async: pay the entry, play one run at any time today, and your real-fill % is ranked against everyone else's today. | Needs no one online at the same moment. |
+
+Plus, always: **ping people who asked for it.** Players can opt in to "ping me for $10–50 SOL duels". Pings go only
+to opted-in players, never to someone who just lost, at most a few a day.
+
+**Expiry:** an open challenge lasts 30 minutes by default (you can pick 5 min to 24 h). If nobody takes it, the pot
+comes back in full: no rake, no fee except the Solana transaction cost.
+
+#### Stand-ins (player market makers)
+- **What it is:** you post a standing offer, e.g. "auto-accept up to $25 a duel, any rolled coin, 3-minute duels,
+  max 5 a day, stop after a $50 loss".
+- **How a match happens:** when a challenger finds no one, the oldest matching Stand-in is matched (ties: VRF).
+- **The Stand-in's side:** a VRF coin flip, sealed until GO. The Stand-in doesn't get the challenger's pick, and the
+  challenger can't see the Stand-in's side.
+- **Who trades:** the Stand-in's session signer can only open and close Clashy duel positions, inside the limits they
+  set. Their stop sits at the KO line, so nothing needs them online.
+- **Why anyone would:** Stand-ins earn rank points like any player, a Stand-in badge, and lower rake (2% instead of
+  3%) on their duels.
+- **Clans:** a clan can run a Stand-in from its chest, voted by captains: the "clan bouncer".
+
+#### Daily Cup (async tournaments)
+- **Entry:** a fixed fee: $1, $5 or $25 tiers.
+- **Play:** one run per entry, any time in the UTC day. Same rules for everyone: a VRF-rolled coin per run, 3
+  minutes, leverage up to the market max.
+- **Payout:** the prize pool is all entries minus the 3% rake. The top 20% are paid on a fixed curve.
+- **Fewer than 5 entries by the close:** everyone is refunded in full.
+- **Practice runs are free**, and are labelled as practice.
+
+#### Cold start (the first weeks)
+- **Prime time:** The House hour and a big Bus every evening concentrate players in one window.
+- **Creator rooms:** streamers and KOLs host Bus rooms and Board challenges; their followers join through Blinks.
+- **Seeded Stand-ins:** the team and early supporters run real Stand-ins with their own money, shown with a
+  "Team" badge. Never disguised as normal players.
+- **Visible activity:** queue counts, the Board, live duels you can spectate and a recent-KO feed are all real
+  numbers. When it's quiet the app says "quiet right now", not a fake crowd.
 
 ## 4. Game families (by length)
 | Length | Games | Settles on |
@@ -141,6 +186,8 @@ Optional, with a recommended default:
 ## 11. Blitz week slice (from Nov 20)
 1. Matchmaking v1:
    - pot ranges with the widening search;
+   - the empty-queue menu: Challenge Board with escrow + expiry refund, and the Bus every 2 minutes
+     (Stand-ins and the Daily Cup come after Blitz);
    - VRF tie-break;
    - rookie pool;
    - challenge links;
