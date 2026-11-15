@@ -63,7 +63,7 @@ export default function DailyCup() {
           <Txt v="title">{coin}</Txt>
           <Txt v="body" color={C.muted}>{live ? fmtUsd(live.price) : '…'}</Txt>
         </Row>
-        <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>Practice: picked from today's date · on chain: a MagicBlock VRF roll at 00:00 UTC</Txt>
+        <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>Practice: the coin of the day is picked from today's date</Txt>
         <Text style={{ fontFamily: F.bold, fontSize: 30, color: '#FFC94A', marginTop: 12, letterSpacing: -0.5, fontVariant: ['tabular-nums'] }}>{untilMidnightUtc(now)}</Text>
         <Txt v="small">until the next cup</Txt>
         {mine ? (

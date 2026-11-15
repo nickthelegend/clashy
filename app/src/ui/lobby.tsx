@@ -84,7 +84,7 @@ export function RoyaleLobby({ best }: { best: number | null }) {
               <Art src={RANKS[0].src} size={56} radius={0} />
               <View style={{ flex: 1 }}><Txt v="small">Your rank</Txt><Txt v="h2">Unranked</Txt><Txt v="small">Ranked opens with wallets at the Blitz kickoff</Txt></View>
             </Row>
-            <Txt v="small" color="#B9B9C2" style={{ marginTop: 10, lineHeight: 18 }}>Ranked queue puts you in any game. MagicBlock VRF rolls Knockout duel, Draw the line or Royale. Wins earn points; climb from Exit Liquidity to The House.</Txt>
+            <Txt v="small" color="#B9B9C2" style={{ marginTop: 10, lineHeight: 18 }}>Ranked queue puts you in any game: Knockout duel, Draw the line or Royale. Wins earn points; climb from Exit Liquidity to The House.</Txt>
           </Card>
           <View style={{ marginTop: 10 }}><RankStrip /></View>
           <Btn title="Try a ranked roll" kind="brand" style={{ marginTop: 10 }} onPress={() => router.push('/ranked')} />
