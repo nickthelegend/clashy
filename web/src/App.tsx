@@ -63,7 +63,6 @@ export default function App() {
         <Hero />
 
         <section className="section arena-sec" id="arena">
-          <img className="arena-bg" src="/art/arena.webp" alt="" width="1600" height="1067" loading="lazy" aria-hidden="true" />
           <div className="wrap">
             <SectionHead
               center

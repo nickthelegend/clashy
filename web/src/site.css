@@ -163,8 +163,8 @@
 }
 .hero-art {
   position: relative;
-  margin: -30px auto 0;
-  width: min(1240px, 120vw);
+  margin: 10px 0 0;
+  width: min(860px, 112vw);
   left: 50%;
   translate: -50% 0;
   -webkit-mask-image: radial-gradient(60% 62% at 50% 50%, #000 55%, transparent 100%);
@@ -358,13 +358,10 @@
   gap: 12px;
   justify-items: center;
 }
-.feat-art,
-.blend {
-  mix-blend-mode: screen;
-}
 .feat-art {
   width: 200px;
   height: 200px;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.6));
   max-height: 34vw;
   object-fit: contain;
   transition: transform 0.6s var(--ease);
@@ -729,17 +726,6 @@
   }
 }
 
-/* duel-light art is rendered on black: screen-blend it into dark surfaces so no box shows */
-.lb-empty img,
-.tug-crests img,
-.msg img,
-.orbit img,
-.prow img,
-.rival-note img,
-.result img {
-  mix-blend-mode: screen;
-  background: none !important;
-}
 
 .closing-bg {
   position: absolute;
@@ -748,7 +734,7 @@
   height: 100%;
   object-fit: cover;
   z-index: -3;
-  opacity: 0.55;
+  opacity: 0.32;
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent);
 }
