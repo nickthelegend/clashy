@@ -44,8 +44,6 @@ export default function HomeScreen() {
         </Row>
       </Row>
 
-      {desk ? <Image source={ART.heroHome} style={{ width: '100%', aspectRatio: 4, borderRadius: 20, marginBottom: 16 }} contentFit="cover" /> : null}
-
       {/* H2: live stories. Friends you have in common post stories of their duels. */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginBottom: 14 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
         <Story label="Your story" add onPress={() => router.push('/wallet')} />
@@ -60,10 +58,10 @@ export default function HomeScreen() {
           <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Txt v="small" color="#D6DBFF" style={{ fontFamily: F.semi, letterSpacing: 0.6, fontSize: 11 }}>QUICK MATCH</Txt>
-              <Txt v="title" color="#fff" style={{ marginTop: 4 }}>Play now</Txt>
+              <Txt v="title" color="#fff" style={{ marginTop: 4, fontSize: desk ? 34 : undefined }}>Play now</Txt>
               <Txt v="small" color="#DDE1FF" style={{ marginTop: 2 }}>Practice a knockout duel on a live price.</Txt>
             </View>
-            <Art src={ART.tileDuel} size={72} radius={18} />
+            {desk ? <Image source={ART.bannerDuel} style={{ width: 240, height: 135, borderRadius: 14 }} contentFit="cover" /> : <Art src={ART.tileDuel} size={72} radius={18} />}
           </Row>
           <Row style={{ gap: 8, marginTop: 14 }}>
             <Btn title="Find a duel" kind="white" style={{ flex: 1 }} icon={<Bolt size={16} color="#000" />} onPress={() => router.push('/arena')} />
