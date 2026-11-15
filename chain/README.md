@@ -8,7 +8,7 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
 |---|---|
 | Program id | `FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS` (keypair in `.keys/`, gitignored) |
 | Rollup | MagicBlock Ephemeral Rollup: duels and tournaments are delegated, scored there every check, and committed back |
-| Randomness | MagicBlock VRF (base queue `Cuj97ggr…`) rolls the coin. With `vrf_required = true` the local commit-reveal fallback is refused |
+| Randomness | MagicBlock VRF rolls the coin (queue in the config: base queue `Cuj97ggr…` on devnet and mainnet, MagicBlock's test queue `GKE6d7…` on the local stack, answered by their `vrf-oracle`). Callbacks need MagicBlock's VRF identity signature. With `vrf_required = true` the commit-reveal fallback is refused |
 | Prices | A crank pushes live Coinbase prices into delegated `PriceFeed` accounts on the rollup every second (duels, tournaments), and into never-delegated base feeds on Solana every 5 s (clan trades; one transaction for all coins). The program also accepts MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout) |
 | Deployed | Local MagicBlock stack only. Devnet and mainnet: **not deployed** (see Status) |
 
@@ -43,7 +43,7 @@ pot minus rake into its chest. A tie refunds both.
 
 ```bash
 npm install
-bash scripts/localnet.sh            # base :8999 + MagicBlock ER :7799, deploys the program (CLASHY_RESET=1 for genesis)
+bash scripts/localnet.sh            # base :8999 + MagicBlock ER :7799 + MagicBlock vrf-oracle, deploys the program (CLASHY_RESET=1 for genesis)
 npx tsx scripts/crank.ts            # live prices: rollup every 1 s, Solana base feeds every 5 s
 npx tsx --test --test-concurrency=1 tests/clashy.test.ts
 ```
@@ -59,9 +59,10 @@ on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bi
 
 - **Local MagicBlock stack: works end to end.** 5/5 end-to-end and 10/10 unit tests pass (see [TESTING.md](TESTING.md)).
   Browser players ran full duels, a clan trade, a clan war and a three-player Royale through the app.
-- **VRF: code only.** The VRF request and callback are written against MagicBlock's SDK, but VRF oracles only run on
-  devnet and mainnet, so the local runs use the commit-reveal fallback. **BLOCKED:** a devnet deploy needs about 6
-  devnet SOL; the faucet rate-limited the airdrop.
+- **VRF: proven locally with MagicBlock's own oracle.** MagicBlock's validator CLI ships `vrf-oracle` and their test
+  queue; the local stack runs it, and duels and Royales get their coin from a real VRF callback (about 1.3 s). A forged
+  callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 6 devnet SOL;
+  the devnet faucet rate-limited the airdrop twice, and the web faucet needs a sign-in and a CAPTCHA.
 - **Mainnet: not deployed.** Needs real SOL: the 870 KB program is 4.42 SOL rent-exempt (`solana rent 870000`), more if deployed with upgrade headroom, plus an equal temporary buffer during the deploy that is refunded, and Nick's
   go-ahead. Real money stays off until then.
 - **Why base feeds:** MagicBlock sponsors only 10 commits per delegated account ("sponsored commit limit exceeded …
