@@ -1,0 +1,218 @@
+/* Clashy v12 theme: pure black, hairlines, Inter, numbers as the hero.
+   Matches designs/clashy/screens-v12.html (the app). */
+:root {
+  --bg: #000000;
+  --s1: #111113;
+  --s2: #1c1c1f;
+  --s3: #26262b;
+  --line: rgba(255, 255, 255, 0.08);
+  --line2: rgba(255, 255, 255, 0.14);
+  --ink: #f5f5f7;
+  --muted: #8e8e98;
+  --dim: #5a5a64;
+  --you: #5b6cff;
+  --you-hi: #8592ff;
+  --opp: #f0468c;
+  --up: #30d158;
+  --down: #ff453a;
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --r: 20px;
+  --max: 1200px;
+  --gutter: 24px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  font-feature-settings: 'cv11', 'ss01';
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+:focus-visible {
+  outline: 2px solid var(--you-hi);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+.wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.cents {
+  color: var(--dim);
+}
+.up {
+  color: var(--up);
+}
+.down {
+  color: var(--down);
+}
+.you {
+  color: var(--you-hi);
+}
+.opp {
+  color: var(--opp);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  z-index: 100;
+  background: var(--you);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+.skip:focus {
+  left: 16px;
+}
+
+/* label: fomo's small blue caps */
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--you-hi);
+}
+
+/* buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 0.15s var(--ease),
+    background 0.2s,
+    opacity 0.2s;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--you);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #6a7aff;
+}
+.btn-dark {
+  background: var(--s2);
+  border-color: var(--line2);
+  color: var(--ink);
+}
+.btn-dark:hover {
+  background: var(--s3);
+}
+.btn-white {
+  background: #fff;
+  color: #000;
+}
+.btn-white:hover {
+  background: #e8e8ee;
+}
+.btn-sm {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 12px;
+}
+
+/* sections */
+.section {
+  padding: clamp(56px, 7vw, 104px) 0;
+  position: relative;
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.8s var(--ease),
+    transform 0.8s var(--ease);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
