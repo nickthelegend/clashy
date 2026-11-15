@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { SOCIAL_SETUP, useMyProfile } from '@/data/social';
 import { Crown } from '@/ui/icons';
-import { ART, Art, BADGES, Btn, Card, Pending, Row, Txt, UnderTabs } from '@/ui/kit';
+import { ART, Art, BADGES, Btn, Card, Pending, Row, Txt, UnderTabs, Avatar } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
 
 type Tab = 'duels' | 'callouts' | 'badges';
@@ -26,8 +26,8 @@ export default function ProfileTab() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
       <Image source={ART.banner} style={{ height: 112, borderRadius: 20, marginBottom: -36 }} contentFit="cover" />
       <Row style={{ gap: 14, paddingLeft: 12, alignItems: 'flex-start' }}>
-        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: C.bg }}>
-          <Txt v="title" color={C.dim}>?</Txt>
+        <View style={{ borderRadius: 40, borderWidth: 4, borderColor: C.bg }}>
+          <Avatar name="you" size={72} />
         </View>
         <View style={{ flex: 1, paddingTop: 42 }}>
           <Txt v="title" style={{ fontSize: 24 }}>{p?.name ?? 'Your profile'}</Txt>

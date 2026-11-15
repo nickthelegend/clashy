@@ -15,15 +15,15 @@ import { useLayout } from '@/ui/layout';
 import { Bob } from '@/ui/fx';
 import { ScrollView } from 'react-native';
 
-type Mode = { key: string; title: string; who: string; line: string; art: number; banner: number; live: boolean };
+type Mode = { key: string; title: string; who: string; line: string; art: number; banner?: number; live: boolean };
 const MODES: Mode[] = [
   { key: 'ko', title: 'Knockout duel', who: '1 v 1 · quick match · 60 s', line: 'Quick match a rival. VRF rolls one coin for both of you. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
-  { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, banner: ART.bannerDuel, live: true },
+  { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, live: true },
   { key: 'diamond', title: 'Diamond Hands', who: 'Solo now · rooms at launch · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true },
   { key: 'cup', title: 'Daily Cup', who: 'Everyone · one run a day', line: 'One coin of the day for everyone. One shot at Draw the line. New cup at 00:00 UTC.', art: ART.tileCup, banner: ART.bannerCup, live: true },
   { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, banner: ART.bannerLine, live: true },
-  { key: 'skirmish', title: 'Clan Skirmish', who: 'Clan vs clan · best of 5', line: 'Each round rolls a coin. Make your clan\'s call. First clan to 3 rounds wins.', art: ART.tileWar, banner: ART.bannerWar, live: true },
-  { key: 'chest', title: 'Clan Chest', who: 'Trade as a group', line: 'Propose a trade on the clan pot, vote, and the captain executes it on the live price.', art: ART.crown, banner: ART.bannerWar, live: true },
+  { key: 'skirmish', title: 'Clan Skirmish', who: 'Clan vs clan · best of 5', line: 'Each round rolls a coin. Make your clan\'s call. First clan to 3 rounds wins.', art: ART.tileWar, live: true },
+  { key: 'chest', title: 'Clan Chest', who: 'Trade as a group', line: 'Propose a trade on the clan pot, vote, and the captain executes it on the live price.', art: ART.coinsPile ?? ART.crown, live: true },
   { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, banner: ART.bannerWar, live: false },
   { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true },
   { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, banner: ART.bannerBounty, live: false },
@@ -53,7 +53,7 @@ function ArenaDesk() {
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 16 }}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Pick a game. Each one lets you play any coin.</Txt></View>
+          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Twelve games: quick matches, rooms, solo runs and clan fights. All practice on live prices.</Txt></View>
           <Btn title="Leaderboard" kind="ghost" h={38} onPress={() => router.push('/leaderboard')} />
         </Row>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
@@ -64,7 +64,9 @@ function ArenaDesk() {
                 width: 300, backgroundColor: C.s1, borderRadius: R.xl, padding: 12,
                 borderWidth: 1.5, borderColor: on ? C.brand : (st as { hovered?: boolean }).hovered ? '#2A2A30' : 'transparent',
               })}>
-                <Image source={g.banner} style={{ width: 276, height: 155, borderRadius: 14 }} contentFit="cover" />
+                {g.banner ? <Image source={g.banner} style={{ width: 276, height: 155, borderRadius: 14 }} contentFit="cover" /> : (
+                  <View style={{ width: 276, height: 155, borderRadius: 14, backgroundColor: '#15151C', alignItems: 'center', justifyContent: 'center' }}><Art src={g.art} size={130} radius={0} /></View>
+                )}
                 <Row style={{ justifyContent: 'space-between', marginTop: 12 }}>
                   <Txt v="h2">{g.title}</Txt>
                   <View style={{ backgroundColor: g.live ? C.upBg : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}><Txt v="small" color={g.live ? C.up : C.muted} style={{ fontSize: 11 }}>{g.live ? 'Practice' : 'Soon'}</Txt></View>

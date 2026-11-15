@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMajors, useTrending, type Market } from '@/data/markets';
 import { Bob } from '@/ui/fx';
 import { ART, Art, Avatar, BackBtn, Btn, ErrorLine, Row, TokenArt, Txt } from '@/ui/kit';
-import { useDeskColumn } from '@/ui/layout';
+import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
 const TILE = 104;
@@ -31,6 +31,7 @@ export default function QuickMatch() {
   const streak = Number(p.streak ?? 0); // Double or Nothing chain length so far
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(620);
+  const { desk } = useLayout();
   const { width } = useWindowDimensions();
   const majors = useMajors();
   const trending = useTrending();
@@ -123,7 +124,7 @@ export default function QuickMatch() {
           <Row style={{ gap: 8, marginTop: 14 }}>
             {LEVS.map((v) => <Btn key={v} title={`${v}×`} h={38} kind={lev === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setLev(v)} />)}
           </Row>
-          <View style={{ flex: 1 }} />
+          <View style={{ flex: desk ? 0 : 1, height: desk ? 24 : undefined }} />
           <Row style={{ gap: 10 }}>
             <Btn title="Long ▲" kind="long" h={68} style={{ flex: 1, borderRadius: 20 }} onPress={() => { setSide('long'); go('long'); }} />
             <Btn title="Short ▼" kind="short" h={68} style={{ flex: 1, borderRadius: 20 }} onPress={() => { setSide('short'); go('short'); }} />
