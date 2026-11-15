@@ -12,6 +12,7 @@ import { Swords } from '@/ui/icons';
 import { ART, Art, Btn, Row, Txt } from '@/ui/kit';
 import { C, F, R, S } from '@/ui/tokens';
 import { useLayout } from '@/ui/layout';
+import { Bob } from '@/ui/fx';
 import { ScrollView } from 'react-native';
 
 type Mode = { key: string; title: string; who: string; line: string; art: number; banner: number; live: boolean };
@@ -120,7 +121,7 @@ function ArenaPhone() {
             <Txt v="small" style={{ marginTop: 4 }}>{m.who}</Txt>
           </View>
           <Animated.View key={m.key} entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={{ alignItems: 'center', marginTop: 22 }}>
-            <Art src={m.art} size={220} radius={44} />
+            <Bob amp={10} ms={1500}><Art src={m.art} size={220} radius={44} /></Bob>
             <Txt v="small" color="#B9B9C2" style={{ textAlign: 'center', marginTop: 16, lineHeight: 19, maxWidth: 300 }}>{m.line}</Txt>
           </Animated.View>
           <Row style={{ gap: 6, justifyContent: 'center', marginTop: 16 }}>

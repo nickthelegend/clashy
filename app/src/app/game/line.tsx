@@ -3,7 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-worklets';
@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { MAJORS } from '@/data/markets';
 import { useTicks } from '@/data/ticks';
+import { Countdown, CountUp, WinBurst } from '@/ui/fx';
+import { ART } from '@/ui/kit';
 import { BackBtn, Btn, Card, LiveDot, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, R, S, fmtUsd } from '@/ui/tokens';
@@ -18,7 +20,7 @@ import { C, F, R, S, fmtUsd } from '@/ui/tokens';
 const WINDOW = 60; // seconds you predict
 const BAND = 0.0025; // ±0.25% vertical range around the price at lock
 const PB_KEY = 'clashy:line:best';
-type Phase = 'warm' | 'draw' | 'live' | 'done';
+type Phase = 'warm' | 'draw' | 'count' | 'live' | 'done';
 
 export default function DrawTheLine() {
   const insets = useSafeAreaInsets();
@@ -33,6 +35,8 @@ export default function DrawTheLine() {
   const [left, setLeft] = useState(WINDOW);
   const [best, setBest] = useState<number | null>(null);
   const done = useRef(false);
+  const lastRef = useRef<number | undefined>(undefined);
+  lastRef.current = last;
 
   const W = Math.min(width, desk ? 900 : 520) - S.gutter * 2 - (desk ? 340 : 0);
   const H = desk ? 420 : 340;
@@ -89,10 +93,10 @@ export default function DrawTheLine() {
   const start = () => {
     if (!covered || !last) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setLock({ t: Date.now(), p: last });
-    setLeft(WINDOW);
-    setPhase('live');
+    setPhase('count');
   };
+  // the line locks at GO, on the price at that moment
+  const go = useCallback(() => { setLock({ t: Date.now(), p: lastRef.current ?? 0 }); setLeft(WINDOW); setPhase('live'); }, []);
   useEffect(() => {
     if (phase !== 'live') return;
     const h = setInterval(() => setLeft((s) => s - 1), 1000);
@@ -113,7 +117,13 @@ export default function DrawTheLine() {
     <View style={{ gap: 10, width: desk ? 320 : undefined }}>
       <Card>
         <Txt v="small">{phase === 'live' ? 'Match so far' : phase === 'done' ? 'Final match' : 'How it works'}</Txt>
-        {phase === 'live' || phase === 'done' ? (
+        {phase === 'done' && score !== null ? (
+          <View style={{ alignItems: 'center' }}>
+            <WinBurst src={score >= 80 ? ART.winTrophy : score >= 60 ? ART.draw : ART.koSkull} size={110} burst={score >= 80} />
+            <CountUp to={score} ms={1100} format={(v) => `${Math.round(v)}%`} style={{ fontFamily: F.bold, fontSize: 48, letterSpacing: -1.5, color: score >= 70 ? C.up : score >= 50 ? C.ink : C.down }} />
+            <Txt v="label" style={{ marginTop: 2 }}>{score >= 80 ? 'Perfect read.' : score >= 60 ? 'Close call.' : 'The market had other plans.'}</Txt>
+          </View>
+        ) : phase === 'live' || phase === 'done' ? (
           <Txt v="title" color={score !== null && score >= 70 ? C.up : C.ink} style={{ fontSize: 40, marginTop: 4 }}>{score ?? '–'}%</Txt>
         ) : (
           <Txt v="small" color="#B9B9C2" style={{ marginTop: 6, lineHeight: 18 }}>Drag across the right side to draw where {coin} goes in the next 60 s. Lock it, then the real price draws over your line.</Txt>
@@ -163,6 +173,7 @@ export default function DrawTheLine() {
         </View>
         {side}
       </View>
+      {phase === 'count' ? <Countdown onDone={go} /> : null}
     </View>
   );
 }

@@ -3,12 +3,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { MAJORS } from '@/data/markets';
+import { Countdown, CountUp, Hit, Shake, WinBurst } from '@/ui/fx';
+import { ART } from '@/ui/kit';
 import { useTicks } from '@/data/ticks';
 import { BackBtn, Btn, Card, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
@@ -18,7 +20,7 @@ const ROUND = 10; // seconds per round
 const LIVES = 3;
 const PB_KEY = 'clashy:royale:best';
 type Call = 'up' | 'down' | null;
-type Phase = 'ready' | 'round' | 'over';
+type Phase = 'ready' | 'count' | 'round' | 'over';
 
 const Heart = ({ on }: { on: boolean }) => <Txt v="h2" color={on ? C.opp : '#2A2A30'} style={{ fontSize: 22 }}>♥</Txt>;
 
@@ -37,6 +39,8 @@ export default function Royale() {
   const [startP, setStartP] = useState<number | null>(null);
   const [log, setLog] = useState<{ r: number; call: Call; move: number; ok: boolean }[]>([]);
   const [best, setBest] = useState<number | null>(null);
+  const [hit, setHit] = useState<{ k: number; ok: boolean }>({ k: 0, ok: true });
+  const [losses, setLosses] = useState(0);
   const lastRef = useRef<number | undefined>(undefined);
   lastRef.current = last;
 
@@ -45,8 +49,9 @@ export default function Royale() {
   const begin = () => {
     if (!last) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setLives(LIVES); setRound(1); setLog([]); setCall(null); setStartP(last); setLeft(ROUND); setPhase('round');
+    setLives(LIVES); setRound(1); setLog([]); setCall(null); setLeft(ROUND); setPhase('count');
   };
+  const startRound = useCallback(() => { setStartP(lastRef.current ?? null); setLeft(ROUND); setPhase('round'); }, []);
 
   useEffect(() => {
     if (phase !== 'round') return;
@@ -62,6 +67,8 @@ export default function Royale() {
     const ok = call !== null && ((call === 'up' && move > 0) || (call === 'down' && move < 0));
     Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
     setLog((l) => [{ r: round, call, move, ok }, ...l].slice(0, 8));
+    setHit((h) => ({ k: h.k + 1, ok }));
+    if (!ok) setLosses((x) => x + 1);
     const nextLives = ok ? lives : lives - 1;
     setLives(nextLives);
     if (nextLives <= 0) {
@@ -91,9 +98,10 @@ export default function Royale() {
             <Txt v="small" style={{ marginTop: 6 }}>Round {round} · from {startP ? fmtUsd(startP) : '–'}</Txt>
           </View>
         ) : phase === 'over' ? (
-          <View style={{ alignItems: 'center', marginTop: 8 }}>
+          <View style={{ alignItems: 'center', marginTop: 4 }}>
+            <Shake trigger={losses}><WinBurst src={ART.koSkull} size={120} burst={false} /></Shake>
             <Txt v="title">Out.</Txt>
-            <Txt v="small" style={{ marginTop: 2 }}>You survived {Math.max(0, round - 1)} round{round - 1 === 1 ? '' : 's'}</Txt>
+            <CountUp to={Math.max(0, round - 1)} ms={800} format={(v) => `You survived ${Math.round(v)} round${Math.round(v) === 1 ? '' : 's'}`} style={{ fontFamily: F.semi, fontSize: 15, color: C.ink, marginTop: 4 }} />
           </View>
         ) : (
           <Txt v="small" color="#B9B9C2" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Every {ROUND} s, call where {coin} goes. Wrong or no call costs a life. Last one standing wins.</Txt>
@@ -106,7 +114,7 @@ export default function Royale() {
           <Btn title={call === 'down' ? 'Down ✓' : 'Down'} kind={call === 'down' ? 'short' : 'ghost'} h={60} style={{ flex: 1 }} onPress={() => setCall('down')} />
         </Row>
       ) : (
-        <Btn title={phase === 'over' ? 'Play again' : last ? 'Start' : 'Waiting for price…'} kind="white" h={56} disabled={!last} onPress={begin} />
+        <Btn title={phase === 'over' ? 'Play again' : last ? 'Start' : 'Waiting for price…'} kind="white" h={56} disabled={!last || phase === 'count'} onPress={begin} />
       )}
       {log.map((x) => (
         <Animated.View key={x.r} entering={FadeInDown.duration(220)}>
@@ -135,7 +143,7 @@ export default function Royale() {
       );
     };
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, ...col }}>
+      <Shake trigger={losses} style={{ flex: 1, backgroundColor: C.bg, ...col }}>
         {zone('up')}
         <View style={{ height: 4, backgroundColor: '#000' }} />
         {zone('down')}
@@ -159,7 +167,8 @@ export default function Royale() {
             <Txt v="small" color={log[0].ok ? C.up : C.down}>Last round: {log[0].call ? `you said ${log[0].call}` : 'no call'} · {log[0].ok ? 'safe' : 'lost a life'}</Txt>
           </View>
         ) : null}
-      </View>
+        <Hit k={hit.k} text={hit.ok ? 'SAFE' : '−1 ♥'} color={hit.ok ? C.up : C.opp} />
+      </Shake>
     );
   }
 
@@ -188,6 +197,8 @@ export default function Royale() {
         </View>
         {controls}
       </View>
+      {phase === 'count' ? <Countdown onDone={startRound} /> : null}
+      <Hit k={phase === 'over' ? hit.k : 0} text="OUT" color={C.down} />
     </View>
   );
 }

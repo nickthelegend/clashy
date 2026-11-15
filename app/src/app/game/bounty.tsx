@@ -3,6 +3,8 @@
 // Poster: your own wanted poster, built from your real practice bests stored on this device.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
+import { useEffect as useFx } from 'react';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -13,6 +15,13 @@ import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
 type Tab = 'board' | 'poster';
+/** The wanted poster swings gently from its pin. */
+function Swing({ children }: { children: React.ReactNode }) {
+  const r = useSharedValue(-6);
+  useFx(() => { r.value = withRepeat(withSequence(withTiming(2.5, { duration: 1400, easing: Easing.inOut(Easing.sin) }), withTiming(-2.5, { duration: 1400, easing: Easing.inOut(Easing.sin) })), -1, true); }, [r]);
+  const st = useAnimatedStyle(() => ({ transform: [{ translateY: -180 }, { rotate: `${r.value}deg` }, { translateY: 180 }] }));
+  return <Animated.View style={st}>{children}</Animated.View>;
+}
 type Sort = 'big' | 'ending' | 'friends';
 const PAPER = '#EADBB8', INK = '#2B1D0E', RED = '#8A1C0E';
 
@@ -51,7 +60,7 @@ export default function Bounty() {
   );
   const poster = (
     <View style={{ gap: 12, width: desk ? 360 : undefined }}>
-      <Poster line={line} royale={royale} />
+      <Swing><Poster line={line} royale={royale} /></Swing>
       <Btn title="Post my bounty" disabled />
       <Txt v="small" style={{ textAlign: 'center' }}>Posting a bounty stakes real money, so it opens with the program at the Blitz kickoff.</Txt>
       {line === null && royale === null ? <Btn title="Set a practice record" kind="ghost" onPress={() => router.push('/game/line')} /> : null}
