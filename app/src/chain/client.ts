@@ -62,10 +62,29 @@ const le64 = (n: number | bigint) => new BN(n.toString()).toArrayLike(Buffer, 'l
 export const P = {
   config: pda(Buffer.from('config')),
   feed: (coin: number) => pda(Buffer.from('feed'), Buffer.from([coin])),
+  /** Never-delegated Solana copy of a coin feed: what Solana-side instructions (clan trades) read. */
+  baseFeed: (coin: number) => pda(Buffer.from('bfeed'), Buffer.from([coin])),
   player: (owner: PublicKey) => pda(Buffer.from('player'), owner.toBuffer()),
   duel: (creator: PublicKey, nonce: number | bigint) => pda(Buffer.from('duel'), creator.toBuffer(), le64(nonce)),
   vault: (of: PublicKey) => pda(Buffer.from('vault'), of.toBuffer()),
+  clan: (name: string) => pda(Buffer.from('clan'), Buffer.from(name)),
+  chest: (clan: PublicKey) => pda(Buffer.from('chest'), clan.toBuffer()),
+  member: (clan: PublicKey, wallet: PublicKey) => pda(Buffer.from('member'), clan.toBuffer(), wallet.toBuffer()),
+  proposal: (clan: PublicKey, id: number | bigint) => pda(Buffer.from('proposal'), clan.toBuffer(), le64(id)),
+  vote: (proposal: PublicKey, wallet: PublicKey) => pda(Buffer.from('vote'), proposal.toBuffer(), wallet.toBuffer()),
+  position: (clan: PublicKey, id: number | bigint) => pda(Buffer.from('position'), clan.toBuffer(), le64(id)),
 };
+
+/** Clan names are stored as fixed 24-byte, zero-padded UTF-8. */
+export const clanName = (bytes: number[]) => Buffer.from(bytes.filter((b) => b !== 0)).toString('utf8');
+/** Accounts whose first field (right after the 8-byte discriminator) is the clan key. */
+export const byClan = (clan: PublicKey) => [{ memcmp: { offset: 8, bytes: clan.toBase58() } }];
+/** Live P&L in basis points, same rule as the program (knockout floor at -100%). */
+export function pnlBps(entry: number, price: number, side: number, lev: number) {
+  if (!entry) return 0;
+  const move = ((price - entry) * 10_000) / entry;
+  return Math.max(-10_000, (side === 2 ? -move : move) * lev);
+}
 
 export async function sha256(...parts: Uint8Array[]): Promise<Uint8Array> {
   const all = new Uint8Array(parts.reduce((s, p) => s + p.length, 0));
