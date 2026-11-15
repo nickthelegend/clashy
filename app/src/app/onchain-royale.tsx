@@ -158,7 +158,7 @@ export default function OnchainRoyale() {
           {tour && tour.status === 3 ? (
             <Animated.View entering={FadeInDown.springify()}>
               <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-                <ClayLoop name={me >= 0 && tour.lives[me] === top && top > 0 ? 'win' : 'royale'} size={150} loop />
+                <ClayLoop name={me >= 0 && tour.lives[me] === top && top > 0 ? 'win' : 'royale'} size={150} loop style={{ borderRadius: 32 }} />
                 <Txt v="title">{me >= 0 && tour.lives[me] === top && top > 0 ? 'Last one standing.' : 'Knocked out.'}</Txt>
                 <Txt v="small" style={{ textAlign: 'center' }}>Settled on Solana · {tour.round} round{tour.round === 1 ? '' : 's'} on {sym} · {tour.lives.filter((l) => l === top && top > 0).length} survivor(s) split {(pot * 0.97).toFixed(4)} SOL</Txt>
                 <Btn title="Back to the lobby" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />

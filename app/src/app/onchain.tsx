@@ -260,7 +260,7 @@ export default function OnChainDuel() {
           {duel && duel.status === 5 ? (
             <Animated.View entering={FadeInDown.springify()}>
               <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-                <ClayLoop name={duel.winner === me + 1 ? 'win' : duel.winner === 3 ? 'duel' : 'ko'} size={150} loop={duel.winner === me + 1} />
+                <ClayLoop name={duel.winner === me + 1 ? 'win' : duel.winner === 3 ? 'duel' : 'ko'} size={150} loop={duel.winner === me + 1} style={{ borderRadius: 32 }} />
                 <Txt v="title">{duel.winner === 3 ? 'Dead heat · refunded' : duel.winner === me + 1 ? 'You won the pot.' : 'You lost.'}</Txt>
                 <Txt v="small">Settled on Solana · {sym} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(1)}% · rival {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(1)}%</Txt>
                 <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
