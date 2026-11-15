@@ -43,15 +43,14 @@ export default function Leaderboard() {
         <Pending art={ART.emptyLeaderboard} title="No ranked duels yet" body="The first settled duel puts someone on the podium." />
       ) : null}
       <Txt v="h2" style={{ marginTop: 22, marginBottom: 4 }}>Ranks</Txt>
-      <Txt v="small" style={{ marginBottom: 12 }}>Every season you climb by winning duels. Your rank shows on your profile and in every duel.</Txt>
-      <Row style={{ flexWrap: 'wrap', gap: 8 }}>
-        {RANKS.map((r) => (
-          <View key={r.key} style={{ width: '31%', flexGrow: 1, backgroundColor: C.s1, borderRadius: 16, paddingVertical: 12, alignItems: 'center' }}>
-            <Art src={r.src} size={64} radius={0} />
-            <Txt v="label" style={{ marginTop: 6 }}>{r.label}</Txt>
-          </View>
-        ))}
-      </Row>
+      <Txt v="small" style={{ marginBottom: 12 }}>Ten tiers, Exit Liquidity to The House. Ranked wins earn points; reach the top and you are the house.</Txt>
+      {RANKS.map((r) => (
+        <Row key={r.key} style={{ gap: 12, backgroundColor: C.s1, borderRadius: 16, padding: 10, marginBottom: 8 }}>
+          <Art src={r.src} size={46} radius={0} />
+          <View style={{ flex: 1 }}><Txt v="label" color={r.color}>{r.n}. {r.label}</Txt><Txt v="small">{r.pts.toLocaleString()} pts</Txt></View>
+          {r.n === 10 ? <Txt v="small" color="#FFD66B">Top tier</Txt> : null}
+        </Row>
+      ))}
     </ScrollView>
   );
 }

@@ -260,14 +260,25 @@ export const AVATARS = [
   require('../../assets/art/avatar-tiger.webp'),
 ];
 /** Rank tiers, lowest first. */
-export const RANKS: { key: string; label: string; src: number }[] = [
-  { key: 'bronze', label: 'Bronze', src: require('../../assets/art/rank-bronze.webp') },
-  { key: 'silver', label: 'Silver', src: require('../../assets/art/rank-silver.webp') },
-  { key: 'gold', label: 'Gold', src: require('../../assets/art/rank-gold.webp') },
-  { key: 'platinum', label: 'Platinum', src: require('../../assets/art/rank-platinum.webp') },
-  { key: 'diamond', label: 'Diamond', src: require('../../assets/art/rank-diamond.webp') },
-  { key: 'legend', label: 'Legend', src: require('../../assets/art/rank-legend.webp') },
+/** Ten ranked tiers with degen names. Points needed to reach each tier (season ladder). Art: rank-N clay emblems
+ *  are on order; until they land, tiers borrow the six existing rank emblems. */
+const RA = {
+  b: require('../../assets/art/rank-bronze.webp'), s: require('../../assets/art/rank-silver.webp'), g: require('../../assets/art/rank-gold.webp'),
+  p: require('../../assets/art/rank-platinum.webp'), d: require('../../assets/art/rank-diamond.webp'), l: require('../../assets/art/rank-legend.webp'),
+};
+export const RANKS: { n: number; key: string; label: string; pts: number; color: string; src: number }[] = [
+  { n: 1, key: 'exit-liquidity', label: 'Exit Liquidity', pts: 0, color: '#8A8A94', src: RA.b },
+  { n: 2, key: 'paper-hands', label: 'Paper Hands', pts: 100, color: '#C9B79C', src: RA.b },
+  { n: 3, key: 'bagholder', label: 'Bagholder', pts: 250, color: '#CD7F4A', src: RA.s },
+  { n: 4, key: 'dip-buyer', label: 'Dip Buyer', pts: 450, color: '#B8C4D6', src: RA.s },
+  { n: 5, key: 'ape', label: 'Ape', pts: 700, color: '#FFC94A', src: RA.g },
+  { n: 6, key: 'degen', label: 'Degen', pts: 1000, color: '#8E9AFF', src: RA.g },
+  { n: 7, key: 'diamond-hands', label: 'Diamond Hands', pts: 1400, color: '#5AC8FA', src: RA.p },
+  { n: 8, key: 'chad', label: 'Chad', pts: 1900, color: '#FFB547', src: RA.d },
+  { n: 9, key: 'whale', label: 'Whale', pts: 2500, color: '#F0468C', src: RA.d },
+  { n: 10, key: 'the-house', label: 'The House', pts: 3300, color: '#FFD66B', src: RA.l },
 ];
+export const rankFor = (pts: number) => [...RANKS].reverse().find((r) => pts >= r.pts) ?? RANKS[0];
 export const CRESTS = [
   require('../../assets/art/crest-moon.webp'), require('../../assets/art/crest-bolt.webp'),
   require('../../assets/art/crest-flame.webp'), require('../../assets/art/crest-star.webp'),
