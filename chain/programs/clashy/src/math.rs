@@ -6,10 +6,10 @@ pub fn pnl_bps(entry: u64, price: u64, dir: u8, lev: u16) -> i64 {
     if entry == 0 {
         return 0;
     }
-    let move_bps = ((price as i128 - entry as i128) * BPS as i128) / entry as i128;
-    let signed = if dir == side::SHORT { -move_bps } else { move_bps };
-    let lev_bps = signed * lev as i128;
-    lev_bps.max(-(BPS as i128)).min(i64::MAX as i128) as i64
+    // leverage is applied before dividing, so small moves at high leverage are not rounded away
+    let lev_bps = ((price as i128 - entry as i128) * BPS as i128 * lev as i128) / entry as i128;
+    let signed = if dir == side::SHORT { -lev_bps } else { lev_bps };
+    signed.max(-(BPS as i128)).min(i64::MAX as i128) as i64
 }
 
 /// Picks a coin index from `pool_mask` (bits over `coin_count` coins) using 32 bytes of randomness.
@@ -136,6 +136,13 @@ mod tests {
         // 1% up at 50x = +50% = 5000 bps for a long, -5000 for a short
         assert_eq!(pnl_bps(100_000_000, 101_000_000, side::LONG, 50), 5_000);
         assert_eq!(pnl_bps(100_000_000, 101_000_000, side::SHORT, 50), -5_000);
+    }
+
+    #[test]
+    fn pnl_keeps_small_moves_at_high_leverage() {
+        // BTC 65,022.78 -> 65,025.25 is 0.38 bp; at 50x that is 18 bp, not 0
+        assert_eq!(pnl_bps(65_022_780_000, 65_025_250_000, side::LONG, 50), 18);
+        assert_eq!(pnl_bps(65_022_780_000, 65_025_250_000, side::SHORT, 50), -18);
     }
 
     #[test]

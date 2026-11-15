@@ -186,6 +186,13 @@ pub mod clashy {
         c.coin_count = 0;
         c.coins = [Coin::default(); MAX_COINS];
         c.bump = ctx.bumps.config;
+        c.vrf_queue = VRF_BASE_QUEUE;
+        Ok(())
+    }
+
+    /// Points coin rolls at another MagicBlock VRF queue (it must be owned by the VRF program).
+    pub fn set_vrf_queue(ctx: Context<SetVrfQueue>) -> Result<()> {
+        ctx.accounts.config.vrf_queue = ctx.accounts.queue.key();
         Ok(())
     }
 
@@ -333,7 +340,7 @@ pub mod clashy {
 
     /// Asks MagicBlock VRF (base-layer queue) to roll the coin for both players.
     pub fn request_coin_roll(ctx: Context<RequestCoinRoll>, caller_seed: [u8; 32]) -> Result<()> {
-        require_keys_eq!(ctx.accounts.oracle_queue.key(), VRF_BASE_QUEUE, ClashyError::InvalidQueue);
+        require_keys_eq!(ctx.accounts.oracle_queue.key(), ctx.accounts.config.vrf_queue, ClashyError::InvalidQueue);
         let d = &mut ctx.accounts.duel;
         require!(d.status == duel_status::MATCHED, ClashyError::WrongStatus);
         require!(!d.vrf_pending, ClashyError::VrfInflight);
@@ -888,7 +895,7 @@ pub mod clashy {
 
     /// Asks MagicBlock VRF to roll the tournament's coin (required on devnet / mainnet).
     pub fn request_tournament_coin(ctx: Context<RequestTournamentCoin>, caller_seed: [u8; 32]) -> Result<()> {
-        require_keys_eq!(ctx.accounts.oracle_queue.key(), VRF_BASE_QUEUE, ClashyError::InvalidQueue);
+        require_keys_eq!(ctx.accounts.oracle_queue.key(), ctx.accounts.config.vrf_queue, ClashyError::InvalidQueue);
         let t = &mut ctx.accounts.tournament;
         require!(t.status == tour_status::OPEN && t.coin == NO_COIN && !t.vrf_pending, ClashyError::WrongStatus);
         require_keys_eq!(ctx.accounts.payer.key(), t.creator, ClashyError::Unauthorized);
@@ -1103,6 +1110,16 @@ pub struct DelegateFeed<'info> {
     /// CHECK: the feed PDA for `coin`, checked by seeds.
     #[account(mut, del, seeds = [FEED_SEED, &[coin]], bump)]
     pub feed: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SetVrfQueue<'info> {
+    pub authority: Signer<'info>,
+    #[account(mut, seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Account<'info, Config>,
+    /// CHECK: any MagicBlock VRF oracle queue; ownership is checked here.
+    #[account(owner = VRF_PROGRAM_ID @ ClashyError::InvalidQueue)]
+    pub queue: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]

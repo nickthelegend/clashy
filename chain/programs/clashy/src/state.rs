@@ -23,6 +23,9 @@ pub struct Config {
     pub coin_count: u8,
     pub coins: [Coin; MAX_COINS],
     pub bump: u8,
+    /// The MagicBlock VRF oracle queue coin rolls go to: the base queue on devnet and mainnet, or
+    /// MagicBlock's test queue on a local stack running their `vrf-oracle`.
+    pub vrf_queue: Pubkey,
 }
 
 /// Clashy-owned price feed. Delegated to the ER and updated about every second by the crank;

@@ -121,7 +121,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
     assert.ok((await lamports(a.publicKey)) - before >= STAKE - 10_000, 'stake returned (minus the tx fee)');
   });
 
-  test('when VRF is required the commit-reveal roll is refused', async () => {
+  test('MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused', async () => {
     const cfg = await baseProgram.account.config.fetch(P.config);
     await baseProgram.methods.updateConfig(cfg.rakeBps, true, cfg.crank, cfg.treasury).accountsPartial({ authority: authority.publicKey }).rpc();
     try {
@@ -134,6 +134,22 @@ describe('knockout duel: quick match on one rolled coin', () => {
       await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, 30, new BN(600), [...sha256(seedA)]).accountsPartial({ creator: a.publicKey, duel, vault }).rpc();
       await programFor(b).methods.joinDuel([...sha256(randomSeed())]).accountsPartial({ joiner: b.publicKey, duel, vault }).rpc();
       await assert.rejects(programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc(), /VrfRequired/);
+
+      // anyone can try to answer the callback themselves and choose the coin: the VRF identity signer stops them
+      const forger = await fundedKeypair(1);
+      await assert.rejects(programFor(forger).methods.coinRollCallback([...randomSeed()]).accountsPartial({ vrfProgramIdentity: forger.publicKey, duel }).signers([forger]).rpc());
+
+      // the real roll: request randomness from MagicBlock's VRF program; MagicBlock's oracle answers the callback
+      const queue = (await baseProgram.account.config.fetch(P.config)).vrfQueue;
+      const t0 = Date.now();
+      await programFor(b).methods.requestCoinRoll([...randomSeed()]).accountsPartial({ payer: b.publicKey, duel, oracleQueue: queue }).rpc();
+      const rolled = await until('MagicBlock VRF callback', 60_000, async () => {
+        const d = await baseProgram.account.duel.fetch(duel);
+        return d.status === 2 ? d : null;
+      });
+      assert.ok(rolled.coin < COINS.length, `VRF coin ${rolled.coin} is in the pool`);
+      assert.equal(rolled.vrfPending, false);
+      console.log(`  VRF roll: ${COINS[rolled.coin].symbol} in ${Date.now() - t0} ms via MagicBlock's oracle on queue ${queue.toBase58().slice(0, 6)}…`);
     } finally {
       await baseProgram.methods.updateConfig(cfg.rakeBps, false, cfg.crank, cfg.treasury).accountsPartial({ authority: authority.publicKey }).rpc();
     }
