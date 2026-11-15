@@ -1,0 +1,69 @@
+# Clashy on-chain
+
+The Clashy Anchor program (`programs/clashy`, Anchor 0.32.1, MagicBlock `ephemeral-rollups-sdk` 0.17 with the
+`anchor-compat` and `vrf` features). It holds all the money logic: escrow, coin roll, sealed picks, live scoring on a
+MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tournaments.
+
+| | |
+|---|---|
+| Program id | `FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS` (keypair in `.keys/`, gitignored) |
+| Rollup | MagicBlock Ephemeral Rollup: duels and tournaments are delegated, scored there every check, and committed back |
+| Randomness | MagicBlock VRF (base queue `Cuj97ggr…`) rolls the coin. With `vrf_required = true` the local commit-reveal fallback is refused |
+| Prices | A crank pushes live Coinbase prices into Clashy `PriceFeed` accounts on the rollup every second and commits them to Solana every 30 s. The program also accepts MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout) |
+| Deployed | Local MagicBlock stack only. Devnet and mainnet: **not deployed** (see Status) |
+
+## What the program does
+
+**Knockout duel (quick match).** Two players, one coin rolled for both.
+1. `open_duel` escrows the creator's stake in a vault PDA; `join_duel` escrows the joiner's. An unmatched challenge
+   can be cancelled for a full refund (no rake).
+2. `request_coin_roll` asks MagicBlock VRF for randomness; `coin_roll_callback` (only the VRF program can call it)
+   picks the coin from the duel's pool. Local fallback: `reveal_seed` from both players, coin = sha256(seed_a ‖ seed_b).
+3. `commit_pick` / `reveal_pick`: long or short and leverage, sealed by commit-reveal so neither player sees the other's
+   side first.
+4. `delegate_duel` hands the duel to the rollup; `start_duel` records the entry price there; `check_duel` scores both
+   sides on every call and, on a knockout or at the bell, commits and undelegates back to Solana.
+5. `settle_duel` pays the winner (rake first, so the vault never drops below rent-exempt) and updates Elo and RP.
+
+**Clans.** `create_clan` / `join_clan` / `leave_clan`; members `deposit_chest` / `withdraw_chest`. Group trades go by
+deposit-weighted vote: `propose` → `vote` → captain `execute_proposal` opens a position at the oracle price →
+`close_position` books its P&L to the chest. Positions are scored at the oracle price; they are **not** venue fills.
+
+**Clan wars.** `declare_war` / `accept_war` / `cancel_war` / `settle_war`: the clan with the better chest return over the
+war window wins.
+
+**Tournaments (Royale).** Up to 16 players: `create` / `join` / `cancel_tournament`, a VRF coin
+(`request_tournament_coin`), then on the rollup `start_tournament`, `call_round` (each player calls up or down),
+`resolve_round` (wrong calls lose a life, commits each round). `settle_tournament` splits the pot among survivors.
+
+## Run it
+
+```bash
+npm install
+bash scripts/localnet.sh            # base :8999 + MagicBlock ER :7799, deploys the program (CLASHY_RESET=1 for genesis)
+npx tsx scripts/crank.ts            # live prices: push every 1 s, commit every 30 s
+npx tsx --test --test-concurrency=1 tests/clashy.test.ts
+```
+
+The app's **On-chain duel** screen (`app/src/app/onchain.tsx`) talks to the same stack by default
+(`EXPO_PUBLIC_CLASHY_BASE`, `_ER`, `_NET`, `_ER_VALIDATOR` point it elsewhere). Open it in two browser tabs: each tab
+gets its own device test wallet.
+
+**Mainnet fork.** `bash scripts/forknet.sh` clones Phoenix and its SOL/USDC market from mainnet into a local validator
+on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bids of that fork.
+
+## Status
+
+- **Local MagicBlock stack: works end to end.** 5/5 end-to-end tests and 9/9 unit tests pass (see [TESTING.md](TESTING.md)).
+  Two browser tabs played full duels through the app.
+- **VRF: code only.** The VRF request and callback are written against MagicBlock's SDK, but VRF oracles only run on
+  devnet and mainnet, so the local runs use the commit-reveal fallback. **BLOCKED:** a devnet deploy needs about 6
+  devnet SOL; the faucet rate-limited the airdrop.
+- **Mainnet: not deployed.** Needs real SOL: the 870 KB program is 4.42 SOL rent-exempt (`solana rent 870000`), more if deployed with upgrade headroom, plus an equal temporary buffer during the deploy that is refunded, and Nick's
+  go-ahead. Real money stays off until then.
+- **Clan trades are paper.** They are scored at the oracle price. The Phoenix swap on the fork is a standalone script,
+  not called from the chest.
+- **Phoenix spot is too thin for duels.** On the fork, best bid 60.03 against a ~71 market; selling 1 SOL filled at
+  54.66 USDC. Duels therefore settle on price, not on venue fills.
+
+MIT licence, see `../LICENSE`.
