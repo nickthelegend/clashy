@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { SETUP_REASON, useClans } from '@/data/clans';
 import { Search } from '@/ui/icons';
-import { ART, Art, Btn, IconBtn, Pending, Press, Row, SearchBar, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
+import { ART, Art, Btn, crestFor, IconBtn, Pending, Press, Row, SearchBar, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
 import { C, F, R, S } from '@/ui/tokens';
 
 export default function Clans() {
@@ -60,7 +60,7 @@ export default function Clans() {
       ) : (
         list.map((c) => (
           <Press key={c.id} onPress={() => router.push({ pathname: '/clan/[id]', params: { id: c.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 }}>
-            <Art src={ART.crest} size={46} radius={13} />
+            <Art src={crestFor(c.name)} size={46} radius={13} />
             <View style={{ flex: 1 }}><Txt v="label">{c.name}</Txt><Txt v="small" style={{ marginTop: 2 }}>{c.members} members · {c.online} online</Txt></View>
             <Btn title="Join" kind="ghost" h={34} />
           </Press>
