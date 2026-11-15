@@ -54,15 +54,19 @@ describe('knockout duel: quick match on one rolled coin', () => {
 
     // sealed picks: A long 50x, B short 50x
     const [saltA, saltB] = [randomSeed(), randomSeed()];
-    const commit = (side: number, lev: number, salt: Buffer) => [...sha256(Buffer.from([side]), Buffer.from(new Uint16Array([lev]).buffer), salt)];
-    await programFor(a).methods.commitPick(commit(1, 50, saltA)).accountsPartial({ signer: a.publicKey, duel }).rpc();
+    const commit = (player: Keypair, side: number, lev: number, salt: Buffer) =>
+      [...sha256(duel.toBuffer(), player.publicKey.toBuffer(), Buffer.from([side]), Buffer.from(new Uint16Array([lev]).buffer), salt)];
+    await programFor(a).methods.commitPick(commit(a, 1, 50, saltA)).accountsPartial({ signer: a.publicKey, duel }).rpc();
     await assert.rejects(programFor(a).methods.revealPick(1, 50, [...saltA]).accountsPartial({ signer: a.publicKey, duel }).rpc(), /CommitsPending/, 'no reveal before both commit');
-    await programFor(b).methods.commitPick(commit(2, 50, saltB)).accountsPartial({ signer: b.publicKey, duel }).rpc();
+    await programFor(b).methods.commitPick(commit(b, 2, 50, saltB)).accountsPartial({ signer: b.publicKey, duel }).rpc();
     await assert.rejects(programFor(b).methods.revealPick(1, 50, [...saltB]).accountsPartial({ signer: b.publicKey, duel }).rpc(), /RevealMismatch/, 'cannot change side after committing');
     await programFor(a).methods.revealPick(1, 50, [...saltA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
     await programFor(b).methods.revealPick(2, 50, [...saltB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
 
     // hand it to the rollup
+    const outsider = await fundedKeypair(1);
+    await assert.rejects(programFor(outsider).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ payer: outsider.publicKey, duel }).rpc(), /NotPlayer/, 'only a player can delegate');
+    await assert.rejects(programFor(a).methods.abortDuel().accountsPartial({ duel, vault, creator: a.publicKey, joiner: b.publicKey, treasury: treasury.publicKey }).rpc(), /NotExpired/, 'no abort inside the setup window');
     await programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ payer: a.publicKey, duel }).remainingAccounts(validatorMeta).rpc();
     await until('duel on the rollup', 30_000, () => er.getAccountInfo(duel));
     d = await baseProgram.account.duel.fetch(duel).catch(() => d);
@@ -115,6 +119,8 @@ describe('knockout duel: quick match on one rolled coin', () => {
     const vault = P.vault(duel);
     await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b1, 60, new BN(3600), [...sha256(randomSeed())]).accountsPartial({ creator: a.publicKey, duel, vault }).rpc();
     await assert.rejects(programFor(a).methods.joinDuel([...sha256(randomSeed())]).accountsPartial({ joiner: a.publicKey, duel, vault, player: P.player(a.publicKey) }).rpc(), /SelfJoin/);
+    // an open challenge cannot be pushed into the rollup (that would lock the escrow)
+    await assert.rejects(programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ payer: a.publicKey, duel }).rpc(), /WrongStatus/);
     const before = await lamports(a.publicKey);
     await programFor(a).methods.cancelDuel().accountsPartial({ signer: a.publicKey, duel, vault, creator: a.publicKey }).rpc();
     assert.equal(await lamports(vault), 0);
@@ -182,7 +188,7 @@ describe('clans: group trading by vote, then clan vs clan', () => {
     await programFor(capA).methods.vote(true).accountsPartial({ wallet: capA.publicKey, clan: clanA, member: P.member(clanA, capA.publicKey), proposal: prop, vote: P.vote(prop, capA.publicKey) }).rpc();
     await programFor(member).methods.vote(false).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop, vote: P.vote(prop, member.publicKey) }).rpc();
     await assert.rejects(programFor(member).methods.vote(true).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop, vote: P.vote(prop, member.publicKey) }).rpc(), 'one vote per member');
-    await assert.rejects(programFor(member).methods.executeProposal().accountsPartial({ captain: member.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0) }).rpc(), /NotCaptain/);
+    await assert.rejects(programFor(member).methods.executeProposal().accountsPartial({ captain: member.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0), war: null }).rpc(), /NotCaptain/);
 
     // war first, so the trade lands inside the war window
     const war = P.war(clanA, clanB, 1);
@@ -194,13 +200,17 @@ describe('clans: group trading by vote, then clan vs clan', () => {
 
     await pushBasePrices(); // Solana-side copy of the live price
     // the rollup feed's stale Solana copy (owned by the delegation program) is not a valid price on Solana
-    await assert.rejects(programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0) }).rpc(), /FeedInvalid/);
-    await programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0) }).rpc();
+    await assert.rejects(programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0), war }).rpc(), /FeedMismatch|FeedInvalid/);
+    await programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc();
+    // nobody can buy into a clan mid-war (its shares are mispriced while the stake is out)
+    await assert.rejects(dep(member, clanA, 1), /WarLocked/);
+    // the war cannot settle while a position is open, and only the captain closes before the window ends
+    await assert.rejects(programFor(member).methods.closePosition().accountsPartial({ closer: member.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc(), /NotCaptain/);
     const pos = await baseProgram.account.clanPosition.fetch(P.position(clanA, 0));
     assert.equal(pos.notional.toNumber(), 1.25 * LAMPORTS_PER_SOL, '50% of the 2.5 SOL chest left after the war stake');
     await sleep(15_000);
     await pushBasePrices();
-    await programFor(capA).methods.closePosition().accountsPartial({ captain: capA.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.baseFeed(0) }).rpc();
+    await programFor(capA).methods.closePosition().accountsPartial({ closer: capA.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc();
     const closed = await baseProgram.account.clanPosition.fetch(P.position(clanA, 0));
     const ca = await baseProgram.account.clan.fetch(clanA);
     assert.equal(ca.scorePnl.toString(), closed.pnl.toString(), 'the clan score is the realized trade P&L');

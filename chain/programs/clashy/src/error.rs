@@ -100,4 +100,10 @@ pub enum ClashyError {
     WarStakeTooBig,
     #[msg("Not enough chest shares")]
     NotEnoughShares,
+    #[msg("The rollup validator is not configured")]
+    NoValidator,
+    #[msg("Close every clan position first")]
+    PositionsOpen,
+    #[msg("Withdrawals wait until the clan's open votes close")]
+    VoteOpen,
 }

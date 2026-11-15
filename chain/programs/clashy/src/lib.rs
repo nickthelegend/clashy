@@ -99,15 +99,11 @@ fn coin_feed(config: &Config, coin: u8) -> Result<Pubkey> {
 }
 
 /// Reads a coin's price on Solana (not in the rollup). The rollup feeds are delegated, so Solana reads the
-/// crank's never-delegated base feed for the coin, or the coin's configured feed when that is an oracle
-/// account (MagicBlock pricing oracle) that lives on Solana.
+/// crank's never-delegated base feed for the coin.
 fn solana_price(config: &Config, coin: u8, account: &AccountInfo, now: i64) -> Result<u64> {
-    let configured = coin_feed(config, coin)?;
-    let expected = if account.key() == configured {
-        configured
-    } else {
-        Pubkey::find_program_address(&[BASE_FEED_SEED, &[coin]], &crate::ID).0
-    };
+    coin_feed(config, coin)?;
+    // one source only, so a captain cannot pick whichever of two prices suits them
+    let expected = Pubkey::find_program_address(&[BASE_FEED_SEED, &[coin]], &crate::ID).0;
     price::read_price(account, &expected, now, MAX_BASE_PRICE_AGE)
 }
 
@@ -187,6 +183,13 @@ pub mod clashy {
         c.coins = [Coin::default(); MAX_COINS];
         c.bump = ctx.bumps.config;
         c.vrf_queue = VRF_BASE_QUEUE;
+        c.er_validator = Pubkey::default();
+        Ok(())
+    }
+
+    /// Pins the rollup validator duels and tournaments are delegated to.
+    pub fn set_er_validator(ctx: Context<AdminConfig>, validator: Pubkey) -> Result<()> {
+        ctx.accounts.config.er_validator = validator;
         Ok(())
     }
 
@@ -321,6 +324,7 @@ pub mod clashy {
         d.joiner = ctx.accounts.joiner.key();
         d.seed_hash[1] = seed_hash;
         d.status = duel_status::MATCHED;
+        d.matched_at = now;
         Ok(())
     }
 
@@ -335,6 +339,40 @@ pub mod clashy {
         let amount = ctx.accounts.vault.lamports();
         pay_from_vault(&ctx.accounts.vault.to_account_info(), &ctx.accounts.creator.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
         ctx.accounts.duel.status = duel_status::CANCELLED;
+        Ok(())
+    }
+
+    /// Anyone can end a duel that matched but never reached the rollup within DUEL_SETUP_SECS (a seed,
+    /// pick or VRF answer never came). If both picks were committed and only one player revealed, the
+    /// other forfeits: the revealer takes the pot minus rake. Otherwise both stakes are refunded.
+    pub fn abort_duel(ctx: Context<AbortDuel>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let d = &ctx.accounts.duel;
+        require!(d.status == duel_status::MATCHED || d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+        require!(now > d.matched_at + DUEL_SETUP_SECS, ClashyError::NotExpired);
+        require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
+        let forfeit_to: u8 = if d.picks_committed == 0b11 && d.picks_revealed == 0b01 { 1 }
+            else if d.picks_committed == 0b11 && d.picks_revealed == 0b10 { 2 } else { 0 };
+        let duel_key = d.key();
+        let seeds: &[&[u8]] = &[VAULT_SEED, duel_key.as_ref(), &[d.vault_bump]];
+        let stake = d.stake;
+        let vault = ctx.accounts.vault.to_account_info();
+        let sys = ctx.accounts.system_program.to_account_info();
+        if forfeit_to == 0 {
+            pay_from_vault(&vault, &ctx.accounts.creator.to_account_info(), &sys, seeds, stake)?;
+            let rest = vault.lamports();
+            pay_from_vault(&vault, &ctx.accounts.joiner.to_account_info(), &sys, seeds, rest)?;
+            ctx.accounts.duel.status = duel_status::CANCELLED;
+        } else {
+            let (_, rake) = math::split_rake(vault.lamports(), ctx.accounts.config.rake_bps);
+            pay_from_vault(&vault, &ctx.accounts.treasury.to_account_info(), &sys, seeds, rake)?;
+            let dest = if forfeit_to == 1 { ctx.accounts.creator.to_account_info() } else { ctx.accounts.joiner.to_account_info() };
+            let rest = vault.lamports();
+            pay_from_vault(&vault, &dest, &sys, seeds, rest)?;
+            let d = &mut ctx.accounts.duel;
+            d.winner = forfeit_to;
+            d.status = duel_status::SETTLED;
+        }
         Ok(())
     }
 
@@ -418,7 +456,7 @@ pub mod clashy {
         require!(lev >= 1 && lev <= MAX_LEVERAGE, ClashyError::BadLeverage);
         let i = player_index(d, &ctx.accounts.signer.key())?;
         require!(d.picks_revealed & (1 << i) == 0, ClashyError::AlreadyDone);
-        require!(hashv(&[&math::pick_preimage(dir, lev, &salt)]).to_bytes() == d.pick_hash[i], ClashyError::RevealMismatch);
+        require!(hashv(&[&math::pick_preimage(&d.key(), &ctx.accounts.signer.key(), dir, lev, &salt)]).to_bytes() == d.pick_hash[i], ClashyError::RevealMismatch);
         d.side[i] = dir;
         d.lev[i] = lev;
         d.picks_revealed |= 1 << i;
@@ -427,10 +465,21 @@ pub mod clashy {
 
     /// Hands the duel to the ER once both picks are revealed.
     pub fn delegate_duel(ctx: Context<DelegateDuel>, creator: Pubkey, nonce: u64) -> Result<()> {
+        {
+            // only a rolled duel with both picks revealed, only by one of its players, only to the pinned validator
+            let info = &ctx.accounts.duel;
+            require_keys_eq!(*info.owner, crate::ID, ClashyError::WrongStatus);
+            let d = Duel::try_deserialize(&mut &info.try_borrow_data()?[..])?;
+            require!(d.status == duel_status::ROLLED && d.picks_revealed == 0b11, ClashyError::WrongStatus);
+            let who = ctx.accounts.payer.key();
+            require!(who == d.creator || who == d.joiner, ClashyError::NotPlayer);
+        }
+        let validator = ctx.accounts.config.er_validator;
+        require!(validator != Pubkey::default(), ClashyError::NoValidator);
         ctx.accounts.delegate_duel(
             &ctx.accounts.payer,
             &[DUEL_SEED, creator.as_ref(), &nonce.to_le_bytes()],
-            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+            DelegateConfig { validator: Some(validator), ..Default::default() },
         )?;
         Ok(())
     }
@@ -536,6 +585,7 @@ pub mod clashy {
         c.score_pnl = 0;
         c.proposals = 0;
         c.positions_open = 0;
+        c.open_votes = 0;
         c.war = Pubkey::default();
         c.bump = ctx.bumps.clan;
         c.chest_bump = ctx.bumps.chest;
@@ -579,6 +629,8 @@ pub mod clashy {
 
     pub fn deposit_chest(ctx: Context<ChestMove>, amount: u64) -> Result<()> {
         require!(amount > 0, ClashyError::StakeTooLow);
+        // no deposits during a war: the stake is out of the chest, so shares would be mispriced
+        require!(ctx.accounts.clan.war == Pubkey::default(), ClashyError::WarLocked);
         let minted = math::shares_for_deposit(amount, ctx.accounts.clan.chest, ctx.accounts.clan.shares).ok_or(ClashyError::ChestTooLow)?;
         require!(minted > 0, ClashyError::StakeTooLow);
         deposit(&ctx.accounts.wallet.to_account_info(), &ctx.accounts.chest.to_account_info(), &ctx.accounts.system_program.to_account_info(), amount)?;
@@ -596,9 +648,11 @@ pub mod clashy {
     pub fn withdraw_chest(ctx: Context<ChestMove>, shares: u64) -> Result<()> {
         let c = &ctx.accounts.clan;
         require!(c.war == Pubkey::default(), ClashyError::WarLocked);
+        require!(c.open_votes == 0, ClashyError::VoteOpen);
         let held = ctx.accounts.member.shares;
         require!(shares > 0 && shares <= held, ClashyError::NotEnoughShares);
-        let payout = math::payout_for_shares(shares, c.chest, c.shares);
+        // the last redeemer takes everything left in the vault, so stray lamports cannot strand it below rent
+        let payout = if shares == c.shares { ctx.accounts.chest.lamports() } else { math::payout_for_shares(shares, c.chest, c.shares) };
         require!(payout > 0, ClashyError::ChestTooLow);
         let clan_key = c.key();
         let seeds: &[&[u8]] = &[CHEST_SEED, clan_key.as_ref(), &[c.chest_bump]];
@@ -607,8 +661,11 @@ pub mod clashy {
         m.deposit -= (m.deposit as u128 * shares as u128 / held as u128) as u64;
         m.shares -= shares;
         let c = &mut ctx.accounts.clan;
-        c.chest -= payout;
+        c.chest = c.chest.saturating_sub(payout);
         c.shares -= shares;
+        if c.shares == 0 {
+            c.chest = 0;
+        }
         Ok(())
     }
 
@@ -635,6 +692,7 @@ pub mod clashy {
         p.deadline = Clock::get()?.unix_timestamp + vote_secs;
         p.status = proposal_status::OPEN;
         p.bump = ctx.bumps.proposal;
+        ctx.accounts.clan.open_votes += 1;
         Ok(())
     }
 
@@ -670,6 +728,12 @@ pub mod clashy {
         require!(p.yes > p.no, ClashyError::NotPassed);
         // votes are in shares: early execution needs yes from over half of all shares
         require!(now > p.deadline || (p.yes as u128) * 2 > shares as u128, ClashyError::VotingOpen);
+        if ctx.accounts.clan.war != Pubkey::default() {
+            // at war: positions may only open inside the war window
+            let w = ctx.accounts.war.as_ref().ok_or(ClashyError::WarLocked)?;
+            require_keys_eq!(w.key(), ctx.accounts.clan.war, ClashyError::WarLocked);
+            require!(w.status != war_status::LIVE || now < w.end_ts, ClashyError::WarLocked);
+        }
         let price = solana_price(&ctx.accounts.config, p.coin, &ctx.accounts.price.to_account_info(), now)?;
         let notional = (chest as u128 * p.size_bps as u128 / BPS as u128) as u64;
         require!(notional > 0, ClashyError::ChestTooLow);
@@ -686,15 +750,19 @@ pub mod clashy {
         pos.bump = ctx.bumps.position;
         ctx.accounts.proposal.status = proposal_status::EXECUTED;
         ctx.accounts.clan.positions_open += 1;
+        ctx.accounts.clan.open_votes -= 1;
         Ok(())
     }
 
     /// Anyone can close a proposal that failed once its window is over.
     pub fn reject_proposal(ctx: Context<RejectProposal>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
         let p = &mut ctx.accounts.proposal;
         require!(p.status == proposal_status::OPEN, ClashyError::WrongStatus);
-        require!(Clock::get()?.unix_timestamp > p.deadline && p.yes <= p.no, ClashyError::VotingOpen);
+        // a failed vote once its window closes, or any vote the captain left unexecuted past the grace period
+        require!((now > p.deadline && p.yes <= p.no) || now > p.deadline + EXECUTE_GRACE_SECS, ClashyError::VotingOpen);
         p.status = proposal_status::REJECTED;
+        ctx.accounts.clan.open_votes -= 1;
         Ok(())
     }
 
@@ -703,6 +771,12 @@ pub mod clashy {
         let now = Clock::get()?.unix_timestamp;
         let pos = &ctx.accounts.position;
         require!(pos.open, ClashyError::WrongStatus);
+        if ctx.accounts.closer.key() != ctx.accounts.clan.captain {
+            // anyone may close a clan's positions once its war window is over, so a war can always settle
+            let w = ctx.accounts.war.as_ref().ok_or(ClashyError::NotCaptain)?;
+            require_keys_eq!(w.key(), ctx.accounts.clan.war, ClashyError::NotCaptain);
+            require!(now >= w.end_ts && w.status == war_status::LIVE, ClashyError::NotCaptain);
+        }
         let price = solana_price(&ctx.accounts.config, pos.coin, &ctx.accounts.price.to_account_info(), now)?;
         let pnl = math::position_pnl(pos.notional, pos.entry_price, price, pos.side, pos.lev);
         let pos = &mut ctx.accounts.position;
@@ -753,6 +827,8 @@ pub mod clashy {
         require!(b.war == Pubkey::default(), ClashyError::WarLocked);
         require!(b.chest >= stake, ClashyError::ChestTooLow);
         require!(stake <= b.chest / 2, ClashyError::WarStakeTooBig);
+        // only trades opened during the war count, so both clans start flat
+        require!(b.positions_open == 0 && ctx.accounts.clan_a.positions_open == 0, ClashyError::PositionsOpen);
         let b_key = b.key();
         let seeds: &[&[u8]] = &[CHEST_SEED, b_key.as_ref(), &[b.chest_bump]];
         pay_from_vault(&ctx.accounts.chest_b.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, stake)?;
@@ -778,7 +854,7 @@ pub mod clashy {
         require!(w.status == war_status::DECLARED, ClashyError::WrongStatus);
         let war_key = w.key();
         let seeds: &[&[u8]] = &[VAULT_SEED, war_key.as_ref(), &[w.vault_bump]];
-        let amount = w.stake;
+        let amount = ctx.accounts.vault.lamports();
         pay_from_vault(&ctx.accounts.vault.to_account_info(), &ctx.accounts.chest_a.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
         let a = &mut ctx.accounts.clan_a;
         a.chest += amount;
@@ -794,6 +870,8 @@ pub mod clashy {
         let w = &ctx.accounts.war;
         require!(w.status == war_status::LIVE, ClashyError::WrongStatus);
         require!(now >= w.end_ts, ClashyError::WarNotOver);
+        // open positions would let a captain bank winners and park losers; everything must be closed
+        require!(ctx.accounts.clan_a.positions_open == 0 && ctx.accounts.clan_b.positions_open == 0, ClashyError::PositionsOpen);
         require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
         let ra = math::war_return_bps(ctx.accounts.clan_a.score_pnl, w.base_a, w.chest_a);
         let rb = math::war_return_bps(ctx.accounts.clan_b.score_pnl, w.base_b, w.chest_b);
@@ -860,6 +938,7 @@ pub mod clashy {
         t.status = tour_status::OPEN;
         t.bump = ctx.bumps.tournament;
         t.vault_bump = ctx.bumps.vault;
+        t.created_at = Clock::get()?.unix_timestamp;
         Ok(())
     }
 
@@ -882,12 +961,17 @@ pub mod clashy {
     pub fn cancel_tournament<'info>(ctx: Context<'_, '_, 'info, 'info, CancelTournament<'info>>) -> Result<()> {
         let t = &ctx.accounts.tournament;
         require!(t.status == tour_status::OPEN, ClashyError::WrongStatus);
+        // the creator any time; anyone once the lobby is stale, so entries cannot be held hostage
+        let now = Clock::get()?.unix_timestamp;
+        require!(ctx.accounts.signer.key() == t.creator || now > t.created_at + TOUR_LOBBY_SECS, ClashyError::NotExpired);
         require!(ctx.remaining_accounts.len() == t.count as usize, ClashyError::PayoutMismatch);
         let key = t.key();
         let seeds: &[&[u8]] = &[VAULT_SEED, key.as_ref(), &[t.vault_bump]];
+        let n = ctx.remaining_accounts.len();
         for (i, acc) in ctx.remaining_accounts.iter().enumerate() {
             require_keys_eq!(acc.key(), t.players[i], ClashyError::PayoutMismatch);
-            pay_from_vault(&ctx.accounts.vault.to_account_info(), acc, &ctx.accounts.system_program.to_account_info(), seeds, t.entry)?;
+            let amount = if i + 1 == n { ctx.accounts.vault.lamports() } else { t.entry };
+            pay_from_vault(&ctx.accounts.vault.to_account_info(), acc, &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
         }
         ctx.accounts.tournament.status = tour_status::CANCELLED;
         Ok(())
@@ -929,10 +1013,21 @@ pub mod clashy {
     }
 
     pub fn delegate_tournament(ctx: Context<DelegateTournament>, creator: Pubkey, nonce: u64) -> Result<()> {
+        {
+            // only an open lobby with its coin rolled and two or more players, only by its creator
+            let info = &ctx.accounts.tournament;
+            require_keys_eq!(*info.owner, crate::ID, ClashyError::WrongStatus);
+            let t = Tournament::try_deserialize(&mut &info.try_borrow_data()?[..])?;
+            require!(t.status == tour_status::OPEN && t.coin != NO_COIN, ClashyError::WrongStatus);
+            require!(t.count >= 2, ClashyError::TooFewPlayers);
+            require_keys_eq!(ctx.accounts.payer.key(), t.creator, ClashyError::Unauthorized);
+        }
+        let validator = ctx.accounts.config.er_validator;
+        require!(validator != Pubkey::default(), ClashyError::NoValidator);
         ctx.accounts.delegate_tournament(
             &ctx.accounts.payer,
             &[TOUR_SEED, creator.as_ref(), &nonce.to_le_bytes()],
-            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+            DelegateConfig { validator: Some(validator), ..Default::default() },
         )?;
         Ok(())
     }
@@ -1183,6 +1278,26 @@ pub struct JoinDuel<'info> {
 }
 
 #[derive(Accounts)]
+pub struct AbortDuel<'info> {
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Account<'info, Duel>,
+    #[account(mut, seeds = [VAULT_SEED, duel.key().as_ref()], bump = duel.vault_bump)]
+    pub vault: SystemAccount<'info>,
+    /// CHECK: payout destination, must be the creator.
+    #[account(mut, address = duel.creator @ ClashyError::PayoutMismatch)]
+    pub creator: AccountInfo<'info>,
+    /// CHECK: payout destination, must be the joiner.
+    #[account(mut, address = duel.joiner @ ClashyError::PayoutMismatch)]
+    pub joiner: AccountInfo<'info>,
+    /// CHECK: must equal config.treasury.
+    #[account(mut)]
+    pub treasury: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct CancelDuel<'info> {
     pub signer: Signer<'info>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
@@ -1233,6 +1348,8 @@ pub struct PlayerDuel<'info> {
 pub struct DelegateDuel<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
     /// CHECK: the duel PDA, checked by seeds. Must be rolled with both picks revealed.
     #[account(mut, del, seeds = [DUEL_SEED, creator.as_ref(), &nonce.to_le_bytes()], bump)]
     pub duel: AccountInfo<'info>,
@@ -1383,26 +1500,33 @@ pub struct ExecuteProposal<'info> {
     pub position: Account<'info, ClanPosition>,
     /// CHECK: validated against the configured feed for the proposal's coin.
     pub price: UncheckedAccount<'info>,
+    /// The clan's war, required while it is at war.
+    pub war: Option<Account<'info, War>>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct RejectProposal<'info> {
+    #[account(mut, address = proposal.clan)]
+    pub clan: Account<'info, Clan>,
     #[account(mut)]
     pub proposal: Account<'info, Proposal>,
 }
 
 #[derive(Accounts)]
 pub struct ClosePosition<'info> {
-    pub captain: Signer<'info>,
+    /// The captain, or anyone once the clan's war window is over.
+    pub closer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
-    #[account(mut, constraint = clan.captain == captain.key() @ ClashyError::NotCaptain)]
+    #[account(mut)]
     pub clan: Account<'info, Clan>,
     #[account(mut, has_one = clan)]
     pub position: Account<'info, ClanPosition>,
-    /// CHECK: validated against the configured feed for the position's coin.
+    /// CHECK: validated against the coin's base feed.
     pub price: UncheckedAccount<'info>,
+    /// The clan's war, needed when someone other than the captain closes.
+    pub war: Option<Account<'info, War>>,
 }
 
 #[derive(Accounts)]
@@ -1501,8 +1625,7 @@ pub struct JoinTournament<'info> {
 
 #[derive(Accounts)]
 pub struct CancelTournament<'info> {
-    #[account(address = tournament.creator @ ClashyError::Unauthorized)]
-    pub creator: Signer<'info>,
+    pub signer: Signer<'info>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
     pub tournament: Account<'info, Tournament>,
     #[account(mut, seeds = [VAULT_SEED, tournament.key().as_ref()], bump = tournament.vault_bump)]
@@ -1539,6 +1662,8 @@ pub struct TournamentCoinCallback<'info> {
 pub struct DelegateTournament<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
     /// CHECK: the tournament PDA, checked by seeds.
     #[account(mut, del, seeds = [TOUR_SEED, creator.as_ref(), &nonce.to_le_bytes()], bump)]
     pub tournament: AccountInfo<'info>,

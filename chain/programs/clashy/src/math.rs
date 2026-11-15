@@ -59,8 +59,11 @@ fn expected_bps(diff: i32) -> i32 {
 }
 
 /// Commitment for a sealed pick: sha256(side || leverage_le || salt).
-pub fn pick_preimage(dir: u8, lev: u16, salt: &[u8; 32]) -> Vec<u8> {
-    let mut v = Vec::with_capacity(35);
+pub fn pick_preimage(duel: &anchor_lang::prelude::Pubkey, player: &anchor_lang::prelude::Pubkey, dir: u8, lev: u16, salt: &[u8; 32]) -> Vec<u8> {
+    // binding the duel and the player stops the second player copying the first player's hash
+    let mut v = Vec::with_capacity(99);
+    v.extend_from_slice(duel.as_ref());
+    v.extend_from_slice(player.as_ref());
     v.push(dir);
     v.extend_from_slice(&lev.to_le_bytes());
     v.extend_from_slice(salt);
