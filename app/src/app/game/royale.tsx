@@ -1,9 +1,10 @@
-// Royale (practice): every 10 s, call up or down on a live price. Wrong or no call costs a life. 3 lives.
+// Royale (practice, style R5 arcade tap zones): every 10 s, call up or down on a live price.
+// During a round the whole screen is the button: top half = up, bottom half = down. Wrong or no call costs a life.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -11,7 +12,7 @@ import { MAJORS } from '@/data/markets';
 import { useTicks } from '@/data/ticks';
 import { BackBtn, Btn, Card, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
-import { C, R, S, fmtUsd } from '@/ui/tokens';
+import { C, F, R, S, fmtUsd } from '@/ui/tokens';
 
 const ROUND = 10; // seconds per round
 const LIVES = 3;
@@ -118,6 +119,50 @@ export default function Royale() {
     </View>
   );
 
+  // the round itself: two giant tap zones and an arcade countdown in the middle
+  if (phase === 'round') {
+    const move = startP && last ? (last - startP) / startP : 0;
+    const zone = (dir: 'up' | 'down') => {
+      const on = call === dir, up = dir === 'up';
+      const base = up ? ['#0B3A1C', '#082714'] : ['#3A0D0D', '#270909'];
+      return (
+        <Pressable onPress={() => { Haptics.selectionAsync(); setCall(dir); }} accessibilityRole="button" accessibilityLabel={`Call ${dir}`}
+          style={{ flex: 1, backgroundColor: on ? (up ? '#145C2C' : '#5C1616') : base[0], alignItems: 'center', justifyContent: up ? 'flex-end' : 'flex-start', paddingBottom: up ? 110 : 0, paddingTop: up ? 0 : 110 }}>
+          {!up ? <Text style={{ color: C.down, fontFamily: F.semi, fontSize: 14, opacity: 0.85 }}>{on ? 'Locked in ✓' : 'Tap anywhere here'}</Text> : null}
+          <Text style={{ color: up ? C.up : C.down, fontFamily: F.bold, fontSize: on ? 76 : 64, letterSpacing: -2 }}>{up ? 'UP' : 'DOWN'}</Text>
+          {up ? <Text style={{ color: C.up, fontFamily: F.semi, fontSize: 14, opacity: 0.85 }}>{on ? 'Locked in ✓' : 'Tap anywhere here'}</Text> : null}
+        </Pressable>
+      );
+    };
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, ...col }}>
+        {zone('up')}
+        <View style={{ height: 4, backgroundColor: '#000' }} />
+        {zone('down')}
+        <Row style={{ position: 'absolute', top: insets.top + 8, left: S.gutter, right: S.gutter, justifyContent: 'space-between' }}>
+          <BackBtn onPress={() => { setPhase('ready'); }} />
+          <Row style={{ gap: 4 }}>{Array.from({ length: LIVES }).map((_, k) => <Heart key={k} on={k < lives} />)}</Row>
+          <View style={{ backgroundColor: '#000', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 }}><Txt v="small" color={C.ink}>Round {round}</Txt></View>
+        </Row>
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 200, height: 200, borderRadius: 100, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: left <= 3 ? C.down : '#FFC94A' }}>
+            <Svg width={200} height={200} style={{ position: 'absolute' }}>
+              <Circle cx={100} cy={100} r={90} stroke={left <= 3 ? C.down : '#FFC94A'} strokeOpacity={0.9} strokeWidth={6} fill="none" strokeDasharray={`${(Math.max(0, left) / ROUND) * 2 * Math.PI * 90} 999`} strokeLinecap="round" transform="rotate(-90 100 100)" />
+            </Svg>
+            <Text style={{ color: left <= 3 ? C.down : '#FFC94A', fontFamily: F.bold, fontSize: 72, lineHeight: 78 }}>{Math.max(0, left)}</Text>
+            <Row style={{ gap: 5 }}><TokenArt symbol={coin} uri={MAJORS.find((m) => m.id === coin)?.image} size={14} /><Txt v="small" color={C.ink}>{last ? fmtUsd(last) : '…'}</Txt></Row>
+            <Txt v="small" color={move > 0 ? C.up : move < 0 ? C.down : C.muted}>{move >= 0 ? '+' : ''}{(move * 100).toFixed(3)}%</Txt>
+          </View>
+        </View>
+        {log[0] ? (
+          <View pointerEvents="none" style={{ position: 'absolute', bottom: insets.bottom + 18, left: 0, right: 0, alignItems: 'center' }}>
+            <Txt v="small" color={log[0].ok ? C.up : C.down}>Last round: {log[0].call ? `you said ${log[0].call}` : 'no call'} · {log[0].ok ? 'safe' : 'lost a life'}</Txt>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 12 }}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
@@ -126,16 +171,16 @@ export default function Royale() {
       </Row>
       <Row style={{ gap: 8, marginBottom: 12 }}>
         {MAJORS.map((m) => (
-          <Btn key={m.id} title={m.id} h={36} kind={coin === m.id ? 'white' : 'ghost'} style={{ flex: 1 }} disabled={phase === 'round'} onPress={() => setCoin(m.id)}
+          <Btn key={m.id} title={m.id} h={36} kind={coin === m.id ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setCoin(m.id)}
             icon={<TokenArt symbol={m.id} uri={m.image} size={18} />} />
         ))}
       </Row>
       <View style={{ flexDirection: desk ? 'row' : 'column', gap: 14 }}>
         <View>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <PriceChart data={ticks.map((k) => k.p)} w={chartW} h={desk ? 380 : 240} koYou={phase === 'round' && startP ? startP : undefined} />
+            <PriceChart data={ticks.map((k) => k.p)} w={chartW} h={desk ? 380 : 240} />
             <Row style={{ justifyContent: 'space-between', padding: 10, paddingTop: 2 }}>
-              <Txt v="small" color={C.brandSoft}>{phase === 'round' ? 'Round start line' : `${coin} live`}</Txt>
+              <Txt v="small" color={C.brandSoft}>{`${coin} live`}</Txt>
               <Txt v="small" color={C.ink}>{last ? fmtUsd(last) : 'Loading…'}</Txt>
             </Row>
           </Card>
