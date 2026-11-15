@@ -15,8 +15,7 @@ export function TopNav() {
     <header className="topnav">
       <div className="wrap topnav-in">
         <a href="#top" className="brand" aria-label="clashy home">
-          <img src="/art/icon-64.png" alt="" width="30" height="30" />
-          <Wordmark size={22} />
+          <Wordmark size={26} />
         </a>
         <nav className="topnav-links" aria-label="Sections">
           {LINKS.map(([l, h]) => (
@@ -51,8 +50,7 @@ export function FloatNav() {
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
     >
       <a href="#top" className="floatnav-brand" aria-label="Back to top">
-        <img src="/art/icon-64.png" alt="" width="24" height="24" />
-        <Wordmark size={16} />
+        <Wordmark size={18} />
       </a>
       <span className="floatnav-sep" />
       {LINKS.map(([l, h]) => (
