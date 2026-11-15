@@ -49,5 +49,15 @@ for f in $RAW/clashy-desktop-*.png(N); do
     *) fit $f $T 512 512; q $T -o $D/$n.webp ;;
   esac
 done
+mkdir -p $M/fx
+for f in $RAW/clashy-fx-*.png(N); do
+  n=${${f:t:r}#clashy-}
+  case $n in
+    fx-round) fit $f $T 1600 600 ;;
+    fx-heart|fx-heart-broken) fit $f $T 512 512 ;;
+    *) fit $f $T 1024 1024 ;;
+  esac
+  q $T -o $M/fx/$n.webp
+done
 rm -f $T
 du -sh $W $M $D
