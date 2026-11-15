@@ -9,7 +9,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { MAJORS } from '@/data/markets';
-import { Countdown, CountUp, Hit, Shake, WinBurst } from '@/ui/fx';
+import { Countdown, CountUp, FX, Hit, RoundBanner, Shake, WinBurst } from '@/ui/fx';
+import { Image } from 'expo-image';
 import { ART } from '@/ui/kit';
 import { useTicks } from '@/data/ticks';
 import { BackBtn, Btn, Card, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
@@ -22,7 +23,7 @@ const PB_KEY = 'clashy:royale:best';
 type Call = 'up' | 'down' | null;
 type Phase = 'ready' | 'count' | 'round' | 'over';
 
-const Heart = ({ on }: { on: boolean }) => <Txt v="h2" color={on ? C.opp : '#2A2A30'} style={{ fontSize: 22 }}>♥</Txt>;
+const Heart = ({ on }: { on: boolean }) => <Image source={on ? FX.heart : FX.heartBroken} style={{ width: 30, height: 30, opacity: on ? 1 : 0.55 }} contentFit="contain" />;
 
 export default function Royale() {
   const insets = useSafeAreaInsets();
@@ -167,7 +168,8 @@ export default function Royale() {
             <Txt v="small" color={log[0].ok ? C.up : C.down}>Last round: {log[0].call ? `you said ${log[0].call}` : 'no call'} · {log[0].ok ? 'safe' : 'lost a life'}</Txt>
           </View>
         ) : null}
-        <Hit k={hit.k} text={hit.ok ? 'SAFE' : '−1 ♥'} color={hit.ok ? C.up : C.opp} />
+        <Hit k={hit.k} src={hit.ok ? FX.safe : FX.heartBroken} />
+        <RoundBanner round={round} />
       </Shake>
     );
   }
@@ -198,7 +200,7 @@ export default function Royale() {
         {controls}
       </View>
       {phase === 'count' ? <Countdown onDone={startRound} /> : null}
-      <Hit k={phase === 'over' ? hit.k : 0} text="OUT" color={C.down} />
+      <Hit k={phase === 'over' ? hit.k : 0} src={FX.out} />
     </View>
   );
 }
