@@ -656,61 +656,6 @@ export type Clashy = {
       ]
     },
     {
-      "name": "commitFeed",
-      "docs": [
-        "Crank-only, inside the ER: commits the feed so Solana-side reads (clans) stay fresh."
-      ],
-      "discriminator": [
-        58,
-        248,
-        246,
-        46,
-        141,
-        119,
-        243,
-        101
-      ],
-      "accounts": [
-        {
-          "name": "crank",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "feed",
-          "writable": true
-        },
-        {
-          "name": "magicProgram",
-          "address": "Magic11111111111111111111111111111111111111"
-        },
-        {
-          "name": "magicContext",
-          "writable": true,
-          "address": "MagicContext1111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "commitPick",
       "docs": [
         "Seals a pick: hash = sha256(side || leverage_le || salt)."
@@ -1917,6 +1862,66 @@ export type Clashy = {
       "args": []
     },
     {
+      "name": "initBaseFeed",
+      "docs": [
+        "A never-delegated copy of a coin's feed on Solana, for Solana-side reads (clan trades).",
+        "MagicBlock sponsors only a few commits per delegated account, so the rollup feeds are not",
+        "committed back; the crank writes this account directly instead."
+      ],
+      "discriminator": [
+        108,
+        243,
+        12,
+        77,
+        150,
+        200,
+        67,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "feed",
+          "writable": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "coin",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "initFeed",
       "discriminator": [
         203,
@@ -2792,6 +2797,56 @@ export type Clashy = {
         {
           "name": "voteSecs",
           "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "pushBasePrice",
+      "docs": [
+        "Crank-only, on Solana."
+      ],
+      "discriminator": [
+        123,
+        142,
+        208,
+        166,
+        123,
+        160,
+        96,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "crank",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "feed",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
         }
       ]
     },
