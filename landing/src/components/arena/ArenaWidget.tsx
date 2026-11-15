@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MARKETS, useLivePrice, type Market, type Tick } from './useLivePrice'
 import { Money } from '../Money'
 import { recordResult } from './record'
+import { ClayLoop } from '../ClayLoop'
 
 // The Arena: a free Knockout Duel practice on real prices, played the way the app's quick match works
 // (specs/clashy-onchain.md §1): you get matched, ONE coin is rolled for both of you, each picks long or
@@ -253,8 +254,8 @@ function ResultCard({ result, onAgain }: { result: Result; onAgain: () => void }
           : 'Dead even at the bell.'
   return (
     <div className={`result ${result.winner}`} role="status">
-      {result.how === 'ko' && <img className="result-art" src="/art/ko-burst.webp" alt="" width="120" height="120" />}
-      {result.how === 'bell' && result.winner === 'you' && <img className="result-art" src="/art/win-trophy.webp" alt="" width="110" height="110" />}
+      {result.how === 'ko' && <ClayLoop name="ko-moment" once className="result-art clay-vid" size={150} />}
+      {result.how === 'bell' && result.winner === 'you' && <ClayLoop name="win-loop" className="result-art clay-vid" size={140} />}
       <b>{title}</b>
       <span className="num">
         you {fmtPct(result.you)} · rival {fmtPct(result.rival)} · {Math.round(result.at / 1000)} s

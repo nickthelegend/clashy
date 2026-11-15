@@ -13,5 +13,8 @@ for n in hero-duo clan-banner coins-pile; do w $A/web/$n.webp $P/$n.webp 1200; d
 w $A/web/phone-hand.webp $P/phone-hand.webp 900
 w $A/web/og.webp $P/og.webp 1200
 [[ -f $A/mobile/app-icon-1024.png ]] && sips -z 64 64 $A/mobile/app-icon-1024.png --out $P/icon-64.png >/dev/null
+# clay video loops (web copies: H.264 + webp poster)
+mkdir -p $ROOT/landing/public/video
+for f in $A/video/web/*.(mp4|webp)(N); do cp $f $ROOT/landing/public/video/; done
 rm -f /tmp/clashy-sync.png
 ls $P | wc -l

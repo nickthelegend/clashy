@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from 'framer-motion'
 import { Money } from '../components/Money'
+import { ClayLoop } from '../components/ClayLoop'
 import { MARKETS, useLivePrice } from '../components/arena/useLivePrice'
 
 // tab.markets' "Pick. Decide. Battle." stage: a pinned phone (clay hand) whose screen changes
@@ -51,7 +52,11 @@ export function How() {
             <div className="callout-wire" aria-hidden="true" />
             <AnimatePresence mode="wait">
               <motion.div key={step} className="callout" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.35 }}>
-                <img src={['/art/av-nova.webp', '/art/coins-pile.webp', '/art/tile-duel.webp'][step]} alt="" width="56" height="56" />
+                {step === 2 ? (
+                  <ClayLoop name="tile-duel-loop" className="clay-vid callout-vid" size={56} />
+                ) : (
+                  <img src={['/art/av-nova.webp', '/art/coins-pile.webp'][step]} alt="" width="56" height="56" />
+                )}
                 <span className="label">
                   0{step + 1} · {STEPS[step].k}
                 </span>
@@ -153,7 +158,7 @@ function ScreenBattle() {
           <span className={`num ${c}`}>{v}</span>
         </div>
       ))}
-      <img className="ps-trophy" src="/art/win-trophy.webp" alt="" width="110" height="110" />
+      <ClayLoop name="win-loop" className="ps-trophy clay-vid" size={90} />
       <span className="ps-note">best % at the bell takes the pot</span>
     </div>
   )

@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { ClayLoop } from '../components/ClayLoop'
 
 // tab.markets' #features-rail: the heading stays pinned on the left while a rail of coloured
 // feature cards slides in from the right as you scroll down. On phones it becomes a swipeable row.
 
 type Card = { n: string; label: string; title: string; body: string; bg: string; ink: string; ui: React.ReactNode }
+
+// tiles that have a clay animation loop in /video
+const LOOPS = new Set(['duel', 'royale', 'line'])
 
 const RANKS = ['Exit Liquidity', 'Paper Hands', 'Bagholder', 'Dip Buyer', 'Ape', 'Degen', 'Diamond Hands', 'Chad', 'Whale', 'The House']
 
@@ -51,7 +55,11 @@ const CARDS: Card[] = [
           ['war', 'Clan war'],
         ].map(([t, n]) => (
           <div key={t} className="ui-mode">
-            <img src={t === 'clash' ? '/art/coins-pile.webp' : `/art/tile-${t}.webp`} alt="" width="72" height="72" />
+            {LOOPS.has(t) ? (
+              <ClayLoop name={`tile-${t}-loop`} className="clay-vid" size={64} />
+            ) : (
+              <img src={t === 'clash' ? '/art/coins-pile.webp' : `/art/tile-${t}.webp`} alt="" width="72" height="72" />
+            )}
             <span>{n}</span>
           </div>
         ))}
