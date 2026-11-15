@@ -19,6 +19,8 @@ import { ScrollView } from 'react-native';
 type Mode = { key: string; title: string; who: string; line: string; art: number; banner?: number; live: boolean };
 const MODES: Mode[] = [
   { key: 'onchain', title: 'On-chain duel', who: 'Real escrow · Solana + MagicBlock rollup', line: 'The real program: stakes in escrow, a rolled coin, sealed picks, scored live on a MagicBlock rollup and settled on Solana.', art: ART.tileDuel, live: true },
+  { key: 'onchain-royale', title: 'On-chain Royale', who: 'Real escrow · 2–16 players · 10 s rounds', line: 'Entries in escrow, rounds called on a MagicBlock rollup, survivors paid on Solana.', art: ART.tileRoyale, live: true },
+  { key: 'onchain-clan', title: 'On-chain clan', who: 'Real chest · weighted votes', line: 'A clan chest on Solana: propose a trade, vote by deposit, the captain executes it at the live price.', art: ART.coinsPile ?? ART.crown, live: true },
   { key: 'ko', title: 'Knockout duel', who: '1 v 1 · quick match · 60 s', line: 'Quick match a rival. VRF rolls one coin for both of you. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
   { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, live: true },
   { key: 'diamond', title: 'Diamond Hands', who: 'Solo now · rooms at launch · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true },
@@ -33,7 +35,7 @@ const MODES: Mode[] = [
   { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, banner: ART.bannerBounty, live: false },
 ];
 /** Higgsfield clay loops for the games that have one. */
-const LOOPS: Record<string, ClayName | undefined> = { ko: 'duel', royale: 'royale', diamond: 'diamond', line: 'line', cup: 'cup', skirmish: 'war', war: 'war' };
+const LOOPS: Record<string, ClayName | undefined> = { ko: 'duel', royale: 'royale', 'onchain-royale': 'royale', diamond: 'diamond', line: 'line', cup: 'cup', skirmish: 'war', war: 'war' };
 const STAKES = [5, 10, 20, 50];
 /** Opens a mode's game. Practice modes play on live prices; Clan war and Bounty open their preview screens. */
 const play = (key: string, stake: number) => {
@@ -41,6 +43,8 @@ const play = (key: string, stake: number) => {
   else if (key === 'royale') router.push('/game/royale');
   else if (key === 'war') router.push('/game/war');
   else if (key === 'onchain') router.push('/onchain');
+  else if (key === 'onchain-royale') router.push('/onchain-royale');
+  else if (key === 'onchain-clan') router.push('/onchain-clan');
   else if (key === 'streak') router.push('/game/streak');
   else if (key === 'snipe') router.push('/game/snipe');
   else if (key === 'skirmish') router.push('/game/skirmish');
@@ -62,7 +66,7 @@ function ArenaDesk() {
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 16 }}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Fourteen games: quick matches, rooms, solo runs and clan fights. All practice on live prices.</Txt></View>
+          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Three modes run on the real program: escrow on Solana, play on a MagicBlock rollup. The rest are free practice on live prices.</Txt></View>
           <Btn title="Leaderboard" kind="ghost" h={38} onPress={() => router.push('/leaderboard')} />
         </Row>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>

@@ -73,7 +73,30 @@ export const P = {
   proposal: (clan: PublicKey, id: number | bigint) => pda(Buffer.from('proposal'), clan.toBuffer(), le64(id)),
   vote: (proposal: PublicKey, wallet: PublicKey) => pda(Buffer.from('vote'), proposal.toBuffer(), wallet.toBuffer()),
   position: (clan: PublicKey, id: number | bigint) => pda(Buffer.from('position'), clan.toBuffer(), le64(id)),
+  tour: (creator: PublicKey, nonce: number | bigint) => pda(Buffer.from('tour'), creator.toBuffer(), le64(nonce)),
 };
+
+export const TOUR_STATUS = ['Lobby', 'Live', 'Finished', 'Settled', 'Cancelled'] as const;
+export type TourView = {
+  key: PublicKey; creator: PublicKey; nonce: number; entry: number; coin: number; maxPlayers: number; count: number;
+  players: PublicKey[]; lives: number[]; calls: number[]; startLives: number; alive: number; round: number; maxRounds: number;
+  roundSecs: number; roundPrice: number; roundStartedAt: number; status: number; onEr: boolean;
+};
+/** Reads a tournament from wherever it lives right now (the rollup while delegated, otherwise Solana). */
+export async function readTour(prog: Program<Clashy>, key: PublicKey): Promise<TourView | null> {
+  const [b, e] = await Promise.all([base.getAccountInfo(key), er.getAccountInfo(key).catch(() => null)]);
+  const onEr = !!b && !b.owner.equals(PROGRAM_ID) && !!e;
+  const info = onEr ? e : b;
+  if (!info || !(onEr || info.owner.equals(PROGRAM_ID))) return null;
+  const t = prog.coder.accounts.decode('tournament', info.data);
+  const n = t.count as number;
+  return {
+    key, creator: t.creator, nonce: Number(t.nonce), entry: Number(t.entry), coin: t.coin, maxPlayers: t.maxPlayers, count: n,
+    players: (t.players as PublicKey[]).slice(0, n), lives: [...t.lives].slice(0, n), calls: [...t.calls].slice(0, n), startLives: t.startLives,
+    alive: t.alive, round: t.round, maxRounds: t.maxRounds, roundSecs: t.roundSecs, roundPrice: Number(t.roundPrice) / 1e6,
+    roundStartedAt: Number(t.roundStartedAt), status: t.status, onEr,
+  };
+}
 
 /** Clan names are stored as fixed 24-byte, zero-padded UTF-8. */
 export const clanName = (bytes: number[]) => Buffer.from(bytes.filter((b) => b !== 0)).toString('utf8');
