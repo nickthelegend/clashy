@@ -36,3 +36,22 @@ the painted background away and redrew the white border, so every sticker has re
 Chrome set https://chatgpt.com/c/6af97944-c64c-83e8-a67b-036543392d5a · smoked-glass test
 https://chatgpt.com/c/6af982b9-cd5c-83ee-b5b6-aa82eb081677 · glossy test https://chatgpt.com/c/6af9837b-ac04-83ee-b836-21882d34f2c8 ·
 duel light https://chatgpt.com/c/6af987b0-fb6c-83ee-a939-366aab2c11ce
+
+## Second sticker run (same style, Nov 15)
+Conversations: https://chatgpt.com/c/6af9bd77-3354-83e8-b93b-f029440a4ac1 and
+https://chatgpt.com/c/6af9bd9f-3b18-83ec-933f-5d5f7807e73f (two tabs in parallel).
+
+- **Mode banners (`assets/mobile/banner-{duel,line,war,royale,bounty}.webp`):** busy sticker scenes on black.
+  ChatGPT returned them at 16:9; they were resized to 1600×900.
+- **Rank tiers:** `rank-{bronze,silver,gold,platinum,diamond,legend}`.
+- **Onboarding slides:** `onboard-{1,2,3}` (1024×1536, on black): duel anyone, any coin, clan wars.
+- **Matchmaking:** `radar`, `vs` (contains the word VS).
+- **Results:** `win-trophy`, `ko-skull` (friendly, dizzy), `draw-handshake`, `confetti`.
+- **Empty states:** `empty-{chats,leaderboard,profile,search}`.
+- **Avatars:** 12 more, 20 in total: `avatar-{nova,beanie,punk,panda,alien,monkey,wizard,dog,cyborg,dragon,skater,tiger}`.
+- **Desktop (`assets/desktop/`):**
+  - `hero-home` (composed as one row, cropped to 4:1, 2400×600)
+  - `rail-live` (contains the word LIVE)
+  - `sidebar-battle`
+
+Ten of these came back with a painted checkerboard and were cleaned to real alpha the same way as the first run.
