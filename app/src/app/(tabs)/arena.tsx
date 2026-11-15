@@ -21,6 +21,8 @@ const MODES: Mode[] = [
   { key: 'ko', title: 'Knockout duel', who: '1 v 1 · quick match · 60 s', line: 'Quick match a rival. VRF rolls one coin for both of you. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
   { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, live: true },
   { key: 'diamond', title: 'Diamond Hands', who: 'Solo now · rooms at launch · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true },
+  { key: 'streak', title: 'Hot Streak', who: 'Solo · a call every 5 s', line: 'Higher or lower, every 5 seconds. The combo grows with your streak. One miss ends it.', art: ART.ko, live: true },
+  { key: 'snipe', title: 'Peak Snipe', who: 'Solo · 30 s · one tap', line: 'Hold a live coin for 30 seconds. One tap to sell. Score how close you got to the top.', art: ART.tileBounty, live: true },
   { key: 'cup', title: 'Daily Cup', who: 'Everyone · one run a day', line: 'One coin of the day for everyone. One shot at Draw the line. New cup at 00:00 UTC.', art: ART.tileCup, banner: ART.bannerCup, live: true },
   { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, banner: ART.bannerLine, live: true },
   { key: 'skirmish', title: 'Clan Skirmish', who: 'Clan vs clan · best of 5', line: 'Each round rolls a coin. Make your clan\'s call. First clan to 3 rounds wins.', art: ART.tileWar, live: true },
@@ -37,6 +39,8 @@ const play = (key: string, stake: number) => {
   if (key === 'line') router.push('/game/line');
   else if (key === 'royale') router.push('/game/royale');
   else if (key === 'war') router.push('/game/war');
+  else if (key === 'streak') router.push('/game/streak');
+  else if (key === 'snipe') router.push('/game/snipe');
   else if (key === 'skirmish') router.push('/game/skirmish');
   else if (key === 'chest') router.push('/clan/chest');
   else if (key === 'diamond') router.push('/game/diamond');
@@ -56,7 +60,7 @@ function ArenaDesk() {
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 16 }}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Twelve games: quick matches, rooms, solo runs and clan fights. All practice on live prices.</Txt></View>
+          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Fourteen games: quick matches, rooms, solo runs and clan fights. All practice on live prices.</Txt></View>
           <Btn title="Leaderboard" kind="ghost" h={38} onPress={() => router.push('/leaderboard')} />
         </Row>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
