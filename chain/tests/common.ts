@@ -150,7 +150,7 @@ export async function pushPrices(): Promise<bigint[]> {
 /** Crank: commits the feeds to Solana and waits until the base copies are fresh. */
 export async function commitFeeds() {
   const before = await Promise.all(COINS.map((_, i) => baseProgram.account.priceFeed.fetch(P.feed(i)).catch(() => null)));
-  await pushPrices();
+  const px = await pushPrices();
   for (let i = 0; i < COINS.length; i++) await sendEr(erProgram.methods.commitFeed().accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority);
   for (let i = 0; i < COINS.length; i++) {
     await until(`feed ${i} committed to Solana`, 60_000, async () => {
@@ -160,6 +160,7 @@ export async function commitFeeds() {
       return f.updatedAt.toNumber() > (before[i]?.updatedAt.toNumber() ?? 0) ? f : null;
     });
   }
+  return px;
 }
 
 /** Keeps the crank pushing live prices every second until stop() is called. */
