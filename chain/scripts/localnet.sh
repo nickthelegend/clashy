@@ -4,6 +4,7 @@
 #   :8999  base L1  mb-test-validator (solana-test-validator with the delegation program DELeGG…),
 #                   plus MagicBlock's committor program ComtrB2K… (fetched once from devnet)
 #   :7799  rollup   ephemeral-validator pointed at the base layer
+#          vrf      MagicBlock's vrf-oracle answering their local test queue
 #
 # CLASHY_RESET=1 starts both from genesis (they share one ledger dir, so they are always reset together).
 # Ledgers live in chain/.localnet on the SSD, not in /tmp on the boot disk.
@@ -29,6 +30,7 @@ wait_rpc() {
 
 if [ "${CLASHY_RESET:-}" = "1" ]; then
   for p in "$BASE_PORT" "$ER_PORT"; do lsof -nP -iTCP:"$p" -sTCP:LISTEN -t 2>/dev/null | xargs kill -9 2>/dev/null || true; done
+  pkill -f "vrf-oracle --rpc-url http://$HOST:$BASE_PORT" 2>/dev/null || true
   sleep 2
   rm -rf "$DIR/ledger" "$DIR/er"
 fi
@@ -63,4 +65,10 @@ if up "$ER_PORT"; then echo "rollup already up on :$ER_PORT"; else
     --remotes "http://$HOST:$BASE_PORT" --remotes "ws://$HOST:$((BASE_PORT + 1))" >"$DIR/er.log" 2>&1 &
   wait_rpc "$ER_PORT" rollup
 fi
-echo "base :$BASE_PORT  rollup :$ER_PORT  ready"
+# MagicBlock's VRF oracle (ships with their validator CLI): answers randomness requests on their test queue
+# GKE6d7…, which the local config points coin rolls at. Devnet and mainnet use MagicBlock's hosted oracles.
+if pgrep -f "vrf-oracle --rpc-url http://$HOST:$BASE_PORT" >/dev/null 2>&1; then echo "vrf-oracle already up"; else
+  echo "starting vrf-oracle"
+  RUST_LOG=info vrf-oracle --rpc-url "http://$HOST:$BASE_PORT" --websocket-url "ws://$HOST:$((BASE_PORT + 1))" >"$DIR/vrf-oracle.log" 2>&1 &
+fi
+echo "base :$BASE_PORT  rollup :$ER_PORT  vrf-oracle  ready"

@@ -12,6 +12,8 @@ const idl = JSON.parse(readFileSync(new URL('../target/idl/clashy.json', import.
 export const BASE_URL = process.env.CLASHY_BASE ?? 'http://127.0.0.1:8999';
 export const ER_URL = process.env.CLASHY_ER ?? 'http://127.0.0.1:7799';
 export const LOCAL_ER_VALIDATOR = new PublicKey('mAGicPQYBMvcYveUZA5F5UNNwyHvfYh5xkLS2Fr1mev');
+/** MagicBlock's VRF test queue, served on a local stack by their `vrf-oracle` (scripts/localnet.sh starts it). */
+export const LOCAL_VRF_QUEUE = new PublicKey('GKE6d7iv8kCBrsxr78W3xVdjGLLLJnxsGiuzrsZCGEvb');
 export const PRICE_SCALE = 1_000_000;
 export const COINS = [
   { symbol: 'SOL', product: 'SOL-USD' },
@@ -120,6 +122,10 @@ export async function ensureSetup(treasury: PublicKey) {
   const cfg = await base.getAccountInfo(P.config);
   if (!cfg) {
     await baseProgram.methods.initialize(300, false, authority.publicKey, treasury).accountsPartial({ authority: authority.publicKey }).rpc();
+  }
+  // local stack: coin rolls go to MagicBlock's test queue, which their local vrf-oracle answers
+  if (!(await baseProgram.account.config.fetch(P.config)).vrfQueue.equals(LOCAL_VRF_QUEUE)) {
+    await baseProgram.methods.setVrfQueue().accountsPartial({ authority: authority.publicKey, queue: LOCAL_VRF_QUEUE }).rpc();
   }
   for (let i = 0; i < COINS.length; i++) {
     const feed = P.feed(i);

@@ -55,7 +55,9 @@ pub const MAX_ROUNDS: u16 = 100;
 pub const ORACLE_PROGRAM_ID: Pubkey = pubkey!("PriCems5tHihc6UDXDjzjeawomAwBduWMGAi8ZUjppd");
 /// Discriminator of the oracle's PriceUpdateV2-layout accounts.
 pub const PRICE_UPDATE_DISCRIMINATOR: [u8; 8] = [234, 161, 14, 36, 172, 239, 15, 232];
-/// MagicBlock VRF base-layer queue with live oracles on devnet and mainnet.
+/// MagicBlock VRF base-layer queue with live oracles on devnet and mainnet (the default `Config::vrf_queue`).
 pub const VRF_BASE_QUEUE: Pubkey = pubkey!("Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh");
+/// MagicBlock VRF program: owns every oracle queue.
+pub const VRF_PROGRAM_ID: Pubkey = pubkey!("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
 /// MagicBlock delegation program: owns delegated accounts on Solana while they live in a rollup.
 pub const DELEGATION_PROGRAM_ID: Pubkey = pubkey!("DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh");
