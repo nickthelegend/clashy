@@ -186,7 +186,10 @@ const server = http.createServer(async (req, res) => {
     return send(404, { error: 'not found' });
   } catch (e) {
     const err = e as Error & { status?: number; logs?: string[]; transactionLogs?: string[] };
-    send(err.status ?? 500, { error: err.message.split('\n')[0], logs: err.logs ?? err.transactionLogs ?? [] });
+    const logs = err.logs ?? err.transactionLogs ?? [];
+    // a transaction the chain refused (simulation or execution) is the caller's problem, not the relay's
+    const chainRefused = logs.length > 0 || /Simulation failed|transaction failed|custom program error/i.test(err.message);
+    send(err.status ?? (chainRefused ? 422 : 500), { error: err.message.split('\n')[0], logs });
   }
 });
 

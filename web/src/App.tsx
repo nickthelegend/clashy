@@ -566,7 +566,7 @@ function Tech() {
     { t: 'Ephemeral Rollups', b: 'Every duel and Royale runs on a MagicBlock rollup: live checks and knockouts in about 10 ms, then committed back and settled on Solana.' },
     { t: 'Sealed picks', b: 'Your long or short is a hash on chain until both players lock in, then both reveal. Nobody copies your call.' },
     { t: 'Verifiable randomness', b: 'The coin in every duel and Royale comes from MagicBlock VRF, and only its oracle can answer, so nobody can rig a room.' },
-    { t: 'Session keys', b: 'Approve once, play the whole session. No wallet pop-up in the middle of a 60-second duel.' },
+    { t: 'USDC in, no SOL', b: 'Sign in with email or Google and Privy makes your wallet. It holds USDC only: Clashy pays every network fee, and nothing pops up mid-duel.' },
   ];
   return (
     <section className="sec" id="tech">

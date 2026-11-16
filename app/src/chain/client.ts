@@ -2,12 +2,16 @@
 // Network comes from EXPO_PUBLIC_CLASHY_BASE / EXPO_PUBLIC_CLASHY_ER (defaults: the local MagicBlock stack
 // started by chain/scripts/localnet.sh). Every number shown in the on-chain screens is read from these
 // accounts; every action is a real signed transaction whose signature is shown to the player.
+//
+// Money is USDC. A player's wallet holds USDC and nothing else: the sponsor relay (chain/scripts/sponsor.ts) is the
+// fee payer of every transaction and the `payer` of every account it creates. The player's wallet (Privy, or a device
+// test wallet on the local stack) signs only for what is theirs.
 import { Buffer } from 'buffer';
 (globalThis as { Buffer?: typeof Buffer }).Buffer ??= Buffer;
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as anchor from '@coral-xyz/anchor';
 import { BN, Program } from '@coral-xyz/anchor';
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, TransactionInstruction, VersionedTransaction } from '@solana/web3.js';
 import idl from './idl.json';
 import type { Clashy } from './idl-types';
 
@@ -18,14 +22,41 @@ export const NET = {
   /** Local test validators accept airdrops; devnet and mainnet do not. */
   airdrop: (process.env.EXPO_PUBLIC_CLASHY_NET ?? 'local') === 'local' || !process.env.EXPO_PUBLIC_CLASHY_NET,
   erValidator: new PublicKey(process.env.EXPO_PUBLIC_CLASHY_ER_VALIDATOR ?? 'mAGicPQYBMvcYveUZA5F5UNNwyHvfYh5xkLS2Fr1mev'),
+  /** The sponsor relay that pays fees and rent (chain/scripts/sponsor.ts). */
+  sponsor: process.env.EXPO_PUBLIC_CLASHY_SPONSOR ?? 'http://127.0.0.1:8790',
 };
+/** The stake currency. The local fork serves mainnet USDC's address with a local mint authority. */
+export const USDC_MINT = new PublicKey(process.env.EXPO_PUBLIC_CLASHY_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+export const USDC = 1_000_000;
+const TOKEN_PROGRAM = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ATA_PROGRAM = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+/** A wallet's USDC token account (its associated token account). */
+export const usdcAta = (owner: PublicKey) => PublicKey.findProgramAddressSync([owner.toBuffer(), TOKEN_PROGRAM.toBuffer(), USDC_MINT.toBuffer()], ATA_PROGRAM)[0];
+/** USDC held by a wallet, in whole USDC (0 before its token account exists). */
+export async function usdcBalance(owner: PublicKey): Promise<number> {
+  const info = await base.getAccountInfo(usdcAta(owner));
+  return info ? Number(info.data.readBigUInt64LE(64)) / USDC : 0;
+}
+/** "12.50 USDC" from base units. */
+export const fmtUsdc = (units: number, dp = 2) => `${(units / USDC).toFixed(dp)} USDC`;
 export const base = new Connection(NET.base, 'confirmed');
 export const er = new Connection(NET.er, 'confirmed');
 export const PROGRAM_ID = new PublicKey((idl as { address: string }).address);
 export const COIN_SYMBOLS = ['SOL', 'BTC', 'ETH'];
 
+/** What signs for the player: their Privy wallet, or a device-held test key on the local stack. */
+export type WalletSigner = {
+  publicKey: PublicKey;
+  kind: 'privy' | 'device';
+  /** Shown in the wallet card: the Privy login (email) or "Device test wallet". */
+  label: string;
+  signTransaction(tx: Transaction): Promise<Transaction>;
+  /** The Privy access token the relay checks (it pays only for the signed-in user's own wallet). */
+  authToken?: () => Promise<string | null>;
+};
+
 const WALLET_KEY = 'clashy:chain:wallet';
-/** A device-held test wallet for the local stack / devnet. Mainnet uses the player's own wallet. */
+/** A device-held test wallet for the local stack (automated tests, phones without Privy). Mainnet uses Privy. */
 export async function loadWallet(): Promise<Keypair> {
   const raw = await AsyncStorage.getItem(WALLET_KEY);
   if (raw) return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
@@ -34,26 +65,98 @@ export async function loadWallet(): Promise<Keypair> {
   return kp;
 }
 
-/** anchor.Wallet is Node-only, so the app signs with its own minimal keypair wallet. */
-function keypairWallet(kp: Keypair) {
-  const sign = <T extends Transaction | VersionedTransaction>(tx: T): T => {
-    if (tx instanceof VersionedTransaction) tx.sign([kp]);
-    else tx.partialSign(kp);
-    return tx;
-  };
-  return {
-    publicKey: kp.publicKey,
-    payer: kp,
-    signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T) => sign(tx),
-    signAllTransactions: async <T extends Transaction | VersionedTransaction>(txs: T[]) => txs.map(sign),
-  };
+export function deviceSigner(kp: Keypair): WalletSigner {
+  return { publicKey: kp.publicKey, kind: 'device', label: 'Device test wallet', signTransaction: async (tx) => { tx.partialSign(kp); return tx; } };
 }
 
-export function programs(kp: Keypair) {
-  const w = keypairWallet(kp);
+let sponsorInfo: Promise<{ sponsor: PublicKey; faucet: boolean }> | null = null;
+/** The relay's sponsor key and whether it runs a test-USDC faucet (local fork only). */
+export function getSponsor() {
+  sponsorInfo ??= fetch(`${NET.sponsor}/info`).then(async (r) => {
+    if (!r.ok) throw new Error(`sponsor relay answered HTTP ${r.status}`);
+    const j = (await r.json()) as { sponsor: string; faucet: boolean };
+    return { sponsor: new PublicKey(j.sponsor), faucet: j.faucet };
+  }).catch((e) => { sponsorInfo = null; throw new Error(`Cannot reach the sponsor relay at ${NET.sponsor} (${(e as Error).message}). Start it: cd chain && npx tsx scripts/sponsor.ts`); });
+  return sponsorInfo;
+}
+
+type Layer = 'base' | 'er';
+async function post<T>(path: string, body: unknown, token?: string | null): Promise<T> {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const r = await fetch(`${NET.sponsor}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+  const j = (await r.json().catch(() => ({ error: `HTTP ${r.status}` }))) as T & { error?: string; logs?: string[] };
+  if (!r.ok) throw Object.assign(new Error(j.error ?? `HTTP ${r.status}`), { logs: j.logs ?? [] });
+  return j;
+}
+const needs = (tx: Transaction, pk: PublicKey) => tx.instructions.some((ix) => ix.keys.some((k) => k.isSigner && k.pubkey.equals(pk)));
+
+/** Sponsor pays: fee payer = sponsor, the player's wallet signs if the transaction needs it, the relay co-signs and sends. */
+export async function sendSponsored(tx: Transaction, layer: Layer, signer: WalletSigner, extra: Keypair[] = []): Promise<string> {
+  const { sponsor } = await getSponsor();
+  tx.feePayer = sponsor;
+  tx.recentBlockhash = (await (layer === 'er' ? er : base).getLatestBlockhash()).blockhash;
+  for (const k of extra) tx.partialSign(k);
+  const signed = needs(tx, signer.publicKey) ? await signer.signTransaction(tx) : tx;
+  const token = (await signer.authToken?.()) ?? null;
+  const { sig } = await post<{ sig: string }>('/relay', { tx: Buffer.from(signed.serialize({ requireAllSignatures: false })).toString('base64'), layer }, token);
+  return sig;
+}
+
+/** Withdraw: sends `amount` USDC (whole units) from the player's USDC account to any Solana address. The sponsor pays
+ *  the fee and, if the receiver has no USDC account yet, its rent. */
+export async function sendUsdc(signer: WalletSigner, to: PublicKey, amount: number): Promise<string> {
+  const { sponsor } = await getSponsor();
+  const units = BigInt(Math.round(amount * USDC));
+  if (units <= 0n) throw new Error('Enter an amount above 0');
+  if (to.equals(signer.publicKey)) throw new Error('That is your own wallet');
+  const dest = usdcAta(to);
+  const createIdem = new TransactionInstruction({
+    programId: ATA_PROGRAM,
+    keys: [
+      { pubkey: sponsor, isSigner: true, isWritable: true }, { pubkey: dest, isSigner: false, isWritable: true },
+      { pubkey: to, isSigner: false, isWritable: false }, { pubkey: USDC_MINT, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, { pubkey: TOKEN_PROGRAM, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.from([1]),
+  });
+  const data = Buffer.alloc(10);
+  data.writeUInt8(12, 0); // TransferChecked
+  data.writeBigUInt64LE(units, 1);
+  data.writeUInt8(6, 9);
+  const transfer = new TransactionInstruction({
+    programId: TOKEN_PROGRAM,
+    keys: [
+      { pubkey: usdcAta(signer.publicKey), isSigner: false, isWritable: true }, { pubkey: USDC_MINT, isSigner: false, isWritable: false },
+      { pubkey: dest, isSigner: false, isWritable: true }, { pubkey: signer.publicKey, isSigner: true, isWritable: false },
+    ],
+    data,
+  });
+  return sendSponsored(new Transaction().add(createIdem, transfer), 'base', signer);
+}
+
+/** Local fork only: 100 test USDC from the relay's faucet. */
+export const faucetUsdc = (owner: PublicKey) => post<{ usdc: number }>('/faucet', { owner: owner.toBase58() });
+/** True when this build plays on the local fork (test USDC from the faucet; no real money). */
+export const IS_LOCAL_NET = /127\.0\.0\.1|localhost/.test(NET.base);
+
+/** An Anchor provider whose `.rpc()` goes through the sponsor relay. */
+function relayProvider(connection: typeof base, layer: Layer, signer: WalletSigner, sponsor: PublicKey) {
+  const wallet = {
+    publicKey: sponsor,
+    signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T) => tx,
+    signAllTransactions: async <T extends Transaction | VersionedTransaction>(txs: T[]) => txs,
+  };
   return {
-    base: new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, w, { commitment: 'confirmed' })),
-    er: new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(er, w, { commitment: 'confirmed' })),
+    connection, publicKey: sponsor, wallet,
+    sendAndConfirm: (tx: Transaction | VersionedTransaction, signers?: Keypair[]) => sendSponsored(tx as Transaction, layer, signer, signers ?? []),
+  } as unknown as anchor.AnchorProvider;
+}
+
+export function programs(signer: WalletSigner, sponsor: PublicKey) {
+  return {
+    base: new Program<Clashy>(idl as Clashy, relayProvider(base, 'base', signer, sponsor)),
+    er: new Program<Clashy>(idl as Clashy, relayProvider(er, 'er', signer, sponsor)),
   };
 }
 
@@ -61,6 +164,7 @@ const pda = (...seeds: (Buffer | Uint8Array)[]) => PublicKey.findProgramAddressS
 const le64 = (n: number | bigint) => new BN(n.toString()).toArrayLike(Buffer, 'le', 8);
 export const P = {
   config: pda(Buffer.from('config')),
+  auth: pda(Buffer.from('auth')),
   feed: (coin: number) => pda(Buffer.from('feed'), Buffer.from([coin])),
   /** Never-delegated Solana copy of a coin feed: what Solana-side instructions (clan trades) read. */
   baseFeed: (coin: number) => pda(Buffer.from('bfeed'), Buffer.from([coin])),
@@ -148,6 +252,16 @@ export async function openDuels(prog: Program<Clashy>): Promise<DuelView[]> {
   return (views.filter(Boolean) as DuelView[]).sort((x, y) => y.nonce - x.nonce);
 }
 
+export type PlayerRecord = { rating: number; rp: number; wins: number; losses: number; streak: number; bestStreak: number };
+/** A player's on-chain record (Elo, rank points, wins, losses, streaks), or null before their player account exists. */
+export async function readPlayer(owner: PublicKey): Promise<PlayerRecord | null> {
+  const info = await base.getAccountInfo(P.player(owner));
+  if (!info) return null;
+  const p = new anchor.BorshAccountsCoder(idl as anchor.Idl).decode('Player', info.data);
+  // the raw coder keeps the IDL's snake_case field names
+  return { rating: p.rating, rp: p.rp, wins: p.wins, losses: p.losses, streak: p.streak, bestStreak: p.best_streak ?? p.bestStreak ?? 0 };
+}
+
 export async function priceOf(prog: Program<Clashy>, coin: number): Promise<number | null> {
   const info = (await er.getAccountInfo(P.feed(coin)).catch(() => null)) ?? (await base.getAccountInfo(P.feed(coin)));
   if (!info) return null;
@@ -155,11 +269,4 @@ export async function priceOf(prog: Program<Clashy>, coin: number): Promise<numb
   return Number(f.price) / 1e6;
 }
 
-export async function balance(pk: PublicKey) { return (await base.getBalance(pk)) / LAMPORTS_PER_SOL; }
-export async function fund(pk: PublicKey, sol = 5) {
-  if (!NET.airdrop) throw new Error(`${NET.label} has no faucet: fund this wallet yourself`);
-  const sig = await base.requestAirdrop(pk, sol * LAMPORTS_PER_SOL);
-  await base.confirmTransaction(sig, 'confirmed');
-  return sig;
-}
 export { BN, Keypair, LAMPORTS_PER_SOL, PublicKey };

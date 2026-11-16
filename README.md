@@ -11,19 +11,22 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
 
 - **On-chain:** the Anchor program runs end to end on a local MagicBlock stack (Solana validator + Ephemeral Rollup):
   escrowed knockout duels, sealed picks, live scoring on the rollup, settlement with rake and Elo, clans with vote-run
-  chest trades, clan wars and Royale tournaments. 5/5 end-to-end and 9/9 unit tests pass. See
+  chest trades, clan wars and Royale tournaments. **Money is USDC only**: players never hold SOL, a sponsor relay pays
+  every fee and rent. 5/5 end-to-end, 5/5 relay and 11/11 unit tests pass, every test player at 0 SOL. See
   [chain/README.md](chain/README.md) and [chain/TESTING.md](chain/TESTING.md).
 - **MagicBlock VRF rolls every coin**, proven locally with MagicBlock's own `vrf-oracle`.
 - **Not deployed** to devnet or mainnet (devnet BLOCKED on devnet SOL). No real money moves anywhere.
 - **App:** the practice games run on live prices with no money. Three screens play the real program on the local
-  stack with a device test wallet: **On-chain duel**, **On-chain Royale** and **On-chain clan** (chest, votes, wars).
+  stack: **On-chain duel**, **On-chain Royale** and **On-chain clan** (chest, votes, wars). On web you sign in with
+  **Privy** (email or Google); Privy makes a Solana wallet that holds USDC, signs silently inside the game, and lets you
+  send USDC out or export the key. Locally the relay hands out 100 test USDC. Automated runs use device test keys.
 
 ## Layout
 
 | Path | What |
 |---|---|
 | `app/` | Expo app (iOS, Android, web): duels, 9 practice games, clans, ranks, chat, and the On-chain duel screen |
-| `chain/` | Anchor program `clashy`, local MagicBlock stack launcher, price crank, mainnet-fork Phoenix trade, tests |
+| `chain/` | Anchor program `clashy`, local MagicBlock stack launcher (with the local USDC mint), price crank, sponsor relay, mainnet-fork Phoenix trade, tests |
 | `web/` | Landing page (Vite + React + motion) |
 | `landing/` | Second landing page variant with the clay animation clips |
 | `assets/` | Brand, 3D/clay art and clay animation clips (`assets/SOURCES.md` says how each was made) |

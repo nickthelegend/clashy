@@ -1,12 +1,14 @@
-// Shared on-chain plumbing for the clan and tournament screens: the device test wallet, the player account,
-// Solana and rollup sends with latency, readable errors, and the transaction strip.
+// Shared on-chain plumbing for the duel, clan and tournament screens: the player's wallet (Privy on web), the player
+// account, sponsored Solana and rollup sends with latency, readable errors, and the transaction strip.
+// Players hold USDC only; the sponsor relay pays every fee and rent.
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
-import type { Transaction } from '@solana/web3.js';
-import { NET, P, PROGRAM_ID, base, balance, er, fund, loadWallet, programs, type Keypair } from './client';
+import { Linking, Pressable, TextInput, View } from 'react-native';
+import { PublicKey, type Transaction } from '@solana/web3.js';
+import { IS_LOCAL_NET, NET, P, PROGRAM_ID, base, faucetUsdc, getSponsor, programs, sendSponsored, sendUsdc, usdcBalance } from './client';
+import { useWallet } from './wallet';
 import { Btn, Card, Row, Txt } from '@/ui/kit';
-import { C } from '@/ui/tokens';
+import { C, F } from '@/ui/tokens';
 
 export type Tx = { sig: string; layer: 'Solana' | 'Rollup'; label: string; ms: number; n?: number };
 export const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
@@ -25,14 +27,20 @@ export function errText(e: unknown): string {
 }
 
 export function useChain(foldLabels: string[] = []) {
-  const [kp, setKp] = useState<Keypair | null>(null);
+  const wallet = useWallet();
+  const signer = wallet.signer;
+  const me: PublicKey | null = signer?.publicKey ?? null;
+  const [sponsor, setSponsor] = useState<{ sponsor: PublicKey; faucet: boolean } | null>(null);
+  /** USDC in the player's wallet (whole USDC). */
   const [bal, setBal] = useState<number | null>(null);
   const [hasPlayer, setHasPlayer] = useState(false);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
-  const progs = useMemo(() => (kp ? programs(kp) : null), [kp]);
+  const progs = useMemo(() => (signer && sponsor ? programs(signer, sponsor.sponsor) : null), [signer, sponsor]);
+
+  useEffect(() => { getSponsor().then(setSponsor).catch((e) => setErr((e as Error).message)); }, []);
 
   // repeated labels (polling sends) fold into one row: latest signature, count, average latency
   const log = useCallback((t: Tx) => setTxs((x) => {
@@ -52,25 +60,15 @@ export function useChain(foldLabels: string[] = []) {
     return sig;
   }, [log]);
 
-  /** Rollup transaction: sent raw and polled (its websocket confirmations are slow). */
+  /** Rollup transaction, sponsored like every other one. */
   const onEr = useCallback(async (label: string, builder: { transaction(): Promise<Transaction> }) => {
-    if (!kp) throw new Error('no wallet');
+    if (!signer) throw new Error('Sign in first');
     const t0 = Date.now();
-    const tx = await builder.transaction();
-    tx.feePayer = kp.publicKey;
-    tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
-    tx.sign(kp);
-    const sig = await er.sendRawTransaction(tx.serialize());
-    for (let i = 0; i < 100; i++) {
-      const [st] = (await er.getSignatureStatuses([sig])).value;
-      if (st?.err) throw new Error(`rollup tx failed: ${JSON.stringify(st.err)}`);
-      if (st && (st.confirmationStatus === 'confirmed' || st.confirmationStatus === 'finalized')) break;
-      await new Promise((r) => setTimeout(r, 150));
-    }
+    const sig = await sendSponsored(await builder.transaction(), 'er', signer);
     log({ sig, layer: 'Rollup', label, ms: Date.now() - t0 });
     setTick((n) => n + 1);
     return sig;
-  }, [kp, log]);
+  }, [signer, log]);
 
   const guard = (name: string, fn: () => Promise<unknown>) => async () => {
     if (busy) return;
@@ -78,41 +76,110 @@ export function useChain(foldLabels: string[] = []) {
     try { await fn(); Haptics.selectionAsync(); } catch (e) { setErr(errText(e)); } finally { setBusy(null); }
   };
 
-  useEffect(() => { loadWallet().then(setKp).catch((e) => setErr(String(e))); }, []);
   useEffect(() => {
-    if (!kp) return;
+    if (!me) return;
     let alive = true;
     const run = async () => {
       try {
-        const [b, p] = await Promise.all([balance(kp.publicKey), base.getAccountInfo(P.player(kp.publicKey))]);
+        const [b, p] = await Promise.all([usdcBalance(me), base.getAccountInfo(P.player(me))]);
         if (alive) { setBal(b); setHasPlayer(!!p); }
       } catch (e) { if (alive) setErr(`Cannot reach ${NET.label} (${NET.base}): ${(e as Error).message}`); }
     };
     run();
     const h = setInterval(run, 3000);
     return () => { alive = false; clearInterval(h); };
-  }, [kp, tick]);
+  }, [me, tick]);
 
-  const setup = guard('setup', async () => {
-    if (!kp || !progs) return;
-    if ((bal ?? 0) < 0.5) await onBase('Faucet (local stack)', () => fund(kp.publicKey, 5));
-    if (!hasPlayer) await onBase('Create player account', () => progs.base.methods.initPlayer().accountsPartial({ owner: kp.publicKey }).rpc());
+  /** Get started: test USDC from the local faucet (local fork only) and the player account (sponsored). */
+  const setup = (need: number) => guard('setup', async () => {
+    if (!me || !progs || !sponsor) return;
+    if ((bal ?? 0) < need) {
+      if (!sponsor.faucet) throw new Error(`Add at least ${need} USDC to ${me.toBase58()} to play`);
+      await faucetUsdc(me);
+    }
+    if (!hasPlayer) await onBase('Create player account', () => progs.base.methods.initPlayer().accountsPartial({ owner: me, payer: sponsor.sponsor }).rpc());
+    setTick((n) => n + 1);
   });
 
-  return { kp, progs, bal, hasPlayer, txs, err, setErr, busy, guard, onBase, onEr, setup, tick, refresh: () => setTick((n) => n + 1) };
+  return {
+    wallet, me, signer, sponsor: sponsor?.sponsor ?? null, faucet: !!sponsor?.faucet, progs, bal, hasPlayer, txs, err, setErr, busy, guard,
+    onBase, onEr, setup, tick, refresh: () => setTick((n) => n + 1),
+  };
 }
 
-export function WalletCard({ chain, note, need = 0.05 }: { chain: ReturnType<typeof useChain>; note: string; need?: number }) {
-  const { kp, bal, hasPlayer, busy, setup } = chain;
+const field = { color: C.ink, fontFamily: F.medium, fontSize: 15, backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 44 } as const;
+
+/** Withdraw USDC to any Solana address (the sponsor pays the fee and the receiver's account rent). */
+export function SendUsdc({ chain, onDone }: { chain: ReturnType<typeof useChain>; onDone: () => void }) {
+  const { signer, bal, busy, guard, onBase, refresh } = chain;
+  const [to, setTo] = useState('');
+  const [amt, setAmt] = useState('');
+  const send = guard('send', async () => {
+    let dest: PublicKey;
+    try { dest = new PublicKey(to.trim()); } catch { throw new Error('That is not a Solana address'); }
+    const n = Number(amt);
+    if (!(n > 0)) throw new Error('Enter an amount above 0');
+    if (n > (bal ?? 0)) throw new Error(`You have ${(bal ?? 0).toFixed(2)} USDC`);
+    await onBase(`Send ${n} USDC to ${short(dest.toBase58())}`, () => sendUsdc(signer!, dest, n));
+    setTo(''); setAmt(''); refresh(); onDone();
+  });
+  return (
+    <View style={{ marginTop: 12, gap: 8 }}>
+      <TextInput value={to} onChangeText={setTo} placeholder="Solana address" placeholderTextColor={C.muted} autoCorrect={false} autoCapitalize="none" style={field} />
+      <Row style={{ gap: 8 }}>
+        <TextInput value={amt} onChangeText={setAmt} placeholder="USDC" placeholderTextColor={C.muted} keyboardType="decimal-pad" style={[field, { flex: 1 }]} />
+        <Btn title="Max" kind="ghost" h={44} onPress={() => setAmt(String(Math.floor((bal ?? 0) * 100) / 100))} />
+        <Btn title={busy === 'send' ? 'Sending…' : 'Send'} h={44} disabled={!!busy || !to || !amt} onPress={send} />
+      </Row>
+      <Txt v="small">USDC on Solana only. Fees are on Clashy.</Txt>
+    </View>
+  );
+}
+
+/** The player's wallet: sign in (Privy), USDC balance, get started. `need` is the USDC this screen needs. */
+export function WalletCard({ chain, note, need = 1 }: { chain: ReturnType<typeof useChain>; note: string; need?: number }) {
+  const { wallet, me, bal, hasPlayer, busy, setup, faucet, sponsor } = chain;
+  const [sending, setSending] = useState(false);
   const ready = hasPlayer && (bal ?? 0) >= need;
+  if (wallet.status === 'setup' || wallet.status === 'error') {
+    return <Card style={{ padding: 14 }}><Txt v="label">Setup required</Txt><Txt v="small" style={{ marginTop: 4 }}>{wallet.error}</Txt></Card>;
+  }
+  if (wallet.status === 'out') {
+    return (
+      <Card style={{ padding: 16 }}>
+        <Txt v="label">Sign in to play for USDC</Txt>
+        <Txt v="small" style={{ marginTop: 4 }}>Email or Google. Privy makes your Clashy wallet: it holds USDC only, with no seed phrase and no SOL. Every fee is on us.</Txt>
+        <Btn title="Sign in" kind="white" style={{ marginTop: 12 }} onPress={() => wallet.login?.()} />
+      </Card>
+    );
+  }
+  if (!me) {
+    return <Card style={{ padding: 14 }}><Txt v="small">{wallet.status === 'creating' ? 'Making your Clashy wallet…' : 'Loading your wallet…'}</Txt></Card>;
+  }
   return (
     <Card style={{ padding: 14 }}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <View><Txt v="small">Test wallet on this device</Txt><Txt v="label">{kp ? short(kp.publicKey.toBase58()) : 'Loading…'}</Txt></View>
-        <View style={{ alignItems: 'flex-end' }}><Txt v="small">Balance</Txt><Txt v="label">{bal === null ? '…' : `${bal.toFixed(3)} SOL`}</Txt></View>
+      <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="small" lines={1}>{wallet.signer?.kind === 'privy' ? `Privy · ${wallet.signer.label}` : wallet.signer?.label}</Txt>
+          <Txt v="label">{short(me.toBase58())}</Txt>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}><Txt v="small">Balance</Txt><Txt v="label">{bal === null ? '…' : `${bal.toFixed(2)} USDC`}</Txt></View>
       </Row>
-      <Txt v="small" style={{ marginTop: 8 }}>Program {short(PROGRAM_ID.toBase58())} · {note}</Txt>
-      {!ready ? <Btn title={busy === 'setup' ? 'Setting up…' : NET.airdrop ? 'Fund wallet and create player' : 'Create player account'} kind="white" style={{ marginTop: 10 }} disabled={!!busy || !kp} onPress={setup} /> : null}
+      <Txt v="small" style={{ marginTop: 8 }}>{note} · fees and rent paid by Clashy{sponsor ? '' : ' (relay offline)'} · program {short(PROGRAM_ID.toBase58())}</Txt>
+      {!ready ? (
+        <Btn
+          title={busy === 'setup' ? 'Setting up…' : (bal ?? 0) < need ? (faucet ? 'Get 100 test USDC and start' : `Add ${need} USDC to start`) : 'Create player account'}
+          kind="white" style={{ marginTop: 10 }} disabled={!!busy || !sponsor || (!faucet && (bal ?? 0) < need)} onPress={setup(need)}
+        />
+      ) : null}
+      {sending ? <SendUsdc chain={chain} onDone={() => setSending(false)} /> : null}
+      <Row style={{ marginTop: 12, gap: 16, flexWrap: 'wrap' }}>
+        {wallet.addFunds ? <Pressable onPress={wallet.addFunds} hitSlop={8}><Txt v="small" color={C.brandSoft}>Add USDC</Txt></Pressable> : null}
+        {(bal ?? 0) > 0 ? <Pressable onPress={() => setSending((v) => !v)} hitSlop={8}><Txt v="small" color={C.brandSoft}>{sending ? 'Close' : 'Send USDC'}</Txt></Pressable> : null}
+        <Pressable onPress={() => Linking.openURL(`https://explorer.solana.com/address/${me.toBase58()}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`)} hitSlop={8}><Txt v="small" color={C.muted}>Explorer</Txt></Pressable>
+        {wallet.exportKey ? <Pressable onPress={wallet.exportKey} hitSlop={8}><Txt v="small" color={C.muted}>Export key</Txt></Pressable> : null}
+        {wallet.logout ? <Pressable onPress={wallet.logout} hitSlop={8}><Txt v="small" color={C.muted}>Sign out</Txt></Pressable> : null}
+      </Row>
     </Card>
   );
 }
@@ -121,7 +188,7 @@ export function TxStrip({ txs }: { txs: Tx[] }) {
   return (
     <>
       <Txt v="h2" style={{ marginTop: 22, marginBottom: 8 }}>Transactions</Txt>
-      {txs.length === 0 ? <Txt v="small">Every action here is a real transaction. They show up here with their layer, latency and an explorer link.</Txt> : txs.map((t) => (
+      {txs.length === 0 ? <Txt v="small">Every action here is a real transaction, paid for by Clashy's sponsor. They show up here with their layer, latency and an explorer link.</Txt> : txs.map((t) => (
         <Pressable key={t.sig} onPress={() => Linking.openURL(explorer(t.sig, t.layer))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.line }}>
           <View style={{ backgroundColor: t.layer === 'Rollup' ? 'rgba(91,108,255,0.18)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={t.layer === 'Rollup' ? C.brandSoft : C.ink} style={{ fontSize: 11 }}>{t.layer}</Txt></View>
           <View style={{ flex: 1 }}><Txt v="small" color={C.ink}>{t.label}{t.n ? ` ×${t.n}` : ''}</Txt><Txt v="small" style={{ fontSize: 11 }}>{short(t.sig)}</Txt></View>
