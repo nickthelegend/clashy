@@ -17,7 +17,7 @@ const CARDS: Card[] = [
     n: '01',
     label: 'Clans',
     title: 'Your clan vs theirs.',
-    body: 'Pool a war chest, vote on trades and fight a new war every week. A season every month.',
+    body: 'Pool a USDC war chest, vote on trades and fight a new war every week. A season every month.',
     bg: '#F0468C',
     ink: '#fff',
     ui: (

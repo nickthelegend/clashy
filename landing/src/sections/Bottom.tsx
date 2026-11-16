@@ -76,8 +76,8 @@ export function Break() {
           <span>Fight your friends.</span>
         </h2>
         <p>
-          Trading arcades put you against a house pool that keeps your loss. On Clashy the other side is a person, the pot
-          sits in Solana escrow, and the winner takes it, minus a 3% rake.
+          Trading arcades put you against a house pool that keeps your loss. On Clashy the other side is a person, the USDC pot
+          sits in escrow on Solana, and the winner takes it, minus a 3% rake. You never need SOL: Clashy pays every network fee.
         </p>
       </div>
       <div className={`modes${reduce ? ' still' : ''}`}>
@@ -103,7 +103,7 @@ export function Join() {
           Make the first move.
         </motion.h2>
         <motion.div className="join-side" {...r}>
-          <p>The app is coming to iOS, Android and the Solana dApp Store. Until then, the Arena above is free to play.</p>
+          <p>The app is coming to iOS, Android and the Solana dApp Store. Until then, the Arena above is free to play. Sign in with email, play in USDC, no seed phrase.</p>
           <a className="btn btn-primary" href="#arena">
             Play a free duel
             <span className="arrow" aria-hidden="true">
@@ -111,7 +111,7 @@ export function Join() {
             </span>
           </a>
           <StoreBadges size="sm" />
-          <span className="sample">Free to try. Real stakes when the app ships.</span>
+          <span className="sample">Free to try. USDC stakes when the app ships.</span>
         </motion.div>
       </div>
     </section>
