@@ -3,7 +3,8 @@
 // Prices are real: the crank reads Coinbase Exchange's public ticker and pushes it on chain.
 import * as anchor from '@coral-xyz/anchor';
 import { BN, Program } from '@coral-xyz/anchor';
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import { createAssociatedTokenAccountIdempotent, getAssociatedTokenAddressSync, mintTo } from '@solana/spl-token';
 import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Clashy } from '../target/types/clashy.ts';
@@ -42,6 +43,13 @@ export function loadKeypair(path: string) {
 export const authority = process.env.CLASHY_AUTHORITY
   ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.CLASHY_AUTHORITY, 'utf8'))))
   : IS_LOCAL ? loadKeypair('../.keys/local-authority.json') : setupRequired('CLASHY_AUTHORITY', 'path to the admin/crank keypair');
+/** Pays every fee and rent so players only ever hold USDC. Off the local stack: CLASHY_SPONSOR (keypair file path; never printed). */
+export const sponsor = process.env.CLASHY_SPONSOR
+  ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.CLASHY_SPONSOR, 'utf8'))))
+  : IS_LOCAL ? loadKeypair('../.keys/local-sponsor.json') : setupRequired('CLASHY_SPONSOR', 'path to the fee/rent sponsor keypair');
+/** The stake currency. The local fork serves mainnet USDC's address with a local mint authority (scripts/usdc-mint.ts). */
+export const USDC_MINT = new PublicKey(process.env.CLASHY_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+export const USDC = 1_000_000;
 export const base = new Connection(BASE_URL, 'confirmed');
 export const er = new Connection(ER_URL, 'confirmed');
 const wallet = new anchor.Wallet(authority);
@@ -54,6 +62,7 @@ const le64 = (n: number | bigint) => new BN(n.toString()).toArrayLike(Buffer, 'l
 export const P = {
   config: pda(Buffer.from('config')),
   feed: (coin: number) => pda(Buffer.from('feed'), Buffer.from([coin])),
+  auth: pda(Buffer.from('auth')),
   baseFeed: (coin: number) => pda(Buffer.from('bfeed'), Buffer.from([coin])),
   player: (owner: PublicKey) => pda(Buffer.from('player'), owner.toBuffer()),
   duel: (creator: PublicKey, nonce: number | bigint) => pda(Buffer.from('duel'), creator.toBuffer(), le64(nonce)),
@@ -94,8 +103,50 @@ export async function fundedKeypair(sol = 20) {
   return kp;
 }
 
+export const usdcAta = (owner: PublicKey) => getAssociatedTokenAddressSync(USDC_MINT, owner, true);
+/** Token balance of any SPL token account (0 when it does not exist). */
+export async function tokenBalance(account: PublicKey): Promise<number> {
+  const info = await base.getAccountInfo(account, 'confirmed');
+  return info ? Number(info.data.readBigUInt64LE(64)) : 0;
+}
+export const usdcOf = (owner: PublicKey) => tokenBalance(usdcAta(owner));
+
+/** Local fork only: mints test USDC (the local mint authority is the local admin key). The sponsor pays the account rent. */
+export async function giveUsdc(owner: PublicKey, amount: number) {
+  if (!IS_LOCAL) throw new Error(`Setup required: test USDC can only be minted on the local fork, not ${BASE_URL}`);
+  const ata = await createAssociatedTokenAccountIdempotent(base, sponsor, USDC_MINT, owner, { commitment: 'confirmed' });
+  await mintTo(base, sponsor, USDC_MINT, ata, authority, amount, [], { commitment: 'confirmed' });
+  return ata;
+}
+
+/** A player holding only USDC: never airdropped a lamport, so every fee and rent must come from the sponsor. */
+export async function usdcPlayer(amount = 100 * USDC) {
+  const kp = Keypair.generate();
+  await giveUsdc(kp.publicKey, amount);
+  return kp;
+}
+
+const isSigner = (tx: Transaction, pk: PublicKey) => tx.instructions.some((ix) => ix.keys.some((k) => k.isSigner && k.pubkey.equals(pk)));
+/** Signs with the fee payer and with each of `extra` the transaction actually needs. */
+function signNeeded(tx: Transaction, payer: Keypair, extra: Keypair[]) {
+  tx.partialSign(payer);
+  for (const k of extra) if (!k.publicKey.equals(payer.publicKey) && isSigner(tx, k.publicKey)) tx.partialSign(k);
+}
+/** The sponsor is the fee payer; the player signs for what is theirs (their stake, their picks). */
+const sponsoredWallet = (kp?: Keypair) => ({
+  publicKey: sponsor.publicKey,
+  payer: sponsor,
+  signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T): Promise<T> => {
+    if (tx instanceof VersionedTransaction) throw new Error('versioned transactions are not used here');
+    signNeeded(tx as Transaction, sponsor, kp ? [kp] : []);
+    return tx;
+  },
+  signAllTransactions: async <T extends Transaction | VersionedTransaction>(txs: T[]) => { for (const t of txs) signNeeded(t as Transaction, sponsor, kp ? [kp] : []); return txs; },
+});
 export const programFor = (kp: Keypair, onEr = false) =>
-  new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(onEr ? er : base, new anchor.Wallet(kp), { commitment: 'confirmed' }));
+  new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(onEr ? er : base, sponsoredWallet(kp) as unknown as anchor.Wallet, { commitment: 'confirmed' }));
+/** Permissionless instructions (settle, resolve): only the sponsor signs. */
+export const sponsorProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, sponsoredWallet() as unknown as anchor.Wallet, { commitment: 'confirmed' }));
 
 /** Waits until a delegated account is back on Solana and owned by the program again. */
 export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
@@ -107,11 +158,11 @@ export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
 
 /** Sends on the rollup and polls for the result: its websocket confirmations are slow or absent,
  *  so Anchor's `.rpc()` would hang. Throws with the program logs when the transaction fails. */
-export async function sendEr(builder: { transaction(): Promise<Transaction> }, signer: Keypair): Promise<string> {
+export async function sendEr(builder: { transaction(): Promise<Transaction> }, signer?: Keypair, feePayer: Keypair = sponsor): Promise<string> {
   const tx = await builder.transaction();
-  tx.feePayer = signer.publicKey;
+  tx.feePayer = feePayer.publicKey;
   tx.recentBlockhash = (await er.getLatestBlockhash()).blockhash;
-  tx.sign(signer);
+  signNeeded(tx, feePayer, signer ? [signer] : []);
   let sig: string;
   try {
     sig = await er.sendRawTransaction(tx.serialize());
@@ -131,11 +182,13 @@ export async function sendEr(builder: { transaction(): Promise<Transaction> }, s
 }
 
 /** Idempotent setup: config (no VRF on the local stack), three Clashy feeds with live prices, delegated to the ER. */
-export async function ensureSetup(treasury: PublicKey) {
+export async function ensureSetup(treasuryOwner: PublicKey) {
   const cfg = await base.getAccountInfo(P.config);
   if (!cfg) {
+    // the rake lands in the treasury owner's USDC account
+    const treasury = await createAssociatedTokenAccountIdempotent(base, authority, USDC_MINT, treasuryOwner, { commitment: 'confirmed' });
     // off the local stack every coin is rolled by MagicBlock VRF; the commit-reveal fallback is refused
-    await baseProgram.methods.initialize(300, !IS_LOCAL, authority.publicKey, treasury).accountsPartial({ authority: authority.publicKey }).rpc();
+    await baseProgram.methods.initialize(300, !IS_LOCAL, authority.publicKey, treasury).accountsPartial({ authority: authority.publicKey, usdcMint: USDC_MINT }).rpc();
   }
   // local stack: coin rolls go to MagicBlock's test queue, which their local vrf-oracle answers;
   // devnet and mainnet keep the base queue that initialize sets
@@ -176,7 +229,7 @@ export async function ensureSetup(treasury: PublicKey) {
 /** Crank: pushes live Coinbase prices into the delegated feeds on the rollup. Returns the prices pushed. */
 export async function pushPrices(): Promise<bigint[]> {
   const prices = await Promise.all(COINS.map((c) => coinbasePrice(c.product)));
-  await Promise.all(prices.map((p, i) => sendEr(erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority)));
+  await Promise.all(prices.map((p, i) => sendEr(erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority, authority)));
   return prices;
 }
 

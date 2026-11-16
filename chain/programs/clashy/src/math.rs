@@ -70,7 +70,7 @@ pub fn pick_preimage(duel: &anchor_lang::prelude::Pubkey, player: &anchor_lang::
     v
 }
 
-/// Paper P&L of a clan position in lamports of notional, floored at -notional.
+/// Paper P&L of a clan position in USDC base units of notional, floored at -notional.
 pub fn position_pnl(notional: u64, entry: u64, price: u64, dir: u8, lev: u16) -> i64 {
     let bps = pnl_bps(entry, price, dir, lev);
     ((notional as i128 * bps as i128) / BPS as i128) as i64
@@ -103,7 +103,7 @@ pub fn shares_for_deposit(amount: u64, chest: u64, shares: u64) -> Option<u64> {
     u64::try_from(amount as u128 * shares as u128 / chest as u128).ok()
 }
 
-/// Lamports paid for redeeming `redeem` of `shares` outstanding from a chest worth `chest`.
+/// USDC base units paid for redeeming `redeem` of `shares` outstanding from a chest worth `chest`.
 pub fn payout_for_shares(redeem: u64, chest: u64, shares: u64) -> u64 {
     if shares == 0 {
         return 0;

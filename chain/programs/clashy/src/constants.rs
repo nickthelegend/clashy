@@ -15,6 +15,8 @@ pub const VOTE_SEED: &[u8] = b"vote";
 pub const POSITION_SEED: &[u8] = b"position";
 pub const WAR_SEED: &[u8] = b"war";
 pub const TOUR_SEED: &[u8] = b"tour";
+/// The one PDA that owns every vault token account (duel and tournament escrows, war pots, clan chests).
+pub const AUTH_SEED: &[u8] = b"auth";
 
 /// Prices are stored as integer USD with 6 decimals.
 pub const PRICE_SCALE: u64 = 1_000_000;
@@ -23,7 +25,8 @@ pub const MAX_RAKE_BPS: u16 = 1_000;
 pub const MAX_COINS: usize = 8;
 pub const NO_COIN: u8 = 255;
 
-pub const MIN_STAKE: u64 = 1_000_000; // 0.001 SOL
+/// Stakes are USDC base units (6 decimals): 1_000_000 = 1 USDC.
+pub const MIN_STAKE: u64 = 1_000_000; // 1 USDC
 pub const MIN_DUEL_SECS: u32 = 30;
 pub const MAX_DUEL_SECS: u32 = 3_600;
 pub const MAX_LEVERAGE: u16 = 100;
