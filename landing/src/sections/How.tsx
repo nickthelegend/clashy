@@ -9,9 +9,9 @@ import { MARKETS, useLivePrice } from '../components/arena/useLivePrice'
 // The phone's blank screen sits at 31.14% / 8.67% / 44.5% x 62.56% of phone-hand.webp.
 
 const STEPS = [
-  { k: 'Match', t: 'Get matched.', d: 'Hit quick match and meet a stranger in seconds, or call out a friend from chat.' },
+  { k: 'Match', t: 'Get matched.', d: 'Sign in with email or Google, hit quick match and meet a stranger in seconds, or call out a friend from chat.' },
   { k: 'Roll', t: 'One coin. Pick your side.', d: 'MagicBlock VRF rolls one coin for both of you. You each get ten seconds to go long or short and set your leverage.' },
-  { k: 'Battle', t: 'Sixty seconds. Best % wins.', d: 'One chart, both knockout lines. Hit yours and you are out. The pot settles on Solana.' },
+  { k: 'Battle', t: 'Sixty seconds. Best % wins.', d: 'One chart, both knockout lines. Hit yours and you are out. The USDC pot settles on Solana.' },
 ]
 
 export function How() {

@@ -112,6 +112,9 @@ export function Hero() {
             See how it works
           </a>
         </motion.div>
+        <motion.p className="hero-note" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7, duration: 0.6 }}>
+          Sign in with email. Play in USDC. No SOL, no seed phrase, fees on us.
+        </motion.p>
         <HeroCard />
       </div>
     </section>
@@ -144,7 +147,7 @@ function HeroCard() {
           <img src="/art/av-nova.webp" alt="" width="26" height="26" />
           <img src="/art/av-shark.webp" alt="" width="26" height="26" />
           <span>
-            <b>you</b> vs <b>rexx</b> · $20 each · 60 s
+            <b>you</b> vs <b>rexx</b> · 5 USDC each · 60 s
           </span>
         </div>
         <div className="hcard-picks">
@@ -161,8 +164,10 @@ function HeroCard() {
             <span className="cents">same coin</span>
           </div>
           <div className="hcard-pot">
-            <b>+$38.80</b>
-            <span>if you win (3% rake)</span>
+            <b>
+              9.70 <small>USDC</small>
+            </b>
+            <span>payout if you win (3% rake)</span>
           </div>
         </div>
       </div>

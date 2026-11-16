@@ -150,6 +150,12 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+.hero-note {
+  margin: 18px auto 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
 
 /* hero product card over a frosted stack (tab.markets) */
 .hcard-stage {
@@ -290,6 +296,11 @@
   font-family: var(--display);
   font-size: 22px;
   font-weight: 600;
+}
+.hcard-pot b small {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6b78;
 }
 .hcard-pot span {
   font-size: 11px;
