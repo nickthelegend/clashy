@@ -10,16 +10,21 @@
 //     USDC token account;
 //   - every other required signature must already be there and valid;
 //   - a per-wallet rate limit.
+//   - with CLASHY_PRIVY_APP_SECRET set (chain/.env, gitignored): a valid Privy access token, and every wallet that signs
+//     the transaction must be one of that Privy user's wallets. Off the local stack this is required; locally, a request
+//     without a token is still served so device test wallets (automated browser tests) keep working.
+// Besides game actions it pays for one plain-money move: sending USDC out of the player's own USDC account
+// (TransferChecked on the USDC mint, signed by the player), so a USDC-only wallet can always withdraw.
 // On the local stack it also runs a test-USDC faucet (the local mint authority is the local admin key).
 //
 //   npx tsx scripts/sponsor.ts              (port 8790; CLASHY_SPONSOR_PORT to change)
-//
-// Production note: put this behind the app's sign-in (verify the Privy access token and that the signing wallet is
-// that user's) before it pays for strangers' transactions on mainnet.
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
 import { ComputeBudgetProgram, PublicKey, Transaction, type Connection } from '@solana/web3.js';
-import { ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { PrivyClient } from '@privy-io/server-auth';
+import { fileURLToPath } from 'node:url';
+try { process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url))); } catch { /* no chain/.env: Privy checks off */ }
 import { BASE_URL, ER_URL, IS_LOCAL, USDC, USDC_MINT, base, er, giveUsdc, programId, sponsor, tokenBalance, usdcAta } from '../tests/common.ts';
 
 const PORT = Number(process.env.CLASHY_SPONSOR_PORT ?? 8790);
@@ -39,6 +44,9 @@ const PLAYER_IXS = new Set([
 /** Instructions that may only run on the rollup (the rest only on Solana). */
 const ER_IXS = new Set(['start_duel', 'check_duel', 'start_tournament', 'call_round', 'resolve_round']);
 const SPONSOR_SLOTS = new Set(['payer', 'rent_payer']);
+const PRIVY = process.env.CLASHY_PRIVY_APP_ID && process.env.CLASHY_PRIVY_APP_SECRET
+  ? new PrivyClient(process.env.CLASHY_PRIVY_APP_ID, process.env.CLASHY_PRIVY_APP_SECRET) : null;
+const AUTH_REQUIRED = !IS_LOCAL || process.env.CLASHY_RELAY_REQUIRE_AUTH === '1';
 const byDisc = new Map(idl.instructions.map((ix) => [Buffer.from(ix.discriminator).toString('hex'), ix]));
 
 type Layer = 'base' | 'er';
@@ -53,6 +61,14 @@ export function vet(tx: Transaction, layer: Layer): string[] {
   for (const ix of tx.instructions) {
     for (const k of ix.keys) if (k.isSigner && !k.pubkey.equals(me)) signers.add(k.pubkey.toBase58());
     if (ix.programId.equals(ComputeBudgetProgram.programId)) continue;
+    if (ix.programId.equals(TOKEN_PROGRAM_ID)) {
+      // withdrawing: TransferChecked (12) of USDC out of the signer's own USDC account [source, mint, dest, owner]
+      if (layer !== 'base' || ix.data[0] !== 12 || ix.keys.length !== 4) throw new Refused('only a USDC transfer out of your own account');
+      const [src, mint, , owner] = ix.keys;
+      if (!mint.pubkey.equals(USDC_MINT) || !owner.isSigner || owner.pubkey.equals(me)) throw new Refused('only USDC, signed by its owner');
+      if (!src.pubkey.equals(usdcAta(owner.pubkey))) throw new Refused('only from your own USDC account');
+      continue;
+    }
     if (ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID)) {
       // create (0 or empty) / create-idempotent (1) a USDC account: [payer, ata, owner, mint, system, token]
       if (layer !== 'base') throw new Refused('token accounts are made on Solana');
@@ -99,11 +115,41 @@ async function confirm(conn: Connection, sig: string) {
   throw new Error(`not confirmed in time: ${sig}`);
 }
 
-async function relay(body: { tx?: string; layer?: Layer }) {
+// Privy user → their wallets, cached a few minutes (one API call per user, not per transaction)
+const userWallets = new Map<string, { at: number; wallets: Set<string> }>();
+async function walletsOf(userId: string) {
+  const hit = userWallets.get(userId);
+  if (hit && Date.now() - hit.at < 300_000) return hit.wallets;
+  const user = await PRIVY!.getUserById(userId);
+  const wallets = new Set(user.linkedAccounts.flatMap((a) => (a.type === 'wallet' && 'address' in a ? [String(a.address)] : [])));
+  userWallets.set(userId, { at: Date.now(), wallets });
+  return wallets;
+}
+
+/** With Privy configured: the bearer token must be valid and every player signer must be that user's wallet. */
+async function authorize(token: string | undefined, signers: string[]) {
+  if (!PRIVY) {
+    if (AUTH_REQUIRED) throw Object.assign(new Refused('Setup required: CLASHY_PRIVY_APP_ID and CLASHY_PRIVY_APP_SECRET'), { status: 503 });
+    return null;
+  }
+  if (!token) {
+    if (AUTH_REQUIRED) throw Object.assign(new Refused('sign in first (no Privy access token)'), { status: 401 });
+    return null; // local stack: device test wallets
+  }
+  let userId: string;
+  try { userId = (await PRIVY.verifyAuthToken(token)).userId; } catch { throw Object.assign(new Refused('your sign-in expired; sign in again'), { status: 401 }); }
+  const mine = await walletsOf(userId);
+  for (const w of signers) if (!mine.has(w)) throw Object.assign(new Refused(`wallet ${w.slice(0, 6)}… is not yours`), { status: 403 });
+  return userId;
+}
+
+async function relay(body: { tx?: string; layer?: Layer }, token?: string) {
   const layer: Layer = body.layer === 'er' ? 'er' : 'base';
   if (!body.tx) throw new Refused('tx (base64) is required');
   const tx = Transaction.from(Buffer.from(body.tx, 'base64'));
-  limit(vet(tx, layer));
+  const signers = vet(tx, layer);
+  const user = await authorize(token, signers);
+  limit(user ? [user, ...signers] : signers);
   tx.partialSign(sponsor);
   if (!tx.verifySignatures(true)) throw new Refused('a required signature is missing or invalid');
   const conn = layer === 'er' ? er : base;
@@ -122,19 +168,20 @@ async function faucet(body: { owner?: string }) {
 
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
-  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204).end(); return; }
   const send = (status: number, data: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(data)); };
   try {
     if (req.method === 'GET' && req.url === '/info') {
-      return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: IS_LOCAL, base: BASE_URL, er: ER_URL });
+      return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: IS_LOCAL, base: BASE_URL, er: ER_URL, privy: !!PRIVY, authRequired: AUTH_REQUIRED });
     }
     if (req.method !== 'POST') return send(404, { error: 'not found' });
     let raw = '';
     for await (const chunk of req) { raw += chunk; if (raw.length > 64_000) throw new Refused('body too large'); }
     const body = raw ? JSON.parse(raw) : {};
-    if (req.url === '/relay') return send(200, await relay(body));
+    const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
+    if (req.url === '/relay') return send(200, await relay(body, token));
     if (req.url === '/faucet') return send(200, await faucet(body));
     return send(404, { error: 'not found' });
   } catch (e) {
@@ -145,7 +192,7 @@ const server = http.createServer(async (req, res) => {
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()!)) {
   server.listen(PORT, '127.0.0.1', () => {
-    console.log(`sponsor relay on :${PORT} · sponsor ${sponsor.publicKey.toBase58()} · ${IS_LOCAL ? 'local fork, test-USDC faucet on' : BASE_URL}`);
+    console.log(`sponsor relay on :${PORT} · sponsor ${sponsor.publicKey.toBase58()} · ${IS_LOCAL ? 'local fork, test-USDC faucet on' : BASE_URL} · Privy ${PRIVY ? 'checks on' : 'off'}${AUTH_REQUIRED ? ' (required)' : ''}`);
   });
 }
 export { server };

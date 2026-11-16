@@ -4,8 +4,8 @@
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import { after, before, describe, test } from 'node:test';
-import { ComputeBudgetProgram, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { ComputeBudgetProgram, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { BN, P, USDC, USDC_MINT, authority, base, baseProgram, erProgram, lamports, sponsor, until, usdcAta, usdcOf } from './common.ts';
 import { server, vet } from '../scripts/sponsor.ts';
 
@@ -49,6 +49,36 @@ describe('sponsor relay: what it will not pay for', () => {
     const otherMint = Keypair.generate().publicKey;
     const ata = createAssociatedTokenAccountIdempotentInstruction(sponsor.publicKey, getAssociatedTokenAddressSync(otherMint, p.publicKey), p.publicKey, otherMint);
     assert.throws(() => vet(tx(ata), 'base'), /only USDC token accounts/);
+  });
+});
+
+describe('sponsor relay: withdrawals and Privy sign-in', () => {
+  const transferChecked = (src: PublicKey, dest: PublicKey, owner: PublicKey, mint = USDC_MINT) => {
+    const data = Buffer.alloc(10); data.writeUInt8(12, 0); data.writeBigUInt64LE(1_000_000n, 1); data.writeUInt8(6, 9);
+    return new TransactionInstruction({ programId: TOKEN_PROGRAM_ID, data, keys: [
+      { pubkey: src, isSigner: false, isWritable: true }, { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: dest, isSigner: false, isWritable: true }, { pubkey: owner, isSigner: true, isWritable: false }] });
+  };
+  test('pays for a USDC transfer out of the signer\'s own account only', () => {
+    const [p, q] = [Keypair.generate(), Keypair.generate()];
+    assert.deepEqual(vet(tx(transferChecked(usdcAta(p.publicKey), usdcAta(q.publicKey), p.publicKey)), 'base'), [p.publicKey.toBase58()]);
+    assert.throws(() => vet(tx(transferChecked(usdcAta(q.publicKey), usdcAta(p.publicKey), p.publicKey)), 'base'), /only from your own USDC account/);
+    assert.throws(() => vet(tx(transferChecked(usdcAta(p.publicKey), usdcAta(q.publicKey), p.publicKey, Keypair.generate().publicKey)), 'base'), /only USDC/);
+    assert.throws(() => vet(tx(transferChecked(usdcAta(sponsor.publicKey), usdcAta(q.publicKey), sponsor.publicKey)), 'base'), /only USDC, signed by its owner/);
+  });
+
+  test('a forged Privy access token is refused (checked against Privy with the app secret)', async (t) => {
+    const info = await (await fetch(`${url}/info`)).json();
+    if (!info.privy) return t.skip('CLASHY_PRIVY_APP_ID / CLASHY_PRIVY_APP_SECRET not set in chain/.env');
+    const p = Keypair.generate();
+    const t2 = new Transaction().add(await baseProgram.methods.initPlayer().accountsPartial({ owner: p.publicKey, payer: sponsor.publicKey }).instruction());
+    t2.feePayer = sponsor.publicKey;
+    t2.recentBlockhash = (await base.getLatestBlockhash()).blockhash;
+    t2.partialSign(p);
+    const r = await fetch(`${url}/relay`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJkaWQ6cHJpdnk6Zm9yZ2VkIn0.AAAA' }, body: JSON.stringify({ tx: t2.serialize({ requireAllSignatures: false }).toString('base64') }) });
+    assert.equal(r.status, 401);
+    assert.match((await r.json()).error, /sign-in expired/);
+    assert.equal(await base.getAccountInfo(P.player(p.publicKey)), null, 'nothing was sent');
   });
 });
 

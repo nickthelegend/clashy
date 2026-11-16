@@ -1,12 +1,15 @@
 # Testing
 
 Every on-chain test runs against real validators: the real Clashy program, MagicBlock's delegation program and a real
-`ephemeral-validator` rollup, with live Coinbase prices. Nothing is mocked or stubbed.
+`ephemeral-validator` rollup, with live Coinbase prices. Nothing is mocked or stubbed. Stakes are USDC (the local fork's
+USDC mint at mainnet's address), and every test player holds USDC and **0 SOL**: the sponsor pays all fees and rent,
+and the tests assert the players' SOL balance is still exactly 0 at the end.
 
 | Suite | Command | Count | Last result |
 |---|---|---|---|
 | Program unit tests (math, chest shares, price scaling) | `cargo test -p clashy --lib` | 11 | 11 pass (Nov 16, 2026) |
-| End-to-end on the local MagicBlock stack | `npx tsx --test --test-concurrency=1 tests/clashy.test.ts` | 5 | 5 pass in 147 s on a fresh stack after the security fixes (Nov 16, 2026); log `.localnet/e2e-last.log` |
+| End-to-end on the local MagicBlock stack | `npx tsx --test --test-concurrency=1 tests/clashy.test.ts` | 5 | 5 pass on a fresh stack in USDC with 0-SOL players (Nov 16, 2026); log `.localnet/e2e-last.log` |
+| Sponsor relay | `npx tsx --test tests/sponsor.test.ts` | 5 | 5 pass: refusals (other fee payer, admin/feed instructions, sponsor in a player slot, wrong layer, SOL transfer, non-USDC account), USDC withdrawals only from your own account, a forged Privy token refused by Privy's own check, and a real sponsored `init_player` for a 0-SOL wallet |
 | Mainnet-fork trade on Phoenix | `npx tsx scripts/fork-trade.ts 1` | 1 | sold 1 SOL for 54.660103 USDC, book expected 54.660103 |
 | App on-chain duel, two browser tabs | Playwright: two contexts on `/onchain` | 5 duels | all settled, no errors; the latest coin rolled by MagicBlock VRF (Nov 16, 2026) |
 | App on-chain clan, two browser tabs | Playwright: two contexts on `/onchain-clan` | 1 full flow | create, join, deposit, propose, vote, execute, close; no errors (Nov 16, 2026) |
@@ -22,22 +25,27 @@ npx tsx scripts/crank.ts          # only needed for the app; the tests run their
 
 ## End-to-end tests (`tests/clashy.test.ts`)
 
-1. **Knockout duel:** open → join → roll → sealed picks → live on the ER → settle with rake and Elo.
-   Last run: ETH 1,819.91 → 1,819.73; creator long 50× -0.49%, joiner short +0.49%; joiner won; ratings 984 / 1016.
+1. **Knockout duel:** open → join → roll → sealed picks → live on the ER (checks signed by the sponsor alone) → settle
+   with rake and Elo; the vault closes and its rent returns to the sponsor. Last USDC run: SOL 71.79 → 71.79, a dead
+   heat, both 5 USDC stakes refunded exactly. Earlier SOL-stake run: ETH 1,819.91 → 1,819.73, joiner won, ratings 984 / 1016.
    (A run before the precision fix scored a 0.38 bp BTC move at 50× as 0/0; P&L now applies leverage before
    dividing.)
-2. **Challenge board:** an unmatched challenge refunds in full with no rake, and joining your own challenge is refused.
+2. **Challenge board:** an unmatched challenge refunds the full 5 USDC (no fee, no rake), joining your own challenge is
+   refused, a stake cannot be paid from someone else's USDC account and a refund cannot be redirected to another
+   wallet's (`ConstraintTokenOwner`).
 3. **MagicBlock VRF:** with `vrf_required = true` the commit-reveal roll is refused (`VrfRequired`), a callback signed
    by anyone but MagicBlock's VRF identity is refused, and a real request to MagicBlock's VRF program is answered by
-   their `vrf-oracle`. Last run: ETH rolled in 1,319 ms.
+   their `vrf-oracle`; only a player of the duel can request the roll (`NotPlayer`). Last run: SOL rolled in 1,334 ms.
 4. **Clans and wars:** chest deposits, deposit-weighted votes, the captain executes and closes at the oracle price, and
    the war settles to the better return. The rollup feed's stale Solana copy is refused (`FeedInvalid`); the trade
    reads the crank's base feed. After the war a member cashes out all their shares for exactly their pro-rata part,
-   and a war stake over half the chest is refused (`WarStakeTooBig`). Last run: long SOL 5× at 71.85 → 71.84
-   (P&L -0.000625 SOL), war -2 vs 0 bps so the other clan won; the member who put in 1 of 3 SOL cashed out
-   0.8333 SOL of the 2.5 SOL chest left after the lost 0.5 SOL stake.
+   and a war stake over half the chest is refused (`WarStakeTooBig`). Last USDC run: long SOL 5× at 71.81 → 71.76
+   (P&L -0.0425 USDC), war -14 vs 0 bps so the other clan won; the member who put in 10 of 30 USDC cashed out exactly
+   8.333333 USDC of the 25 USDC chest left after the lost 5 USDC stake. Leaving returns the member account's rent to
+   the sponsor, never to the member (`PayoutMismatch`).
 5. **Royale tournament:** entries escrowed, calls and rounds on the ER, survivors split the pot. Last run on BTC:
-   lives 1 / 0 / 0, so one survivor took 0.1455 SOL (0.15 SOL pot minus 3% rake).
+   lives 1 / 0 / 0, so one survivor took 5.82 USDC (6 USDC pot minus 3% rake). A payout list with a swapped token
+   account is refused (`PayoutMismatch`).
 
 Running the crank for the app caught a real limit: the MagicBlock rollup sponsors only 10 commits per delegated account, which broke
 the crank's 30-second feed commits after five minutes. Solana-side reads now use base feeds (see README).
