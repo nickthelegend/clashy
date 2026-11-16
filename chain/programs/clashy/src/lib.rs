@@ -10,12 +10,16 @@
 //! - **Tournaments:** an on-chain Royale. Entries escrowed; up/down calls and round resolution run
 //!   on the ER; the last players standing split the pot.
 //!
+//! Money is USDC (an SPL token, 6 decimals): every escrow, chest and pot is a token account owned
+//! by the program's `auth` PDA. Rent and fees are paid by a separate `payer` signer (the sponsor),
+//! so a player's wallet only ever needs USDC; vault rent goes back to whoever paid it.
+//!
 //! Prices come from Clashy `PriceFeed` accounts (crank-pushed, delegated to the ER) or MagicBlock
 //! pricing-oracle accounts; see `price.rs`.
 
 use anchor_lang::prelude::*;
 use solana_sha256_hasher::hashv;
-use anchor_lang::system_program::{transfer, Transfer};
+use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer as TokenTransfer};
 use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
 use ephemeral_rollups_sdk::ephem::MagicIntentBundleBuilder;
@@ -63,24 +67,51 @@ pub struct RoundResolved {
     pub alive: u8,
 }
 
-fn pay_from_vault<'info>(
-    vault: &AccountInfo<'info>,
-    to: &AccountInfo<'info>,
-    system_program: &AccountInfo<'info>,
-    seeds: &[&[u8]],
-    amount: u64,
-) -> Result<()> {
+/// Moves USDC out of a vault token account; the `auth` PDA signs.
+fn pay_out<'info>(token_program: &AccountInfo<'info>, from: &AccountInfo<'info>, to: &AccountInfo<'info>, auth: &AccountInfo<'info>, auth_bump: u8, amount: u64) -> Result<()> {
     if amount == 0 {
         return Ok(());
     }
-    transfer(
-        CpiContext::new_with_signer(system_program.clone(), Transfer { from: vault.clone(), to: to.clone() }, &[seeds]),
+    let bump = [auth_bump];
+    let seeds: &[&[u8]] = &[AUTH_SEED, &bump];
+    token::transfer(
+        CpiContext::new_with_signer(token_program.clone(), TokenTransfer { from: from.clone(), to: to.clone(), authority: auth.clone() }, &[seeds]),
         amount,
     )
 }
 
-fn deposit<'info>(from: &AccountInfo<'info>, to: &AccountInfo<'info>, system_program: &AccountInfo<'info>, amount: u64) -> Result<()> {
-    transfer(CpiContext::new(system_program.clone(), Transfer { from: from.clone(), to: to.clone() }), amount)
+/// Moves USDC from a player's own token account into a vault; the player signs.
+fn pay_in<'info>(token_program: &AccountInfo<'info>, from: &AccountInfo<'info>, to: &AccountInfo<'info>, owner: &AccountInfo<'info>, amount: u64) -> Result<()> {
+    token::transfer(CpiContext::new(token_program.clone(), TokenTransfer { from: from.clone(), to: to.clone(), authority: owner.clone() }), amount)
+}
+
+/// Closes an emptied vault token account and returns its rent to whoever paid it.
+fn close_vault<'info>(token_program: &AccountInfo<'info>, vault: &AccountInfo<'info>, rent_to: &AccountInfo<'info>, auth: &AccountInfo<'info>, auth_bump: u8) -> Result<()> {
+    let bump = [auth_bump];
+    let seeds: &[&[u8]] = &[AUTH_SEED, &bump];
+    token::close_account(CpiContext::new_with_signer(
+        token_program.clone(),
+        CloseAccount { account: vault.clone(), destination: rent_to.clone(), authority: auth.clone() },
+        &[seeds],
+    ))
+}
+
+/// The token balance of an SPL token account (bytes 64..72 of the account layout).
+fn token_amount(info: &AccountInfo) -> Result<u64> {
+    require_keys_eq!(*info.owner, token::ID, ClashyError::PayoutMismatch);
+    let data = info.try_borrow_data()?;
+    require!(data.len() >= 72, ClashyError::PayoutMismatch);
+    Ok(u64::from_le_bytes(data[64..72].try_into().unwrap()))
+}
+
+/// A payout destination passed as a remaining account: a USDC token account owned by `owner`.
+fn check_usdc_account(info: &AccountInfo, owner: &Pubkey, mint: &Pubkey) -> Result<()> {
+    require_keys_eq!(*info.owner, token::ID, ClashyError::PayoutMismatch);
+    let data = info.try_borrow_data()?;
+    let ta = TokenAccount::try_deserialize(&mut &data[..])?;
+    require_keys_eq!(ta.owner, *owner, ClashyError::PayoutMismatch);
+    require_keys_eq!(ta.mint, *mint, ClashyError::PayoutMismatch);
+    Ok(())
 }
 
 fn player_index(duel: &Duel, who: &Pubkey) -> Result<usize> {
@@ -184,6 +215,8 @@ pub mod clashy {
         c.bump = ctx.bumps.config;
         c.vrf_queue = VRF_BASE_QUEUE;
         c.er_validator = Pubkey::default();
+        c.usdc_mint = ctx.accounts.usdc_mint.key();
+        c.auth_bump = ctx.bumps.auth;
         Ok(())
     }
 
@@ -297,8 +330,9 @@ pub mod clashy {
         require!(expires_in > 0 && expires_in <= MAX_CHALLENGE_SECS, ClashyError::Expired);
         let cfg = &ctx.accounts.config;
         require!(math::pick_coin(&[0u8; 32], pool_mask, cfg.coin_count).is_some(), ClashyError::EmptyPool);
-        deposit(&ctx.accounts.creator.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), stake)?;
+        pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.creator_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.creator.to_account_info(), stake)?;
         let d = &mut ctx.accounts.duel;
+        d.rent_payer = ctx.accounts.payer.key();
         d.creator = ctx.accounts.creator.key();
         d.joiner = Pubkey::default();
         d.nonce = nonce;
@@ -320,7 +354,7 @@ pub mod clashy {
         require!(d.status == duel_status::OPEN, ClashyError::WrongStatus);
         require!(now <= d.expires_at, ClashyError::Expired);
         require_keys_neq!(ctx.accounts.joiner.key(), d.creator, ClashyError::SelfJoin);
-        deposit(&ctx.accounts.joiner.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), d.stake)?;
+        pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.joiner_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.joiner.to_account_info(), d.stake)?;
         d.joiner = ctx.accounts.joiner.key();
         d.seed_hash[1] = seed_hash;
         d.status = duel_status::MATCHED;
@@ -334,10 +368,11 @@ pub mod clashy {
         let d = &ctx.accounts.duel;
         require!(d.status == duel_status::OPEN, ClashyError::WrongStatus);
         require!(ctx.accounts.signer.key() == d.creator || now > d.expires_at, ClashyError::NotExpired);
-        let duel_key = d.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, duel_key.as_ref(), &[d.vault_bump]];
-        let amount = ctx.accounts.vault.lamports();
-        pay_from_vault(&ctx.accounts.vault.to_account_info(), &ctx.accounts.creator.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
+        let bump = ctx.accounts.config.auth_bump;
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
+        let amount = token_amount(&vault)?;
+        pay_out(&tp, &vault, &ctx.accounts.creator_usdc.to_account_info(), &auth, bump, amount)?;
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         ctx.accounts.duel.status = duel_status::CANCELLED;
         Ok(())
     }
@@ -353,26 +388,25 @@ pub mod clashy {
         require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
         let forfeit_to: u8 = if d.picks_committed == 0b11 && d.picks_revealed == 0b01 { 1 }
             else if d.picks_committed == 0b11 && d.picks_revealed == 0b10 { 2 } else { 0 };
-        let duel_key = d.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, duel_key.as_ref(), &[d.vault_bump]];
         let stake = d.stake;
-        let vault = ctx.accounts.vault.to_account_info();
-        let sys = ctx.accounts.system_program.to_account_info();
+        let (bump, rake_bps) = (ctx.accounts.config.auth_bump, ctx.accounts.config.rake_bps);
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
         if forfeit_to == 0 {
-            pay_from_vault(&vault, &ctx.accounts.creator.to_account_info(), &sys, seeds, stake)?;
-            let rest = vault.lamports();
-            pay_from_vault(&vault, &ctx.accounts.joiner.to_account_info(), &sys, seeds, rest)?;
+            pay_out(&tp, &vault, &ctx.accounts.creator_usdc.to_account_info(), &auth, bump, stake)?;
+            let rest = token_amount(&vault)?;
+            pay_out(&tp, &vault, &ctx.accounts.joiner_usdc.to_account_info(), &auth, bump, rest)?;
             ctx.accounts.duel.status = duel_status::CANCELLED;
         } else {
-            let (_, rake) = math::split_rake(vault.lamports(), ctx.accounts.config.rake_bps);
-            pay_from_vault(&vault, &ctx.accounts.treasury.to_account_info(), &sys, seeds, rake)?;
-            let dest = if forfeit_to == 1 { ctx.accounts.creator.to_account_info() } else { ctx.accounts.joiner.to_account_info() };
-            let rest = vault.lamports();
-            pay_from_vault(&vault, &dest, &sys, seeds, rest)?;
+            let (_, rake) = math::split_rake(token_amount(&vault)?, rake_bps);
+            pay_out(&tp, &vault, &ctx.accounts.treasury.to_account_info(), &auth, bump, rake)?;
+            let dest = if forfeit_to == 1 { ctx.accounts.creator_usdc.to_account_info() } else { ctx.accounts.joiner_usdc.to_account_info() };
+            let rest = token_amount(&vault)?;
+            pay_out(&tp, &vault, &dest, &auth, bump, rest)?;
             let d = &mut ctx.accounts.duel;
             d.winner = forfeit_to;
             d.status = duel_status::SETTLED;
         }
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         Ok(())
     }
 
@@ -382,7 +416,7 @@ pub mod clashy {
         let d = &mut ctx.accounts.duel;
         require!(d.status == duel_status::MATCHED, ClashyError::WrongStatus);
         require!(!d.vrf_pending, ClashyError::VrfInflight);
-        let signer = ctx.accounts.payer.key();
+        let signer = ctx.accounts.player.key();
         require!(signer == d.creator || signer == d.joiner, ClashyError::NotPlayer);
         d.vrf_pending = true;
         let duel_key = d.key();
@@ -471,7 +505,7 @@ pub mod clashy {
             require_keys_eq!(*info.owner, crate::ID, ClashyError::WrongStatus);
             let d = Duel::try_deserialize(&mut &info.try_borrow_data()?[..])?;
             require!(d.status == duel_status::ROLLED && d.picks_revealed == 0b11, ClashyError::WrongStatus);
-            let who = ctx.accounts.payer.key();
+            let who = ctx.accounts.player.key();
             require!(who == d.creator || who == d.joiner, ClashyError::NotPlayer);
         }
         let validator = ctx.accounts.config.er_validator;
@@ -535,31 +569,27 @@ pub mod clashy {
     pub fn settle_duel(ctx: Context<SettleDuel>) -> Result<()> {
         let d = &ctx.accounts.duel;
         require!(d.status == duel_status::FINISHED, ClashyError::WrongStatus);
-        require_keys_eq!(ctx.accounts.creator.key(), d.creator, ClashyError::PayoutMismatch);
-        require_keys_eq!(ctx.accounts.joiner.key(), d.joiner, ClashyError::PayoutMismatch);
-        require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
         let duel_key = d.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, duel_key.as_ref(), &[d.vault_bump]];
-        let vault = ctx.accounts.vault.to_account_info();
-        let sys = ctx.accounts.system_program.to_account_info();
-        let pot = vault.lamports();
+        let (bump, rake_bps) = (ctx.accounts.config.auth_bump, ctx.accounts.config.rake_bps);
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
+        let pot = token_amount(&vault)?;
         let winner = d.winner;
         let (paid, rake) = match winner {
             1 | 2 => {
-                let (to_winner, rake) = math::split_rake(pot, ctx.accounts.config.rake_bps);
-                let dest = if winner == 1 { ctx.accounts.creator.to_account_info() } else { ctx.accounts.joiner.to_account_info() };
-                // rake first: a vault left holding only the rake would sit below rent-exempt and fail
-                pay_from_vault(&vault, &ctx.accounts.treasury.to_account_info(), &sys, seeds, rake)?;
-                pay_from_vault(&vault, &dest, &sys, seeds, to_winner)?;
+                let (to_winner, rake) = math::split_rake(pot, rake_bps);
+                let dest = if winner == 1 { ctx.accounts.creator_usdc.to_account_info() } else { ctx.accounts.joiner_usdc.to_account_info() };
+                pay_out(&tp, &vault, &ctx.accounts.treasury.to_account_info(), &auth, bump, rake)?;
+                pay_out(&tp, &vault, &dest, &auth, bump, to_winner)?;
                 (to_winner, rake)
             }
             _ => {
                 let half = pot / 2;
-                pay_from_vault(&vault, &ctx.accounts.creator.to_account_info(), &sys, seeds, half)?;
-                pay_from_vault(&vault, &ctx.accounts.joiner.to_account_info(), &sys, seeds, pot - half)?;
+                pay_out(&tp, &vault, &ctx.accounts.creator_usdc.to_account_info(), &auth, bump, half)?;
+                pay_out(&tp, &vault, &ctx.accounts.joiner_usdc.to_account_info(), &auth, bump, pot - half)?;
                 (pot, 0)
             }
         };
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         update_players(&mut ctx.accounts.creator_player, &mut ctx.accounts.joiner_player, winner);
         ctx.accounts.duel.status = duel_status::SETTLED;
         emit!(DuelSettled { duel: duel_key, winner, paid, rake });
@@ -596,6 +626,7 @@ pub mod clashy {
         m.shares = 0;
         m.joined_at = Clock::get()?.unix_timestamp;
         m.bump = ctx.bumps.member;
+        m.rent_payer = ctx.accounts.payer.key();
         ctx.accounts.player.clan = clan_key;
         Ok(())
     }
@@ -610,6 +641,7 @@ pub mod clashy {
         m.shares = 0;
         m.joined_at = Clock::get()?.unix_timestamp;
         m.bump = ctx.bumps.member;
+        m.rent_payer = ctx.accounts.payer.key();
         ctx.accounts.clan.members += 1;
         ctx.accounts.player.clan = clan_key;
         Ok(())
@@ -633,7 +665,7 @@ pub mod clashy {
         require!(ctx.accounts.clan.war == Pubkey::default(), ClashyError::WarLocked);
         let minted = math::shares_for_deposit(amount, ctx.accounts.clan.chest, ctx.accounts.clan.shares).ok_or(ClashyError::ChestTooLow)?;
         require!(minted > 0, ClashyError::StakeTooLow);
-        deposit(&ctx.accounts.wallet.to_account_info(), &ctx.accounts.chest.to_account_info(), &ctx.accounts.system_program.to_account_info(), amount)?;
+        pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.wallet_usdc.to_account_info(), &ctx.accounts.chest.to_account_info(), &ctx.accounts.wallet.to_account_info(), amount)?;
         let m = &mut ctx.accounts.member;
         m.deposit += amount;
         m.shares += minted;
@@ -651,12 +683,10 @@ pub mod clashy {
         require!(c.open_votes == 0, ClashyError::VoteOpen);
         let held = ctx.accounts.member.shares;
         require!(shares > 0 && shares <= held, ClashyError::NotEnoughShares);
-        // the last redeemer takes everything left in the vault, so stray lamports cannot strand it below rent
-        let payout = if shares == c.shares { ctx.accounts.chest.lamports() } else { math::payout_for_shares(shares, c.chest, c.shares) };
+        // the last redeemer takes everything left in the chest, so a stray transfer cannot strand it
+        let payout = if shares == c.shares { token_amount(&ctx.accounts.chest.to_account_info())? } else { math::payout_for_shares(shares, c.chest, c.shares) };
         require!(payout > 0, ClashyError::ChestTooLow);
-        let clan_key = c.key();
-        let seeds: &[&[u8]] = &[CHEST_SEED, clan_key.as_ref(), &[c.chest_bump]];
-        pay_from_vault(&ctx.accounts.chest.to_account_info(), &ctx.accounts.wallet.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, payout)?;
+        pay_out(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.chest.to_account_info(), &ctx.accounts.wallet_usdc.to_account_info(), &ctx.accounts.auth.to_account_info(), ctx.accounts.config.auth_bump, payout)?;
         let m = &mut ctx.accounts.member;
         m.deposit -= (m.deposit as u128 * shares as u128 / held as u128) as u64;
         m.shares -= shares;
@@ -801,8 +831,7 @@ pub mod clashy {
         require!(a.chest >= stake, ClashyError::ChestTooLow);
         require!(stake <= a.chest / 2, ClashyError::WarStakeTooBig);
         let a_key = a.key();
-        let seeds: &[&[u8]] = &[CHEST_SEED, a_key.as_ref(), &[a.chest_bump]];
-        pay_from_vault(&ctx.accounts.chest_a.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, stake)?;
+        pay_out(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.chest_a.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.auth.to_account_info(), ctx.accounts.config.auth_bump, stake)?;
         let war_key = ctx.accounts.war.key();
         let w = &mut ctx.accounts.war;
         w.clan_a = a_key;
@@ -813,6 +842,7 @@ pub mod clashy {
         w.status = war_status::DECLARED;
         w.bump = ctx.bumps.war;
         w.vault_bump = ctx.bumps.vault;
+        w.rent_payer = ctx.accounts.payer.key();
         let a = &mut ctx.accounts.clan_a;
         a.chest -= stake;
         a.war = war_key;
@@ -829,9 +859,7 @@ pub mod clashy {
         require!(stake <= b.chest / 2, ClashyError::WarStakeTooBig);
         // only trades opened during the war count, so both clans start flat
         require!(b.positions_open == 0 && ctx.accounts.clan_a.positions_open == 0, ClashyError::PositionsOpen);
-        let b_key = b.key();
-        let seeds: &[&[u8]] = &[CHEST_SEED, b_key.as_ref(), &[b.chest_bump]];
-        pay_from_vault(&ctx.accounts.chest_b.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, stake)?;
+        pay_out(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.chest_b.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.auth.to_account_info(), ctx.accounts.config.auth_bump, stake)?;
         let war_key = ctx.accounts.war.key();
         let b = &mut ctx.accounts.clan_b;
         b.chest -= stake;
@@ -852,10 +880,11 @@ pub mod clashy {
     pub fn cancel_war(ctx: Context<CancelWar>) -> Result<()> {
         let w = &ctx.accounts.war;
         require!(w.status == war_status::DECLARED, ClashyError::WrongStatus);
-        let war_key = w.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, war_key.as_ref(), &[w.vault_bump]];
-        let amount = ctx.accounts.vault.lamports();
-        pay_from_vault(&ctx.accounts.vault.to_account_info(), &ctx.accounts.chest_a.to_account_info(), &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
+        let bump = ctx.accounts.config.auth_bump;
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
+        let amount = token_amount(&vault)?;
+        pay_out(&tp, &vault, &ctx.accounts.chest_a.to_account_info(), &auth, bump, amount)?;
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         let a = &mut ctx.accounts.clan_a;
         a.chest += amount;
         a.war = Pubkey::default();
@@ -872,21 +901,18 @@ pub mod clashy {
         require!(now >= w.end_ts, ClashyError::WarNotOver);
         // open positions would let a captain bank winners and park losers; everything must be closed
         require!(ctx.accounts.clan_a.positions_open == 0 && ctx.accounts.clan_b.positions_open == 0, ClashyError::PositionsOpen);
-        require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
         let ra = math::war_return_bps(ctx.accounts.clan_a.score_pnl, w.base_a, w.chest_a);
         let rb = math::war_return_bps(ctx.accounts.clan_b.score_pnl, w.base_b, w.chest_b);
         let winner = if ra > rb { 1 } else if rb > ra { 2 } else { 3 };
-        let war_key = w.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, war_key.as_ref(), &[w.vault_bump]];
-        let vault = ctx.accounts.vault.to_account_info();
-        let sys = ctx.accounts.system_program.to_account_info();
-        let pot = vault.lamports();
+        let (bump, rake_bps) = (ctx.accounts.config.auth_bump, ctx.accounts.config.rake_bps);
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
+        let pot = token_amount(&vault)?;
         match winner {
             1 | 2 => {
-                let (to_winner, rake) = math::split_rake(pot, ctx.accounts.config.rake_bps);
+                let (to_winner, rake) = math::split_rake(pot, rake_bps);
                 let dest = if winner == 1 { ctx.accounts.chest_a.to_account_info() } else { ctx.accounts.chest_b.to_account_info() };
-                pay_from_vault(&vault, &ctx.accounts.treasury.to_account_info(), &sys, seeds, rake)?;
-                pay_from_vault(&vault, &dest, &sys, seeds, to_winner)?;
+                pay_out(&tp, &vault, &ctx.accounts.treasury.to_account_info(), &auth, bump, rake)?;
+                pay_out(&tp, &vault, &dest, &auth, bump, to_winner)?;
                 if winner == 1 {
                     ctx.accounts.clan_a.chest += to_winner;
                     ctx.accounts.clan_a.wins += 1;
@@ -899,12 +925,13 @@ pub mod clashy {
             }
             _ => {
                 let half = pot / 2;
-                pay_from_vault(&vault, &ctx.accounts.chest_a.to_account_info(), &sys, seeds, half)?;
-                pay_from_vault(&vault, &ctx.accounts.chest_b.to_account_info(), &sys, seeds, pot - half)?;
+                pay_out(&tp, &vault, &ctx.accounts.chest_a.to_account_info(), &auth, bump, half)?;
+                pay_out(&tp, &vault, &ctx.accounts.chest_b.to_account_info(), &auth, bump, pot - half)?;
                 ctx.accounts.clan_a.chest += half;
                 ctx.accounts.clan_b.chest += pot - half;
             }
         }
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         ctx.accounts.clan_a.war = Pubkey::default();
         ctx.accounts.clan_b.war = Pubkey::default();
         let w = &mut ctx.accounts.war;
@@ -939,6 +966,7 @@ pub mod clashy {
         t.bump = ctx.bumps.tournament;
         t.vault_bump = ctx.bumps.vault;
         t.created_at = Clock::get()?.unix_timestamp;
+        t.rent_payer = ctx.accounts.payer.key();
         Ok(())
     }
 
@@ -948,7 +976,7 @@ pub mod clashy {
         require!((t.count as usize) < t.max_players as usize, ClashyError::TourFull);
         let me = ctx.accounts.player.key();
         require!(!t.players[..t.count as usize].contains(&me), ClashyError::AlreadyJoined);
-        deposit(&ctx.accounts.player.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.system_program.to_account_info(), t.entry)?;
+        pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.player_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.player.to_account_info(), t.entry)?;
         let t = &mut ctx.accounts.tournament;
         let i = t.count as usize;
         t.players[i] = me;
@@ -957,7 +985,7 @@ pub mod clashy {
         Ok(())
     }
 
-    /// Creator cancels an unstarted tournament; remaining accounts are every player's wallet in join order.
+    /// Creator cancels an unstarted tournament; remaining accounts are every player's USDC token account in join order.
     pub fn cancel_tournament<'info>(ctx: Context<'_, '_, 'info, 'info, CancelTournament<'info>>) -> Result<()> {
         let t = &ctx.accounts.tournament;
         require!(t.status == tour_status::OPEN, ClashyError::WrongStatus);
@@ -965,14 +993,15 @@ pub mod clashy {
         let now = Clock::get()?.unix_timestamp;
         require!(ctx.accounts.signer.key() == t.creator || now > t.created_at + TOUR_LOBBY_SECS, ClashyError::NotExpired);
         require!(ctx.remaining_accounts.len() == t.count as usize, ClashyError::PayoutMismatch);
-        let key = t.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, key.as_ref(), &[t.vault_bump]];
+        let (bump, mint) = (ctx.accounts.config.auth_bump, ctx.accounts.config.usdc_mint);
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
         let n = ctx.remaining_accounts.len();
         for (i, acc) in ctx.remaining_accounts.iter().enumerate() {
-            require_keys_eq!(acc.key(), t.players[i], ClashyError::PayoutMismatch);
-            let amount = if i + 1 == n { ctx.accounts.vault.lamports() } else { t.entry };
-            pay_from_vault(&ctx.accounts.vault.to_account_info(), acc, &ctx.accounts.system_program.to_account_info(), seeds, amount)?;
+            check_usdc_account(acc, &t.players[i], &mint)?;
+            let amount = if i + 1 == n { token_amount(&vault)? } else { t.entry };
+            pay_out(&tp, &vault, acc, &auth, bump, amount)?;
         }
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         ctx.accounts.tournament.status = tour_status::CANCELLED;
         Ok(())
     }
@@ -982,7 +1011,7 @@ pub mod clashy {
         require_keys_eq!(ctx.accounts.oracle_queue.key(), ctx.accounts.config.vrf_queue, ClashyError::InvalidQueue);
         let t = &mut ctx.accounts.tournament;
         require!(t.status == tour_status::OPEN && t.coin == NO_COIN && !t.vrf_pending, ClashyError::WrongStatus);
-        require_keys_eq!(ctx.accounts.payer.key(), t.creator, ClashyError::Unauthorized);
+        require_keys_eq!(ctx.accounts.creator.key(), t.creator, ClashyError::Unauthorized);
         t.vrf_pending = true;
         let key = t.key();
         let seed = hashv(&[&caller_seed, key.as_ref(), &Clock::get()?.slot.to_le_bytes()]).to_bytes();
@@ -1020,7 +1049,7 @@ pub mod clashy {
             let t = Tournament::try_deserialize(&mut &info.try_borrow_data()?[..])?;
             require!(t.status == tour_status::OPEN && t.coin != NO_COIN, ClashyError::WrongStatus);
             require!(t.count >= 2, ClashyError::TooFewPlayers);
-            require_keys_eq!(ctx.accounts.payer.key(), t.creator, ClashyError::Unauthorized);
+            require_keys_eq!(ctx.accounts.host.key(), t.creator, ClashyError::Unauthorized);
         }
         let validator = ctx.accounts.config.er_validator;
         require!(validator != Pubkey::default(), ClashyError::NoValidator);
@@ -1127,35 +1156,41 @@ pub mod clashy {
     }
 
     /// Solana: players left with the most lives split the pot minus rake. Remaining accounts are
-    /// every player's wallet in join order.
+    /// every player's USDC token account in join order.
     pub fn settle_tournament<'info>(ctx: Context<'_, '_, 'info, 'info, SettleTournament<'info>>) -> Result<()> {
         let t = &ctx.accounts.tournament;
         require!(t.status == tour_status::FINISHED, ClashyError::WrongStatus);
         require!(ctx.remaining_accounts.len() == t.count as usize, ClashyError::PayoutMismatch);
-        require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
         let n = t.count as usize;
         let top = *t.lives[..n].iter().max().unwrap_or(&0);
         let winners: Vec<usize> = (0..n).filter(|i| top > 0 && t.lives[*i] == top).collect();
-        let key = t.key();
-        let seeds: &[&[u8]] = &[VAULT_SEED, key.as_ref(), &[t.vault_bump]];
-        let vault = ctx.accounts.vault.to_account_info();
-        let sys = ctx.accounts.system_program.to_account_info();
-        let pot = vault.lamports();
-        let (to_winners, rake) = math::split_rake(pot, ctx.accounts.config.rake_bps);
-        pay_from_vault(&vault, &ctx.accounts.treasury.to_account_info(), &sys, seeds, rake)?;
+        let (bump, rake_bps, mint) = (ctx.accounts.config.auth_bump, ctx.accounts.config.rake_bps, ctx.accounts.config.usdc_mint);
+        let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
+        // every account must be that player's own USDC account, winner or not, so the list cannot be shuffled
+        for (i, acc) in ctx.remaining_accounts.iter().enumerate() {
+            check_usdc_account(acc, &t.players[i], &mint)?;
+        }
+        let pot = token_amount(&vault)?;
+        // nobody standing (cannot happen after a resolved round, but never strand the pot): all of it is rake
+        let (to_winners, rake) = if winners.is_empty() { (0, pot) } else { math::split_rake(pot, rake_bps) };
+        pay_out(&tp, &vault, &ctx.accounts.treasury.to_account_info(), &auth, bump, rake)?;
         let share = to_winners / winners.len().max(1) as u64;
         for (k, i) in winners.iter().enumerate() {
             let acc = &ctx.remaining_accounts[*i];
-            require_keys_eq!(acc.key(), t.players[*i], ClashyError::PayoutMismatch);
             let amount = if k == winners.len() - 1 { to_winners - share * (winners.len() as u64 - 1) } else { share };
-            pay_from_vault(&vault, acc, &sys, seeds, amount)?;
+            pay_out(&tp, &vault, acc, &auth, bump, amount)?;
         }
+        close_vault(&tp, &vault, &ctx.accounts.rent_payer.to_account_info(), &auth, bump)?;
         ctx.accounts.tournament.status = tour_status::SETTLED;
         Ok(())
     }
 }
 
 // ====================================================================== accounts
+//
+// Money accounts: `vault` / `chest` are USDC token accounts at program PDAs, owned by the `auth` PDA.
+// `payer` is whoever pays rent and fees (the sponsor in the app), never the source of a stake: stakes
+// always come from the player's own USDC token account, signed by the player.
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -1163,6 +1198,11 @@ pub struct Initialize<'info> {
     pub authority: Signer<'info>,
     #[account(init, payer = authority, space = 8 + Config::INIT_SPACE, seeds = [CONFIG_SEED], bump)]
     pub config: Account<'info, Config>,
+    /// The stake currency (USDC).
+    pub usdc_mint: Account<'info, Mint>,
+    /// CHECK: the PDA that owns every vault token account; only its bump is stored.
+    #[account(seeds = [AUTH_SEED], bump)]
+    pub auth: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -1240,9 +1280,10 @@ pub struct PushBasePrice<'info> {
 
 #[derive(Accounts)]
 pub struct InitPlayer<'info> {
-    #[account(mut)]
     pub owner: Signer<'info>,
-    #[account(init, payer = owner, space = 8 + Player::INIT_SPACE, seeds = [PLAYER_SEED, owner.key().as_ref()], bump)]
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(init, payer = payer, space = 8 + Player::INIT_SPACE, seeds = [PLAYER_SEED, owner.key().as_ref()], bump)]
     pub player: Account<'info, Player>,
     pub system_program: Program<'info, System>,
 }
@@ -1250,69 +1291,95 @@ pub struct InitPlayer<'info> {
 #[derive(Accounts)]
 #[instruction(nonce: u64)]
 pub struct OpenDuel<'info> {
-    #[account(mut)]
     pub creator: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(seeds = [PLAYER_SEED, creator.key().as_ref()], bump = player.bump)]
     pub player: Account<'info, Player>,
-    #[account(init, payer = creator, space = 8 + Duel::INIT_SPACE, seeds = [DUEL_SEED, creator.key().as_ref(), &nonce.to_le_bytes()], bump)]
-    pub duel: Account<'info, Duel>,
-    /// CHECK: system-owned escrow PDA holding both stakes.
-    #[account(mut, seeds = [VAULT_SEED, duel.key().as_ref()], bump)]
-    pub vault: SystemAccount<'info>,
+    #[account(init, payer = payer, space = 8 + Duel::INIT_SPACE, seeds = [DUEL_SEED, creator.key().as_ref(), &nonce.to_le_bytes()], bump)]
+    pub duel: Box<Account<'info, Duel>>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = creator)]
+    pub creator_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(address = config.usdc_mint)]
+    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(init, payer = payer, seeds = [VAULT_SEED, duel.key().as_ref()], bump, token::mint = usdc_mint, token::authority = auth)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct JoinDuel<'info> {
-    #[account(mut)]
     pub joiner: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(seeds = [PLAYER_SEED, joiner.key().as_ref()], bump = player.bump)]
     pub player: Account<'info, Player>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
-    pub duel: Account<'info, Duel>,
+    pub duel: Box<Account<'info, Duel>>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = joiner)]
+    pub joiner_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK: the duel's USDC vault, checked by seeds; the token program checks the transfer.
     #[account(mut, seeds = [VAULT_SEED, duel.key().as_ref()], bump = duel.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct AbortDuel<'info> {
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
-    pub duel: Account<'info, Duel>,
+    pub duel: Box<Account<'info, Duel>>,
+    /// CHECK: the duel's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, duel.key().as_ref()], bump = duel.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    /// CHECK: payout destination, must be the creator.
-    #[account(mut, address = duel.creator @ ClashyError::PayoutMismatch)]
-    pub creator: AccountInfo<'info>,
-    /// CHECK: payout destination, must be the joiner.
-    #[account(mut, address = duel.joiner @ ClashyError::PayoutMismatch)]
-    pub joiner: AccountInfo<'info>,
-    /// CHECK: must equal config.treasury.
-    #[account(mut)]
-    pub treasury: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = duel.creator)]
+    pub creator_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = duel.joiner)]
+    pub joiner_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut, address = config.treasury @ ClashyError::PayoutMismatch)]
+    pub treasury: Box<Account<'info, TokenAccount>>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct CancelDuel<'info> {
     pub signer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
-    pub duel: Account<'info, Duel>,
+    pub duel: Box<Account<'info, Duel>>,
+    /// CHECK: the duel's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, duel.key().as_ref()], bump = duel.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    /// CHECK: refund destination, must be the creator.
-    #[account(mut, address = duel.creator @ ClashyError::PayoutMismatch)]
-    pub creator: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = duel.creator)]
+    pub creator_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[vrf]
 #[derive(Accounts)]
 pub struct RequestCoinRoll<'info> {
+    /// One of the duel's two players.
+    pub player: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
@@ -1346,6 +1413,8 @@ pub struct PlayerDuel<'info> {
 #[derive(Accounts)]
 #[instruction(creator: Pubkey, nonce: u64)]
 pub struct DelegateDuel<'info> {
+    /// One of the duel's two players.
+    pub player: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
@@ -1382,122 +1451,148 @@ pub struct CheckDuel<'info> {
 #[derive(Accounts)]
 pub struct SettleDuel<'info> {
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
-    pub duel: Account<'info, Duel>,
+    pub duel: Box<Account<'info, Duel>>,
+    /// CHECK: the duel's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, duel.key().as_ref()], bump = duel.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    /// CHECK: must equal duel.creator.
-    #[account(mut)]
-    pub creator: AccountInfo<'info>,
-    /// CHECK: must equal duel.joiner.
-    #[account(mut)]
-    pub joiner: AccountInfo<'info>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = duel.creator)]
+    pub creator_usdc: Box<Account<'info, TokenAccount>>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = duel.joiner)]
+    pub joiner_usdc: Box<Account<'info, TokenAccount>>,
     #[account(mut, seeds = [PLAYER_SEED, duel.creator.as_ref()], bump = creator_player.bump)]
-    pub creator_player: Account<'info, Player>,
+    pub creator_player: Box<Account<'info, Player>>,
     #[account(mut, seeds = [PLAYER_SEED, duel.joiner.as_ref()], bump = joiner_player.bump)]
-    pub joiner_player: Account<'info, Player>,
-    /// CHECK: must equal config.treasury.
-    #[account(mut)]
-    pub treasury: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    pub joiner_player: Box<Account<'info, Player>>,
+    #[account(mut, address = config.treasury @ ClashyError::PayoutMismatch)]
+    pub treasury: Box<Account<'info, TokenAccount>>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 #[instruction(name: String)]
 pub struct CreateClan<'info> {
-    #[account(mut)]
     pub founder: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [PLAYER_SEED, founder.key().as_ref()], bump = player.bump)]
-    pub player: Account<'info, Player>,
-    #[account(init, payer = founder, space = 8 + Clan::INIT_SPACE, seeds = [CLAN_SEED, name.as_bytes()], bump)]
-    pub clan: Account<'info, Clan>,
-    #[account(seeds = [CHEST_SEED, clan.key().as_ref()], bump)]
-    pub chest: SystemAccount<'info>,
-    #[account(init, payer = founder, space = 8 + Member::INIT_SPACE, seeds = [MEMBER_SEED, clan.key().as_ref(), founder.key().as_ref()], bump)]
-    pub member: Account<'info, Member>,
+    pub player: Box<Account<'info, Player>>,
+    #[account(init, payer = payer, space = 8 + Clan::INIT_SPACE, seeds = [CLAN_SEED, name.as_bytes()], bump)]
+    pub clan: Box<Account<'info, Clan>>,
+    #[account(address = config.usdc_mint)]
+    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(init, payer = payer, seeds = [CHEST_SEED, clan.key().as_ref()], bump, token::mint = usdc_mint, token::authority = auth)]
+    pub chest: Box<Account<'info, TokenAccount>>,
+    #[account(init, payer = payer, space = 8 + Member::INIT_SPACE, seeds = [MEMBER_SEED, clan.key().as_ref(), founder.key().as_ref()], bump)]
+    pub member: Box<Account<'info, Member>>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct JoinClan<'info> {
-    #[account(mut)]
     pub wallet: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(mut, seeds = [PLAYER_SEED, wallet.key().as_ref()], bump = player.bump)]
     pub player: Account<'info, Player>,
     #[account(mut)]
     pub clan: Account<'info, Clan>,
-    #[account(init, payer = wallet, space = 8 + Member::INIT_SPACE, seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump)]
+    #[account(init, payer = payer, space = 8 + Member::INIT_SPACE, seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump)]
     pub member: Account<'info, Member>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct LeaveClan<'info> {
-    #[account(mut)]
     pub wallet: Signer<'info>,
     #[account(mut, seeds = [PLAYER_SEED, wallet.key().as_ref()], bump = player.bump, constraint = player.clan == clan.key() @ ClashyError::NotInClan)]
     pub player: Account<'info, Player>,
     #[account(mut)]
     pub clan: Account<'info, Clan>,
-    #[account(mut, close = wallet, seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
+    #[account(mut, close = rent_payer, seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
     pub member: Account<'info, Member>,
+    /// CHECK: gets the member account's rent back; must be who paid it.
+    #[account(mut, address = member.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]
 pub struct ChestMove<'info> {
-    #[account(mut)]
     pub wallet: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut)]
-    pub clan: Account<'info, Clan>,
+    pub clan: Box<Account<'info, Clan>>,
     #[account(mut, seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
-    pub member: Account<'info, Member>,
+    pub member: Box<Account<'info, Member>>,
+    /// CHECK: the clan's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan.key().as_ref()], bump = clan.chest_bump)]
-    pub chest: SystemAccount<'info>,
-    pub system_program: Program<'info, System>,
+    pub chest: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = wallet)]
+    pub wallet_usdc: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct Propose<'info> {
-    #[account(mut)]
     pub wallet: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
     #[account(mut)]
     pub clan: Account<'info, Clan>,
     #[account(seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
     pub member: Account<'info, Member>,
-    #[account(init, payer = wallet, space = 8 + Proposal::INIT_SPACE, seeds = [PROPOSAL_SEED, clan.key().as_ref(), &clan.proposals.to_le_bytes()], bump)]
+    #[account(init, payer = payer, space = 8 + Proposal::INIT_SPACE, seeds = [PROPOSAL_SEED, clan.key().as_ref(), &clan.proposals.to_le_bytes()], bump)]
     pub proposal: Account<'info, Proposal>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct CastVote<'info> {
-    #[account(mut)]
     pub wallet: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub clan: Account<'info, Clan>,
     #[account(seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
     pub member: Account<'info, Member>,
     #[account(mut, has_one = clan)]
     pub proposal: Account<'info, Proposal>,
-    #[account(init, payer = wallet, space = 8 + Vote::INIT_SPACE, seeds = [VOTE_SEED, proposal.key().as_ref(), wallet.key().as_ref()], bump)]
+    #[account(init, payer = payer, space = 8 + Vote::INIT_SPACE, seeds = [VOTE_SEED, proposal.key().as_ref(), wallet.key().as_ref()], bump)]
     pub vote: Account<'info, Vote>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct ExecuteProposal<'info> {
-    #[account(mut)]
     pub captain: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, constraint = clan.captain == captain.key() @ ClashyError::NotCaptain)]
-    pub clan: Account<'info, Clan>,
+    pub clan: Box<Account<'info, Clan>>,
     #[account(mut, has_one = clan)]
-    pub proposal: Account<'info, Proposal>,
-    #[account(init, payer = captain, space = 8 + ClanPosition::INIT_SPACE, seeds = [POSITION_SEED, clan.key().as_ref(), &proposal.id.to_le_bytes()], bump)]
-    pub position: Account<'info, ClanPosition>,
+    pub proposal: Box<Account<'info, Proposal>>,
+    #[account(init, payer = payer, space = 8 + ClanPosition::INIT_SPACE, seeds = [POSITION_SEED, clan.key().as_ref(), &proposal.id.to_le_bytes()], bump)]
+    pub position: Box<Account<'info, ClanPosition>>,
     /// CHECK: validated against the configured feed for the proposal's coin.
     pub price: UncheckedAccount<'info>,
     /// The clan's war, required while it is at war.
@@ -1532,110 +1627,166 @@ pub struct ClosePosition<'info> {
 #[derive(Accounts)]
 #[instruction(nonce: u64)]
 pub struct DeclareWar<'info> {
-    #[account(mut)]
     pub captain: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, constraint = clan_a.captain == captain.key() @ ClashyError::NotCaptain)]
-    pub clan_a: Account<'info, Clan>,
-    pub clan_b: Account<'info, Clan>,
+    pub clan_a: Box<Account<'info, Clan>>,
+    pub clan_b: Box<Account<'info, Clan>>,
+    /// CHECK: clan A's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_a.key().as_ref()], bump = clan_a.chest_bump)]
-    pub chest_a: SystemAccount<'info>,
-    #[account(init, payer = captain, space = 8 + War::INIT_SPACE, seeds = [WAR_SEED, clan_a.key().as_ref(), clan_b.key().as_ref(), &nonce.to_le_bytes()], bump)]
-    pub war: Account<'info, War>,
-    #[account(mut, seeds = [VAULT_SEED, war.key().as_ref()], bump)]
-    pub vault: SystemAccount<'info>,
+    pub chest_a: UncheckedAccount<'info>,
+    #[account(init, payer = payer, space = 8 + War::INIT_SPACE, seeds = [WAR_SEED, clan_a.key().as_ref(), clan_b.key().as_ref(), &nonce.to_le_bytes()], bump)]
+    pub war: Box<Account<'info, War>>,
+    #[account(address = config.usdc_mint)]
+    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(init, payer = payer, seeds = [VAULT_SEED, war.key().as_ref()], bump, token::mint = usdc_mint, token::authority = auth)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct AcceptWar<'info> {
     pub captain: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(address = war.clan_a)]
-    pub clan_a: Account<'info, Clan>,
+    pub clan_a: Box<Account<'info, Clan>>,
     #[account(mut, address = war.clan_b, constraint = clan_b.captain == captain.key() @ ClashyError::NotCaptain)]
-    pub clan_b: Account<'info, Clan>,
+    pub clan_b: Box<Account<'info, Clan>>,
+    /// CHECK: clan B's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_b.key().as_ref()], bump = clan_b.chest_bump)]
-    pub chest_b: SystemAccount<'info>,
+    pub chest_b: UncheckedAccount<'info>,
     #[account(mut, seeds = [WAR_SEED, war.clan_a.as_ref(), war.clan_b.as_ref(), &war.nonce.to_le_bytes()], bump = war.bump)]
-    pub war: Account<'info, War>,
+    pub war: Box<Account<'info, War>>,
+    /// CHECK: the war's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, war.key().as_ref()], bump = war.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct CancelWar<'info> {
     pub captain: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, address = war.clan_a, constraint = clan_a.captain == captain.key() @ ClashyError::NotCaptain)]
-    pub clan_a: Account<'info, Clan>,
+    pub clan_a: Box<Account<'info, Clan>>,
+    /// CHECK: clan A's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_a.key().as_ref()], bump = clan_a.chest_bump)]
-    pub chest_a: SystemAccount<'info>,
+    pub chest_a: UncheckedAccount<'info>,
     #[account(mut, seeds = [WAR_SEED, war.clan_a.as_ref(), war.clan_b.as_ref(), &war.nonce.to_le_bytes()], bump = war.bump)]
-    pub war: Account<'info, War>,
+    pub war: Box<Account<'info, War>>,
+    /// CHECK: the war's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, war.key().as_ref()], bump = war.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = war.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct SettleWar<'info> {
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, address = war.clan_a)]
-    pub clan_a: Account<'info, Clan>,
+    pub clan_a: Box<Account<'info, Clan>>,
     #[account(mut, address = war.clan_b)]
-    pub clan_b: Account<'info, Clan>,
+    pub clan_b: Box<Account<'info, Clan>>,
+    /// CHECK: clan A's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_a.key().as_ref()], bump = clan_a.chest_bump)]
-    pub chest_a: SystemAccount<'info>,
+    pub chest_a: UncheckedAccount<'info>,
+    /// CHECK: clan B's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_b.key().as_ref()], bump = clan_b.chest_bump)]
-    pub chest_b: SystemAccount<'info>,
+    pub chest_b: UncheckedAccount<'info>,
     #[account(mut, seeds = [WAR_SEED, war.clan_a.as_ref(), war.clan_b.as_ref(), &war.nonce.to_le_bytes()], bump = war.bump)]
-    pub war: Account<'info, War>,
+    pub war: Box<Account<'info, War>>,
+    /// CHECK: the war's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, war.key().as_ref()], bump = war.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    /// CHECK: must equal config.treasury.
-    #[account(mut)]
-    pub treasury: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, address = config.treasury @ ClashyError::PayoutMismatch)]
+    pub treasury: Box<Account<'info, TokenAccount>>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = war.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 #[instruction(nonce: u64)]
 pub struct CreateTournament<'info> {
-    #[account(mut)]
     pub creator: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
-    #[account(init, payer = creator, space = 8 + Tournament::INIT_SPACE, seeds = [TOUR_SEED, creator.key().as_ref(), &nonce.to_le_bytes()], bump)]
-    pub tournament: Account<'info, Tournament>,
-    #[account(seeds = [VAULT_SEED, tournament.key().as_ref()], bump)]
-    pub vault: SystemAccount<'info>,
+    pub config: Box<Account<'info, Config>>,
+    #[account(init, payer = payer, space = 8 + Tournament::INIT_SPACE, seeds = [TOUR_SEED, creator.key().as_ref(), &nonce.to_le_bytes()], bump)]
+    pub tournament: Box<Account<'info, Tournament>>,
+    #[account(address = config.usdc_mint)]
+    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(init, payer = payer, seeds = [VAULT_SEED, tournament.key().as_ref()], bump, token::mint = usdc_mint, token::authority = auth)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct JoinTournament<'info> {
-    #[account(mut)]
     pub player: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
-    pub tournament: Account<'info, Tournament>,
+    pub tournament: Box<Account<'info, Tournament>>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = player)]
+    pub player_usdc: Box<Account<'info, TokenAccount>>,
+    /// CHECK: the tournament's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, tournament.key().as_ref()], bump = tournament.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
 pub struct CancelTournament<'info> {
     pub signer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
-    pub tournament: Account<'info, Tournament>,
+    pub tournament: Box<Account<'info, Tournament>>,
+    /// CHECK: the tournament's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, tournament.key().as_ref()], bump = tournament.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = tournament.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[vrf]
 #[derive(Accounts)]
 pub struct RequestTournamentCoin<'info> {
+    pub creator: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
@@ -1660,6 +1811,8 @@ pub struct TournamentCoinCallback<'info> {
 #[derive(Accounts)]
 #[instruction(creator: Pubkey, nonce: u64)]
 pub struct DelegateTournament<'info> {
+    /// The tournament's creator.
+    pub host: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
@@ -1703,13 +1856,19 @@ pub struct ResolveRound<'info> {
 #[derive(Accounts)]
 pub struct SettleTournament<'info> {
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, Config>,
+    pub config: Box<Account<'info, Config>>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
-    pub tournament: Account<'info, Tournament>,
+    pub tournament: Box<Account<'info, Tournament>>,
+    /// CHECK: the tournament's USDC vault, checked by seeds.
     #[account(mut, seeds = [VAULT_SEED, tournament.key().as_ref()], bump = tournament.vault_bump)]
-    pub vault: SystemAccount<'info>,
-    /// CHECK: must equal config.treasury.
-    #[account(mut)]
-    pub treasury: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, address = config.treasury @ ClashyError::PayoutMismatch)]
+    pub treasury: Box<Account<'info, TokenAccount>>,
+    /// CHECK: gets the vault's rent back; must be who paid it.
+    #[account(mut, address = tournament.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
 }

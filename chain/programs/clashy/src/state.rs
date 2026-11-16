@@ -28,6 +28,10 @@ pub struct Config {
     pub vrf_queue: Pubkey,
     /// The MagicBlock rollup validator duels and tournaments may be delegated to (set by the admin).
     pub er_validator: Pubkey,
+    /// The stake currency: every stake, chest, war pot and entry is this SPL mint (USDC).
+    pub usdc_mint: Pubkey,
+    /// Bump of the `auth` PDA that owns every vault token account.
+    pub auth_bump: u8,
 }
 
 /// Clashy-owned price feed. Delegated to the ER and updated about every second by the crank;
@@ -110,6 +114,8 @@ pub struct Duel {
     pub vault_bump: u8,
     /// When the joiner matched; after DUEL_SETUP_SECS a duel stuck before the rollup can be aborted.
     pub matched_at: i64,
+    /// Paid the rent for the duel and its vault (the sponsor); gets the vault's rent back when it closes.
+    pub rent_payer: Pubkey,
 }
 
 #[account]
@@ -119,11 +125,11 @@ pub struct Clan {
     pub captain: Pubkey,
     pub crest: u8,
     pub members: u32,
-    /// Lamports in the chest vault: members' deposits, minus war stakes lost, plus war pots won.
+    /// USDC base units in the chest vault: members' deposits, minus war stakes lost, plus war pots won.
     pub chest: u64,
-    /// Total chest shares held by members. A share is worth `chest / shares` lamports.
+    /// Total chest shares held by members. A share is worth `chest / shares` USDC base units.
     pub shares: u64,
-    /// Realized paper P&L of the clan's voted trades, in lamports of notional.
+    /// Realized paper P&L of the clan's voted trades, in USDC base units of notional.
     pub score_pnl: i64,
     pub proposals: u64,
     pub positions_open: u16,
@@ -141,12 +147,14 @@ pub struct Clan {
 pub struct Member {
     pub clan: Pubkey,
     pub wallet: Pubkey,
-    /// Lamports this member put in, net of withdrawals (cost basis, for display).
+    /// USDC base units this member put in, net of withdrawals (cost basis, for display).
     pub deposit: u64,
     /// Chest shares: withdrawals pay `shares * chest / clan.shares`, and votes weigh by shares.
     pub shares: u64,
     pub joined_at: i64,
     pub bump: u8,
+    /// Paid the member account's rent; gets it back when the member leaves.
+    pub rent_payer: Pubkey,
 }
 
 pub mod proposal_status {
@@ -228,6 +236,8 @@ pub struct War {
     pub winner: u8,
     pub bump: u8,
     pub vault_bump: u8,
+    /// Paid the war vault's rent; gets it back when the vault closes.
+    pub rent_payer: Pubkey,
 }
 
 pub mod tour_status {
@@ -265,4 +275,6 @@ pub struct Tournament {
     pub vault_bump: u8,
     /// Lobby opened; after TOUR_LOBBY_SECS anyone can cancel an unstarted tournament (full refunds).
     pub created_at: i64,
+    /// Paid the tournament vault's rent; gets it back when the vault closes.
+    pub rent_payer: Pubkey,
 }

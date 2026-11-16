@@ -5,6 +5,7 @@
 #                   plus MagicBlock's committor program ComtrB2K… (fetched once from devnet)
 #   :7799  rollup   ephemeral-validator pointed at the base layer
 #          vrf      MagicBlock's vrf-oracle answering their local test queue
+#          usdc     mainnet USDC's mint address, loaded with a local mint authority (test USDC)
 #
 # CLASHY_RESET=1 starts both from genesis (they share one ledger dir, so they are always reset together).
 # Ledgers live in chain/.localnet on the SSD, not in /tmp on the boot disk.
@@ -44,6 +45,13 @@ if [ ! -s "$COMMITTOR_SO" ]; then
 fi
 EXTRA=()
 [ -s "$COMMITTOR_SO" ] && EXTRA=(--bpf-program "$COMMITTOR" "$COMMITTOR_SO")
+# The stake currency: mainnet USDC's address with a local mint authority (a fork-style stand-in; see scripts/usdc-mint.ts).
+USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+npx tsx scripts/usdc-mint.ts "$DIR/usdc-mint.json"
+EXTRA+=(--account "$USDC_MINT" "$DIR/usdc-mint.json")
+# The sponsor pays every fee and rent so players only ever hold USDC. Made once, never printed.
+SPONSOR=.keys/local-sponsor.json
+[ -s "$SPONSOR" ] || solana-keygen new --no-bip39-passphrase --silent --outfile "$SPONSOR" >/dev/null 2>&1
 
 if up "$BASE_PORT"; then echo "base already up on :$BASE_PORT"; else
   echo "starting base on :$BASE_PORT"
@@ -56,6 +64,7 @@ fi
 URL="http://$HOST:$BASE_PORT"
 AUTH=.keys/local-authority.json
 solana airdrop 50 "$(solana-keygen pubkey $AUTH)" --url "$URL" >/dev/null 2>&1 || true
+solana airdrop 100 "$(solana-keygen pubkey $SPONSOR)" --url "$URL" >/dev/null 2>&1 || true
 solana program deploy target/deploy/clashy.so --program-id target/deploy/clashy-keypair.json \
   --keypair "$AUTH" --upgrade-authority "$AUTH" --url "$URL" >/dev/null && echo "deployed clashy $(solana-keygen pubkey target/deploy/clashy-keypair.json)"
 

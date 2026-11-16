@@ -1,36 +1,39 @@
-// End-to-end tests on the local MagicBlock stack: real program, real rollup, live Coinbase prices.
+// End-to-end tests on the local MagicBlock stack: real program, real rollup, live Coinbase prices, USDC stakes.
+// Every player here holds USDC and not one lamport: the sponsor pays all fees and rent.
 // Run: bash scripts/localnet.sh && npx tsx --test --test-concurrency=1 tests/clashy.test.ts
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import {
-  BN, COINS, Keypair, sendEr, LAMPORTS_PER_SOL, LOCAL_ER_VALIDATOR, P, authority, base, baseProgram, pushBasePrices, ensureSetup,
-  er, fundedKeypair, lamports, programFor, randomSeed, runCrank, sha256, sleep, until, waitHome,
+  BN, COINS, Keypair, P, PublicKey, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, lamports, LOCAL_ER_VALIDATOR,
+  programFor, pushBasePrices, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta,
+  usdcOf, usdcPlayer, waitHome,
 } from './common.ts';
 
-const STAKE = 0.1 * LAMPORTS_PER_SOL;
+const STAKE = 5 * USDC;
 const validatorMeta = [{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }];
-let treasury: Keypair;
+let treasury: PublicKey; // the treasury's USDC token account
 let rakeBps = 0;
 let crank: ReturnType<typeof runCrank>;
+const pay = { payer: sponsor.publicKey };
+const noSol = async (...kps: Keypair[]) => { for (const k of kps) assert.equal(await lamports(k.publicKey), 0, 'a player never holds SOL'); };
 
 before(async () => {
-  treasury = await fundedKeypair(1);
-  const cfg = await ensureSetup(treasury.publicKey);
-  // a rerun keeps the first run's treasury; use whatever the config holds
-  treasury = cfg.treasury.equals(treasury.publicKey) ? treasury : ({ publicKey: cfg.treasury } as Keypair);
+  const cfg = await ensureSetup(authority.publicKey);
+  treasury = cfg.treasury;
+  assert.ok(cfg.usdcMint.equals(USDC_MINT), 'stakes are USDC');
   rakeBps = cfg.rakeBps;
   crank = runCrank();
 });
 after(async () => { await crank?.stop(); });
 
-async function newPlayer() {
-  const kp = await fundedKeypair(10);
-  await programFor(kp).methods.initPlayer().accountsPartial({ owner: kp.publicKey }).rpc();
+async function newPlayer(usdc = 100 * USDC) {
+  const kp = await usdcPlayer(usdc);
+  await programFor(kp).methods.initPlayer().accountsPartial({ owner: kp.publicKey, ...pay }).rpc();
   return kp;
 }
 
 describe('knockout duel: quick match on one rolled coin', () => {
-  test('open → join → roll → sealed picks → live on the ER → settle with rake and Elo', async () => {
+  test('open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC', async () => {
     const a = await newPlayer();
     const b = await newPlayer();
     const nonce = Date.now();
@@ -39,18 +42,18 @@ describe('knockout duel: quick match on one rolled coin', () => {
     const [seedA, seedB] = [randomSeed(), randomSeed()];
 
     await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, 30, new BN(600), [...sha256(seedA)])
-      .accountsPartial({ creator: a.publicKey, duel, vault }).rpc();
-    await programFor(b).methods.joinDuel([...sha256(seedB)]).accountsPartial({ joiner: b.publicKey, duel, vault }).rpc();
-    assert.equal(await lamports(vault), 2 * STAKE, 'both stakes are escrowed in the vault');
+      .accountsPartial({ creator: a.publicKey, ...pay, duel, vault, creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc();
+    await programFor(b).methods.joinDuel([...sha256(seedB)]).accountsPartial({ joiner: b.publicKey, duel, vault, joinerUsdc: usdcAta(b.publicKey) }).rpc();
+    assert.equal(await tokenBalance(vault), 2 * STAKE, 'both USDC stakes are escrowed in the vault');
+    await noSol(a, b);
 
-    // local stack has no VRF oracle: the two-party commit-reveal roll
+    // local stack has no VRF oracle in this test: the two-party commit-reveal roll
     await programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
     await programFor(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
     let d = await baseProgram.account.duel.fetch(duel);
     assert.equal(d.status, 2, 'rolled');
     assert.ok(d.coin < COINS.length, `coin ${d.coin} is in the pool`);
-    const expected = sha256(seedA, seedB);
-    assert.deepEqual(Buffer.from(d.randomness), expected, 'randomness = sha256(seedA || seedB)');
+    assert.deepEqual(Buffer.from(d.randomness), sha256(seedA, seedB), 'randomness = sha256(seedA || seedB)');
 
     // sealed picks: A long 50x, B short 50x
     const [saltA, saltB] = [randomSeed(), randomSeed()];
@@ -64,10 +67,10 @@ describe('knockout duel: quick match on one rolled coin', () => {
     await programFor(b).methods.revealPick(2, 50, [...saltB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
 
     // hand it to the rollup
-    const outsider = await fundedKeypair(1);
-    await assert.rejects(programFor(outsider).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ payer: outsider.publicKey, duel }).rpc(), /NotPlayer/, 'only a player can delegate');
-    await assert.rejects(programFor(a).methods.abortDuel().accountsPartial({ duel, vault, creator: a.publicKey, joiner: b.publicKey, treasury: treasury.publicKey }).rpc(), /NotExpired/, 'no abort inside the setup window');
-    await programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ payer: a.publicKey, duel }).remainingAccounts(validatorMeta).rpc();
+    const outsider = await usdcPlayer(0);
+    await assert.rejects(programFor(outsider).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ player: outsider.publicKey, ...pay, duel }).rpc(), /NotPlayer/, 'only a player can delegate');
+    await assert.rejects(sponsorProgram.methods.abortDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc(), /NotExpired/, 'no abort inside the setup window');
+    await programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ player: a.publicKey, ...pay, duel }).remainingAccounts(validatorMeta).rpc();
     await until('duel on the rollup', 30_000, () => er.getAccountInfo(duel));
     d = await baseProgram.account.duel.fetch(duel).catch(() => d);
     const priceAcct = P.feed(d.coin);
@@ -75,13 +78,13 @@ describe('knockout duel: quick match on one rolled coin', () => {
     const erA = programFor(a, true);
     const startSig = await sendEr(erA.methods.startDuel().accountsPartial({ signer: a.publicKey, duel, price: priceAcct }), a);
     assert.ok(startSig, 'start_duel landed on the rollup');
-    // check every 2 s until the bell (30 s) or a knockout; the duel then commits and undelegates itself
+    // the sponsor alone runs the checks (check_duel is permissionless) until the bell or a knockout
     let checks = 0;
     for (;;) {
       await sleep(2000);
       const live = erA.coder.accounts.decode('duel', (await er.getAccountInfo(duel))!.data);
       if (live.status !== 3) break;
-      await sendEr(erA.methods.checkDuel().accountsPartial({ payer: a.publicKey, duel, price: priceAcct }), a).catch((e) => {
+      await sendEr(erA.methods.checkDuel().accountsPartial({ payer: sponsor.publicKey, duel, price: priceAcct })).catch((e) => {
         if (!String(e).includes('WrongStatus')) throw e;
       });
       checks++;
@@ -93,10 +96,11 @@ describe('knockout duel: quick match on one rolled coin', () => {
     assert.ok(d.entryPrice.gtn(0) && d.exitPrice.gtn(0));
     assert.equal(d.pnlBps[0].toNumber() + d.pnlBps[1].toNumber(), 0, 'same coin, opposite sides, same leverage: mirrored P&L');
 
-    const [ca, cb, ct] = await Promise.all([lamports(a.publicKey), lamports(b.publicKey), lamports(treasury.publicKey)]);
-    await baseProgram.methods.settleDuel().accountsPartial({ duel, vault, creator: a.publicKey, joiner: b.publicKey, creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury: treasury.publicKey }).rpc();
-    const [na, nb, nt] = await Promise.all([lamports(a.publicKey), lamports(b.publicKey), lamports(treasury.publicKey)]);
-    assert.equal(await lamports(vault), 0, 'vault is emptied');
+    const [ca, cb, ct, rent0] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury), lamports(sponsor.publicKey)]);
+    await sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc();
+    const [na, nb, nt, rent1] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury), lamports(sponsor.publicKey)]);
+    assert.equal(await base.getAccountInfo(vault), null, 'the emptied vault is closed');
+    assert.ok(rent1 > rent0, 'its rent went back to the sponsor');
     const pot = 2 * STAKE;
     const rake = Math.floor((pot * rakeBps) / 10_000);
     if (d.winner === 1) {
@@ -106,25 +110,32 @@ describe('knockout duel: quick match on one rolled coin', () => {
     } else {
       assert.equal(na - ca, STAKE); assert.equal(nb - cb, STAKE); assert.equal(nt, ct);
     }
+    await noSol(a, b);
     const [pa, pb] = await Promise.all([baseProgram.account.player.fetch(P.player(a.publicKey)), baseProgram.account.player.fetch(P.player(b.publicKey))]);
     assert.equal(pa.rating + pb.rating, 2000, 'Elo is zero-sum');
-    console.log(`  duel on ${COINS[d.coin].symbol}: entry ${d.entryPrice} exit ${d.exitPrice} pnl ${d.pnlBps.map(String)} winner ${d.winner} · ratings ${pa.rating}/${pb.rating}`);
-    await assert.rejects(baseProgram.methods.settleDuel().accountsPartial({ duel, vault, creator: a.publicKey, joiner: b.publicKey, creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury: treasury.publicKey }).rpc(), /WrongStatus/, 'cannot settle twice');
+    console.log(`  duel on ${COINS[d.coin].symbol}: entry ${d.entryPrice} exit ${d.exitPrice} pnl ${d.pnlBps.map(String)} winner ${d.winner} · USDC ${na / USDC}/${nb / USDC} · ratings ${pa.rating}/${pb.rating}`);
+    await assert.rejects(sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc(), /WrongStatus|AccountNotInitialized|3012/, 'cannot settle twice');
   });
 
-  test('challenge board: an unmatched challenge refunds in full, no rake; joining your own is refused', async () => {
+  test('challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner', async () => {
     const a = await newPlayer();
+    const thief = await newPlayer();
     const nonce = Date.now();
     const duel = P.duel(a.publicKey, nonce);
     const vault = P.vault(duel);
-    await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b1, 60, new BN(3600), [...sha256(randomSeed())]).accountsPartial({ creator: a.publicKey, duel, vault }).rpc();
-    await assert.rejects(programFor(a).methods.joinDuel([...sha256(randomSeed())]).accountsPartial({ joiner: a.publicKey, duel, vault, player: P.player(a.publicKey) }).rpc(), /SelfJoin/);
+    await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b1, 60, new BN(3600), [...sha256(randomSeed())]).accountsPartial({ creator: a.publicKey, ...pay, duel, vault, creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc();
+    await assert.rejects(programFor(a).methods.joinDuel([...sha256(randomSeed())]).accountsPartial({ joiner: a.publicKey, duel, vault, player: P.player(a.publicKey), joinerUsdc: usdcAta(a.publicKey) }).rpc(), /SelfJoin/);
     // an open challenge cannot be pushed into the rollup (that would lock the escrow)
-    await assert.rejects(programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ payer: a.publicKey, duel }).rpc(), /WrongStatus/);
-    const before = await lamports(a.publicKey);
-    await programFor(a).methods.cancelDuel().accountsPartial({ signer: a.publicKey, duel, vault, creator: a.publicKey }).rpc();
-    assert.equal(await lamports(vault), 0);
-    assert.ok((await lamports(a.publicKey)) - before >= STAKE - 10_000, 'stake returned (minus the tx fee)');
+    await assert.rejects(programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ player: a.publicKey, ...pay, duel }).rpc(), /WrongStatus/);
+    // a stake cannot be paid from someone else's USDC account
+    await assert.rejects(programFor(thief).methods.openDuel(new BN(nonce + 1), new BN(STAKE), 0b1, 60, new BN(3600), [...sha256(randomSeed())]).accountsPartial({ creator: thief.publicKey, ...pay, duel: P.duel(thief.publicKey, nonce + 1), vault: P.vault(P.duel(thief.publicKey, nonce + 1)), creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc(), /ConstraintTokenOwner|2015/);
+    // the refund cannot be redirected to another wallet's USDC account
+    await assert.rejects(programFor(a).methods.cancelDuel().accountsPartial({ signer: a.publicKey, duel, vault, creatorUsdc: usdcAta(thief.publicKey), rentPayer: sponsor.publicKey }).rpc(), /ConstraintTokenOwner|2015/);
+    const before = await usdcOf(a.publicKey);
+    await programFor(a).methods.cancelDuel().accountsPartial({ signer: a.publicKey, duel, vault, creatorUsdc: usdcAta(a.publicKey), rentPayer: sponsor.publicKey }).rpc();
+    assert.equal(await base.getAccountInfo(vault), null, 'vault closed');
+    assert.equal((await usdcOf(a.publicKey)) - before, STAKE, 'the full stake comes back: no fee, no rake');
+    await noSol(a, thief);
   });
 
   test('MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused', async () => {
@@ -137,24 +148,27 @@ describe('knockout duel: quick match on one rolled coin', () => {
       const duel = P.duel(a.publicKey, nonce);
       const vault = P.vault(duel);
       const seedA = randomSeed();
-      await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, 30, new BN(600), [...sha256(seedA)]).accountsPartial({ creator: a.publicKey, duel, vault }).rpc();
-      await programFor(b).methods.joinDuel([...sha256(randomSeed())]).accountsPartial({ joiner: b.publicKey, duel, vault }).rpc();
+      await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, 30, new BN(600), [...sha256(seedA)]).accountsPartial({ creator: a.publicKey, ...pay, duel, vault, creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc();
+      await programFor(b).methods.joinDuel([...sha256(randomSeed())]).accountsPartial({ joiner: b.publicKey, duel, vault, joinerUsdc: usdcAta(b.publicKey) }).rpc();
       await assert.rejects(programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc(), /VrfRequired/);
 
       // anyone can try to answer the callback themselves and choose the coin: the VRF identity signer stops them
-      const forger = await fundedKeypair(1);
-      await assert.rejects(programFor(forger).methods.coinRollCallback([...randomSeed()]).accountsPartial({ vrfProgramIdentity: forger.publicKey, duel }).signers([forger]).rpc());
+      const forger = await usdcPlayer(0);
+      await assert.rejects(programFor(forger).methods.coinRollCallback([...randomSeed()]).accountsPartial({ vrfProgramIdentity: forger.publicKey, duel }).rpc());
+      // only a player of this duel may ask for its roll
+      const queue = (await baseProgram.account.config.fetch(P.config)).vrfQueue;
+      await assert.rejects(programFor(forger).methods.requestCoinRoll([...randomSeed()]).accountsPartial({ player: forger.publicKey, ...pay, duel, oracleQueue: queue }).rpc(), /NotPlayer/);
 
       // the real roll: request randomness from MagicBlock's VRF program; MagicBlock's oracle answers the callback
-      const queue = (await baseProgram.account.config.fetch(P.config)).vrfQueue;
       const t0 = Date.now();
-      await programFor(b).methods.requestCoinRoll([...randomSeed()]).accountsPartial({ payer: b.publicKey, duel, oracleQueue: queue }).rpc();
+      await programFor(b).methods.requestCoinRoll([...randomSeed()]).accountsPartial({ player: b.publicKey, ...pay, duel, oracleQueue: queue }).rpc();
       const rolled = await until('MagicBlock VRF callback', 60_000, async () => {
         const d = await baseProgram.account.duel.fetch(duel);
         return d.status === 2 ? d : null;
       });
       assert.ok(rolled.coin < COINS.length, `VRF coin ${rolled.coin} is in the pool`);
       assert.equal(rolled.vrfPending, false);
+      await noSol(a, b);
       console.log(`  VRF roll: ${COINS[rolled.coin].symbol} in ${Date.now() - t0} ms via MagicBlock's oracle on queue ${queue.toBase58().slice(0, 6)}…`);
     } finally {
       await baseProgram.methods.updateConfig(cfg.rakeBps, false, cfg.crank, cfg.treasury).accountsPartial({ authority: authority.publicKey }).rpc();
@@ -163,7 +177,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
 });
 
 describe('clans: group trading by vote, then clan vs clan', () => {
-  test('chest deposits, weighted votes, captain executes and closes at the oracle price, war settles to the better return', async () => {
+  test('USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return', async () => {
     const capA = await newPlayer();
     const capB = await newPlayer();
     const member = await newPlayer();
@@ -172,95 +186,101 @@ describe('clans: group trading by vote, then clan vs clan', () => {
     const nameB = `moon-${tag}`;
     const clanA = P.clan(nameA);
     const clanB = P.clan(nameB);
-    await programFor(capA).methods.createClan(nameA, 2).accountsPartial({ founder: capA.publicKey, clan: clanA, chest: P.chest(clanA), member: P.member(clanA, capA.publicKey) }).rpc();
-    await programFor(capB).methods.createClan(nameB, 0).accountsPartial({ founder: capB.publicKey, clan: clanB, chest: P.chest(clanB), member: P.member(clanB, capB.publicKey) }).rpc();
-    await programFor(member).methods.joinClan().accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey) }).rpc();
+    await programFor(capA).methods.createClan(nameA, 2).accountsPartial({ founder: capA.publicKey, ...pay, clan: clanA, chest: P.chest(clanA), member: P.member(clanA, capA.publicKey), usdcMint: USDC_MINT }).rpc();
+    await programFor(capB).methods.createClan(nameB, 0).accountsPartial({ founder: capB.publicKey, ...pay, clan: clanB, chest: P.chest(clanB), member: P.member(clanB, capB.publicKey), usdcMint: USDC_MINT }).rpc();
+    await programFor(member).methods.joinClan().accountsPartial({ wallet: member.publicKey, ...pay, clan: clanA, member: P.member(clanA, member.publicKey) }).rpc();
 
-    const dep = (kp: Keypair, clan: typeof clanA, sol: number) => programFor(kp).methods.depositChest(new BN(sol * LAMPORTS_PER_SOL)).accountsPartial({ wallet: kp.publicKey, clan, member: P.member(clan, kp.publicKey), chest: P.chest(clan) }).rpc();
-    await dep(capA, clanA, 2);
-    await dep(member, clanA, 1);
-    await dep(capB, clanB, 2);
-    assert.equal(await lamports(P.chest(clanA)), 3 * LAMPORTS_PER_SOL);
+    const chestMove = (kp: Keypair, clan: PublicKey) => ({ wallet: kp.publicKey, clan, member: P.member(clan, kp.publicKey), chest: P.chest(clan), walletUsdc: usdcAta(kp.publicKey) });
+    const dep = (kp: Keypair, clan: PublicKey, usdc: number) => programFor(kp).methods.depositChest(new BN(usdc * USDC)).accountsPartial(chestMove(kp, clan)).rpc();
+    await dep(capA, clanA, 20);
+    await dep(member, clanA, 10);
+    await dep(capB, clanB, 20);
+    assert.equal(await tokenBalance(P.chest(clanA)), 30 * USDC);
 
-    // proposal: long SOL 5x with 50% of the chest; captain yes (2 SOL), member no (1 SOL) → passes 2:1 with over half of all shares
+    // proposal: long SOL 5x with 50% of the chest; captain yes (20), member no (10) → passes 2:1 with over half of all shares
     const prop = P.proposal(clanA, 0);
-    await programFor(member).methods.propose(0, 1, 5, 5000, new BN(60)).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop }).rpc();
-    await programFor(capA).methods.vote(true).accountsPartial({ wallet: capA.publicKey, clan: clanA, member: P.member(clanA, capA.publicKey), proposal: prop, vote: P.vote(prop, capA.publicKey) }).rpc();
-    await programFor(member).methods.vote(false).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop, vote: P.vote(prop, member.publicKey) }).rpc();
-    await assert.rejects(programFor(member).methods.vote(true).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop, vote: P.vote(prop, member.publicKey) }).rpc(), 'one vote per member');
-    await assert.rejects(programFor(member).methods.executeProposal().accountsPartial({ captain: member.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0), war: null }).rpc(), /NotCaptain/);
+    await programFor(member).methods.propose(0, 1, 5, 5000, new BN(60)).accountsPartial({ wallet: member.publicKey, ...pay, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop }).rpc();
+    await programFor(capA).methods.vote(true).accountsPartial({ wallet: capA.publicKey, ...pay, clan: clanA, member: P.member(clanA, capA.publicKey), proposal: prop, vote: P.vote(prop, capA.publicKey) }).rpc();
+    await programFor(member).methods.vote(false).accountsPartial({ wallet: member.publicKey, ...pay, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop, vote: P.vote(prop, member.publicKey) }).rpc();
+    await assert.rejects(programFor(member).methods.vote(true).accountsPartial({ wallet: member.publicKey, ...pay, clan: clanA, member: P.member(clanA, member.publicKey), proposal: prop, vote: P.vote(prop, member.publicKey) }).rpc(), 'one vote per member');
+    await assert.rejects(programFor(member).methods.executeProposal().accountsPartial({ captain: member.publicKey, ...pay, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0), war: null }).rpc(), /NotCaptain/);
 
     // war first, so the trade lands inside the war window
     const war = P.war(clanA, clanB, 1);
-    const warStake = 0.5 * LAMPORTS_PER_SOL;
-    await programFor(capA).methods.declareWar(new BN(1), new BN(warStake), new BN(60)).accountsPartial({ captain: capA.publicKey, clanA, clanB, chestA: P.chest(clanA), war, vault: P.vault(war) }).rpc();
+    const warStake = 5 * USDC;
+    await programFor(capA).methods.declareWar(new BN(1), new BN(warStake), new BN(60)).accountsPartial({ captain: capA.publicKey, ...pay, clanA, clanB, chestA: P.chest(clanA), war, vault: P.vault(war), usdcMint: USDC_MINT }).rpc();
     await programFor(capB).methods.acceptWar().accountsPartial({ captain: capB.publicKey, clanA, clanB, chestB: P.chest(clanB), war, vault: P.vault(war) }).rpc();
-    assert.equal(await lamports(P.vault(war)), 2 * warStake, 'both war stakes escrowed');
-    await assert.rejects(programFor(member).methods.withdrawChest(new BN(1000)).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), chest: P.chest(clanA) }).rpc(), /WarLocked/);
+    assert.equal(await tokenBalance(P.vault(war)), 2 * warStake, 'both war stakes escrowed');
+    await assert.rejects(programFor(member).methods.withdrawChest(new BN(1000)).accountsPartial(chestMove(member, clanA)).rpc(), /WarLocked/);
 
     await pushBasePrices(); // Solana-side copy of the live price
     // the rollup feed's stale Solana copy (owned by the delegation program) is not a valid price on Solana
-    await assert.rejects(programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0), war }).rpc(), /FeedMismatch|FeedInvalid/);
-    await programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc();
+    await assert.rejects(programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, ...pay, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.feed(0), war }).rpc(), /FeedMismatch|FeedInvalid/);
+    await programFor(capA).methods.executeProposal().accountsPartial({ captain: capA.publicKey, ...pay, clan: clanA, proposal: prop, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc();
     // nobody can buy into a clan mid-war (its shares are mispriced while the stake is out)
     await assert.rejects(dep(member, clanA, 1), /WarLocked/);
     // the war cannot settle while a position is open, and only the captain closes before the window ends
     await assert.rejects(programFor(member).methods.closePosition().accountsPartial({ closer: member.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc(), /NotCaptain/);
     const pos = await baseProgram.account.clanPosition.fetch(P.position(clanA, 0));
-    assert.equal(pos.notional.toNumber(), 1.25 * LAMPORTS_PER_SOL, '50% of the 2.5 SOL chest left after the war stake');
+    assert.equal(pos.notional.toNumber(), 12.5 * USDC, '50% of the 25 USDC chest left after the war stake');
     await sleep(15_000);
     await pushBasePrices();
     await programFor(capA).methods.closePosition().accountsPartial({ closer: capA.publicKey, clan: clanA, position: P.position(clanA, 0), price: P.baseFeed(0), war }).rpc();
     const closed = await baseProgram.account.clanPosition.fetch(P.position(clanA, 0));
     const ca = await baseProgram.account.clan.fetch(clanA);
     assert.equal(ca.scorePnl.toString(), closed.pnl.toString(), 'the clan score is the realized trade P&L');
-    console.log(`  clan trade long SOL 5x: ${closed.entryPrice} → ${closed.exitPrice}, P&L ${closed.pnl} lamports of notional`);
+    console.log(`  clan trade long SOL 5x: ${closed.entryPrice} → ${closed.exitPrice}, P&L ${Number(closed.pnl) / USDC} USDC of notional`);
 
     await until('war window over', 90_000, async () => (await baseProgram.account.war.fetch(war)).endTs.toNumber() <= Math.floor(Date.now() / 1000) - 2);
-    const [chA, chB, tr] = await Promise.all([lamports(P.chest(clanA)), lamports(P.chest(clanB)), lamports(treasury.publicKey)]);
-    await baseProgram.methods.settleWar().accountsPartial({ clanA, clanB, chestA: P.chest(clanA), chestB: P.chest(clanB), war, vault: P.vault(war), treasury: treasury.publicKey }).rpc();
+    const [chA, chB, tr] = await Promise.all([tokenBalance(P.chest(clanA)), tokenBalance(P.chest(clanB)), tokenBalance(treasury)]);
+    await sponsorProgram.methods.settleWar().accountsPartial({ clanA, clanB, chestA: P.chest(clanA), chestB: P.chest(clanB), war, vault: P.vault(war), treasury, rentPayer: sponsor.publicKey }).rpc();
     const w = await baseProgram.account.war.fetch(war);
     const pot = 2 * warStake;
     const rake = Math.floor((pot * rakeBps) / 10_000);
-    const [nA, nB, nT] = await Promise.all([lamports(P.chest(clanA)), lamports(P.chest(clanB)), lamports(treasury.publicKey)]);
+    const [nA, nB, nT] = await Promise.all([tokenBalance(P.chest(clanA)), tokenBalance(P.chest(clanB)), tokenBalance(treasury)]);
     if (w.winner === 1) { assert.equal(nA - chA, pot - rake); assert.equal(nT - tr, rake); }
     else if (w.winner === 2) { assert.equal(nB - chB, pot - rake); assert.equal(nT - tr, rake); }
     else { assert.equal(nA - chA, warStake); assert.equal(nB - chB, warStake); }
+    assert.equal(await base.getAccountInfo(P.vault(war)), null, 'war vault closed');
     console.log(`  war returns ${w.returnBps.map(String)} bps → winner ${w.winner === 1 ? nameA : w.winner === 2 ? nameB : 'tie'}`);
     const after = await baseProgram.account.clan.fetch(clanA);
-    assert.ok(after.war.equals(new (await import('@solana/web3.js')).PublicKey(new Uint8Array(32))), 'chest unlocked');
+    assert.ok(after.war.equals(PublicKey.default), 'chest unlocked');
+    assert.equal(after.chest.toNumber(), await tokenBalance(P.chest(clanA)), 'the chest record matches the USDC in the chest');
 
-    // the member cashes out all their shares: exactly their pro-rata part of the chest after the war
+    // the member cashes out all their shares: exactly their pro-rata part of the chest after the war, to the unit
     const m = await baseProgram.account.member.fetch(P.member(clanA, member.publicKey));
-    const before = await lamports(member.publicKey);
+    const before = await usdcOf(member.publicKey);
     const expected = BigInt(after.chest.toString()) * BigInt(m.shares.toString()) / BigInt(after.shares.toString());
-    await programFor(member).methods.withdrawChest(m.shares).accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), chest: P.chest(clanA) }).rpc();
-    const got = BigInt(await lamports(member.publicKey)) - BigInt(before);
-    assert.ok(got <= expected && expected - got <= 10_000n, `pro-rata payout ${got} vs ${expected} (only the fee differs)`);
-    const am = await baseProgram.account.member.fetch(P.member(clanA, member.publicKey));
-    assert.equal(am.shares.toNumber(), 0);
-    console.log(`  member cashed out ${m.shares} shares of ${after.shares} for ${Number(expected) / LAMPORTS_PER_SOL} SOL of a ${after.chest.toNumber() / LAMPORTS_PER_SOL} SOL chest`);
+    await programFor(member).methods.withdrawChest(m.shares).accountsPartial(chestMove(member, clanA)).rpc();
+    assert.equal(BigInt(await usdcOf(member.publicKey)) - BigInt(before), expected, 'pro-rata payout to the unit');
+    assert.equal((await baseProgram.account.member.fetch(P.member(clanA, member.publicKey))).shares.toNumber(), 0);
+    console.log(`  member cashed out ${m.shares} shares of ${after.shares} for ${Number(expected) / USDC} USDC of a ${after.chest.toNumber() / USDC} USDC chest`);
     // a war can stake at most half the chest
     const war2 = P.war(clanA, clanB, 2);
     const chestNow = (await baseProgram.account.clan.fetch(clanA)).chest.toNumber();
-    await assert.rejects(programFor(capA).methods.declareWar(new BN(2), new BN(Math.floor(chestNow / 2) + 1), new BN(60)).accountsPartial({ captain: capA.publicKey, clanA, clanB, chestA: P.chest(clanA), war: war2, vault: P.vault(war2) }).rpc(), /WarStakeTooBig/);
+    await assert.rejects(programFor(capA).methods.declareWar(new BN(2), new BN(Math.floor(chestNow / 2) + 1), new BN(60)).accountsPartial({ captain: capA.publicKey, ...pay, clanA, clanB, chestA: P.chest(clanA), war: war2, vault: P.vault(war2), usdcMint: USDC_MINT }).rpc(), /WarStakeTooBig/);
+    // the member leaves; the member account's rent goes back to the sponsor that paid it, never to the member
+    await assert.rejects(programFor(member).methods.leaveClan().accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), rentPayer: member.publicKey }).rpc(), /PayoutMismatch/);
+    await programFor(member).methods.leaveClan().accountsPartial({ wallet: member.publicKey, clan: clanA, member: P.member(clanA, member.publicKey), rentPayer: sponsor.publicKey }).rpc();
+    await noSol(capA, capB, member);
   });
 });
 
 describe('tournament: an on-chain Royale', () => {
-  test('entries escrowed, calls and rounds on the ER, survivors split the pot', async () => {
+  test('USDC entries escrowed, calls and rounds on the ER, survivors split the pot', async () => {
     const host = await newPlayer();
     const ps = [await newPlayer(), await newPlayer(), await newPlayer()];
     const nonce = Date.now();
     const tour = P.tour(host.publicKey, nonce);
     const vault = P.vault(tour);
-    const ENTRY = 0.05 * LAMPORTS_PER_SOL;
-    await programFor(host).methods.createTournament(new BN(nonce), new BN(ENTRY), 3, 1, 1, 3, 6).accountsPartial({ creator: host.publicKey, tournament: tour, vault }).rpc();
-    for (const p of ps) await programFor(p).methods.joinTournament().accountsPartial({ player: p.publicKey, tournament: tour, vault }).rpc();
-    await assert.rejects(programFor(ps[0]).methods.joinTournament().accountsPartial({ player: ps[0].publicKey, tournament: tour, vault }).rpc(), /AlreadyJoined|TourFull/);
-    assert.equal(await lamports(vault), 3 * ENTRY);
+    const ENTRY = 2 * USDC;
+    await programFor(host).methods.createTournament(new BN(nonce), new BN(ENTRY), 3, 1, 1, 3, 6).accountsPartial({ creator: host.publicKey, ...pay, tournament: tour, vault, usdcMint: USDC_MINT }).rpc();
+    const join = (p: Keypair) => programFor(p).methods.joinTournament().accountsPartial({ player: p.publicKey, tournament: tour, vault, playerUsdc: usdcAta(p.publicKey) }).rpc();
+    for (const p of ps) await join(p);
+    await assert.rejects(join(ps[0]), /AlreadyJoined|TourFull/);
+    assert.equal(await tokenBalance(vault), 3 * ENTRY);
 
-    await programFor(host).methods.delegateTournament(host.publicKey, new BN(nonce)).accountsPartial({ payer: host.publicKey, tournament: tour }).remainingAccounts(validatorMeta).rpc();
+    await programFor(host).methods.delegateTournament(host.publicKey, new BN(nonce)).accountsPartial({ host: host.publicKey, ...pay, tournament: tour }).remainingAccounts(validatorMeta).rpc();
     await until('tournament on the rollup', 30_000, () => er.getAccountInfo(tour));
     await sendEr(programFor(host, true).methods.startTournament().accountsPartial({ signer: host.publicKey, tournament: tour, price: P.feed(1) }), host);
 
@@ -271,24 +291,26 @@ describe('tournament: an on-chain Royale', () => {
       await sendEr(programFor(ps[0], true).methods.callRound(1).accountsPartial({ player: ps[0].publicKey, tournament: tour }), ps[0]).catch(() => {});
       await sendEr(programFor(ps[1], true).methods.callRound(2).accountsPartial({ player: ps[1].publicKey, tournament: tour }), ps[1]).catch(() => {});
       await sleep(7000);
-      await sendEr(programFor(host, true).methods.resolveRound().accountsPartial({ payer: host.publicKey, tournament: tour, price: P.feed(1) }), host);
+      await sendEr(programFor(host, true).methods.resolveRound().accountsPartial({ payer: sponsor.publicKey, tournament: tour, price: P.feed(1) }));
     }
     await waitHome(tour, 90_000);
     const t = await baseProgram.account.tournament.fetch(tour);
     assert.equal(t.status, 2, 'finished and back on Solana');
     assert.equal(t.lives[2], 0, 'the silent player is out');
-    const balances = await Promise.all(ps.map((p) => lamports(p.publicKey)));
-    await baseProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury: treasury.publicKey })
-      .remainingAccounts(ps.map((p) => ({ pubkey: p.publicKey, isSigner: false, isWritable: true }))).rpc();
-    const after = await Promise.all(ps.map((p) => lamports(p.publicKey)));
-    const won = after.map((v, i) => v - balances[i]);
+    const usdcMeta = (owner: PublicKey) => ({ pubkey: usdcAta(owner), isSigner: false, isWritable: true });
+    // payouts must go to each player's own USDC account, in join order
+    await assert.rejects(sponsorProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury, rentPayer: sponsor.publicKey })
+      .remainingAccounts([usdcMeta(ps[0].publicKey), usdcMeta(ps[0].publicKey), usdcMeta(ps[2].publicKey)]).rpc(), /PayoutMismatch/);
+    const balances = await Promise.all(ps.map((p) => usdcOf(p.publicKey)));
+    await sponsorProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury, rentPayer: sponsor.publicKey })
+      .remainingAccounts(ps.map((p) => usdcMeta(p.publicKey))).rpc();
+    const won = (await Promise.all(ps.map((p) => usdcOf(p.publicKey)))).map((v, i) => v - balances[i]);
     const pot = 3 * ENTRY;
     const rake = Math.floor((pot * rakeBps) / 10_000);
     assert.equal(won.reduce((s, v) => s + v, 0), pot - rake, 'winners split the pot minus rake');
     assert.equal(won[2], 0, 'eliminated player gets nothing');
-    assert.equal(await lamports(vault), 0);
-    console.log(`  royale on BTC: lives ${t.lives.slice(0, 3)} rounds ${t.round} → payouts ${won.map((v) => v / LAMPORTS_PER_SOL)} SOL`);
+    assert.equal(await base.getAccountInfo(vault), null, 'vault closed');
+    await noSol(host, ...ps);
+    console.log(`  royale on BTC: lives ${t.lives.slice(0, 3)} rounds ${t.round} → payouts ${won.map((v) => v / USDC)} USDC`);
   });
 });
-
-void base;
