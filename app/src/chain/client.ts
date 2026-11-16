@@ -76,7 +76,11 @@ export function getSponsor() {
     if (!r.ok) throw new Error(`sponsor relay answered HTTP ${r.status}`);
     const j = (await r.json()) as { sponsor: string; faucet: boolean };
     return { sponsor: new PublicKey(j.sponsor), faucet: j.faucet };
-  }).catch((e) => { sponsorInfo = null; throw new Error(`Cannot reach the sponsor relay at ${NET.sponsor} (${(e as Error).message}). Start it: cd chain && npx tsx scripts/sponsor.ts`); });
+  }).catch((e) => {
+    sponsorInfo = null;
+    console.warn(`sponsor relay ${NET.sponsor} unreachable:`, e);
+    throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
+  });
   return sponsorInfo;
 }
 
@@ -84,7 +88,10 @@ type Layer = 'base' | 'er';
 async function post<T>(path: string, body: unknown, token?: string | null): Promise<T> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (token) headers.authorization = `Bearer ${token}`;
-  const r = await fetch(`${NET.sponsor}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+  const r = await fetch(`${NET.sponsor}${path}`, { method: 'POST', headers, body: JSON.stringify(body) }).catch((e) => {
+    console.warn(`sponsor relay ${NET.sponsor} unreachable:`, e);
+    throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
+  });
   const j = (await r.json().catch(() => ({ error: `HTTP ${r.status}` }))) as T & { error?: string; logs?: string[] };
   if (!r.ok) throw Object.assign(new Error(j.error ?? `HTTP ${r.status}`), { logs: j.logs ?? [] });
   return j;
@@ -226,7 +233,7 @@ export type DuelView = {
   key: PublicKey; creator: PublicKey; joiner: PublicKey; nonce: number; stake: number; status: number; coin: number;
   lenSecs: number; expiresAt: number; side: number[]; lev: number[]; picksCommitted: number; picksRevealed: number;
   seedsRevealed: number; vrfPending: boolean; entryPrice: number; exitPrice: number; startTs: number; pnlBps: number[]; ko: number; winner: number;
-  onEr: boolean;
+  onEr: boolean; matchedAt: number;
 };
 
 /** Reads a duel from wherever it lives right now (the rollup while delegated, otherwise Solana). */
@@ -240,7 +247,7 @@ export async function readDuel(prog: Program<Clashy>, key: PublicKey): Promise<D
     key, creator: d.creator, joiner: d.joiner, nonce: Number(d.nonce), stake: Number(d.stake), status: d.status, coin: d.coin,
     lenSecs: d.lenSecs, expiresAt: Number(d.expiresAt), side: [...d.side], lev: [...d.lev], picksCommitted: d.picksCommitted,
     picksRevealed: d.picksRevealed, seedsRevealed: d.seedsRevealed, vrfPending: d.vrfPending, entryPrice: Number(d.entryPrice) / 1e6, exitPrice: Number(d.exitPrice) / 1e6,
-    startTs: Number(d.startTs), pnlBps: d.pnlBps.map((x: BN) => Number(x)), ko: d.ko, winner: d.winner, onEr,
+    startTs: Number(d.startTs), pnlBps: d.pnlBps.map((x: BN) => Number(x)), ko: d.ko, winner: d.winner, onEr, matchedAt: Number(d.matchedAt),
   };
 }
 
@@ -252,14 +259,21 @@ export async function openDuels(prog: Program<Clashy>): Promise<DuelView[]> {
   return (views.filter(Boolean) as DuelView[]).sort((x, y) => y.nonce - x.nonce);
 }
 
-export type PlayerRecord = { rating: number; rp: number; wins: number; losses: number; streak: number; bestStreak: number };
+export type PlayerRecord = { rating: number; rp: number; wins: number; losses: number; streak: number; bestStreak: number; clan: PublicKey };
 /** A player's on-chain record (Elo, rank points, wins, losses, streaks), or null before their player account exists. */
 export async function readPlayer(owner: PublicKey): Promise<PlayerRecord | null> {
   const info = await base.getAccountInfo(P.player(owner));
   if (!info) return null;
   const p = new anchor.BorshAccountsCoder(idl as anchor.Idl).decode('Player', info.data);
   // the raw coder keeps the IDL's snake_case field names
-  return { rating: p.rating, rp: p.rp, wins: p.wins, losses: p.losses, streak: p.streak, bestStreak: p.best_streak ?? p.bestStreak ?? 0 };
+  return { rating: p.rating, rp: p.rp, wins: p.wins, losses: p.losses, streak: p.streak, bestStreak: p.best_streak ?? p.bestStreak ?? 0, clan: p.clan };
+}
+
+/** A coin's price on Solana: the crank-written base feed, the one clan trades execute and close at. */
+export async function basePriceOf(prog: Program<Clashy>, coin: number): Promise<number | null> {
+  const info = await base.getAccountInfo(P.baseFeed(coin));
+  if (!info) return null;
+  return Number(prog.coder.accounts.decode('priceFeed', info.data).price) / 1e6;
 }
 
 export async function priceOf(prog: Program<Clashy>, coin: number): Promise<number | null> {

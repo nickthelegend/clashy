@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BN, COIN_SYMBOLS, NET, P, PublicKey, TOUR_STATUS, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView,
 } from '@/chain/client';
+import { reader } from '@/chain/reads';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { ClayLoop } from '@/ui/clay';
 import { FX } from '@/ui/fx';
@@ -52,13 +53,14 @@ export default function OnchainRoyale() {
   useEffect(() => { const h = setInterval(() => setNow(Date.now() / 1000), 250); return () => clearInterval(h); }, []);
 
   // lobby: open tournaments on Solana
+  // the lobby is public: shown whether or not this device has signed in
   useEffect(() => {
-    if (!progs) return;
+    const rp = progs?.base ?? reader;
     let alive = true;
     const load = async () => {
       try {
-        const all = await progs.base.account.tournament.all();
-        const open = await Promise.all(all.filter((a) => a.account.status === 0).map((a) => readTour(progs.base, a.publicKey)));
+        const all = await rp.account.tournament.all();
+        const open = await Promise.all(all.filter((a) => a.account.status === 0).map((a) => readTour(rp, a.publicKey)));
         if (alive) setLobby((open.filter(Boolean) as TourView[]).filter((t) => t.status === 0 && !t.onEr).sort((a, b) => b.nonce - a.nonce));
       } catch (e) { if (alive) setErr(`Cannot read tournaments from ${NET.label}: ${errText(e)}`); }
     };
@@ -143,6 +145,11 @@ export default function OnchainRoyale() {
   /** The pot in USDC. */
   const pot = tour ? (tour.entry * tour.count) / USDC : 0;
   const top = tour ? Math.max(0, ...tour.lives) : 0;
+  // payout exactly as the program does it: rake = floor(pot * 300 bps), survivors split the rest
+  const survivors = tour && top > 0 ? tour.lives.filter((l) => l === top).length : 0;
+  const payout = tour ? (tour.entry * tour.count - Math.floor((tour.entry * tour.count * 300) / 10_000)) / USDC : 0;
+  const survived = !!tour && top > 0 && me >= 0 && tour.lives[me] === top;
+  const share = survivors ? payout / survivors : 0;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 30 }}>
@@ -160,12 +167,19 @@ export default function OnchainRoyale() {
           {tour && tour.status === 3 ? (
             <Animated.View entering={FadeInDown.springify()}>
               <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-                <ClayLoop name={me >= 0 && tour.lives[me] === top && top > 0 ? 'win' : 'royale'} size={150} loop style={{ borderRadius: 32 }} />
-                <Txt v="title">{me >= 0 && tour.lives[me] === top && top > 0 ? 'Last one standing.' : 'Knocked out.'}</Txt>
-                <Txt v="small" style={{ textAlign: 'center' }}>Settled on Solana · {tour.round} round{tour.round === 1 ? '' : 's'} on {sym} · {tour.lives.filter((l) => l === top && top > 0).length} survivor(s) split {(pot * 0.97).toFixed(2)} USDC</Txt>
+                <ClayLoop name={survived ? 'win' : 'royale'} size={150} loop style={{ borderRadius: 32 }} />
+                <Txt v="title">{!survived ? 'Knocked out.' : survivors === 1 ? 'Last one standing.' : `You survived with ${survivors - 1} other${survivors === 2 ? '' : 's'}.`}</Txt>
+                {survivors ? <Txt v="label" style={{ textAlign: 'center', marginTop: 2 }}>Survivor{survivors === 1 ? '' : 's'}: {tour.players.filter((_, i) => tour.lives[i] === top).map((p) => (wallet && p.equals(wallet) ? 'you' : short(p.toBase58()))).join(', ')}</Txt> : null}
+                <Txt v="small" style={{ textAlign: 'center' }}>{survived ? `You won ${share.toFixed(2)} USDC · ` : ''}Settled on Solana · {tour.round} round{tour.round === 1 ? '' : 's'} on {sym} · {survivors} survivor{survivors === 1 ? '' : 's'} split {payout.toFixed(2)} USDC</Txt>
                 <Btn title="Back to the lobby" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />
               </Card>
             </Animated.View>
+          ) : tour && tour.status === 4 ? (
+            <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
+              <Txt v="title">Royale cancelled</Txt>
+              <Txt v="small" style={{ textAlign: 'center' }}>It never started, so every entry ({ENTRY_USDC} USDC each) went back to its player.</Txt>
+              <Btn title="Back to the lobby" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />
+            </Card>
           ) : null}
 
           <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Host a Royale</Txt>
@@ -189,11 +203,11 @@ export default function OnchainRoyale() {
               <Row style={{ gap: 10 }}>
                 <View style={{ flex: 1 }}>
                   <Txt v="label">{t.coin < 3 ? COIN_SYMBOLS[t.coin] : 'Coin rolling'} · {t.count}/{t.maxPlayers} seats · {t.startLives} ♥</Txt>
-                  <Txt v="small">Entry {(t.entry / USDC).toFixed(2)} USDC · host {short(t.creator.toBase58())}</Txt>
+                  <Txt v="small">Entry {(t.entry / USDC).toFixed(2)} USDC · host {short(t.creator.toBase58())} · opened {Math.max(0, Math.round((Date.now() - t.nonce) / 60_000))} min ago</Txt>
                 </View>
                 {wallet && t.players.some((p) => p.equals(wallet))
                   ? <Btn title="Open" kind="ghost" h={38} onPress={() => setActiveTour(t.key)} />
-                  : <Btn title="Join" h={38} disabled={!ready || !!busy || t.count >= t.maxPlayers} onPress={() => join(t)} />}
+                  : <Btn title={t.count >= t.maxPlayers ? 'Full' : 'Join'} kind={t.count >= t.maxPlayers ? 'ghost' : 'brand'} h={38} disabled={!ready || !!busy || t.count >= t.maxPlayers} onPress={() => join(t)} />}
               </Row>
             </Card>
           ))}

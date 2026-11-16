@@ -80,7 +80,7 @@ export default function QuickMatch() {
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 12 }}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">{streak ? `Double or Nothing · ×${2 ** streak}` : 'Knockout duel'}</Txt><Txt v="small">Quick match · ${stake} · 60 s{streak ? ` · streak ${streak}` : ''}</Txt></View>
+        <View style={{ flex: 1 }}><Txt v="h2">{streak ? `Double or Nothing · ×${2 ** streak}` : 'Practice duel'}</Txt><Txt v="small">Practice · ${stake} · 60 s{streak ? ` · streak ${streak}` : ''}</Txt></View>
         <View style={{ backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 }}><Txt v="small" color={C.ink}>Practice</Txt></View>
       </Row>
 
@@ -129,7 +129,7 @@ export default function QuickMatch() {
             <Btn title="Long ▲" kind="long" h={68} style={{ flex: 1, borderRadius: 20 }} onPress={() => { setSide('long'); go('long'); }} />
             <Btn title="Short ▼" kind="short" h={68} style={{ flex: 1, borderRadius: 20 }} onPress={() => { setSide('short'); go('short'); }} />
           </Row>
-          <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>Practice rival takes the other side · real quick match opens at the Blitz kickoff</Txt>
+          <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>Practice rival takes the other side · no money moves</Txt>
         </Animated.View>
       ) : null}
     </View>

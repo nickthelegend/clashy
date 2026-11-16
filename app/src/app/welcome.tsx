@@ -13,9 +13,9 @@ import { C, S } from '@/ui/tokens';
 export const ONBOARDED_KEY = 'clashy:onboarded';
 
 const SLIDES = [
-  { art: ART.onboard1, title: 'Duel anyone.', body: 'Quick match a rival. One coin is rolled for both of you. Long or short, best % in 60 seconds takes the pot.' },
-  { art: ART.onboard2, title: 'Twelve ways to win.', body: 'Royale, Draw the line, Diamond Hands, the Daily Cup and more, all on live prices. Hit your knockout line and you are out.' },
-  { art: ART.onboard3, title: 'Fight with your clan.', body: 'Join a clan, chat, push the pot and win the weekly war together.' },
+  { art: ART.onboard1, title: 'Duel anyone.', body: 'Duel a rival for 5 USDC. One coin is rolled for both of you. Long or short, best % in 60 seconds takes the pot.' },
+  { art: ART.onboard2, title: 'Play in USDC. No SOL.', body: 'Sign in with email: you get a wallet that holds USDC, and Clashy pays every network fee. Or practice free on live prices.' },
+  { art: ART.onboard3, title: 'Fight with your clan.', body: 'Pool USDC in a clan chest, vote on trades, and take on other clans in wars for their stake.' },
 ];
 
 export default function Welcome() {

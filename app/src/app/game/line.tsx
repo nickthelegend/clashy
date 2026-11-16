@@ -46,6 +46,12 @@ export default function DrawTheLine() {
   const split = 0.35; // left 35% = recent history, right 65% = the next 60 s
 
   useEffect(() => { AsyncStorage.getItem(PB_KEY).then((v) => v && setBest(Number(v))).catch(() => {}); }, []);
+  // Daily Cup: one attempt a day. A run counts from the moment it starts, so leaving mid-run does not give a retry.
+  const [cupUsed, setCupUsed] = useState<number | null>(null);
+  useEffect(() => {
+    if (!cup) return;
+    AsyncStorage.getItem(`clashy:cup:${cup}`).then((v) => { if (v) setCupUsed((JSON.parse(v) as { score: number }).score); }).catch(() => {});
+  }, [cup]);
   useEffect(() => { if (phase === 'warm' && ticks.length >= 8) setPhase('draw'); }, [phase, ticks.length]);
   useEffect(() => { setPhase('warm'); setDrawn([]); setLock(null); done.current = false; }, [coin]);
 
@@ -99,7 +105,13 @@ export default function DrawTheLine() {
     setPhase('count');
   };
   // the line locks at GO, on the price at that moment
-  const go = useCallback(() => { setLock({ t: Date.now(), p: lastRef.current ?? 0 }); setLeft(WINDOW); setPhase('live'); }, []);
+  const go = useCallback(() => {
+    if (lastRef.current == null) return;
+    setLock({ t: Date.now(), p: lastRef.current });
+    setLeft(WINDOW);
+    setPhase('live');
+    if (cup) AsyncStorage.setItem(`clashy:cup:${cup}`, JSON.stringify({ score: 0, coin, at: Date.now() })).catch(() => {});
+  }, [cup, coin]);
   useEffect(() => {
     if (phase !== 'live') return;
     const h = setInterval(() => setLeft((s) => s - 1), 1000);
@@ -111,7 +123,7 @@ export default function DrawTheLine() {
       setPhase('done');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (score !== null && (best === null || score > best)) { setBest(score); AsyncStorage.setItem(PB_KEY, String(score)).catch(() => {}); }
-      if (cup && score !== null) AsyncStorage.setItem(`clashy:cup:${cup}`, JSON.stringify({ score, coin, at: Date.now() })).catch(() => {});
+      if (cup) AsyncStorage.setItem(`clashy:cup:${cup}`, JSON.stringify({ score: score ?? 0, coin, at: Date.now() })).catch(() => {});
     }
   }, [phase, left, score, best]);
 
@@ -137,10 +149,10 @@ export default function DrawTheLine() {
         )}
         {best !== null ? <Txt v="small" style={{ marginTop: 6 }}>Your best: {best}%</Txt> : null}
       </Card>
-      {phase === 'draw' ? <Btn title={covered ? 'Lock my line' : 'Draw to the right edge'} kind="white" disabled={!covered} onPress={start} /> : null}
+      {phase === 'draw' && !(cup && cupUsed !== null) ? <Btn title={covered ? 'Lock my line' : 'Draw to the right edge'} kind="white" disabled={!covered} onPress={start} /> : null}
       {phase === 'draw' && drawn.length ? <Btn title="Clear" kind="ghost" onPress={() => setDrawn([])} /> : null}
       {phase === 'done' ? (cup ? <Btn title="Back to the Daily Cup" kind="white" onPress={() => router.replace('/game/cup')} /> : <Btn title="Draw again" kind="white" onPress={reset} />) : null}
-      <Txt v="small" style={{ textAlign: 'center' }}>Practice · live {coin} price · rooms with real players open at the Blitz kickoff</Txt>
+      <Txt v="small" style={{ textAlign: 'center' }}>Practice · live {coin} price · no money moves</Txt>
     </View>
   );
 
@@ -151,6 +163,14 @@ export default function DrawTheLine() {
         <View style={{ flex: 1 }}><Txt v="h2">{cup ? 'Daily Cup' : 'Draw the line'}</Txt><Txt v="small">{cup ? `Today's run · ${coin} · one attempt` : 'Practice · 60 s'}</Txt></View>
         {phase === 'live' ? <Row style={{ gap: 6 }}><LiveDot /><Txt v="title" style={{ fontSize: 22 }}>0:{String(Math.max(0, left)).padStart(2, '0')}</Txt></Row> : null}
       </Row>
+      {cup && cupUsed !== null && phase !== 'live' && phase !== 'done' ? (
+        <Card style={{ alignItems: 'center', padding: 18 }}>
+          <Txt v="label">Today's run is done</Txt>
+          <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>You scored {cupUsed}% on today's cup. One attempt a day: the next cup opens at 00:00 UTC.</Txt>
+          <Btn title="Back to the Daily Cup" kind="white" style={{ marginTop: 12, alignSelf: 'stretch' }} onPress={() => router.replace('/game/cup')} />
+        </Card>
+      ) : null}
+      {cup && cupUsed !== null && phase !== 'live' && phase !== 'done' ? null : (<>
       {cup ? null : (
       <Row style={{ gap: 8, marginBottom: 12 }}>
         {MAJORS.map((m) => (
@@ -184,6 +204,7 @@ export default function DrawTheLine() {
       </View>
       <Hit k={phase === 'done' && score !== null && score >= 80 ? 1 : 0} src={FX.perfect} />
       {phase === 'count' ? <Countdown onDone={go} /> : null}
+      </>)}
     </View>
   );
 }

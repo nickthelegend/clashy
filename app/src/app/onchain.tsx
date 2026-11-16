@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BN, COIN_SYMBOLS, DUEL_STATUS, NET, P, USDC, USDC_MINT, fmtUsdc, openDuels, priceOf, random32, readDuel, sha256, usdcAta, type DuelView, PublicKey,
 } from '@/chain/client';
+import { reader } from '@/chain/reads';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { ClayLoop } from '@/ui/clay';
 import { FX, Fill, Hit } from '@/ui/fx';
@@ -18,6 +19,8 @@ import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
 type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
+/** The program's DUEL_SETUP_SECS: after this a matched duel that never reached the rollup can be aborted. */
+const DUEL_SETUP_SECS = 600;
 /** Each player's stake, in USDC. */
 const STAKE_USDC = 5;
 const secretKey = (duel: PublicKey) => `clashy:chain:secret:${duel.toBase58()}`;
@@ -28,6 +31,7 @@ export default function OnChainDuel() {
   const chain = useChain(['Check duel']);
   const { me: wallet, sponsor, progs, bal, hasPlayer, txs, err, setErr, busy, guard, onBase, onEr } = chain;
   const [board, setBoard] = useState<DuelView[]>([]);
+  const [boardErr, setBoardErr] = useState<string>();
   const [active, setActive] = useState<PublicKey | null>(null);
   const [duel, setDuel] = useState<DuelView | null>(null);
   const [price, setPrice] = useState<number | null>(null);
@@ -36,13 +40,19 @@ export default function OnChainDuel() {
   const matchedAt = useRef<number | null>(null);
   /** When this device first saw the finished duel back on Solana (the joiner's settle backup timer). */
   const homeAt = useRef<number | null>(null);
+  /** When this device first saw the duel in its current step; the joiner steps in if the creator stalls there. */
+  const stepSeen = useRef<{ key: string; at: number }>({ key: '', at: 0 });
   const [vrf, setVrf] = useState<{ queue: PublicKey; required: boolean } | null>(null);
 
   // the challenge board
+  // the board is public: shown whether or not this device has signed in
   useEffect(() => {
-    if (!progs) return;
+    const rp = progs?.base ?? reader;
     let alive = true;
-    const tick = async () => { try { const b = await openDuels(progs.base); if (alive) setBoard(b); } catch { /* the wallet card shows network errors */ } };
+    const tick = async () => {
+      try { const b = await openDuels(rp); if (alive) { setBoard(b); setBoardErr(undefined); } }
+      catch (e) { if (alive) setBoardErr(`Cannot read the challenge board: ${errText(e)}`); }
+    };
     tick();
     const h = setInterval(tick, 3000);
     return () => { alive = false; clearInterval(h); };
@@ -59,9 +69,14 @@ export default function OnChainDuel() {
       setDuel(d);
       if (d.coin < 3) setPrice(await priceOf(progs.base, d.coin).catch(() => null));
       const me = d.creator.equals(wallet) ? 0 : d.joiner.equals(wallet) ? 1 : -1;
-      if (me < 0) return;
+      // a duel remembered on this device from another wallet (signed in as someone else): not ours to show
+      if (me < 0) { setActiveDuel(null); return; }
       const raw = await AsyncStorage.getItem(secretKey(active));
       const sec: Secrets | null = raw ? JSON.parse(raw) : null;
+      const stepKey = `${d.status}:${d.picksRevealed}:${d.onEr}:${d.vrfPending}`;
+      if (stepSeen.current.key !== stepKey) stepSeen.current = { key: stepKey, at: Date.now() };
+      // the creator's device drives each step; if it stalls 8 s (closed tab, lost connection), the joiner's device does it
+      const driver = me === 0 || Date.now() - stepSeen.current.at > 8_000;
       const once = async (tag: string, fn: () => Promise<unknown>) => {
         if (inflight.current.has(tag)) return;
         inflight.current.add(tag);
@@ -83,7 +98,7 @@ export default function OnChainDuel() {
           cfg = { queue: c.vrfQueue, required: c.vrfRequired };
           setVrf(cfg);
         }
-        if (me === 0 && !d.vrfPending) {
+        if (driver && !d.vrfPending) {
           await once('vrf', () => onBase('Request VRF roll', () => progs.base.methods.requestCoinRoll([...random32()]).accountsPartial({ player: wallet, payer: sponsor, duel: active, oracleQueue: cfg.queue }).rpc()));
         }
         if (!cfg.required && sec && !(d.seedsRevealed & (1 << me)) && Date.now() - matchedAt.current > 15_000) {
@@ -97,10 +112,10 @@ export default function OnChainDuel() {
         await once(`reveal-${me}`, () => onBase('Reveal sealed pick', () => progs.base.methods.revealPick(sec.side!, sec.lev!, sec.salt!).accountsPartial({ signer: wallet, duel: active }).rpc()));
       }
       // both revealed: the creator hands the duel to the rollup, then starts it there
-      if (d.status === 2 && d.picksRevealed === 0b11 && me === 0 && !d.onEr) {
+      if (d.status === 2 && d.picksRevealed === 0b11 && driver && !d.onEr) {
         await once('delegate', () => onBase('Delegate duel to the rollup', () => progs.base.methods.delegateDuel(d.creator, new BN(d.nonce)).accountsPartial({ player: wallet, payer: sponsor, duel: active }).remainingAccounts([{ pubkey: NET.erValidator, isSigner: false, isWritable: false }]).rpc()));
       }
-      if (d.status === 2 && d.picksRevealed === 0b11 && me === 0 && d.onEr) {
+      if (d.status === 2 && d.picksRevealed === 0b11 && driver && d.onEr) {
         await once('start', () => onEr('Start duel on the rollup', progs.er.methods.startDuel().accountsPartial({ signer: wallet, duel: active, price: P.feed(d.coin) })));
       }
       // LIVE: both devices ask for a check every 2 s (idempotent, signed by the sponsor alone); the finishing check commits and undelegates
@@ -162,6 +177,17 @@ export default function OnChainDuel() {
     await onBase('Cancel · refund USDC stake', () => progs.base.methods.cancelDuel().accountsPartial({ signer: wallet, duel: active, vault: P.vault(active), creatorUsdc: usdcAta(wallet), rentPayer: sponsor }).rpc());
     await setActiveDuel(null);
   });
+  // a matched duel that never reaches the rollup can be aborted by anyone after the program's 10 min setup window:
+  // both stakes refunded (or, if only one player revealed after both locked, that player takes the pot)
+  const abort = guard('abort', async () => {
+    if (!progs || !duel || !sponsor) return;
+    const cfg = await progs.base.account.config.fetch(P.config);
+    await onBase('Abort the stuck duel · refund', () => progs.base.methods.abortDuel().accountsPartial({
+      duel: duel.key, vault: P.vault(duel.key), creatorUsdc: usdcAta(duel.creator), joinerUsdc: usdcAta(duel.joiner), treasury: cfg.treasury, rentPayer: sponsor,
+    }).rpc());
+  });
+  // +3 s: the program needs its own clock strictly past the window, and the chain's clock can trail this device's by a second or two
+  const setupLeft = duel && (duel.status === 1 || duel.status === 2) && !duel.onEr ? duel.matchedAt + DUEL_SETUP_SECS + 3 - Date.now() / 1000 : null;
   const me = duel && wallet ? (duel.creator.equals(wallet) ? 0 : duel.joiner.equals(wallet) ? 1 : -1) : -1;
   const sym = duel && duel.coin < 3 ? COIN_SYMBOLS[duel.coin] : '…';
   const ready = hasPlayer && (bal ?? 0) >= STAKE_USDC;
@@ -191,9 +217,16 @@ export default function OnChainDuel() {
                 <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
               </Card>
             </Animated.View>
+          ) : duel && duel.status === 6 ? (
+            <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
+              <Txt v="title">Duel cancelled</Txt>
+              <Txt v="small" style={{ textAlign: 'center' }}>{duel.joiner.equals(PublicKey.default) ? `Nobody joined. Your ${fmtUsdc(duel.stake)} stake is back in your wallet.` : 'It never reached the rollup in time, so both stakes were refunded.'}</Txt>
+              <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
+            </Card>
           ) : null}
           <Btn title={busy === 'open' ? 'Opening…' : `Open a duel · ${STAKE_USDC} USDC`} h={58} style={{ marginTop: 14, borderRadius: 18 }} disabled={!ready || !!busy} onPress={open} />
           <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Challenge board</Txt>
+          {boardErr ? <ErrorLine msg={boardErr} /> : null}
           {board.filter((d) => !wallet || !d.creator.equals(wallet)).length === 0 ? (
             <Card style={{ alignItems: 'center', padding: 16 }}><Txt v="small" style={{ textAlign: 'center' }}>No open duels from other players right now. Open one, then join it from a second device or browser tab.</Txt></Card>
           ) : board.filter((d) => !wallet || !d.creator.equals(wallet)).map((d) => (
@@ -235,7 +268,13 @@ export default function OnChainDuel() {
                   <Txt v="small" style={{ marginTop: 10 }}>Locked. {duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Handing the duel to the rollup…' : 'Revealing picks…') : 'Waiting for your rival to lock…'}</Txt>
                 )}
               </View>
-            ) : duel.status === 3 || duel.status === 4 ? (
+            ) : null}
+            {setupLeft !== null && setupLeft < DUEL_SETUP_SECS - 30 ? (
+              setupLeft <= 0
+                ? <Btn title={busy === 'abort' ? 'Refunding…' : 'Your rival went quiet · refund now'} kind="white" style={{ marginTop: 12 }} disabled={!!busy} onPress={abort} />
+                : <Txt v="small" style={{ marginTop: 10 }}>If this duel never starts, the stakes come back: refund unlocks in {Math.floor(setupLeft / 60)}:{String(Math.floor(setupLeft % 60)).padStart(2, '0')}.</Txt>
+            ) : null}
+            {duel.status === 3 || duel.status === 4 ? (
               <View style={{ marginTop: 10 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <View><Txt v="small">You · {duel.side[me] === 1 ? 'long' : 'short'} {duel.lev[me]}×</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: myPnl >= 0 ? C.up : C.down }}>{myPnl >= 0 ? '+' : ''}{myPnl.toFixed(1)}%</Text></View>

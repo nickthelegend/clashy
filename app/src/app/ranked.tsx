@@ -44,7 +44,7 @@ export default function Ranked() {
     <View style={{ flex: 1, backgroundColor: C.bg, ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 12 }}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">Ranked</Txt><Txt v="small">The queue puts you in any game</Txt></View>
+        <View style={{ flex: 1 }}><Txt v="h2">Surprise me</Txt><Txt v="small">A random practice game</Txt></View>
         <Bob amp={4} ms={900}><Art src={ART.crown} size={40} radius={0} /></Bob>
       </Row>
       <Txt v="small" style={{ textAlign: 'center', marginTop: 26, fontFamily: F.semi, letterSpacing: 1, fontSize: 11 }}>{g ? 'YOUR GAME' : 'ROLLING THE GAME'}</Txt>
@@ -58,11 +58,11 @@ export default function Ranked() {
           ))}
         </Animated.View>
       </View>
-      <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice roll on this device · in ranked this roll is MagicBlock VRF</Txt>
+      <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Rolled on this device · practice, no money</Txt>
       {g ? (
         <Animated.View entering={FadeInDown.springify().damping(14)} style={{ marginTop: 18 }}>
           <Btn title={`Play ${g.title}`} h={60} style={{ borderRadius: 18 }} onPress={g.go} />
-          <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice only · ranked points start at the Blitz kickoff</Txt>
+          <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Rank points come from on-chain duels: see the Leaderboard</Txt>
         </Animated.View>
       ) : null}
       <View style={{ flex: 1 }} />

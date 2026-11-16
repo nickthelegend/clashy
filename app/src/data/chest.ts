@@ -1,6 +1,6 @@
 // Clan Chest (practice): a shared clan pot that only trades by vote. Proposal → votes → captain executes → a live
 // position on the real price → close. On chain this is the Clan account's vault with Proposal accounts voted on the
-// ER. Until clans go live, the chest is practice money kept on this device and you are the only voter and captain.
+// ER. This practice chest is money-free, kept on this device, and you are the only voter and captain (the real one is /onchain-clan).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 

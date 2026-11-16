@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAJORS } from '@/data/markets';
 import { useTicks } from '@/data/ticks';
 import { Countdown, CountUp, FX, Hit, WinBurst } from '@/ui/fx';
-import { ART, BackBtn, Btn, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { ErrorLine, ART, BackBtn, Btn, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
@@ -25,7 +25,7 @@ export default function PeakSnipe() {
   const { desk } = useLayout();
   const { width } = useWindowDimensions();
   const [coin, setCoin] = useState('SOL');
-  const { ticks, last } = useTicks(coin, 120);
+  const { ticks, last, error: feedError } = useTicks(coin, 120);
   const [phase, setPhase] = useState<Phase>('ready');
   const [t0, setT0] = useState(0);
   const [left, setLeft] = useState(WINDOW);
@@ -77,6 +77,7 @@ export default function PeakSnipe() {
           {MAJORS.map((m) => <Btn key={m.id} title={m.id} h={36} kind={coin === m.id ? 'white' : 'ghost'} style={{ flex: 1 }} disabled={phase === 'live' || phase === 'count'} onPress={() => setCoin(m.id)} icon={<TokenArt symbol={m.id} uri={m.image} size={18} />} />)}
         </Row>
         <Card style={{ padding: 0, overflow: 'hidden' }}>
+          {feedError ? <ErrorLine msg={`Price feed: ${feedError}`} /> : null}
           <LiveChart data={series.length > 1 ? series : ticks.map((k) => k.p)} w={chartW} h={desk ? 320 : 230} refLine={sold?.price} refLabel={sold ? `You sold ${fmtUsd(sold.price)}` : undefined} color={C.opp} />
           <Row style={{ justifyContent: 'space-between', padding: 10, paddingTop: 2 }}>
             <Txt v="small" color={C.brandSoft}>{phase === 'live' || phase === 'done' ? `Window high ${hi ? fmtUsd(hi) : '…'}` : `${coin} live`}</Txt>

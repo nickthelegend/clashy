@@ -42,8 +42,8 @@ export default function Discover() {
       }
       ListEmptyComponent={t.loading ? <Txt v="small">Loading…</Txt> : <Txt v="small">No matches.</Txt>}
       renderItem={({ item: m }) => (
-        <CoinRow symbol={m.symbol} name={m.name} image={m.image} price={m.marketCap ? fmtUsd(m.marketCap, { compact: true }) : fmtUsd(m.price)} change={m.change24h}
-          sub={`vol ${fmtUsd(m.volume24h ?? 0, { compact: true })}`} hot={m.change24h > 50}
+        <CoinRow symbol={m.symbol} name={m.name} image={m.image} price={fmtUsd(m.price)} change={m.change24h}
+          sub={`${m.marketCap ? `mcap ${fmtUsd(m.marketCap, { compact: true })} · ` : ''}vol ${fmtUsd(m.volume24h ?? 0, { compact: true })}`} hot={m.change24h > 50}
           onPress={() => router.push({ pathname: '/coin/[id]', params: { id: m.id } })}
           onDuel={() => router.push({ pathname: '/duel/amount', params: { id: m.id } })} />
       )}

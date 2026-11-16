@@ -8,7 +8,6 @@ import { ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAJORS, useMajors } from '@/data/markets';
-import { SOCIAL_SETUP } from '@/data/social';
 import { Bob, CountUp } from '@/ui/fx';
 import { ART, Art, BackBtn, Btn, Card, Pending, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -96,8 +95,8 @@ export default function DailyCup() {
         })}
       </Row>
 
-      <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Today's ranking</Txt>
-      <Pending art={ART.emptyLeaderboard} title="Setup required: cup ranking" body={`Real cups rank your run against everyone's and pay the top 20%, with a full refund under 5 entries. ${SOCIAL_SETUP}`} />
+      <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Your runs</Txt>
+      <Pending art={ART.emptyLeaderboard} title="Your runs, on this device" body="Daily Cup is practice: each run is scored and kept on this device. There is no shared cup ranking or prize." />
     </ScrollView>
   );
 }

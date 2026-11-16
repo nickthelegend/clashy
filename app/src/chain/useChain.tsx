@@ -12,8 +12,9 @@ import { C, F } from '@/ui/tokens';
 
 export type Tx = { sig: string; layer: 'Solana' | 'Rollup'; label: string; ms: number; n?: number };
 export const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
-export const explorer = (sig: string, layer: Tx['layer']) =>
-  `https://explorer.solana.com/tx/${sig}?cluster=custom&customUrl=${encodeURIComponent(layer === 'Rollup' ? NET.er : NET.base)}`;
+export const explorer = (sig: string, layer: Tx['layer']) => (IS_LOCAL_NET || layer === 'Rollup'
+  ? `https://explorer.solana.com/tx/${sig}?cluster=custom&customUrl=${encodeURIComponent(layer === 'Rollup' ? NET.er : NET.base)}`
+  : `https://explorer.solana.com/tx/${sig}${/devnet/.test(NET.base) ? '?cluster=devnet' : ''}`);
 
 /** Readable error: the Anchor error message or the failing program log, not web3's generic wrapper. */
 export function errText(e: unknown): string {
@@ -40,7 +41,15 @@ export function useChain(foldLabels: string[] = []) {
   const [tick, setTick] = useState(0);
   const progs = useMemo(() => (signer && sponsor ? programs(signer, sponsor.sponsor) : null), [signer, sponsor]);
 
-  useEffect(() => { getSponsor().then(setSponsor).catch((e) => setErr((e as Error).message)); }, []);
+  // the relay pays every fee: keep asking until it answers (it may come back after being offline)
+  useEffect(() => {
+    if (sponsor) return;
+    let alive = true;
+    const ask = () => getSponsor().then((s) => { if (alive) { setSponsor(s); setErr(undefined); } }).catch((e) => alive && setErr((e as Error).message));
+    ask();
+    const h = setInterval(ask, 5000);
+    return () => { alive = false; clearInterval(h); };
+  }, [sponsor]);
 
   // repeated labels (polling sends) fold into one row: latest signature, count, average latency
   const log = useCallback((t: Tx) => setTxs((x) => {

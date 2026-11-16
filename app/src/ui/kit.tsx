@@ -295,7 +295,7 @@ export const STICKERS: { key: string; src: number }[] = (['ko', 'gg', 'rekt', 'l
   'fade-me': require('../../assets/art/sticker-fade-me.webp'), moon: require('../../assets/art/sticker-moon.webp'), crying: require('../../assets/art/sticker-crying.webp'), crown: require('../../assets/art/sticker-crown.webp'),
 } as Record<string, number>)[key] }));
 export const BADGES: { key: string; label: string; src: number }[] = [
-  { key: 'top10', label: 'Season top 10', src: require('../../assets/art/badge-top10.webp') },
+  { key: 'top10', label: 'Top 10', src: require('../../assets/art/badge-top10.webp') },
   { key: 'streak', label: '9 win streak', src: require('../../assets/art/badge-streak.webp') },
   { key: '500', label: '500 duels', src: require('../../assets/art/badge-500.webp') },
   { key: 'captain', label: 'Clan captain', src: require('../../assets/art/badge-captain.webp') },
