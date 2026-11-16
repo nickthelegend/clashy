@@ -10,7 +10,27 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
 | Rollup | MagicBlock Ephemeral Rollup: duels and tournaments are delegated, scored there every check, and committed back |
 | Randomness | MagicBlock VRF rolls the coin (queue in the config: base queue `Cuj97ggr…` on devnet and mainnet, MagicBlock's test queue `GKE6d7…` on the local stack, answered by their `vrf-oracle`). Callbacks need MagicBlock's VRF identity signature. With `vrf_required = true` the commit-reveal fallback is refused |
 | Prices | A crank pushes live Coinbase prices into delegated `PriceFeed` accounts on the rollup every second (duels, tournaments), and into never-delegated base feeds on Solana every 5 s (clan trades; one transaction for all coins). The program also accepts MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout) |
+| Money | **USDC only.** Every stake, chest, war pot and entry is a USDC token account owned by the program's `auth` PDA. A player's wallet never needs SOL: the sponsor relay pays every fee and rent |
+| Wallets | Privy (web): email or Google sign-in makes a Solana wallet that holds USDC. Phones and automated tests use a device test key on the local stack |
 | Deployed | Local MagicBlock stack only. Devnet and mainnet: **not deployed** (see Status) |
+
+## Money: USDC in, no SOL ever
+
+- **Stakes are USDC.** `open_duel`, `join_duel`, `join_tournament` and `deposit_chest` move USDC from the player's own
+  USDC account (checked: right mint, owned by the signer). Payouts go only to each player's own USDC account; Royale
+  payouts check every account in the list. The vaults are token accounts at program PDAs owned by one `auth` PDA.
+- **Fees and rent come from a sponsor.** Every instruction that creates an account takes a separate `payer` signer and
+  records it as `rent_payer`; when a vault empties (settle, cancel, abort) it is closed and the rent goes back to that
+  payer, and a member's account rent goes back to it on leave (never to the member).
+- **The sponsor relay** (`scripts/sponsor.ts`, port 8790) is the fee payer of every app transaction. It co-signs only
+  Clashy player instructions (never admin, feed or VRF-callback ones), Compute Budget, creating a USDC account, and a
+  USDC `TransferChecked` out of the signer's own account (withdrawals). The sponsor key may sit only in `payer` /
+  `rent_payer` slots. Every other signature must already be valid. With `CLASHY_PRIVY_APP_ID` and
+  `CLASHY_PRIVY_APP_SECRET` in `chain/.env` (gitignored) it verifies the Privy access token and that every signing
+  wallet belongs to that user; off the local stack that check is mandatory. Per-wallet rate limit 40 tx / 10 s.
+- **Local fork USDC.** `scripts/usdc-mint.ts` loads mainnet USDC's mint address (`EPjF…Dt1v`, 6 decimals) into the
+  local validator with the local admin key as mint authority, so the relay's `/faucet` can hand out 100 test USDC.
+  On devnet/mainnet there is no faucet: players bring USDC (or buy it through Privy's funding flow).
 
 ## What the program does
 
@@ -23,7 +43,7 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
    side first.
 4. `delegate_duel` hands the duel to the rollup; `start_duel` records the entry price there; `check_duel` scores both
    sides on every call and, on a knockout or at the bell, commits and undelegates back to Solana.
-5. `settle_duel` pays the winner (rake first, so the vault never drops below rent-exempt) and updates Elo and RP.
+5. `settle_duel` pays the winner in USDC minus the rake, closes the vault (its rent back to the sponsor) and updates Elo and RP.
 
 **Clans.** `create_clan` / `join_clan` / `leave_clan`. The chest is held as shares: `deposit_chest` mints shares at
 the chest's current value and `withdraw_chest` redeems shares for their pro-rata part, so a war win or loss is shared
@@ -45,12 +65,15 @@ pot minus rake into its chest. A tie refunds both.
 npm install
 bash scripts/localnet.sh            # base :8999 + MagicBlock ER :7799 + MagicBlock vrf-oracle, deploys the program (CLASHY_RESET=1 for genesis)
 npx tsx scripts/crank.ts            # live prices: rollup every 1 s, Solana base feeds every 5 s
+npx tsx scripts/sponsor.ts          # fee/rent sponsor relay + local test-USDC faucet (:8790)
 npx tsx --test --test-concurrency=1 tests/clashy.test.ts
+npx tsx --test tests/sponsor.test.ts
 ```
 
-The app's **On-chain duel** screen (`app/src/app/onchain.tsx`) talks to the same stack by default
-(`EXPO_PUBLIC_CLASHY_BASE`, `_ER`, `_NET`, `_ER_VALIDATOR` point it elsewhere). Open it in two browser tabs: each tab
-gets its own device test wallet.
+The app's on-chain screens (`/onchain`, `/onchain-royale`, `/onchain-clan`) talk to the same stack and relay by
+default (`EXPO_PUBLIC_CLASHY_BASE`, `_ER`, `_NET`, `_ER_VALIDATOR`, `_SPONSOR` point them elsewhere). On web they sign
+in with Privy (`EXPO_PUBLIC_PRIVY_APP_ID` in `app/.env.local`); `EXPO_PUBLIC_CLASHY_DEV_WALLET=1` swaps in a device
+test key per browser tab for automated multi-player runs.
 
 **Devnet / mainnet.** `scripts/deploy.sh devnet|mainnet` checks the admin balance against the program's rent, deploys,
 then runs first-time setup with VRF required on MagicBlock's base queue. It needs `CLASHY_AUTHORITY` (keypair path),
@@ -80,20 +103,24 @@ attack tests where a test can reach them:
   withdrawals wait for open votes (no voting twice with the same money), and unexecuted votes can be closed.
 
 **Trust that remains:** the crank key sets every price (bounded only by freshness checks); the closing price of a duel
-is the feed at the first check after the bell (up to 15 s old); the treasury must hold at least the rent minimum or a
-small rake fails. Mainnet should move duel pricing to MagicBlock's pricing oracle accounts, which `read_price` already
+is the feed at the first check after the bell (up to 15 s old). The sponsor key pays fees and rent: the relay's
+filter, Privy check and rate limit bound what it pays for, and duel, player, proposal, vote and position accounts are
+not closed yet, so their rent (about 0.004 SOL per duel) stays spent. Mainnet should move duel pricing to MagicBlock's pricing oracle accounts, which `read_price` already
 accepts.
 
 ## Status
 
-- **Local MagicBlock stack: works end to end.** 5/5 end-to-end and 10/10 unit tests pass (see [TESTING.md](TESTING.md)).
-  Browser players ran full duels, a clan trade, a clan war and a three-player Royale through the app.
+- **Local MagicBlock stack: works end to end, in USDC.** 5/5 end-to-end, 5/5 relay and 11/11 unit tests pass (see
+  [TESTING.md](TESTING.md)); every test player holds USDC and exactly 0 SOL. Browser players ran full duels, a clan
+  trade, a clan war and a three-player Royale through the app.
+- **Privy:** the Clashy app exists in Privy's dashboard; the web app signs in with it and the relay verifies its tokens
+  with the app secret. A real Privy sign-in needs a person (email code or Google), so automated runs use device keys.
 - **VRF: proven locally with MagicBlock's own oracle.** MagicBlock's validator CLI ships `vrf-oracle` and their test
   queue; the local stack runs it, and duels and Royales get their coin from a real VRF callback (about 1.3 s). A forged
   callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 12.5 devnet SOL;
   the devnet faucet rate-limited the airdrop twice, and the web faucet needs a sign-in and a CAPTCHA.
-- **Mainnet: not deployed.** The 884 KB program is 6.16 SOL rent-exempt (`solana rent 884520`); a deploy briefly
-  holds about 12.5 SOL (buffer plus program data) and returns the buffer. It needs real SOL and Nick's go-ahead.
+- **Mainnet: not deployed.** The 1.05 MB program needs 5.33 SOL rent-exempt (`solana rent 1049296`); a deploy briefly
+  holds about twice that (buffer plus program data) and returns the buffer. The sponsor also needs SOL for fees and rent. It needs real SOL and Nick's go-ahead.
   Real money stays off until then.
 - **Why base feeds:** MagicBlock sponsors only 10 commits per delegated account ("sponsored commit limit exceeded …
   current commit nonce 10 reached the limit of 10"), so committing the rollup feeds back to Solana every 30 s stopped
