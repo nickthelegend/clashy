@@ -10,7 +10,7 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, LAMPORTS_PER_SOL, NET, P, PROGRAM_ID, PublicKey, base, byClan, clanName, pnlBps, priceOf,
+  BN, COIN_SYMBOLS, NET, P, PROGRAM_ID, PublicKey, USDC, USDC_MINT, usdcAta, base, byClan, clanName, pnlBps, priceOf,
 } from '@/chain/client';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { Art, BackBtn, Btn, CRESTS, Card, Chips, ErrorLine, LiveDot, Row, Tag, Txt } from '@/ui/kit';
@@ -24,10 +24,14 @@ type PosView = { key: PublicKey; id: number; coin: number; side: number; lev: nu
 
 /** Vote tallies are in chest shares, shown as a share of the whole chest. */
 const pct = (part: number, total: number) => `${total ? Math.round((part / total) * 100) : 0}%`;
-const sol = (l: number) => (l / LAMPORTS_PER_SOL).toFixed(l % 1e7 === 0 ? 2 : 4);
-const signed = (l: number) => `${l >= 0 ? '+' : '−'}${(Math.abs(l) / LAMPORTS_PER_SOL).toFixed(4)} SOL`;
+/** USDC base units as "12.50". */
+const usdc = (u: number) => (u / USDC).toFixed(2);
+const signed = (u: number) => `${u >= 0 ? '+' : '−'}${(Math.abs(u) / USDC).toFixed(2)} USDC`;
 const VOTE_SECS = 60;
-const WAR_STAKE_SOL = 0.1;
+/** Each clan's war stake, in USDC (at most half its chest). */
+const WAR_STAKE_USDC = 5;
+/** Chest top-ups, in USDC. */
+const TOP_UPS = [5, 20];
 const WAR_LENGTHS = [{ key: '120', label: '2 min' }, { key: '3600', label: '1 hour' }, { key: '86400', label: '1 day' }] as const;
 const retBps = (score: number, base: number, chest: number) => (chest ? ((score - base) * 10_000) / chest : 0);
 
@@ -35,7 +39,7 @@ export default function OnchainClan() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(820);
   const chain = useChain();
-  const { kp, progs, hasPlayer, busy, guard, onBase, err, tick } = chain;
+  const { me: wallet, sponsor, progs, hasPlayer, busy, guard, onBase, err, tick } = chain;
 
   const [clans, setClans] = useState<ClanView[]>([]);
   const [mine, setMine] = useState<ClanView | null>(null);
@@ -61,7 +65,7 @@ export default function OnchainClan() {
   const [size, setSize] = useState<'2500' | '5000' | '10000'>('5000');
 
   useEffect(() => {
-    if (!progs || !kp) return;
+    if (!progs || !wallet || !sponsor) return;
     let alive = true;
     const load = async () => {
       try {
@@ -70,7 +74,7 @@ export default function OnchainClan() {
           score: Number(c.scorePnl), proposals: Number(c.proposals), war: c.war,
         });
         const all = (await progs.base.account.clan.all()).map((a) => toView(a.publicKey, a.account));
-        const player = hasPlayer ? await progs.base.account.player.fetch(P.player(kp.publicKey)).catch(() => null) : null;
+        const player = hasPlayer ? await progs.base.account.player.fetch(P.player(wallet)).catch(() => null) : null;
         const myKey = player && !player.clan.equals(PublicKey.default) ? player.clan : null;
         const my = myKey ? all.find((c) => c.key.equals(myKey)) ?? null : null;
         const px = await Promise.all([0, 1, 2].map((i) => priceOf(progs.base, i).catch(() => null)));
@@ -81,13 +85,13 @@ export default function OnchainClan() {
         setLoadErr(undefined);
         if (!my) { setProps([]); setPositions([]); setMyDeposit(0); setMyShares(0); return; }
         const [m, ps, pos, warsA, warsB] = await Promise.all([
-          progs.base.account.member.fetch(P.member(my.key, kp.publicKey)).catch(() => null),
+          progs.base.account.member.fetch(P.member(my.key, wallet)).catch(() => null),
           progs.base.account.proposal.all(byClan(my.key)),
           progs.base.account.clanPosition.all(byClan(my.key)),
           progs.base.account.war.all([{ memcmp: { offset: 8, bytes: my.key.toBase58() } }]),
           progs.base.account.war.all([{ memcmp: { offset: 40, bytes: my.key.toBase58() } }]),
         ]);
-        const votes = await base.getMultipleAccountsInfo(ps.map((p) => P.vote(p.publicKey, kp.publicKey)));
+        const votes = await base.getMultipleAccountsInfo(ps.map((p) => P.vote(p.publicKey, wallet)));
         if (!alive) return;
         setMyDeposit(m ? Number(m.deposit) : 0);
         setMyShares(m ? Number(m.shares) : 0);
@@ -111,9 +115,9 @@ export default function OnchainClan() {
     const h = setInterval(load, 2000);
     const c = setInterval(() => setNow(Date.now() / 1000), 500);
     return () => { alive = false; clearInterval(h); clearInterval(c); };
-  }, [progs, kp, hasPlayer, tick]);
+  }, [progs, wallet, hasPlayer, tick]);
 
-  const captain = !!(mine && kp && mine.captain.equals(kp.publicKey));
+  const captain = !!(mine && wallet && mine.captain.equals(wallet));
   const warLocked = !!mine && !mine.war.equals(PublicKey.default);
 
   const create = guard('create', async () => {
@@ -122,22 +126,22 @@ export default function OnchainClan() {
     if (new TextEncoder().encode(n).length > 24) throw new Error('Clan names are at most 24 bytes');
     if (clans.some((c) => c.name === n)) throw new Error(`“${n}” is taken on chain`);
     const clan = P.clan(n);
-    await onBase(`Create clan ${n}`, () => progs!.base.methods.createClan(n, crest).accountsPartial({ founder: kp!.publicKey, clan, chest: P.chest(clan), member: P.member(clan, kp!.publicKey) }).rpc());
+    await onBase(`Create clan ${n}`, () => progs!.base.methods.createClan(n, crest).accountsPartial({ founder: wallet!, payer: sponsor!, clan, chest: P.chest(clan), member: P.member(clan, wallet!), usdcMint: USDC_MINT }).rpc());
     setName('');
   });
-  const join = (c: ClanView) => guard(`join-${c.name}`, () => onBase(`Join ${c.name}`, () => progs!.base.methods.joinClan().accountsPartial({ wallet: kp!.publicKey, clan: c.key, member: P.member(c.key, kp!.publicKey) }).rpc()))();
-  const deposit = (amt: number) => guard(`dep-${amt}`, () => onBase(`Deposit ${amt} SOL to the chest`, () => progs!.base.methods.depositChest(new BN(amt * LAMPORTS_PER_SOL)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), chest: P.chest(mine!.key) }).rpc()))();
-  const withdraw = guard('withdraw', () => onBase('Cash out my shares', () => progs!.base.methods.withdrawChest(new BN(myShares)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), chest: P.chest(mine!.key) }).rpc()));
-  const leave = guard('leave', () => onBase(`Leave ${mine!.name}`, () => progs!.base.methods.leaveClan().accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey) }).rpc()));
+  const join = (c: ClanView) => guard(`join-${c.name}`, () => onBase(`Join ${c.name}`, () => progs!.base.methods.joinClan().accountsPartial({ wallet: wallet!, payer: sponsor!, clan: c.key, member: P.member(c.key, wallet!) }).rpc()))();
+  const deposit = (amt: number) => guard(`dep-${amt}`, () => onBase(`Deposit ${amt} USDC to the chest`, () => progs!.base.methods.depositChest(new BN(amt * USDC)).accountsPartial({ wallet: wallet!, clan: mine!.key, member: P.member(mine!.key, wallet!), chest: P.chest(mine!.key), walletUsdc: usdcAta(wallet!) }).rpc()))();
+  const withdraw = guard('withdraw', () => onBase('Cash out my shares', () => progs!.base.methods.withdrawChest(new BN(myShares)).accountsPartial({ wallet: wallet!, clan: mine!.key, member: P.member(mine!.key, wallet!), chest: P.chest(mine!.key), walletUsdc: usdcAta(wallet!) }).rpc()));
+  const leave = guard('leave', () => onBase(`Leave ${mine!.name}`, () => progs!.base.methods.leaveClan().accountsPartial({ wallet: wallet!, clan: mine!.key, member: P.member(mine!.key, wallet!), rentPayer: sponsor! }).rpc()));
   const propose = guard('propose', async () => {
     const prop = P.proposal(mine!.key, mine!.proposals);
     const what = `${dir === '1' ? 'Long' : 'Short'} ${COIN_SYMBOLS[+coin]} ${lev}× · ${+size / 100}% of chest`;
-    await onBase(`Propose ${what}`, () => progs!.base.methods.propose(+coin, +dir, +lev, +size, new BN(VOTE_SECS)).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), proposal: prop }).rpc());
+    await onBase(`Propose ${what}`, () => progs!.base.methods.propose(+coin, +dir, +lev, +size, new BN(VOTE_SECS)).accountsPartial({ wallet: wallet!, payer: sponsor!, clan: mine!.key, member: P.member(mine!.key, wallet!), proposal: prop }).rpc());
   });
-  const vote = (p: PropView, yes: boolean) => guard(`vote-${p.id}`, () => onBase(`Vote ${yes ? 'yes' : 'no'} on #${p.id}`, () => progs!.base.methods.vote(yes).accountsPartial({ wallet: kp!.publicKey, clan: mine!.key, member: P.member(mine!.key, kp!.publicKey), proposal: p.key, vote: P.vote(p.key, kp!.publicKey) }).rpc()))();
-  const execute = (p: PropView) => guard(`exec-${p.id}`, () => onBase(`Execute #${p.id} at the oracle price`, () => progs!.base.methods.executeProposal().accountsPartial({ captain: kp!.publicKey, clan: mine!.key, proposal: p.key, position: P.position(mine!.key, p.id), price: P.baseFeed(p.coin), war: warLocked ? mine!.war : null }).rpc()))();
+  const vote = (p: PropView, yes: boolean) => guard(`vote-${p.id}`, () => onBase(`Vote ${yes ? 'yes' : 'no'} on #${p.id}`, () => progs!.base.methods.vote(yes).accountsPartial({ wallet: wallet!, payer: sponsor!, clan: mine!.key, member: P.member(mine!.key, wallet!), proposal: p.key, vote: P.vote(p.key, wallet!) }).rpc()))();
+  const execute = (p: PropView) => guard(`exec-${p.id}`, () => onBase(`Execute #${p.id} at the oracle price`, () => progs!.base.methods.executeProposal().accountsPartial({ captain: wallet!, payer: sponsor!, clan: mine!.key, proposal: p.key, position: P.position(mine!.key, p.id), price: P.baseFeed(p.coin), war: warLocked ? mine!.war : null }).rpc()))();
   const reject = (p: PropView) => guard(`rej-${p.id}`, () => onBase(`Close failed vote #${p.id}`, () => progs!.base.methods.rejectProposal().accountsPartial({ clan: mine!.key, proposal: p.key }).rpc()))();
-  const closePos = (p: PosView) => guard(`close-${p.id}`, () => onBase(`Close position #${p.id}`, () => progs!.base.methods.closePosition().accountsPartial({ closer: kp!.publicKey, clan: mine!.key, position: p.key, price: P.baseFeed(p.coin), war: warLocked ? mine!.war : null }).rpc()))();
+  const closePos = (p: PosView) => guard(`close-${p.id}`, () => onBase(`Close position #${p.id}`, () => progs!.base.methods.closePosition().accountsPartial({ closer: wallet!, clan: mine!.key, position: p.key, price: P.baseFeed(p.coin), war: warLocked ? mine!.war : null }).rpc()))();
 
   const byKey = (k: PublicKey) => clans.find((c) => c.key.equals(k));
   const declare = guard('declare', async () => {
@@ -145,17 +149,17 @@ export default function OnchainClan() {
     if (!b) throw new Error('Pick a rival clan');
     const nonce = Date.now();
     const war = PublicKey.findProgramAddressSync([Buffer.from('war'), mine!.key.toBuffer(), b.key.toBuffer(), new BN(nonce).toArrayLike(Buffer, 'le', 8)], PROGRAM_ID)[0];
-    await onBase(`Declare war on ${b.name}`, () => progs!.base.methods.declareWar(new BN(nonce), new BN(WAR_STAKE_SOL * LAMPORTS_PER_SOL), new BN(+warLen))
-      .accountsPartial({ captain: kp!.publicKey, clanA: mine!.key, clanB: b.key, chestA: P.chest(mine!.key), war, vault: P.vault(war) }).rpc());
+    await onBase(`Declare war on ${b.name}`, () => progs!.base.methods.declareWar(new BN(nonce), new BN(WAR_STAKE_USDC * USDC), new BN(+warLen))
+      .accountsPartial({ captain: wallet!, payer: sponsor!, clanA: mine!.key, clanB: b.key, chestA: P.chest(mine!.key), war, vault: P.vault(war), usdcMint: USDC_MINT }).rpc());
   });
   const acceptWar = (w: WarView) => guard(`accept-${w.nonce}`, () => onBase(`Accept war from ${byKey(w.a)?.name ?? 'rival'}`, () => progs!.base.methods.acceptWar()
-    .accountsPartial({ captain: kp!.publicKey, clanA: w.a, clanB: w.b, chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key) }).rpc()))();
+    .accountsPartial({ captain: wallet!, clanA: w.a, clanB: w.b, chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key) }).rpc()))();
   const cancelWar = (w: WarView) => guard(`cancelwar-${w.nonce}`, () => onBase('Withdraw the declaration', () => progs!.base.methods.cancelWar()
-    .accountsPartial({ captain: kp!.publicKey, clanA: w.a, chestA: P.chest(w.a), war: w.key, vault: P.vault(w.key) }).rpc()))();
+    .accountsPartial({ captain: wallet!, clanA: w.a, chestA: P.chest(w.a), war: w.key, vault: P.vault(w.key), rentPayer: sponsor! }).rpc()))();
   const settleWar = (w: WarView) => guard(`settlewar-${w.nonce}`, async () => {
     const cfg = await progs!.base.account.config.fetch(P.config);
     await onBase('Settle the war', () => progs!.base.methods.settleWar()
-      .accountsPartial({ clanA: w.a, clanB: w.b, chestA: P.chest(w.a), chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key), treasury: cfg.treasury }).rpc());
+      .accountsPartial({ clanA: w.a, clanB: w.b, chestA: P.chest(w.a), chestB: P.chest(w.b), war: w.key, vault: P.vault(w.key), treasury: cfg.treasury, rentPayer: sponsor! }).rpc());
   })();
   const activeWars = wars.filter((w) => w.status <= 1);
   const warOver = activeWars.some((w) => w.status === 1 && now >= w.endTs);
@@ -173,7 +177,7 @@ export default function OnchainClan() {
         <Row style={{ gap: 6 }}><LiveDot color={C.up} /><Txt v="small" color={C.up}>On chain</Txt></Row>
       </Row>
 
-      <WalletCard chain={chain} note="clan trades are scored at the oracle price" />
+      <WalletCard chain={chain} note="chests hold USDC · trades scored at the oracle price" need={5} />
       {err ? <ErrorLine msg={err} /> : null}
       {loadErr ? <ErrorLine msg={loadErr} /> : null}
 
@@ -205,7 +209,7 @@ export default function OnchainClan() {
                 <Art src={CRESTS[c.crest % CRESTS.length]} size={48} radius={12} />
                 <View style={{ flex: 1 }}>
                   <Txt v="label">{c.name}</Txt>
-                  <Txt v="small">{c.members} member{c.members === 1 ? '' : 's'} · chest {sol(c.chest)} SOL · score {signed(c.score)}</Txt>
+                  <Txt v="small">{c.members} member{c.members === 1 ? '' : 's'} · chest {usdc(c.chest)} USDC · score {signed(c.score)}</Txt>
                 </View>
                 <Btn title="Join" h={38} disabled={!hasPlayer || !!busy} onPress={() => join(c)} />
               </Row>
@@ -225,20 +229,19 @@ export default function OnchainClan() {
                 </View>
               </Row>
               <Row style={{ marginTop: 14, gap: 8 }}>
-                {[['Chest · SOL', sol(mine.chest), C.ink], ['Your share', mine.shares ? `${((myShares / mine.shares) * 100).toFixed(0)}%` : '0%', C.brandSoft], ['Score · SOL', `${mine.score >= 0 ? '+' : '−'}${(Math.abs(mine.score) / LAMPORTS_PER_SOL).toFixed(4)}`, mine.score >= 0 ? C.up : C.down]].map(([k, v, c]) => (
+                {[['Chest · USDC', usdc(mine.chest), C.ink], ['Your share', mine.shares ? `${((myShares / mine.shares) * 100).toFixed(0)}%` : '0%', C.brandSoft], ['Score · USDC', `${mine.score >= 0 ? '+' : '−'}${usdc(Math.abs(mine.score))}`, mine.score >= 0 ? C.up : C.down]].map(([k, v, c]) => (
                   <View key={k} style={{ flex: 1, backgroundColor: C.s2, borderRadius: 12, padding: 10 }}>
                     <Txt v="small" lines={1}>{k}</Txt><Txt v="label" color={c} lines={1}>{v}</Txt>
                   </View>
                 ))}
               </Row>
               <Row style={{ marginTop: 12, gap: 8 }}>
-                <Btn title="+0.1" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.1)} />
-                <Btn title="+0.5" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={() => deposit(0.5)} />
+                {TOP_UPS.map((a) => <Btn key={a} title={`+${a}`} kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked} onPress={() => deposit(a)} />)}
                 {myShares > 0
                   ? <Btn title="Cash out" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy || warLocked || mine.openVotes > 0} onPress={withdraw} />
                   : !captain ? <Btn title="Leave" kind="ghost" h={40} style={{ flex: 1 }} disabled={!!busy} onPress={leave} /> : null}
               </Row>
-              <Txt v="small" style={{ marginTop: 8 }}>{myShares ? `You put in ${sol(myDeposit)} SOL; your shares are worth ${sol(mine.shares ? Math.floor((myShares * mine.chest) / mine.shares) : 0)} SOL now. Votes count by shares.` : 'Deposit to get chest shares and a vote. Shares pay out pro rata, so war wins and losses are shared.'}</Txt>
+              <Txt v="small" style={{ marginTop: 8 }}>{myShares ? `You put in ${usdc(myDeposit)} USDC; your shares are worth ${usdc(mine.shares ? Math.floor((myShares * mine.chest) / mine.shares) : 0)} USDC now. Votes count by shares.` : 'Deposit to get chest shares and a vote. Shares pay out pro rata, so war wins and losses are shared.'}</Txt>
             </Card>
           </Animated.View>
 
@@ -249,7 +252,7 @@ export default function OnchainClan() {
             <Chips items={(['2', '5', '10', '20'] as const).map((k) => ({ key: k, label: `${k}×` }))} value={lev} onChange={setLev} />
             <Chips items={[{ key: '2500', label: '25% of chest' }, { key: '5000', label: '50%' }, { key: '10000', label: '100%' }]} value={size} onChange={setSize} />
             <Btn title={busy === 'propose' ? 'Proposing…' : `Put it to a vote · ${VOTE_SECS} s`} kind={dir === '1' ? 'long' : 'short'} disabled={!!busy || mine.chest === 0} onPress={propose} />
-            <Txt v="small" style={{ marginTop: 8 }}>{mine.chest === 0 ? 'Deposit first: an empty chest has nothing to trade.' : `Passes with more yes than no, early once yes holds over half of all shares. Size: ${sol((mine.chest * +size) / 10_000)} SOL notional.`}</Txt>
+            <Txt v="small" style={{ marginTop: 8 }}>{mine.chest === 0 ? 'Deposit first: an empty chest has nothing to trade.' : `Passes with more yes than no, early once yes holds over half of all shares. Size: ${usdc((mine.chest * +size) / 10_000)} USDC notional.`}</Txt>
           </Card>
 
           <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Votes</Txt>
@@ -264,7 +267,7 @@ export default function OnchainClan() {
                   <Txt v="label" color={p.side === 1 ? C.up : C.down}>#{p.id} {p.side === 1 ? 'Long' : 'Short'} {COIN_SYMBOLS[p.coin]} {p.lev}×</Txt>
                   <Txt v="small" color={left ? C.ink : C.muted}>{left ? `${left} s left` : 'Voting closed'}</Txt>
                 </Row>
-                <Txt v="small">{p.sizeBps / 100}% of the chest · proposed by {kp && p.proposer.equals(kp.publicKey) ? 'you' : short(p.proposer.toBase58())}</Txt>
+                <Txt v="small">{p.sizeBps / 100}% of the chest · proposed by {wallet && p.proposer.equals(wallet) ? 'you' : short(p.proposer.toBase58())}</Txt>
                 <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: C.s2, marginTop: 10 }}>
                   <View style={{ flex: total ? p.yes : 0, backgroundColor: C.up }} /><View style={{ flex: total ? p.no : 1, backgroundColor: total ? C.down : C.s2 }} />
                 </View>
@@ -295,7 +298,7 @@ export default function OnchainClan() {
                   <Txt v="label" color={p.side === 1 ? C.up : C.down}>{p.side === 1 ? 'Long' : 'Short'} {COIN_SYMBOLS[p.coin]} {p.lev}×</Txt>
                   {p.open ? <Row style={{ gap: 6 }}><LiveDot color={C.up} /><Txt v="small" color={C.up}>Open</Txt></Row> : <Txt v="small">Closed</Txt>}
                 </Row>
-                <Txt v="small">{sol(p.notional)} SOL notional · entry ${p.entry.toFixed(2)} → {p.open ? (px ? `now $${px.toFixed(2)}` : 'price loading') : `exit $${p.exit.toFixed(2)}`}</Txt>
+                <Txt v="small">{usdc(p.notional)} USDC notional · entry ${p.entry.toFixed(2)} → {p.open ? (px ? `now $${px.toFixed(2)}` : 'price loading') : `exit $${p.exit.toFixed(2)}`}</Txt>
                 <Row style={{ justifyContent: 'space-between', marginTop: 8 }}>
                   <Txt v="title" color={live >= 0 ? C.up : C.down}>{signed(Math.round(live))}</Txt>
                   {p.open && (captain || warOver) ? <Btn title="Close at oracle price" kind="white" h={40} disabled={!!busy} onPress={() => closePos(p)} /> : null}
@@ -330,10 +333,10 @@ export default function OnchainClan() {
                 </Row>
                 {w.status === 0 ? (
                   <>
-                    <Txt v="small" style={{ marginTop: 8 }}>{weA ? `Declared · ${sol(w.stake)} SOL staked from our chest · waiting for ${them?.name ?? 'them'} to accept` : `${them?.name ?? 'A clan'} declared war · stake ${sol(w.stake)} SOL from each chest`}</Txt>
+                    <Txt v="small" style={{ marginTop: 8 }}>{weA ? `Declared · ${usdc(w.stake)} USDC staked from our chest · waiting for ${them?.name ?? 'them'} to accept` : `${them?.name ?? 'A clan'} declared war · stake ${usdc(w.stake)} USDC from each chest`}</Txt>
                     {captain ? (weA
                       ? <Btn title="Withdraw the declaration" kind="ghost" h={40} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => cancelWar(w)} />
-                      : <Btn title={`Accept · stake ${sol(w.stake)} SOL`} h={44} style={{ marginTop: 10 }} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => acceptWar(w)} />)
+                      : <Btn title={`Accept · stake ${usdc(w.stake)} USDC`} h={44} style={{ marginTop: 10 }} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => acceptWar(w)} />)
                       : <Txt v="small" style={{ marginTop: 6 }}>Your captain decides.</Txt>}
                   </>
                 ) : (
@@ -343,7 +346,7 @@ export default function OnchainClan() {
                       <Txt v="title" color={rThem >= 0 ? C.up : C.down}>{rThem >= 0 ? '+' : ''}{(rThem / 100).toFixed(2)}%</Txt>
                     </Row>
                     {Math.abs(rUsLive - rUs) >= 0.5 ? <Txt v="small" color={rUsLive >= 0 ? C.up : C.down}>{rUsLive >= 0 ? '+' : ''}{(rUsLive / 100).toFixed(2)}% if your open trades closed now</Txt> : null}
-                    <Txt v="small" style={{ marginTop: 4 }}>Booked return on each starting chest from closed trades · pot {sol(w.stake * 2)} SOL · {left ? `${left >= 3600 ? `${(left / 3600).toFixed(1)} h` : `${left} s`} left` : 'over'}</Txt>
+                    <Txt v="small" style={{ marginTop: 4 }}>Booked return on each starting chest from closed trades · pot {usdc(w.stake * 2)} USDC · {left ? `${left >= 3600 ? `${(left / 3600).toFixed(1)} h` : `${left} s`} left` : 'over'}</Txt>
                     {left === 0 ? (A && B && (A.positionsOpen > 0 || B.positionsOpen > 0)
                       ? <Txt v="small" color={C.opp} style={{ marginTop: 8 }}>Window over. Every open position must be closed (anyone can now) before the war settles.</Txt>
                       : <Btn title="Settle the war" kind="white" h={44} style={{ marginTop: 10 }} disabled={!!busy} onPress={() => settleWar(w)} />) : null}
@@ -355,14 +358,14 @@ export default function OnchainClan() {
           {activeWars.length === 0 ? (
             captain ? (
               <Card style={{ padding: 14 }}>
-                <Txt v="small" style={{ marginBottom: 6 }}>Stake {WAR_STAKE_SOL} SOL from the chest against a rival (at most half the chest). Best return from closed trades over the window takes the pot.</Txt>
+                <Txt v="small" style={{ marginBottom: 6 }}>Stake {WAR_STAKE_USDC} USDC from the chest against a rival (at most half the chest). Best return from closed trades over the window takes the pot.</Txt>
                 <View style={{ backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 42, justifyContent: 'center', marginBottom: 8 }}>
                   <TextInput value={rivalQ} onChangeText={setRivalQ} placeholder="Find a rival clan" placeholderTextColor={C.muted} autoCorrect={false} autoCapitalize="none"
                     style={{ color: C.ink, fontFamily: F.medium, fontSize: 14 }} />
                 </View>
                 {rivals.length ? <Chips items={rivals.map((c) => ({ key: c.name, label: c.name }))} value={rival} onChange={setRival} /> : <Txt v="small" style={{ marginBottom: 8 }}>{rivalQ ? 'No clan by that name is free to fight.' : `No other clans on ${NET.label} yet.`}</Txt>}
                 <Chips items={WAR_LENGTHS.map((l) => ({ key: l.key, label: l.label }))} value={warLen} onChange={setWarLen} />
-                <Btn title={busy === 'declare' ? 'Declaring…' : rival ? `Declare war on ${rival}` : 'Pick a rival'} kind="short" disabled={!!busy || !rival || mine.chest < 2 * WAR_STAKE_SOL * LAMPORTS_PER_SOL} onPress={declare} />
+                <Btn title={busy === 'declare' ? 'Declaring…' : rival ? `Declare war on ${rival}` : 'Pick a rival'} kind="short" disabled={!!busy || !rival || mine.chest < 2 * WAR_STAKE_USDC * USDC} onPress={declare} />
               </Card>
             ) : <Card style={{ padding: 14 }}><Txt v="small">No war right now. Your captain can declare one.</Txt></Card>
           ) : null}

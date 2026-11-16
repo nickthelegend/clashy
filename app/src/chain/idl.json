@@ -93,11 +93,27 @@
           }
         },
         {
-          "name": "creator",
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator_usdc",
           "writable": true
         },
         {
-          "name": "joiner",
+          "name": "joiner_usdc",
           "writable": true
         },
         {
@@ -105,8 +121,12 @@
           "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -127,6 +147,24 @@
         {
           "name": "captain",
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan_a"
@@ -211,8 +249,24 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -293,6 +347,24 @@
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "duel",
           "writable": true,
           "pda": {
@@ -342,12 +414,32 @@
           }
         },
         {
-          "name": "creator",
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator_usdc",
           "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -355,7 +447,7 @@
     {
       "name": "cancel_tournament",
       "docs": [
-        "Creator cancels an unstarted tournament; remaining accounts are every player's wallet in join order."
+        "Creator cancels an unstarted tournament; remaining accounts are every player's USDC token account in join order."
       ],
       "discriminator": [
         249,
@@ -371,6 +463,24 @@
         {
           "name": "signer",
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "tournament",
@@ -422,8 +532,28 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -447,6 +577,24 @@
         {
           "name": "captain",
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan_a",
@@ -528,8 +676,28 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -856,8 +1024,30 @@
       "accounts": [
         {
           "name": "founder",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "player",
@@ -904,7 +1094,27 @@
           }
         },
         {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "chest",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -952,6 +1162,10 @@
           }
         },
         {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -982,6 +1196,10 @@
       "accounts": [
         {
           "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -1029,7 +1247,27 @@
           }
         },
         {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1048,6 +1286,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "system_program",
@@ -1100,8 +1342,30 @@
       "accounts": [
         {
           "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan_a",
@@ -1161,6 +1425,25 @@
           }
         },
         {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -1181,6 +1464,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "system_program",
@@ -1218,6 +1505,13 @@
         100
       ],
       "accounts": [
+        {
+          "name": "player",
+          "docs": [
+            "One of the duel's two players."
+          ],
+          "signer": true
+        },
         {
           "name": "payer",
           "writable": true,
@@ -1629,6 +1923,13 @@
       ],
       "accounts": [
         {
+          "name": "host",
+          "docs": [
+            "The tournament's creator."
+          ],
+          "signer": true
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -1846,8 +2147,25 @@
       "accounts": [
         {
           "name": "wallet",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan",
@@ -1903,8 +2221,28 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "wallet_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -1933,6 +2271,10 @@
       "accounts": [
         {
           "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2142,6 +2484,10 @@
       "accounts": [
         {
           "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2213,6 +2559,28 @@
           }
         },
         {
+          "name": "usdc_mint",
+          "docs": [
+            "The stake currency (USDC)."
+          ]
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -2251,6 +2619,10 @@
       "accounts": [
         {
           "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2330,8 +2702,25 @@
       "accounts": [
         {
           "name": "joiner",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "player",
@@ -2383,6 +2772,10 @@
           }
         },
         {
+          "name": "joiner_usdc",
+          "writable": true
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -2405,8 +2798,8 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -2436,8 +2829,25 @@
       "accounts": [
         {
           "name": "player",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "tournament",
@@ -2467,6 +2877,10 @@
           }
         },
         {
+          "name": "player_usdc",
+          "writable": true
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -2489,8 +2903,8 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -2513,7 +2927,6 @@
       "accounts": [
         {
           "name": "wallet",
-          "writable": true,
           "signer": true
         },
         {
@@ -2569,6 +2982,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "rent_payer",
+          "writable": true
         }
       ],
       "args": []
@@ -2592,6 +3009,10 @@
       "accounts": [
         {
           "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2661,6 +3082,29 @@
           }
         },
         {
+          "name": "creator_usdc",
+          "writable": true
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -2681,6 +3125,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "system_program",
@@ -2842,6 +3290,10 @@
       "accounts": [
         {
           "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -3095,6 +3547,13 @@
       ],
       "accounts": [
         {
+          "name": "player",
+          "docs": [
+            "One of the duel's two players."
+          ],
+          "signer": true
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -3209,6 +3668,10 @@
         192
       ],
       "accounts": [
+        {
+          "name": "creator",
+          "signer": true
+        },
         {
           "name": "payer",
           "writable": true,
@@ -3797,11 +4260,27 @@
           }
         },
         {
-          "name": "creator",
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator_usdc",
           "writable": true
         },
         {
-          "name": "joiner",
+          "name": "joiner_usdc",
           "writable": true
         },
         {
@@ -3857,8 +4336,12 @@
           "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -3867,7 +4350,7 @@
       "name": "settle_tournament",
       "docs": [
         "Solana: players left with the most lives split the pot minus rake. Remaining accounts are",
-        "every player's wallet in join order."
+        "every player's USDC token account in join order."
       ],
       "discriminator": [
         106,
@@ -3948,12 +4431,32 @@
           }
         },
         {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "treasury",
           "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -4099,12 +4602,32 @@
           }
         },
         {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "treasury",
           "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "rent_payer",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -4407,6 +4930,10 @@
       "accounts": [
         {
           "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -4502,8 +5029,25 @@
       "accounts": [
         {
           "name": "wallet",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan",
@@ -4559,8 +5103,28 @@
           }
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "wallet_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -5049,21 +5613,21 @@
           {
             "name": "chest",
             "docs": [
-              "Lamports in the chest vault: members' deposits, minus war stakes lost, plus war pots won."
+              "USDC base units in the chest vault: members' deposits, minus war stakes lost, plus war pots won."
             ],
             "type": "u64"
           },
           {
             "name": "shares",
             "docs": [
-              "Total chest shares held by members. A share is worth `chest / shares` lamports."
+              "Total chest shares held by members. A share is worth `chest / shares` USDC base units."
             ],
             "type": "u64"
           },
           {
             "name": "score_pnl",
             "docs": [
-              "Realized paper P&L of the clan's voted trades, in lamports of notional."
+              "Realized paper P&L of the clan's voted trades, in USDC base units of notional."
             ],
             "type": "i64"
           },
@@ -5256,6 +5820,20 @@
               "The MagicBlock rollup validator duels and tournaments may be delegated to (set by the admin)."
             ],
             "type": "pubkey"
+          },
+          {
+            "name": "usdc_mint",
+            "docs": [
+              "The stake currency: every stake, chest, war pot and entry is this SPL mint (USDC)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "auth_bump",
+            "docs": [
+              "Bump of the `auth` PDA that owns every vault token account."
+            ],
+            "type": "u8"
           }
         ]
       }
@@ -5452,6 +6030,13 @@
               "When the joiner matched; after DUEL_SETUP_SECS a duel stuck before the rollup can be aborted."
             ],
             "type": "i64"
+          },
+          {
+            "name": "rent_payer",
+            "docs": [
+              "Paid the rent for the duel and its vault (the sponsor); gets the vault's rent back when it closes."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -5537,7 +6122,7 @@
           {
             "name": "deposit",
             "docs": [
-              "Lamports this member put in, net of withdrawals (cost basis, for display)."
+              "USDC base units this member put in, net of withdrawals (cost basis, for display)."
             ],
             "type": "u64"
           },
@@ -5555,6 +6140,13 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "rent_payer",
+            "docs": [
+              "Paid the member account's rent; gets it back when the member leaves."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -5827,6 +6419,13 @@
               "Lobby opened; after TOUR_LOBBY_SECS anyone can cancel an unstarted tournament (full refunds)."
             ],
             "type": "i64"
+          },
+          {
+            "name": "rent_payer",
+            "docs": [
+              "Paid the tournament vault's rent; gets it back when the vault closes."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -5938,6 +6537,13 @@
           {
             "name": "vault_bump",
             "type": "u8"
+          },
+          {
+            "name": "rent_payer",
+            "docs": [
+              "Paid the war vault's rent; gets it back when the vault closes."
+            ],
+            "type": "pubkey"
           }
         ]
       }

@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ClashyWallet } from '@/chain/wallet';
 import { C } from '@/ui/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -24,6 +25,7 @@ export default function Root() {
   if (!loaded || !checked) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
+      <ClashyWallet>
       <ThemeProvider value={theme}>
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }}>
@@ -52,6 +54,7 @@ export default function Root() {
           <Stack.Screen name="duel/result" options={{ gestureEnabled: false, animation: 'fade' }} />
         </Stack>
       </ThemeProvider>
+      </ClashyWallet>
     </GestureHandlerRootView>
   );
 }

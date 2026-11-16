@@ -5,7 +5,7 @@ export type Ranked = { rank: number; name: string; pnl7d: number; winRate: numbe
 export type Profile = { name: string; duels: number; winRate: number; pnl30d: number; bestStreak: number; rank?: number };
 
 export const SOCIAL_LIVE = false;
-export const SOCIAL_SETUP = 'Chats and profiles run on the Clashy program on MagicBlock. They go live at the Blitz kickoff, along with wallet sign-in.';
+export const SOCIAL_SETUP = 'Chats, callouts and shared leaderboards are not on chain yet. On-chain duels, Royales and clan chests already are: sign in and play them from the Arena.';
 
 export type State<T> = { status: 'setup' } | { status: 'ready'; data: T };
 export const useChats = (): State<Chat[]> => (SOCIAL_LIVE ? { status: 'ready', data: [] } : { status: 'setup' });

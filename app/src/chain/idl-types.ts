@@ -99,11 +99,27 @@ export type Clashy = {
           }
         },
         {
-          "name": "creator",
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "creatorUsdc",
           "writable": true
         },
         {
-          "name": "joiner",
+          "name": "joinerUsdc",
           "writable": true
         },
         {
@@ -111,8 +127,12 @@ export type Clashy = {
           "writable": true
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -133,6 +153,24 @@ export type Clashy = {
         {
           "name": "captain",
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clanA"
@@ -217,8 +255,24 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -299,6 +353,24 @@ export type Clashy = {
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "duel",
           "writable": true,
           "pda": {
@@ -348,12 +420,32 @@ export type Clashy = {
           }
         },
         {
-          "name": "creator",
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "creatorUsdc",
           "writable": true
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -361,7 +453,7 @@ export type Clashy = {
     {
       "name": "cancelTournament",
       "docs": [
-        "Creator cancels an unstarted tournament; remaining accounts are every player's wallet in join order."
+        "Creator cancels an unstarted tournament; remaining accounts are every player's USDC token account in join order."
       ],
       "discriminator": [
         249,
@@ -377,6 +469,24 @@ export type Clashy = {
         {
           "name": "signer",
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "tournament",
@@ -428,8 +538,28 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -453,6 +583,24 @@ export type Clashy = {
         {
           "name": "captain",
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clanA",
@@ -534,8 +682,28 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -862,8 +1030,30 @@ export type Clashy = {
       "accounts": [
         {
           "name": "founder",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "player",
@@ -910,7 +1100,27 @@ export type Clashy = {
           }
         },
         {
+          "name": "usdcMint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "chest",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -958,6 +1168,10 @@ export type Clashy = {
           }
         },
         {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
@@ -988,6 +1202,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -1035,7 +1253,27 @@ export type Clashy = {
           }
         },
         {
+          "name": "usdcMint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "vault",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -1054,6 +1292,10 @@ export type Clashy = {
               }
             ]
           }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "systemProgram",
@@ -1106,8 +1348,30 @@ export type Clashy = {
       "accounts": [
         {
           "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clanA",
@@ -1167,6 +1431,25 @@ export type Clashy = {
           }
         },
         {
+          "name": "usdcMint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -1187,6 +1470,10 @@ export type Clashy = {
               }
             ]
           }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "systemProgram",
@@ -1224,6 +1511,13 @@ export type Clashy = {
         100
       ],
       "accounts": [
+        {
+          "name": "player",
+          "docs": [
+            "One of the duel's two players."
+          ],
+          "signer": true
+        },
         {
           "name": "payer",
           "writable": true,
@@ -1635,6 +1929,13 @@ export type Clashy = {
       ],
       "accounts": [
         {
+          "name": "host",
+          "docs": [
+            "The tournament's creator."
+          ],
+          "signer": true
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -1852,8 +2153,25 @@ export type Clashy = {
       "accounts": [
         {
           "name": "wallet",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan",
@@ -1909,8 +2227,28 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "walletUsdc",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -1939,6 +2277,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "captain",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2148,6 +2490,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2219,6 +2565,28 @@ export type Clashy = {
           }
         },
         {
+          "name": "usdcMint",
+          "docs": [
+            "The stake currency (USDC)."
+          ]
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
@@ -2257,6 +2625,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2336,8 +2708,25 @@ export type Clashy = {
       "accounts": [
         {
           "name": "joiner",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "player",
@@ -2389,6 +2778,10 @@ export type Clashy = {
           }
         },
         {
+          "name": "joinerUsdc",
+          "writable": true
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -2411,8 +2804,8 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -2442,8 +2835,25 @@ export type Clashy = {
       "accounts": [
         {
           "name": "player",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "tournament",
@@ -2473,6 +2883,10 @@ export type Clashy = {
           }
         },
         {
+          "name": "playerUsdc",
+          "writable": true
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -2495,8 +2909,8 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -2519,7 +2933,6 @@ export type Clashy = {
       "accounts": [
         {
           "name": "wallet",
-          "writable": true,
           "signer": true
         },
         {
@@ -2575,6 +2988,10 @@ export type Clashy = {
               }
             ]
           }
+        },
+        {
+          "name": "rentPayer",
+          "writable": true
         }
       ],
       "args": []
@@ -2598,6 +3015,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -2667,6 +3088,29 @@ export type Clashy = {
           }
         },
         {
+          "name": "creatorUsdc",
+          "writable": true
+        },
+        {
+          "name": "usdcMint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "vault",
           "writable": true,
           "pda": {
@@ -2687,6 +3131,10 @@ export type Clashy = {
               }
             ]
           }
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "systemProgram",
@@ -2848,6 +3296,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -3101,6 +3553,13 @@ export type Clashy = {
       ],
       "accounts": [
         {
+          "name": "player",
+          "docs": [
+            "One of the duel's two players."
+          ],
+          "signer": true
+        },
+        {
           "name": "payer",
           "writable": true,
           "signer": true
@@ -3215,6 +3674,10 @@ export type Clashy = {
         192
       ],
       "accounts": [
+        {
+          "name": "creator",
+          "signer": true
+        },
         {
           "name": "payer",
           "writable": true,
@@ -3803,11 +4266,27 @@ export type Clashy = {
           }
         },
         {
-          "name": "creator",
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "creatorUsdc",
           "writable": true
         },
         {
-          "name": "joiner",
+          "name": "joinerUsdc",
           "writable": true
         },
         {
@@ -3863,8 +4342,12 @@ export type Clashy = {
           "writable": true
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -3873,7 +4356,7 @@ export type Clashy = {
       "name": "settleTournament",
       "docs": [
         "Solana: players left with the most lives split the pot minus rake. Remaining accounts are",
-        "every player's wallet in join order."
+        "every player's USDC token account in join order."
       ],
       "discriminator": [
         106,
@@ -3954,12 +4437,32 @@ export type Clashy = {
           }
         },
         {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "treasury",
           "writable": true
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -4105,12 +4608,32 @@ export type Clashy = {
           }
         },
         {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "treasury",
           "writable": true
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "rentPayer",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
@@ -4413,6 +4936,10 @@ export type Clashy = {
       "accounts": [
         {
           "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -4508,8 +5035,25 @@ export type Clashy = {
       "accounts": [
         {
           "name": "wallet",
-          "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "clan",
@@ -4565,8 +5109,28 @@ export type Clashy = {
           }
         },
         {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "walletUsdc",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -5055,21 +5619,21 @@ export type Clashy = {
           {
             "name": "chest",
             "docs": [
-              "Lamports in the chest vault: members' deposits, minus war stakes lost, plus war pots won."
+              "USDC base units in the chest vault: members' deposits, minus war stakes lost, plus war pots won."
             ],
             "type": "u64"
           },
           {
             "name": "shares",
             "docs": [
-              "Total chest shares held by members. A share is worth `chest / shares` lamports."
+              "Total chest shares held by members. A share is worth `chest / shares` USDC base units."
             ],
             "type": "u64"
           },
           {
             "name": "scorePnl",
             "docs": [
-              "Realized paper P&L of the clan's voted trades, in lamports of notional."
+              "Realized paper P&L of the clan's voted trades, in USDC base units of notional."
             ],
             "type": "i64"
           },
@@ -5262,6 +5826,20 @@ export type Clashy = {
               "The MagicBlock rollup validator duels and tournaments may be delegated to (set by the admin)."
             ],
             "type": "pubkey"
+          },
+          {
+            "name": "usdcMint",
+            "docs": [
+              "The stake currency: every stake, chest, war pot and entry is this SPL mint (USDC)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "authBump",
+            "docs": [
+              "Bump of the `auth` PDA that owns every vault token account."
+            ],
+            "type": "u8"
           }
         ]
       }
@@ -5458,6 +6036,13 @@ export type Clashy = {
               "When the joiner matched; after DUEL_SETUP_SECS a duel stuck before the rollup can be aborted."
             ],
             "type": "i64"
+          },
+          {
+            "name": "rentPayer",
+            "docs": [
+              "Paid the rent for the duel and its vault (the sponsor); gets the vault's rent back when it closes."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -5543,7 +6128,7 @@ export type Clashy = {
           {
             "name": "deposit",
             "docs": [
-              "Lamports this member put in, net of withdrawals (cost basis, for display)."
+              "USDC base units this member put in, net of withdrawals (cost basis, for display)."
             ],
             "type": "u64"
           },
@@ -5561,6 +6146,13 @@ export type Clashy = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "rentPayer",
+            "docs": [
+              "Paid the member account's rent; gets it back when the member leaves."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -5833,6 +6425,13 @@ export type Clashy = {
               "Lobby opened; after TOUR_LOBBY_SECS anyone can cancel an unstarted tournament (full refunds)."
             ],
             "type": "i64"
+          },
+          {
+            "name": "rentPayer",
+            "docs": [
+              "Paid the tournament vault's rent; gets it back when the vault closes."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -5944,6 +6543,13 @@ export type Clashy = {
           {
             "name": "vaultBump",
             "type": "u8"
+          },
+          {
+            "name": "rentPayer",
+            "docs": [
+              "Paid the war vault's rent; gets it back when the vault closes."
+            ],
+            "type": "pubkey"
           }
         ]
       }
