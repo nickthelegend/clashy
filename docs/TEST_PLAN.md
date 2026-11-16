@@ -11,6 +11,62 @@ except a relay 422 that the screen shows as a readable error on purpose). Checke
 
 Status: `PASS` / `FAIL → fixed → PASS` / `UNTESTED (reason)`.
 
+## Results (Nov 16, 2026, production build, local MagicBlock stack, Privy wallet `GRtL…b8Zq` + 7 friends)
+
+Run in Claude in Chrome (signed out, 1568 px desktop and a 606 px tab) and in the app's browser pane as Nick's signed-in
+Privy wallet (Chrome's own Privy sign-in needs Nick's email code). Every item was re-run after its fix; the last pass
+over all items ran on the final build. Console: zero errors on every route and every flow on the final build (the only
+messages are Privy's two debug lines). Network: every request 2xx; the relay's one deliberate 422 path (a transaction
+the chain refuses) no longer occurs in normal play.
+
+| # | Status | What was wrong → what was fixed |
+|---|---|---|
+| A1 | PASS | – |
+| A2 | FAIL → fixed → PASS | "Twelve ways to win", weekly-war and chat copy described things that do not exist → slides now say USDC, email sign-in, no SOL, clan chests and wars |
+| A3 | PASS | – |
+| A4 | FAIL → fixed → PASS | Right rail had a hardcoded "0 live", a fake "Message your clan" input and "once duels are on chain" → live duel/challenge/Royale/clan counts from the program |
+| A5 | FAIL → fixed → PASS | `/discover`, `/chat/[id]`, `/clan/[id]` unreachable; war preview orphaned → Discover linked from Home; dead routes removed |
+| A6 | FAIL → fixed → PASS | Skirmish and the practice duel overflowed to 758 px at 390 px (the VS sticker starts at 3.2× scale) → full-screen effects clip; all 25 routes measure 375/390 |
+| B1 | PASS | – |
+| B2 | PASS | Privy modal "Sign in to Clashy" (email, Google) verified in Chrome; Nick's own sign-in earlier today created wallet `GRtL…b8Zq` and its player account |
+| B3 | PASS | Faucet 4.07 → 104.07 USDC; button disappears; Open enabled |
+| B4 | FAIL → fixed → PASS | Refunds were labelled "Paid out by a game" → "Back from a game"; history matches every on-chain stake, payout, refund and send |
+| B5 | PASS | Bad address / 0 / over balance errors exact; 3 and 70 USDC sends landed; sender SOL 0 |
+| B6 | PASS | Privy's "Export wallet" opens in Privy's frame (auth.privy.io); the key never enters the app |
+| B7 | UNTESTED | Signing back in needs Nick's email code (Privy identity provider); signing out was not run so his session stays usable |
+| B8 | FAIL → fixed → PASS | Relay down showed empty boards and a developer command → readable "payment relay is offline" message, boards still read the chain, recovers on its own in ~5 s |
+| C1–C5 | PASS (and re-run) | Win (+9.70, balance exact), loss (−5.00), dead heat (stake back) all verified |
+| C2–C3 | FAIL → fixed → PASS | Start on the rollup was sent before the rollup had the delegated copy (two 422s per duel) → "on the rollup" now means the rollup copy is program-owned; zero errors |
+| C6 | FAIL → fixed → PASS | Signed out, the board said "No open duels" while Mira's challenge was open → board reads the chain without a wallet; joined Mira's challenge and won |
+| C7 | PASS | Cancel refunds the full 5 USDC |
+| C8 | PASS | Below 5 USDC, Open is disabled and the faucet is offered |
+| C9 | FAIL → fixed → PASS | Profile showed placeholders and fake "Gold III" → on-chain record (2–0, Elo 1031, 50 RP, best streak 2, #1 of 7), settled-duel history, badges earned only from chain facts |
+| C+ | FAIL → fixed → PASS | A duel whose creator leaves was stuck (only the creator could roll VRF / delegate / start) → the joiner's device drives after 8 s; after the 10-min setup window a refund button calls the program's abort (unlock waits 3 s for the chain clock: the first try was refused with NotExpired) |
+| D1–D5 | PASS (and re-run) | Hosted 3/4 seats with Ash and Bo, VRF coin, rounds on the rollup; knocked out (balance unchanged) and won as last survivor (+5.82) |
+| D5 | FAIL → fixed → PASS | "Last one standing." shown even with several survivors; no survivor names → exact survivor count, names and payout |
+| D6 | FAIL → fixed → PASS | Lobby hidden when signed out; full lobbies showed "Join" → lobby reads the chain; "Full"; lobby age shown |
+| D7 | PASS | Cancel with 3 players refunds every entry |
+| E1–E7 | PASS | Name rules, deposit (share 67%), Lux joins and votes, early pass, execute/close at the Solana price (P&L to the cent), war lost −0.58% vs 0.00%, tie refunded, cash-out exactly pro rata (16.67) |
+| E1 | FAIL → fixed → PASS | Clan list empty when signed out ("No clans yet") → reads the chain without a wallet |
+| E5 | FAIL → fixed → PASS | Prices shown from the rollup feed but trades executed at the Solana feed → shows the Solana price |
+| E8 | PASS | At war: +5/+20/Cash out disabled with "deposits and cash-outs wait until it settles" |
+| F1 | FAIL → fixed → PASS | Fake story bubble, dead bell, Post, "posting opens at kickoff" → live-now stories, open challenges (Join) and results from the chain, balance chip |
+| F2 | FAIL → fixed → PASS | "Setup required: clans" with a disabled Create → real clans, your clan, Create/Join to the clan screen |
+| F3 | FAIL → fixed → PASS | Dashed placeholder podium, dead range buttons → on-chain ranking |
+| F4 | FAIL → fixed → PASS | (see C9) |
+| F5 | FAIL → fixed → PASS | Fake 700 ms skeleton → honest "not built yet" |
+| F6 | FAIL → fixed → PASS | Real-USDC modes labelled "Practice", "real duels open at kickoff", Clan war "Soon", stake chips on modes that ignore them → USDC/Practice/Preview badges, stakes only where used, Clan war opens the real war |
+| F7–F8 | FAIL → fixed → PASS | Practice screens titled like the real duel; clash claimed "your opponent picks theirs" and "Real clashes … settle on Solana"; "until real duels open" → practice labels and true copy |
+| F9 | FAIL → fixed → PASS | Daily Cup retry by leaving mid-run → attempt recorded at start; used cup shows only "Today's run is done" |
+| F10 | FAIL → fixed → PASS | Diamond "+-2.8%"; Skirmish round with no price never ended; feed errors silent in Skirmish/Snipe/Streak; 28 "navigator.vibrate blocked" console errors → fixed sign, waits for a price, feed errors shown, vibrate only after a tap |
+| F11 | FAIL → fixed → PASS | Reset wiped without asking → two-tap confirm |
+| F12 | FAIL → fixed → PASS | Bounty board, sort chips and Post did nothing; Ranked claimed a VRF ranked queue → Bounty is an honest preview; "Surprise me" practice roll |
+| F13 | FAIL → fixed → PASS | Discover unreachable, market cap in the price column; coin page "No duels on this coin yet" while SOL had on-chain duels → linked, price column, real top duelists |
+
+**Zero mocks or stubs remain in the tested surface:** every number on the USDC screens, Home, Clans, Leaderboard,
+Profile and the rail is read from the Clashy program or the token accounts; practice games use live Coinbase /
+DexScreener prices and say "no money moves"; features that do not exist (chat, bounties) say so.
+
 ## A. Shell and navigation
 
 | # | Item | Correct means |

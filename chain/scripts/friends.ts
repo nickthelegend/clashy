@@ -44,7 +44,8 @@ async function live<T>(kind: 'duel' | 'tournament', key: PublicKey): Promise<{ v
   if (!b) return null;
   if (b.owner.equals(baseProgram.programId)) return { v: baseProgram.coder.accounts.decode(kind, b.data) as T, onEr: false };
   const e = await er.getAccountInfo(key).catch(() => null);
-  return e ? { v: erProgram.coder.accounts.decode(kind, e.data) as T, onEr: true } : null;
+  // the rollup copy counts once it is the delegated one (owned by the program); a fresh read-only clone is not yet
+  return e && e.owner.equals(baseProgram.programId) ? { v: erProgram.coder.accounts.decode(kind, e.data) as T, onEr: true } : null;
 }
 type Duel = { creator: PublicKey; joiner: PublicKey; nonce: BN; status: number; coin: number; vrfPending: boolean; picksCommitted: number; picksRevealed: number; expiresAt: BN };
 type Tour = { creator: PublicKey; nonce: BN; status: number; coin: number; count: number; maxPlayers: number; players: PublicKey[]; lives: number[]; calls: number[]; vrfPending: boolean; roundStartedAt: BN; roundSecs: number; round: number };
