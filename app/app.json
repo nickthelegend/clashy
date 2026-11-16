@@ -20,7 +20,7 @@
       "package": "fun.clashy.app"
     },
     "web": {
-      "output": "server",
+      "output": "single",
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [

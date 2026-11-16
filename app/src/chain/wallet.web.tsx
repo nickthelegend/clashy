@@ -1,7 +1,7 @@
 // Web: Privy. Email or Google sign-in; Privy makes the player's Solana wallet on first login and signs silently inside
 // its own frame (the key never reaches this app). The wallet only ever holds USDC: the sponsor relay pays fees and rent.
 // EXPO_PUBLIC_CLASHY_DEV_WALLET=1 swaps Privy for a device test key (automated browser tests on the local stack).
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import { useExportWallet, useFundWallet, useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
 import { createSolanaRpc, createSolanaRpcSubscriptions } from '@solana/kit';
@@ -52,10 +52,22 @@ function Missing({ children }: { children: ReactNode }) {
   return <WalletCtx.Provider value={value}>{children}</WalletCtx.Provider>;
 }
 
+/** Server render and first paint: no Privy yet (it needs the browser), so the wallet reads as loading. */
+function Loading({ children }: { children: ReactNode }) {
+  return <WalletCtx.Provider value={{ status: 'loading', signer: null }}>{children}</WalletCtx.Provider>;
+}
+
 export function ClashyWallet({ children }: { children: ReactNode }) {
-  useEffect(() => { if (DEV) console.info('Clashy: device test wallet (EXPO_PUBLIC_CLASHY_DEV_WALLET=1)'); }, []);
+  // Privy only runs in the browser: rendering it in Expo's server render throws, and symbolicating that error
+  // against the full source map ran Metro out of memory. Mount it after hydration instead.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    if (DEV) console.info('Clashy: device test wallet (EXPO_PUBLIC_CLASHY_DEV_WALLET=1)');
+  }, []);
   if (DEV) return <DeviceWallet>{children}</DeviceWallet>;
   if (!APP_ID) return <Missing>{children}</Missing>;
+  if (!mounted) return <Loading>{children}</Loading>;
   const ws = NET.base.replace(/^http/, 'ws').replace(/:(\d+)$/, (_, p) => `:${Number(p) + 1}`);
   return (
     <PrivyProvider
