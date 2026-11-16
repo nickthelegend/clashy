@@ -10,6 +10,14 @@ import { C } from '@/ui/tokens';
 
 SplashScreen.preventAutoHideAsync();
 
+// Web: haptics map to navigator.vibrate, which the browser blocks (and logs as an error) until the person has tapped
+// the page. Games fire haptics on their own events (a round resolving, the VS intro), so only vibrate after a tap.
+if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+  const vibrate = navigator.vibrate.bind(navigator);
+  const activation = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
+  navigator.vibrate = ((pattern: VibratePattern) => (activation && !activation.hasBeenActive ? false : vibrate(pattern))) as Navigator['vibrate'];
+}
+
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, text: C.ink, border: C.line, primary: C.brand } };
 const ONBOARDED_KEY = 'clashy:onboarded';
 

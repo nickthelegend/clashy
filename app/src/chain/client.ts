@@ -196,7 +196,8 @@ export type TourView = {
 /** Reads a tournament from wherever it lives right now (the rollup while delegated, otherwise Solana). */
 export async function readTour(prog: Program<Clashy>, key: PublicKey): Promise<TourView | null> {
   const [b, e] = await Promise.all([base.getAccountInfo(key), er.getAccountInfo(key).catch(() => null)]);
-  const onEr = !!b && !b.owner.equals(PROGRAM_ID) && !!e;
+  // on the rollup once its copy there is the delegated one (owned by the program); a fresh read-only clone is not yet
+  const onEr = !!b && !b.owner.equals(PROGRAM_ID) && !!e && e.owner.equals(PROGRAM_ID);
   const info = onEr ? e : b;
   if (!info || !(onEr || info.owner.equals(PROGRAM_ID))) return null;
   const t = prog.coder.accounts.decode('tournament', info.data);
@@ -239,7 +240,8 @@ export type DuelView = {
 /** Reads a duel from wherever it lives right now (the rollup while delegated, otherwise Solana). */
 export async function readDuel(prog: Program<Clashy>, key: PublicKey): Promise<DuelView | null> {
   const [b, e] = await Promise.all([base.getAccountInfo(key), er.getAccountInfo(key).catch(() => null)]);
-  const onEr = !!b && !b.owner.equals(PROGRAM_ID) && !!e;
+  // on the rollup once its copy there is the delegated one (owned by the program); a fresh read-only clone is not yet
+  const onEr = !!b && !b.owner.equals(PROGRAM_ID) && !!e && e.owner.equals(PROGRAM_ID);
   const info = onEr ? e : b;
   if (!info || !(onEr || info.owner.equals(PROGRAM_ID))) return null;
   const d = prog.coder.accounts.decode('duel', info.data);

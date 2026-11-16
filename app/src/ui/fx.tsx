@@ -59,7 +59,7 @@ export function VsIntro({ left, right, leftLabel, rightLabel, onDone }: { left: 
   const V = useAnimatedStyle(() => ({ opacity: vo.value, transform: [{ scale: vs.value }, { rotate: '-8deg' }] }));
   const S = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
   return (
-    <Animated.View exiting={FadeOut.duration(250)} style={[{ position: 'absolute', inset: 0, zIndex: 60, backgroundColor: '#05050A', alignItems: 'center', justifyContent: 'center' }, S]}>
+    <Animated.View exiting={FadeOut.duration(250)} style={[{ position: 'absolute', inset: 0, zIndex: 60, backgroundColor: '#05050A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, S]}>
       <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%', backgroundColor: 'rgba(91,108,255,0.22)' }} />
       <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%', backgroundColor: 'rgba(240,70,140,0.2)' }} />
       <View style={{ flexDirection: 'row', width: '100%', maxWidth: 560, justifyContent: 'space-between', paddingHorizontal: 22 }}>
@@ -203,7 +203,7 @@ export { FadeIn };
 export function RoundBanner({ round }: { round: number }) {
   if (!round) return null;
   return (
-    <Animated.View key={round} pointerEvents="none" entering={ZoomIn.springify().damping(10)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, top: '16%', alignItems: 'center', zIndex: 44 }}>
+    <Animated.View key={round} pointerEvents="none" entering={ZoomIn.springify().damping(10)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', left: 0, right: 0, top: '16%', alignItems: 'center', zIndex: 44, overflow: 'hidden' }}>
       <AutoHide ms={1100}>
         <View style={{ width: 320, height: 120, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={FX.round} style={{ position: 'absolute', width: 320, height: 120 }} contentFit="contain" />
