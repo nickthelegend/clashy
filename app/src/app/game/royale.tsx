@@ -108,7 +108,7 @@ export default function Royale() {
             <CountUp to={Math.max(0, round - 1)} ms={800} format={(v) => `You survived ${Math.round(v)} round${Math.round(v) === 1 ? '' : 's'}`} style={{ fontFamily: F.semi, fontSize: 15, color: C.ink, marginTop: 4 }} />
           </View>
         ) : (
-          <Txt v="small" color="#B9B9C2" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Every {ROUND} s, call where {coin} goes. Wrong or no call costs a life. Last one standing wins.</Txt>
+          <Txt v="small" color="#B9B9C2" style={{ marginTop: 8, textAlign: 'center', lineHeight: 18 }}>Every {ROUND} s, call where {coin} goes. Wrong or no call costs a life. Survive as many rounds as you can.</Txt>
         )}
         {best !== null ? <Txt v="small" style={{ marginTop: 8 }}>Your best: {best} rounds</Txt> : null}
       </Card>

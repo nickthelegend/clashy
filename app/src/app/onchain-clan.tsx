@@ -10,8 +10,9 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, NET, P, PROGRAM_ID, PublicKey, USDC, USDC_MINT, usdcAta, base, byClan, clanName, pnlBps, priceOf,
+  BN, COIN_SYMBOLS, NET, P, PROGRAM_ID, PublicKey, USDC, USDC_MINT, usdcAta, base, basePriceOf, byClan, clanName, pnlBps,
 } from '@/chain/client';
+import { reader } from '@/chain/reads';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { Art, BackBtn, Btn, CRESTS, Card, Chips, ErrorLine, LiveDot, Row, Tag, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -65,7 +66,8 @@ export default function OnchainClan() {
   const [size, setSize] = useState<'2500' | '5000' | '10000'>('5000');
 
   useEffect(() => {
-    if (!progs || !wallet || !sponsor) return;
+    // clans are public: read them whether or not this device has signed in (signed out = browse only)
+    const rp = progs?.base ?? reader;
     let alive = true;
     const load = async () => {
       try {
@@ -73,23 +75,23 @@ export default function OnchainClan() {
           key, name: clanName(c.name), captain: c.captain, crest: c.crest, members: c.members, chest: Number(c.chest), shares: Number(c.shares), openVotes: c.openVotes, positionsOpen: c.positionsOpen,
           score: Number(c.scorePnl), proposals: Number(c.proposals), war: c.war,
         });
-        const all = (await progs.base.account.clan.all()).map((a) => toView(a.publicKey, a.account));
-        const player = hasPlayer ? await progs.base.account.player.fetch(P.player(wallet)).catch(() => null) : null;
+        const all = (await rp.account.clan.all()).map((a) => toView(a.publicKey, a.account));
+        const player = wallet && hasPlayer ? await rp.account.player.fetch(P.player(wallet)).catch(() => null) : null;
         const myKey = player && !player.clan.equals(PublicKey.default) ? player.clan : null;
         const my = myKey ? all.find((c) => c.key.equals(myKey)) ?? null : null;
-        const px = await Promise.all([0, 1, 2].map((i) => priceOf(progs.base, i).catch(() => null)));
+        const px = await Promise.all([0, 1, 2].map((i) => basePriceOf(rp, i).catch(() => null)));
         if (!alive) return;
         setClans(all.sort((a, b) => b.chest - a.chest));
         setMine(my);
         setPrices(px);
         setLoadErr(undefined);
-        if (!my) { setProps([]); setPositions([]); setMyDeposit(0); setMyShares(0); return; }
+        if (!my || !wallet) { setProps([]); setPositions([]); setMyDeposit(0); setMyShares(0); return; }
         const [m, ps, pos, warsA, warsB] = await Promise.all([
-          progs.base.account.member.fetch(P.member(my.key, wallet)).catch(() => null),
-          progs.base.account.proposal.all(byClan(my.key)),
-          progs.base.account.clanPosition.all(byClan(my.key)),
-          progs.base.account.war.all([{ memcmp: { offset: 8, bytes: my.key.toBase58() } }]),
-          progs.base.account.war.all([{ memcmp: { offset: 40, bytes: my.key.toBase58() } }]),
+          rp.account.member.fetch(P.member(my.key, wallet)).catch(() => null),
+          rp.account.proposal.all(byClan(my.key)),
+          rp.account.clanPosition.all(byClan(my.key)),
+          rp.account.war.all([{ memcmp: { offset: 8, bytes: my.key.toBase58() } }]),
+          rp.account.war.all([{ memcmp: { offset: 40, bytes: my.key.toBase58() } }]),
         ]);
         const votes = await base.getMultipleAccountsInfo(ps.map((p) => P.vote(p.publicKey, wallet)));
         if (!alive) return;
@@ -303,7 +305,7 @@ export default function OnchainClan() {
                   <Txt v="title" color={live >= 0 ? C.up : C.down}>{signed(Math.round(live))}</Txt>
                   {p.open && (captain || warOver) ? <Btn title="Close at oracle price" kind="white" h={40} disabled={!!busy} onPress={() => closePos(p)} /> : null}
                 </Row>
-                {p.open ? <Txt v="small" style={{ marginTop: 4 }}>Live P&L at the rollup price; booked to the clan score at close.</Txt> : null}
+                {p.open ? <Txt v="small" style={{ marginTop: 4 }}>Live P&L at the Solana price; booked to the clan score at close.</Txt> : null}
               </Card>
             );
           })}

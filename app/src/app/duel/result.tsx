@@ -68,7 +68,7 @@ export default function Result() {
           <Card style={{ flex: 1, alignItems: 'center', borderWidth: 1.5, borderColor: !won && !flat && p.reason !== 'ko' ? C.opp : 'transparent' }}><Txt v="num" color={rPct >= 0 ? C.up : C.down}>{rPct >= 0 ? '+' : ''}{rPct.toFixed(1)}%</Txt><Txt v="small">{quick ? 'Practice rival' : `Rival coin · ${p.rival}`}</Txt></Card>
         </Row>
       ) : null}
-      <Card style={{ marginTop: 10 }}><Txt v="small" style={{ lineHeight: 18 }}>{quick ? 'Practice quick match: one rolled coin, a practice rival on the other side, live prices, no money. Real quick matches pair you with a person, roll the coin with MagicBlock VRF and settle the pot on Solana.' : 'Practice coin clash: your coin races a rival coin on live prices, with no money. Real clashes are against people and settle the pot on Solana via a MagicBlock rollup.'}</Txt></Card>
+      <Card style={{ marginTop: 10 }}><Txt v="small" style={{ lineHeight: 18 }}>{quick ? 'Practice duel: one rolled coin, a practice rival on the other side, live prices, no money. The real duel is the 5 USDC Knockout duel in the Arena: a person, a coin rolled by MagicBlock VRF, settled on Solana.' : 'Practice coin clash: your coin races a rival coin on live prices, with no money. Coin clash is practice only; the real duel is the 5 USDC Knockout duel in the Arena.'}</Txt></Card>
       <View style={{ flex: 1 }} />
       {quick && won ? (
         <Animated.View entering={FadeInDown.delay(500).springify().damping(13)} style={{ borderRadius: 22, padding: 14, marginBottom: 10, backgroundColor: '#1A1206', borderWidth: 1.5, borderColor: 'rgba(255,201,74,0.5)' }}>

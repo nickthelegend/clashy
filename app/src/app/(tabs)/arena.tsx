@@ -16,32 +16,42 @@ import { useLayout } from '@/ui/layout';
 import { Bob } from '@/ui/fx';
 import { ScrollView } from 'react-native';
 
-type Mode = { key: string; title: string; who: string; line: string; art: number; banner?: number; live: boolean };
+/** usdc: the real program, real USDC (test USDC on the local fork). practice: free, live prices, no money. preview: not playable yet. */
+type Kind = 'usdc' | 'practice' | 'preview';
+type Mode = { key: string; title: string; who: string; line: string; art: number; banner?: number; live: boolean; kind: Kind };
 const MODES: Mode[] = [
-  { key: 'onchain', title: 'On-chain duel', who: 'Real escrow · Solana + MagicBlock rollup', line: 'The real program: stakes in escrow, a rolled coin, sealed picks, scored live on a MagicBlock rollup and settled on Solana.', art: ART.tileDuel, live: true },
-  { key: 'onchain-royale', title: 'On-chain Royale', who: 'Real escrow · 2–16 players · 10 s rounds', line: 'Entries in escrow, rounds called on a MagicBlock rollup, survivors paid on Solana.', art: ART.tileRoyale, live: true },
-  { key: 'onchain-clan', title: 'On-chain clan', who: 'Real chest · weighted votes', line: 'A clan chest on Solana: propose a trade, vote by deposit, the captain executes it at the live price.', art: ART.coinsPile ?? ART.crown, live: true },
-  { key: 'ko', title: 'Knockout duel', who: '1 v 1 · quick match · 60 s', line: 'Quick match a rival. One coin is rolled for both of you (MagicBlock VRF in the on-chain duel). Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, banner: ART.bannerDuel, live: true },
-  { key: 'clash', title: 'Coin clash', who: '1 v 1 · each picks a coin · 60 s', line: 'You pick any coin, they pick theirs. Best % in 60 s takes the pot.', art: ART.ko, live: true },
-  { key: 'diamond', title: 'Diamond Hands', who: 'Solo now · rooms at launch · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true },
-  { key: 'streak', title: 'Hot Streak', who: 'Solo · a call every 5 s', line: 'Higher or lower, every 5 seconds. The combo grows with your streak. One miss ends it.', art: ART.ko, live: true },
-  { key: 'snipe', title: 'Peak Snipe', who: 'Solo · 30 s · one tap', line: 'Hold a live coin for 30 seconds. One tap to sell. Score how close you got to the top.', art: ART.tileBounty, live: true },
-  { key: 'cup', title: 'Daily Cup', who: 'Everyone · one run a day', line: 'One coin of the day for everyone. One shot at Draw the line. New cup at 00:00 UTC.', art: ART.tileCup, banner: ART.bannerCup, live: true },
-  { key: 'line', title: 'Draw the line', who: '3–10 players · any coin', line: 'Draw the next 60 s with your finger. Closest line wins the room.', art: ART.tileLine, banner: ART.bannerLine, live: true },
-  { key: 'skirmish', title: 'Clan Skirmish', who: 'Clan vs clan · best of 5', line: 'Each round rolls a coin. Make your clan\'s call. First clan to 3 rounds wins.', art: ART.tileWar, live: true },
-  { key: 'chest', title: 'Clan Chest', who: 'Trade as a group', line: 'Propose a trade on the clan pot, vote, and the captain executes it on the live price.', art: ART.coinsPile ?? ART.crown, live: true },
-  { key: 'war', title: 'Clan war', who: 'Clan vs clan · one week', line: 'Push the pot, trade any coins, best return wins the war.', art: ART.tileWar, banner: ART.bannerWar, live: false },
-  { key: 'royale', title: 'Royale', who: '5–20 players · 10 s rounds', line: 'Call up or down on any coin. Wrong call loses a life.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true },
-  { key: 'bounty', title: 'Bounty', who: 'Open · one week', line: 'Put a price on your head. Beat it and take it.', art: ART.tileBounty, banner: ART.bannerBounty, live: false },
+  { key: 'onchain', title: 'Knockout duel', who: '1 v 1 · 5 USDC each · 60 s', line: 'Quick match a rival for 5 USDC. MagicBlock VRF rolls one coin for both of you, picks are sealed, the duel is scored live on a MagicBlock rollup and paid out on Solana.', art: ART.tileDuel, banner: ART.bannerDuel, live: true, kind: 'usdc' },
+  { key: 'onchain-royale', title: 'Royale', who: '2–16 players · 2 USDC entry · 10 s rounds', line: 'Call up or down every round on a coin rolled by MagicBlock VRF. Wrong call loses a heart. Survivors split the pot.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true, kind: 'usdc' },
+  { key: 'onchain-clan', title: 'Clan chest', who: 'Your crew · a shared USDC chest', line: 'Pool USDC with your clan, propose a trade, vote by chest share, and the captain executes it at the live price.', art: ART.coinsPile ?? ART.crown, live: true, kind: 'usdc' },
+  { key: 'war', title: 'Clan war', who: 'Clan vs clan · USDC from each chest', line: 'Stake USDC from your chest against a rival clan. Best return from the trades you close in the window takes the pot.', art: ART.tileWar, banner: ART.bannerWar, live: true, kind: 'usdc' },
+  { key: 'ko', title: 'Practice duel', who: '1 v 1 · 60 s · no money', line: 'The knockout duel on a live price against a practice rival. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, live: true, kind: 'practice' },
+  { key: 'clash', title: 'Coin clash', who: '1 v 1 · pick any coin · 60 s', line: 'You pick any coin against a practice rival on another coin. Best % in 60 s wins.', art: ART.ko, live: true, kind: 'practice' },
+  { key: 'diamond', title: 'Diamond Hands', who: 'Solo · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true, kind: 'practice' },
+  { key: 'streak', title: 'Hot Streak', who: 'Solo · a call every 5 s', line: 'Higher or lower, every 5 seconds. The combo grows with your streak. One miss ends it.', art: ART.ko, live: true, kind: 'practice' },
+  { key: 'snipe', title: 'Peak Snipe', who: 'Solo · 30 s · one tap', line: 'Hold a live coin for 30 seconds. One tap to sell. Score how close you got to the top.', art: ART.tileBounty, live: true, kind: 'practice' },
+  { key: 'cup', title: 'Daily Cup', who: 'One run a day', line: 'One coin of the day. One shot at Draw the line. New cup at 00:00 UTC.', art: ART.tileCup, banner: ART.bannerCup, live: true, kind: 'practice' },
+  { key: 'line', title: 'Draw the line', who: 'Solo · any major coin', line: 'Draw the next 60 s with your finger. The closer your line, the higher your score.', art: ART.tileLine, banner: ART.bannerLine, live: true, kind: 'practice' },
+  { key: 'royale', title: 'Practice Royale', who: 'Solo · 10 s rounds', line: 'Call up or down on a live coin. Wrong call loses a life.', art: ART.tileRoyale, live: true, kind: 'practice' },
+  { key: 'skirmish', title: 'Clan Skirmish', who: 'You vs a practice clan · best of 5', line: 'Each round rolls a coin. Make the call for your side. First to 3 rounds wins.', art: ART.tileWar, live: true, kind: 'practice' },
+  { key: 'chest', title: 'Practice chest', who: 'Clan chest on this device', line: 'Try the clan chest without money: propose, vote, execute and close on live prices.', art: ART.coinsPile ?? ART.crown, live: true, kind: 'practice' },
+  { key: 'bounty', title: 'Bounty', who: 'Preview', line: 'Put a price on your head. Beat it and take it. Not playable yet: your practice records show what a bounty would be.', art: ART.tileBounty, banner: ART.bannerBounty, live: false, kind: 'preview' },
 ];
+const BADGE: Record<Kind, { label: string; color: string; bg: string }> = {
+  usdc: { label: 'USDC', color: C.up, bg: C.upBg },
+  practice: { label: 'Practice', color: C.brandSoft, bg: 'rgba(91,108,255,0.16)' },
+  preview: { label: 'Preview', color: C.muted, bg: C.s2 },
+};
+/** Only the practice duel and Coin clash use the stake chips (practice P&L in $); USDC modes have fixed on-chain stakes. */
+const usesStake = (key: string) => key === 'ko' || key === 'clash';
+const note = (m: Mode) => (m.kind === 'usdc' ? 'Real USDC · every fee paid by Clashy · settled on Solana' : m.kind === 'practice' ? 'Free practice on a live price · no money moves' : 'Not playable yet');
 /** Higgsfield clay loops for the games that have one. */
-const LOOPS: Record<string, ClayName | undefined> = { ko: 'duel', royale: 'royale', 'onchain-royale': 'royale', diamond: 'diamond', line: 'line', cup: 'cup', skirmish: 'war', war: 'war' };
+const LOOPS: Record<string, ClayName | undefined> = { onchain: 'duel', ko: 'duel', royale: 'royale', 'onchain-royale': 'royale', diamond: 'diamond', line: 'line', cup: 'cup', skirmish: 'war', war: 'war' };
 const STAKES = [5, 10, 20, 50];
 /** Opens a mode's game. Practice modes play on live prices; Clan war and Bounty open their preview screens. */
 const play = (key: string, stake: number) => {
   if (key === 'line') router.push('/game/line');
   else if (key === 'royale') router.push('/game/royale');
-  else if (key === 'war') router.push('/game/war');
+  else if (key === 'war') router.push('/onchain-clan');
   else if (key === 'onchain') router.push('/onchain');
   else if (key === 'onchain-royale') router.push('/onchain-royale');
   else if (key === 'onchain-clan') router.push('/onchain-clan');
@@ -66,7 +76,7 @@ function ArenaDesk() {
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 28, gap: 16 }}>
         <Row style={{ justifyContent: 'space-between' }}>
-          <View><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>Three modes run on the real program: escrow on Solana, play on a MagicBlock rollup. The rest are free practice on live prices.</Txt></View>
+          <View style={{ flex: 1 }}><Txt v="title">Arena</Txt><Txt v="small" style={{ marginTop: 4 }}>USDC modes run on the Clashy program: escrow on Solana, play on a MagicBlock rollup, no SOL needed. Practice modes are free on live prices.</Txt></View>
           <Btn title="Leaderboard" kind="ghost" h={38} onPress={() => router.push('/leaderboard')} />
         </Row>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
@@ -82,7 +92,7 @@ function ArenaDesk() {
                 )}
                 <Row style={{ justifyContent: 'space-between', marginTop: 12 }}>
                   <Txt v="h2">{g.title}</Txt>
-                  <View style={{ backgroundColor: g.live ? C.upBg : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}><Txt v="small" color={g.live ? C.up : C.muted} style={{ fontSize: 11 }}>{g.live ? 'Practice' : 'Soon'}</Txt></View>
+                  <View style={{ backgroundColor: BADGE[g.kind].bg, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}><Txt v="small" color={BADGE[g.kind].color} style={{ fontSize: 11 }}>{BADGE[g.kind].label}</Txt></View>
                 </Row>
                 <Txt v="small" style={{ marginTop: 4 }}>{g.who}</Txt>
               </Pressable>
@@ -95,13 +105,17 @@ function ArenaDesk() {
         <Txt v="title" style={{ marginTop: 6 }}>{m.title}</Txt>
         <Txt v="small" style={{ marginTop: 4 }}>{m.who}</Txt>
         <Txt v="body" color="#B9B9C2" style={{ marginTop: 14, lineHeight: 21 }}>{m.line}</Txt>
-        <Txt v="small" color={C.ink} style={{ marginTop: 22, marginBottom: 8 }}>Stake</Txt>
-        <Row style={{ gap: 8 }}>
-          {STAKES.map((v) => <Btn key={v} title={`$${v}`} h={38} kind={stake === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setStake(v)} />)}
-        </Row>
+        {usesStake(m.key) ? (
+          <>
+            <Txt v="small" color={C.ink} style={{ marginTop: 22, marginBottom: 8 }}>Practice stake</Txt>
+            <Row style={{ gap: 8 }}>
+              {STAKES.map((v) => <Btn key={v} title={`$${v}`} h={38} kind={stake === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setStake(v)} />)}
+            </Row>
+          </>
+        ) : null}
         <View style={{ flex: 1 }} />
         <Btn title={m.live ? 'Battle' : 'See how it works'} h={60} kind={m.live ? 'brand' : 'white'} icon={m.live ? <Swords size={20} color="#fff" /> : undefined} style={{ borderRadius: 18 }} onPress={battle} />
-        <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>{m.live ? 'Practice on a live price · real duels open at the Blitz kickoff' : 'Preview on live coins · wars and bounties open at the Blitz kickoff'}</Txt>
+        <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>{note(m)}</Txt>
       </View>
     </View>
   );
@@ -129,8 +143,8 @@ function ArenaPhone() {
       <Row style={{ justifyContent: 'space-between' }}>
         <Txt v="title">Arena</Txt>
         <Row style={{ gap: 8 }}>
-          <View style={{ backgroundColor: C.upBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Txt v="small" color={C.up} style={{ fontSize: 11.5 }}>Practice open</Txt></View>
-          <Btn title="Ranked" kind="white" h={32} onPress={() => router.push('/ranked')} />
+          <View style={{ backgroundColor: BADGE[m.kind].bg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}><Txt v="small" color={BADGE[m.kind].color} style={{ fontSize: 11.5 }}>{BADGE[m.kind].label}</Txt></View>
+          <Btn title="Surprise me" kind="white" h={32} onPress={() => router.push('/ranked')} />
           <Btn title="Ranks" kind="ghost" h={32} onPress={() => router.push('/leaderboard')} />
         </Row>
       </Row>
@@ -156,11 +170,13 @@ function ArenaPhone() {
         </View>
       </GestureDetector>
 
-      <Row style={{ gap: 8, justifyContent: 'center', marginBottom: 14 }}>
-        {STAKES.map((v) => (
-          <Btn key={v} title={`$${v}`} h={36} kind={stake === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setStake(v)} />
-        ))}
-      </Row>
+      {usesStake(m.key) ? (
+        <Row style={{ gap: 8, justifyContent: 'center', marginBottom: 14 }}>
+          {STAKES.map((v) => (
+            <Btn key={v} title={`$${v}`} h={36} kind={stake === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setStake(v)} />
+          ))}
+        </Row>
+      ) : <Txt v="small" style={{ textAlign: 'center', marginBottom: 14 }}>{note(m)}</Txt>}
       <Btn
         title={m.live ? 'Battle' : 'See how it works'}
         h={60}

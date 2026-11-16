@@ -24,6 +24,7 @@ export default function ClanChest() {
   const majors = useMajors();
   const price = (id: string) => majors.data?.find((m) => m.id === id)?.price;
   const { chest, propose, vote, execute, drop, close, reset } = useChest();
+  const [confirmReset, setConfirmReset] = useState(false);
   const [tab, setTab] = useState<Tab>('votes');
   const [coin, setCoin] = useState('SOL');
   const [side, setSide] = useState<Side>('long');
@@ -57,8 +58,12 @@ export default function ClanChest() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 28 }}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">Clan Chest</Txt><Txt v="small">Trade together · the pot only moves by vote</Txt></View>
-        <Btn title="Reset" kind="ghost" h={32} onPress={reset} />
+        <View style={{ flex: 1 }}><Txt v="h2">Practice chest</Txt><Txt v="small">Trade together · no money · the pot only moves by vote</Txt></View>
+        <Btn title={confirmReset ? 'Tap again to wipe' : 'Reset'} kind={confirmReset ? 'short' : 'ghost'} h={32} onPress={() => {
+          if (confirmReset) { reset(); setConfirmReset(false); return; }
+          setConfirmReset(true);
+          setTimeout(() => setConfirmReset(false), 3000);
+        }} />
       </Row>
 
       {/* the chest */}
@@ -75,7 +80,7 @@ export default function ClanChest() {
           </Row>
         </View>
       </View>
-      <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice money on live Coinbase prices · you are the only voter and captain until clans go live at the Blitz kickoff</Txt>
+      <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice money on live Coinbase prices · just you on this device · the real USDC clan chest is in Clans</Txt>
 
       <View style={{ marginTop: 16 }}>
         {composing ? composer : <Btn title="Propose a trade" h={52} onPress={() => setComposing(true)} />}

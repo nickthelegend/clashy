@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAJORS } from '@/data/markets';
 import { useTicks } from '@/data/ticks';
 import { Countdown, CountUp, FX, Hit, Shake, WinBurst } from '@/ui/fx';
-import { ART, BackBtn, Btn, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { ErrorLine, ART, BackBtn, Btn, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
@@ -26,7 +26,7 @@ export default function HotStreak() {
   const { desk } = useLayout();
   const { width } = useWindowDimensions();
   const [coin, setCoin] = useState('BTC');
-  const { ticks, last } = useTicks(coin, 120);
+  const { ticks, last, error: feedError } = useTicks(coin, 120);
   const [phase, setPhase] = useState<Phase>('ready');
   const [streak, setStreak] = useState(0);
   const [score, setScore] = useState(0);
@@ -94,6 +94,7 @@ export default function HotStreak() {
           </Row>
         </Shake>
         <Card style={{ padding: 0, overflow: 'hidden' }}>
+          {feedError ? <ErrorLine msg={`Price feed: ${feedError}`} /> : null}
           <LiveChart data={ticks.map((k) => k.p)} w={chartW} h={desk ? 300 : 210} refLine={phase === 'call' && ref ? ref : undefined} refLabel={phase === 'call' ? 'Your line' : undefined} />
           <Row style={{ justifyContent: 'space-between', padding: 10, paddingTop: 2 }}>
             <Txt v="small" color={C.brandSoft}>{coin} live</Txt>

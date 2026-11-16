@@ -88,7 +88,7 @@ export default function Wallet() {
           ) : moves.map((m) => (
             <Pressable key={m.sig} onPress={() => Linking.openURL(explorerTx(m.sig))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
               <View style={{ flex: 1 }}>
-                <Txt v="label">{m.game ? (m.delta < 0 ? 'Staked in a game' : 'Paid out by a game') : m.delta < 0 ? 'Sent' : 'Received'}</Txt>
+                <Txt v="label">{m.game ? (m.delta < 0 ? 'Staked in a game' : 'Back from a game') : m.delta < 0 ? 'Sent' : 'Received'}</Txt>
                 <Txt v="small">{m.at ? new Date(m.at).toLocaleString() : ''} · {short(m.sig)}</Txt>
               </View>
               <Txt v="label" color={m.delta >= 0 ? C.up : C.ink}>{m.delta >= 0 ? '+' : '−'}{Math.abs(m.delta).toFixed(2)} USDC</Txt>

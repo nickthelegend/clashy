@@ -1,6 +1,6 @@
 // Clan Skirmish (practice): clan vs clan, best of 5 rounds on live prices. Each round rolls a coin, you make the
 // clan's call (long or short) and the practice rival clan takes the other side; 20 s later the real price decides it.
-// Real skirmishes run 5 members' duels at once on a MagicBlock rollup with a VRF roll; they open at the Blitz kickoff.
+// Practice only: you against a practice clan on live prices.
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAJORS } from '@/data/markets';
 import { useTicks } from '@/data/ticks';
 import { Countdown, CountUp, FX, Hit, RoundBanner, Shake, VsIntro, WinBurst } from '@/ui/fx';
-import { ART, Art, BackBtn, Btn, CRESTS, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { ErrorLine, ART, Art, BackBtn, Btn, CRESTS, Card, LiveChart, Row, TokenArt, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
@@ -32,7 +32,7 @@ export default function Skirmish() {
   const { width } = useWindowDimensions();
   const [phase, setPhase] = useState<Phase>('intro');
   const [coin, setCoin] = useState(() => MAJORS[randomIndex(MAJORS.length)].id);
-  const { ticks, last } = useTicks(coin, 120);
+  const { ticks, last, error: feedError } = useTicks(coin, 120);
   const [side, setSide] = useState<'long' | 'short' | null>(null);
   const [left, setLeft] = useState(PICK_SECS);
   const [start, setStart] = useState<number | null>(null);
@@ -50,7 +50,11 @@ export default function Skirmish() {
 
   const toPick = useCallback(() => { setSide(null); setLeft(PICK_SECS); setPhase('pick'); }, []);
   const lock = (s: 'long' | 'short') => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setSide(s); setPhase('count'); };
-  const go = useCallback(() => { setStart(lastRef.current ?? null); setT0(Date.now()); setLeft(ROUND_SECS); setPhase('round'); }, []);
+  // never start a round without a price: wait for the coin's first tick (a new coin's feed starts empty)
+  const go = useCallback(function tryGo() {
+    if (lastRef.current == null) { setTimeout(tryGo, 300); return; }
+    setStart(lastRef.current); setT0(Date.now()); setLeft(ROUND_SECS); setPhase('round');
+  }, []);
 
   // clocks
   useEffect(() => {
@@ -158,6 +162,7 @@ export default function Skirmish() {
         </View>
         <View style={{ flexDirection: desk ? 'row' : 'column', gap: 14, marginTop: 14 }}>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
+            {feedError ? <ErrorLine msg={`Price feed: ${feedError}`} /> : null}
             <LiveChart data={series} w={chartW} h={desk ? 340 : 220} refLine={phase === 'round' && start ? start : undefined} refLabel={phase === 'round' ? 'Round start' : undefined} />
             <Row style={{ justifyContent: 'space-between', padding: 10, paddingTop: 2 }}>
               <Row style={{ gap: 6 }}><TokenArt symbol={coin} uri={m.image} size={16} /><Txt v="small" color={C.brandSoft}>{coin} live</Txt></Row>

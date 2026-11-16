@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
-import { SOCIAL_SETUP, useChats } from '@/data/social';
+import { CHATS_NOTE, useChats } from '@/data/social';
 import { Search } from '@/ui/icons';
-import { ART, Avatar, Btn, IconBtn, Pending, Row, SearchBar, SkeletonRows, Txt, useFirstLoad } from '@/ui/kit';
+import { ART, Avatar, Btn, IconBtn, Pending, Row, SearchBar, Txt } from '@/ui/kit';
 import { C, F, R, S } from '@/ui/tokens';
 import { Text } from 'react-native';
 
@@ -19,7 +19,6 @@ export default function Chats() {
   const [f, setF] = useState<Filter>('all');
   const [q, setQ] = useState('');
   const [searching, setSearching] = useState(false);
-  const loading = useFirstLoad();
   const chats = useChats();
   const list = chats.status === 'ready' ? chats.data.filter((c) => (f === 'all' || c.kind === f) && (!q || c.name.toLowerCase().includes(q.toLowerCase()))) : [];
 
@@ -41,26 +40,11 @@ export default function Chats() {
         ))}
       </Row>
 
-      {loading ? (
-        <><Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.6 }}>PINNED</Txt><SkeletonRows n={1} square /><View style={{ height: 1, backgroundColor: C.line, marginVertical: 6 }} /><Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.6 }}>RECENT</Txt><SkeletonRows n={4} /></>
-      ) : chats.status !== 'ready' ? (
-        <Pending art={ART.emptyChats} title="Setup required: chats" body={SOCIAL_SETUP} action="Practice a duel" onAction={() => router.push('/arena')} />
+      {chats.status !== 'ready' ? (
+        <Pending art={ART.emptyChats} title="Chats are not live yet" body={CHATS_NOTE} action="Duel someone" onAction={() => router.push('/onchain')} />
       ) : list.length === 0 ? (
         <Pending art={ART.emptyChats} title="No chats yet" body="Challenge someone or join a clan to start talking." />
-      ) : (
-        list.map((c) => (
-          <Pressable key={c.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: c.id, name: c.name } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}>
-            <Avatar name={c.name} size={48} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Row style={{ justifyContent: 'space-between' }}><Txt v="label">{c.name}</Txt><Txt v="small" style={{ fontSize: 11.5 }}>{new Date(c.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Txt></Row>
-              <Row style={{ justifyContent: 'space-between', marginTop: 3 }}>
-                <Txt v="small" lines={1} style={{ flex: 1 }}>{c.last}</Txt>
-                {c.unread ? <View style={{ minWidth: 20, height: 20, borderRadius: R.pill, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}><Txt v="small" color="#fff" style={{ fontSize: 11, fontFamily: F.bold }}>{c.unread}</Txt></View> : null}
-              </Row>
-            </View>
-          </Pressable>
-        ))
-      )}
+      ) : null}
     </ScrollView>
   );
 }

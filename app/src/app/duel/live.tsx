@@ -1,7 +1,7 @@
 // Live practice duel (style K5 race + K2 HP bars). VS intro → 3-2-1-GO → 60 s race on live prices.
 // mode=quick (Knockout duel): ONE rolled coin for both; the practice rival takes the other side of your call.
 // mode=clash (Coin clash): each side has its own coin; practice races your pick against a rival coin.
-// Prices are re-based at GO, so the clock and both lines start together. Real 1v1 duels open at the Blitz kickoff.
+// Prices are re-based at GO, so the clock and both lines start together. The real 1v1 duel is the on-chain one (/onchain).
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -115,7 +115,7 @@ export default function Live() {
     <View>
       <Row style={{ justifyContent: 'space-between', marginBottom: 10 }}>
         <BackBtn onPress={() => (phase === 'live' ? finish('cash') : router.back())} />
-        <Row style={{ gap: 6 }}><LiveDot /><Txt v="small" color={C.ink}>{quick ? `Quick match · ${p.symbol} · ${lev}×` : `Coin clash · ${lev}× ${side}`}</Txt></Row>
+        <Row style={{ gap: 6 }}><LiveDot /><Txt v="small" color={C.ink}>{quick ? `Practice · ${p.symbol} · ${lev}×` : `Practice clash · ${lev}× ${side}`}</Txt></Row>
         <Txt v="small">${stake} stake</Txt>
       </Row>
       <Row style={{ alignItems: 'flex-start' }}>
@@ -171,7 +171,7 @@ export default function Live() {
         {EMOTES.map((k) => {
           const st = STICKERS.find((s) => s.key === k);
           return st ? (
-            <Pressable key={k} onPress={() => spawn(st.src)} accessibilityLabel={`Send ${k} emote`} style={({ pressed }) => ({ flex: 1, height: 56, borderRadius: 16, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.92 : 1 }] })}>
+            <Pressable key={k} onPress={() => spawn(st.src)} accessibilityLabel={`Show ${k} emote`} style={({ pressed }) => ({ flex: 1, height: 56, borderRadius: 16, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.92 : 1 }] })}>
               <Art src={st.src} size={44} radius={0} />
             </Pressable>
           ) : null;

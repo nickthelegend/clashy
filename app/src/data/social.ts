@@ -1,13 +1,6 @@
-// Chats, profiles and rankings. Messages run on a MagicBlock Ephemeral Rollup and identities are Solana wallets,
-// both built from the Blitz kickoff. Until then these report "setup" and the UI says so, never inventing people.
+// Chats are not built yet: there is no message store, on chain or off. The Chats tab says so instead of showing
+// invented conversations. (Profiles, rankings and duel history are on chain: see chain/reads.ts.)
 export type Chat = { id: string; kind: 'dm' | 'clan' | 'challenge'; name: string; last: string; at: number; unread: number };
-export type Ranked = { rank: number; name: string; pnl7d: number; winRate: number };
-export type Profile = { name: string; duels: number; winRate: number; pnl30d: number; bestStreak: number; rank?: number };
-
-export const SOCIAL_LIVE = false;
-export const SOCIAL_SETUP = 'Chats, callouts and shared leaderboards are not on chain yet. On-chain duels, Royales and clan chests already are: sign in and play them from the Arena.';
-
 export type State<T> = { status: 'setup' } | { status: 'ready'; data: T };
-export const useChats = (): State<Chat[]> => (SOCIAL_LIVE ? { status: 'ready', data: [] } : { status: 'setup' });
-export const useLeaderboard = (): State<Ranked[]> => (SOCIAL_LIVE ? { status: 'ready', data: [] } : { status: 'setup' });
-export const useMyProfile = (): State<Profile> => ({ status: 'setup' });
+export const CHATS_NOTE = 'Direct messages and clan chat are not built yet. Duels, Royales and clans are live: play them from the Arena.';
+export const useChats = (): State<Chat[]> => ({ status: 'setup' });

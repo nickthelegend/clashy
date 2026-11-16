@@ -1,6 +1,6 @@
 // Diamond Hands (practice): buy a live coin with leverage and hold as long as you dare. Your score is your P&L when
 // YOU sell. A knockout line trails your peak: give back too much from the top and you are out. Max 3 minutes.
-// Live Coinbase prices, no money. Rooms where everyone holds the same coin open with the program at the Blitz kickoff.
+// Live Coinbase prices, no money.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -107,7 +107,7 @@ export default function DiamondHands() {
           {out.reason === 'ko' ? <Txt v="small" style={{ marginTop: 4 }}>You gave back {GIVEBACK} pts from your +{peak.toFixed(1)}% peak.</Txt> : (
             <CountUp to={Math.abs(out.pnl)} ms={900} format={(v) => `${out.pnl >= 0 ? '+' : '−'}${v.toFixed(1)}%`} style={{ fontFamily: F.bold, fontSize: 44, letterSpacing: -1.5, color: out.pnl >= 0 ? C.up : C.down }} />
           )}
-          {best !== null ? <Txt v="small" style={{ marginTop: 6 }}>Your best: +{best.toFixed(1)}%</Txt> : null}
+          {best !== null ? <Txt v="small" style={{ marginTop: 6 }}>Your best: {best >= 0 ? '+' : '−'}{Math.abs(best).toFixed(1)}%</Txt> : null}
           <Btn title="Hold again" kind="white" style={{ marginTop: 14, alignSelf: 'stretch' }} onPress={begin} />
         </Card>
       ) : (
@@ -118,10 +118,10 @@ export default function DiamondHands() {
           </Row>
           <Row style={{ gap: 8, marginTop: 14 }}>{LEVS.map((v) => <Btn key={v} title={`${v}×`} h={38} kind={lev === v ? 'white' : 'ghost'} style={{ flex: 1 }} onPress={() => setLev(v)} />)}</Row>
           <Btn title={last ? 'Buy and hold' : 'Waiting for price…'} h={56} disabled={!last} style={{ marginTop: 12 }} onPress={begin} />
-          {best !== null ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Your best: +{best.toFixed(1)}%</Txt> : null}
+          {best !== null ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Your best: {best >= 0 ? '+' : '−'}{Math.abs(best).toFixed(1)}%</Txt> : null}
         </Card>
       )}
-      <Txt v="small" style={{ textAlign: 'center' }}>Practice · live {coin} price · rooms where everyone holds the same coin open at the Blitz kickoff</Txt>
+      <Txt v="small" style={{ textAlign: 'center' }}>Practice · live {coin} price · no money moves</Txt>
     </View>
   );
 

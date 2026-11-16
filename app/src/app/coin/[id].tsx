@@ -4,7 +4,9 @@ import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { isMajor, useCandles, useMarket } from '@/data/markets';
-import { ART, BackBtn, Btn, Card, ChangePill, ErrorLine, Pending, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { ART, Avatar, BackBtn, Btn, Card, ChangePill, ErrorLine, Pending, PriceChart, Row, TokenArt, Txt } from '@/ui/kit';
+import { COIN_SYMBOLS } from '@/chain/client';
+import { useCoinDuelists } from '@/chain/reads';
 import { C, S, fmtUsd } from '@/ui/tokens';
 
 const Stat = ({ k, v }: { k: string; v: string }) => (
@@ -19,6 +21,7 @@ export default function Coin() {
   const m = useMarket(id);
   const candles = useCandles(id);
   const major = isMajor(id);
+  const top = useCoinDuelists(major ? COIN_SYMBOLS.indexOf(id) : -1);
   const d = m.data;
   const duel = (side: 'long' | 'short') => router.push({ pathname: '/duel/amount', params: { id, side } });
 
@@ -46,13 +49,26 @@ export default function Coin() {
         {major ? (
           <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
             <PriceChart data={candles.data ?? []} w={Math.min(width, 760) - S.gutter * 2} h={230} />
-            <Txt v="small" style={{ padding: 10, paddingTop: 0 }}>Last 2 hours · 1m candles · Coinbase</Txt>
+            <Txt v="small" color={candles.error ? C.down : C.muted} style={{ padding: 10, paddingTop: 0 }}>{candles.error ? `Chart unavailable: ${candles.error}` : 'Last 2 hours · 1m candles · Coinbase'}</Txt>
           </Card>
         ) : (
-          <View style={{ marginBottom: 12 }}><Pending title="Chart for this coin" body="Live price and stats come from DexScreener. Candle history for Solana tokens arrives with our own price indexer." /></View>
+          <View style={{ marginBottom: 12 }}><Pending title="No chart for this coin" body="Live price and stats come from DexScreener, which has no candle history to show here. Charts are for SOL, BTC and ETH." /></View>
         )}
-        <Txt v="h2" style={{ marginBottom: 8 }}>Top duelists</Txt>
-        <Pending art={ART.duels} title="No duels on this coin yet" body="Players who picked this coin in their duels will rank here." />
+        {major ? (
+          <>
+            <Txt v="h2" style={{ marginBottom: 8 }}>Top duelists on {id}</Txt>
+            {top.status === 'loading' ? <Txt v="small">Loading…</Txt> : top.status === 'error' ? <ErrorLine msg={top.error} /> : top.data.length === 0 ? (
+              <Pending art={ART.duels} title={`No on-chain duels won on ${id} yet`} body={`Win a USDC duel when MagicBlock VRF rolls ${id} and you rank here.`} />
+            ) : top.data.map((p, i) => (
+              <Row key={p.owner.toBase58()} style={{ gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.line }}>
+                <Txt v="label" color={C.muted} style={{ width: 20 }}>{i + 1}</Txt>
+                <Avatar name={p.owner.toBase58()} size={34} />
+                <Txt v="label" style={{ flex: 1 }} lines={1}>{p.owner.toBase58().slice(0, 4)}…{p.owner.toBase58().slice(-4)}</Txt>
+                <Txt v="small">{p.wins}W {p.losses}L · +{p.won.toFixed(2)} USDC</Txt>
+              </Row>
+            ))}
+          </>
+        ) : null}
       </ScrollView>
       <Row style={{ position: 'absolute', left: S.gutter, right: S.gutter, bottom: insets.bottom + 12, gap: 10 }}>
         <Btn title="Duel with it · long" kind="long" style={{ flex: 1 }} onPress={() => duel('long')} disabled={!d} />

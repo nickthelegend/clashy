@@ -54,7 +54,7 @@ export default function Amount() {
         <View style={{ backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 }}><Txt v="small" color={C.ink}>Practice · free</Txt></View>
       </Row>
       <Txt v="h2" style={{ marginTop: 14 }}>Coin clash</Txt>
-      <Txt v="small" style={{ marginTop: 2 }}>You pick any coin, your opponent picks theirs. Best % in 60s wins the pot.</Txt>
+      <Txt v="small" style={{ marginTop: 2 }}>You pick any coin; the practice rival races you on BTC (on ETH if you pick BTC). Best % in 60 s wins.</Txt>
       <Txt v="small" color={C.ink} style={{ marginTop: 12, marginBottom: 6 }}>Your pick</Txt>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
         {picks.map((c) => {
@@ -77,7 +77,7 @@ export default function Amount() {
       </View>
       <View style={{ alignItems: 'center', marginTop: 16 }}>
         <Text style={{ fontFamily: F.semi, fontSize: 60, letterSpacing: -2.4, color: C.ink, fontVariant: ['tabular-nums'] }}>${amt || '0'}</Text>
-        <Txt v="small">Practice stake · {lev}× · vs the market until real duels open</Txt>
+        <Txt v="small">Practice stake · {lev}× · no money moves</Txt>
       </View>
       <Row style={{ gap: 8, marginTop: 14 }}>
         {PRESETS.map((v) => (
@@ -104,7 +104,7 @@ export default function Amount() {
           </Row>
         ))}
       </View>
-      <Txt v="small" style={{ textAlign: 'center', marginBottom: 10 }}>Real-money duels open with the on-chain program at the Blitz kickoff.</Txt>
+      <Txt v="small" style={{ textAlign: 'center', marginBottom: 10 }}>Practice · no money moves · the real 5 USDC duel is the Knockout duel in the Arena</Txt>
       <Btn title={price ? 'Start practice duel' : 'Waiting for price…'} kind="white" onPress={start} disabled={!price || !stake} />
     </View>
   );

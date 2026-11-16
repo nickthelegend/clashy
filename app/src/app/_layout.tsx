@@ -31,8 +31,6 @@ export default function Root() {
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
-          <Stack.Screen name="clan/[id]" />
-          <Stack.Screen name="chat/[id]" />
           <Stack.Screen name="leaderboard" />
           <Stack.Screen name="ranked" />
           <Stack.Screen name="onchain" options={{ gestureEnabled: false }} />
@@ -40,7 +38,6 @@ export default function Root() {
           <Stack.Screen name="onchain-royale" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/line" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/royale" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/war" />
           <Stack.Screen name="game/streak" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/snipe" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/skirmish" options={{ gestureEnabled: false }} />
