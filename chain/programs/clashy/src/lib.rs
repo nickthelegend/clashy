@@ -1020,7 +1020,6 @@ pub mod clashy {
     pub fn create_clan(ctx: Context<CreateClan>, name: String, crest: u8) -> Result<()> {
         let bytes = name.as_bytes();
         require!(!bytes.is_empty() && bytes.len() <= CLAN_NAME_LEN, ClashyError::BadName);
-        require!(ctx.accounts.player.clan == Pubkey::default(), ClashyError::AlreadyInClan);
         let mut fixed = [0u8; CLAN_NAME_LEN];
         fixed[..bytes.len()].copy_from_slice(bytes);
         let clan_key = ctx.accounts.clan.key();
@@ -1046,12 +1045,14 @@ pub mod clashy {
         m.joined_at = Clock::get()?.unix_timestamp;
         m.bump = ctx.bumps.member;
         m.rent_payer = ctx.accounts.payer.key();
-        ctx.accounts.player.clan = clan_key;
+        // a player can be in any number of squads (each membership is its own Member account); the first one is their main squad
+        if ctx.accounts.player.clan == Pubkey::default() {
+            ctx.accounts.player.clan = clan_key;
+        }
         Ok(())
     }
 
     pub fn join_clan(ctx: Context<JoinClan>) -> Result<()> {
-        require!(ctx.accounts.player.clan == Pubkey::default(), ClashyError::AlreadyInClan);
         let clan_key = ctx.accounts.clan.key();
         let m = &mut ctx.accounts.member;
         m.clan = clan_key;
@@ -1062,7 +1063,10 @@ pub mod clashy {
         m.bump = ctx.bumps.member;
         m.rent_payer = ctx.accounts.payer.key();
         ctx.accounts.clan.members += 1;
-        ctx.accounts.player.clan = clan_key;
+        // a player can be in any number of squads (each membership is its own Member account); the first one is their main squad
+        if ctx.accounts.player.clan == Pubkey::default() {
+            ctx.accounts.player.clan = clan_key;
+        }
         Ok(())
     }
 
@@ -1074,7 +1078,9 @@ pub mod clashy {
             require!(c.members == 1, ClashyError::NotCaptain);
         }
         c.members -= 1;
-        ctx.accounts.player.clan = Pubkey::default();
+        if ctx.accounts.player.clan == c.key() {
+            ctx.accounts.player.clan = Pubkey::default();
+        }
         Ok(())
     }
 
@@ -1943,10 +1949,11 @@ pub struct JoinClan<'info> {
 #[derive(Accounts)]
 pub struct LeaveClan<'info> {
     pub wallet: Signer<'info>,
-    #[account(mut, seeds = [PLAYER_SEED, wallet.key().as_ref()], bump = player.bump, constraint = player.clan == clan.key() @ ClashyError::NotInClan)]
+    #[account(mut, seeds = [PLAYER_SEED, wallet.key().as_ref()], bump = player.bump)]
     pub player: Account<'info, Player>,
     #[account(mut)]
     pub clan: Account<'info, Clan>,
+    /// Membership is proven by this account existing (seeds), not by the player's main squad.
     #[account(mut, close = rent_payer, seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
     pub member: Account<'info, Member>,
     /// CHECK: gets the member account's rent back; must be who paid it.
