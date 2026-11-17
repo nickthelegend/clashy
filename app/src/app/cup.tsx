@@ -74,7 +74,7 @@ export default function Cup() {
         <View style={{ backgroundColor: C.opp, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 }}>
           <Txt v="small" color="#fff" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.6 }}>LIVE · ENDS MONDAY 00:00 UTC</Txt>
         </View>
-        <Txt v="title" style={{ fontSize: 34, marginTop: 8, fontStyle: 'italic', letterSpacing: -0.5 }}>WEEKLY CUP</Txt>
+        <Txt v="title" style={{ fontSize: 44, marginTop: 8, fontFamily: F.display, letterSpacing: -1 }}>WEEKLY CUP</Txt>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>Profit on your Stash stock positions, plus duel winnings settled this week.</Txt>
       </View>
       <Row style={{ gap: 8, marginTop: 14 }}>
@@ -105,7 +105,7 @@ export default function Cup() {
                   <Txt v="label" lines={1} style={{ marginTop: 4 }}>{r.profile?.name ?? 'player'}</Txt>
                   <Txt v="small" color={r.total >= 0 ? C.up : C.down}>{r.total >= 0 ? '+' : '−'}{fmtUsd(Math.abs(r.total))}</Txt>
                   <View style={{ width: '100%', height: place === 1 ? 70 : place === 2 ? 50 : 36, marginTop: 6, borderTopLeftRadius: 12, borderTopRightRadius: 12, backgroundColor: place === 1 ? C.brand : C.s1, alignItems: 'center', justifyContent: 'center' }}>
-                    <Txt v="h2" color={place === 1 ? '#fff' : C.ink} style={{ fontStyle: 'italic' }}>{place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}</Txt>
+                    <Txt v="h2" color={place === 1 ? '#fff' : C.ink} style={{ fontFamily: F.display, fontSize: 22 }}>{place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}</Txt>
                   </View>
                 </View>
               );

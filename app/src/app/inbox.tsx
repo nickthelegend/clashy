@@ -70,7 +70,7 @@ export default function Inbox() {
         <Row style={{ gap: 12 }}>
           <Lottie name="flame" size={58} loop />
           <View style={{ flex: 1 }}>
-            <Txt v="title" color="#fff" style={{ fontSize: 24, fontStyle: 'italic' }}>{streak > 0 ? `${streak}-DAY STREAK` : 'START A STREAK'}</Txt>
+            <Txt v="title" color="#fff" style={{ fontSize: 26, fontFamily: F.display }}>{streak > 0 ? `${streak}-DAY STREAK` : 'START A STREAK'}</Txt>
             <Txt v="small" color="#FFE3EE">Save, invest or play once a day to keep it. {p?.bestDayStreak ? `Best ${p.bestDayStreak}.` : ''}</Txt>
           </View>
         </Row>
