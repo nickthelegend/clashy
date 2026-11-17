@@ -4,17 +4,19 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
 import { BN, COIN_SYMBOLS, P, FEED_BOARD } from '@/chain/client';
 import { useFeed, type FeedDuel } from '@/chain/reads';
 import { errText, useChain } from '@/chain/useChain';
-import { readHoldings, readStash, useBoard, usePoll, usePrices, useProfiles, type Post } from '@/chain/social';
+import { readHoldings, readPortfolio, readStash, useBoard, usePoll, usePrices, useProfiles, type Post } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
-import { Composer, Thread } from '@/ui/feed';
+import { ProfileAvatar, STOCK_ART, Thread } from '@/ui/feed';
+import { useCreate } from '@/ui/create';
 import { Bell, Jar } from '@/ui/icons';
-import { Avatar, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
+import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
@@ -57,7 +59,7 @@ export default function HomeScreen() {
   const col = useDeskColumn();
   const { desk } = useLayout();
   const [tab, setTab] = useState<Tab>('calls');
-  const [replyTo, setReplyTo] = useState<Post | null>(null);
+  const { openCall, openSave } = useCreate();
   const [liking, setLiking] = useState<number | null>(null);
   const [likeErr, setLikeErr] = useState<string>();
   const chain = useChain();
@@ -84,6 +86,27 @@ export default function HomeScreen() {
   const holdMap = holdings.status === 'ready' ? holdings.data : new Map();
   const px = prices.status === 'ready' ? prices.data : {};
 
+  // net worth: wallet USDC + Stash + stocks at the live price (all read from chain)
+  const portfolio = usePoll(() => (me ? readPortfolio(me) : Promise.resolve([])), 6000, [me?.toBase58()]);
+  const stashBal = stash.status === 'ready' && stash.data ? stash.data.balance : 0;
+  const pos = portfolio.status === 'ready' ? portfolio.data : [];
+  const stockVal = pos.reduce((a, x) => a + x.shares * (px[x.stock.symbol] ?? 0), 0);
+  const stockPnl = pos.reduce((a, x) => a + (x.shares > 0 ? x.shares * (px[x.stock.symbol] ?? 0) - x.cost : 0), 0);
+  const worth = (bal ?? 0) + stashBal + stockVal;
+  // the strongest real positions behind recent calls
+  const topCalls = (() => {
+    const seen = new Set<string>();
+    const rows: { key: string; owner: string; sym: string; pnl: number; cost: number }[] = [];
+    for (const p of posts) {
+      if (p.kind !== 1) continue;
+      const h = holdMap.get(`${p.author.toBase58()}:${p.refkey.toBase58()}`);
+      const k = `${p.author.toBase58()}:${p.refkey.toBase58()}`;
+      if (!h || h.shares <= 0 || seen.has(k) || !px[h.stock.symbol]) continue;
+      seen.add(k);
+      rows.push({ key: k, owner: p.author.toBase58(), sym: h.stock.symbol, pnl: h.shares * px[h.stock.symbol] - h.cost, cost: h.cost });
+    }
+    return rows.sort((a, b) => b.pnl - a.pnl).slice(0, 8);
+  })();
   const top = posts.filter((p) => p.replyTo === null || !posts.some((q) => q.seq === p.replyTo));
   const repliesOf = (seq: number) => posts.filter((p) => p.replyTo === seq).sort((a, b) => a.seq - b.seq);
   const nameOf = (k: PublicKey) => profMap.get(k.toBase58())?.name ?? short(k.toBase58());
@@ -96,27 +119,70 @@ export default function HomeScreen() {
       board.reload();
     } catch (e) { setLikeErr(errText(e)); } finally { setLiking(null); }
   };
-  useEffect(() => { if (replyTo) setTab('calls'); }, [replyTo]);
   // signed in without a name: finish onboarding first
   useEffect(() => { if (me && hasProfile === false) router.replace('/welcome?step=name' as Href); }, [me?.toBase58(), hasProfile]); // eslint-disable-line react-hooks/exhaustive-deps
   const f = feed.status === 'ready' ? feed.data : null;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-      <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-        {desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
+      <Row style={{ justifyContent: 'space-between', marginBottom: 14 }}>
+        {myProfile ? (
+          <Pressable onPress={() => router.push('/profile')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <ProfileAvatar p={myProfile} size={38} />
+            <View><Txt v="small" style={{ fontSize: 12 }}>gm,</Txt><Txt v="label">@{myProfile.name}</Txt></View>
+          </Pressable>
+        ) : desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         {wallet.status === 'out' ? <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} /> : (
           <Row style={{ gap: 8 }}>
-            <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-              <Bell size={17} color={C.ink} />
+            <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+              <Bell size={18} color={C.ink} />
             </Pressable>
-            <Pressable onPress={() => router.push('/stash' as Href)} style={{ height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: C.s2, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Jar size={17} color={C.ink} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{stash.status === 'ready' && stash.data ? `$${stash.data.balance.toFixed(2)}` : 'Stash'}</Txt>
+            <Pressable onPress={openSave} style={({ pressed }) => ({ height: 40, paddingHorizontal: 18, borderRadius: 20, backgroundColor: C.up, justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+              <Txt v="label" color="#04120A">Add</Txt>
             </Pressable>
-            <Btn title={bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`} kind="ghost" h={36} onPress={() => router.push('/wallet')} />
           </Row>
         )}
       </Row>
+
+      {me ? (
+        // net worth, the way the best trading apps lead: one big number, cents dimmed, what moved it
+        <Pressable onPress={() => router.push('/stash' as Href)} style={{ marginBottom: 16 }}>
+          <Txt v="small">Net worth</Txt>
+          <Money value={worth} size={46} />
+          <Row style={{ gap: 8, marginTop: 4 }}>
+            <View style={{ backgroundColor: stockPnl >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+              <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{stockPnl >= 0 ? '+' : '−'}${Math.abs(stockPnl).toFixed(2)}</Txt>
+            </View>
+            <Txt v="small">on your stocks</Txt>
+          </Row>
+          <Txt v="small" style={{ marginTop: 4 }}>Wallet ${(bal ?? 0).toFixed(2)} · Stash ${stashBal.toFixed(2)} · Stocks ${stockVal.toFixed(2)}</Txt>
+        </Pressable>
+      ) : null}
+
+      {topCalls.length ? (
+        <View style={{ marginBottom: 14 }}>
+          <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+            <Txt v="label">Top calls right now</Txt>
+            <Pressable onPress={() => router.push('/cup' as Href)}><Txt v="small" color={C.brandSoft}>Weekly Cup ›</Txt></Pressable>
+          </Row>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
+            {topCalls.map((t) => (
+              <Pressable key={t.key} onPress={() => router.push(`/u/${t.owner}` as Href)} style={{ width: 150, backgroundColor: '#15151B', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#23232B' }}>
+                <Row style={{ gap: 8 }}>
+                  <ProfileAvatar p={profMap.get(t.owner)} size={28} />
+                  <Txt v="label" lines={1} style={{ flex: 1, fontSize: 13 }}>{profMap.get(t.owner)?.name ?? 'player'}</Txt>
+                </Row>
+                <Row style={{ gap: 6, marginTop: 10 }}>
+                  <Image source={STOCK_ART[t.sym]} style={{ width: 26, height: 26 }} contentFit="contain" />
+                  <Txt v="small">{t.sym}</Txt>
+                </Row>
+                <Txt v="title" color={t.pnl >= 0 ? C.up : C.down} style={{ fontSize: 20, marginTop: 4 }}>{t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toFixed(2)}</Txt>
+                <Txt v="small" style={{ fontSize: 11 }}>on ${t.cost.toFixed(2)}</Txt>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {f && f.live.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginBottom: 12 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
@@ -136,8 +202,17 @@ export default function HomeScreen() {
       ) : null}
 
       {myProfile ? (
-        <Composer chain={chain} me={myProfile} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPosted={() => { board.reload(); holdings.reload(); stash.reload(); }}
-          stashBalance={stash.status === 'ready' ? stash.data?.balance ?? 0 : null} myHoldings={holdMap} />
+        // tap to open the call drawer
+        <Pressable onPress={() => openCall(null)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#1B1B21' : C.s1, borderRadius: 22, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: '#1F1F26' })}>
+          <ProfileAvatar p={myProfile} size={40} />
+          <View style={{ flex: 1 }}>
+            <Txt v="title" style={{ fontFamily: F.display, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
+            <Txt v="small" style={{ marginTop: 1 }}>Post it with your real position</Txt>
+          </View>
+          <Row style={{ gap: -8 }}>
+            {['NVDA', 'TSLA', 'AAPL'].map((k) => <Image key={k} source={STOCK_ART[k]} style={{ width: 30, height: 30 }} contentFit="contain" />)}
+          </Row>
+        </Pressable>
       ) : null}
 
       <View style={{ marginTop: 8 }}>
@@ -150,7 +225,7 @@ export default function HomeScreen() {
           <Pending art={ART.chat} title="No calls yet" body="Post the first call: pick a stock, say why, and back it from your Stash so your position shows." />
         ) : top.map((p) => (
           <Thread key={p.seq} post={p} replies={repliesOf(p.seq)} profiles={profMap} holdings={holdMap} prices={px} me={myProfile}
-            onReply={(x) => (myProfile ? setReplyTo(x) : wallet.login?.())} onLike={like} liking={liking} />
+            onReply={(x) => (myProfile ? openCall(x) : wallet.login?.())} onLike={like} liking={liking} />
         ))
       ) : feed.status === 'loading' ? <SkeletonRows n={3} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : (
         <>

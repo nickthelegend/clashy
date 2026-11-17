@@ -4,7 +4,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -15,8 +16,12 @@ import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain'
 import { ClayLoop } from '@/ui/clay';
 import { FX, Fill, Hit } from '@/ui/fx';
 import { WinExtras } from '@/ui/result';
+import { Sheet } from '@/ui/sheet';
+import { ProfileAvatar } from '@/ui/feed';
+import { useProfiles } from '@/chain/social';
+import { CallButtons, CoinRoll, CoinToken, FaceOff, LiveBoard, ModeCard, OpenClash, Searching, coinName, symbolsIn } from '@/ui/clash';
 import { Lottie } from '@/ui/lottie';
-import { BackBtn, Btn, Card, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
+import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
@@ -34,6 +39,7 @@ export default function OnChainDuel() {
   const col = useDeskColumn(820);
   const chain = useChain(['Check duel']);
   const [mode, setMode] = useState<keyof typeof MODES>('crypto');
+  const [stake, setStake] = useState(STAKE_USDC);
   const { me: wallet, sponsor, progs, bal, hasPlayer, txs, err, setErr, busy, guard, onBase, onEr } = chain;
   const [board, setBoard] = useState<DuelView[]>([]);
   const [boardErr, setBoardErr] = useState<string>();
@@ -48,6 +54,14 @@ export default function OnChainDuel() {
   /** When this device first saw the duel in its current step; the joiner steps in if the creator stalls there. */
   const stepSeen = useRef<{ key: string; at: number }>({ key: '', at: 0 });
   const [vrf, setVrf] = useState<{ queue: PublicKey; required: boolean } | null>(null);
+  const [proof, setProof] = useState(false);
+  /** Prices seen while the clash is live, for the chart. */
+  const [hist, setHist] = useState<number[]>([]);
+  const { width: winW } = useWindowDimensions();
+  const profiles = useProfiles();
+  const names = profiles.status === 'ready' ? profiles.data : new Map();
+  /** The roll lands for a beat before the call buttons take over. */
+  const [rolledSeen, setRolledSeen] = useState(false);
 
   // the challenge board
   // the board is public: shown whether or not this device has signed in
@@ -72,7 +86,7 @@ export default function OnChainDuel() {
       const d = await readDuel(progs.base, active).catch(() => null);
       if (!alive || !d) return;
       setDuel(d);
-      if (d.coin < 3) setPrice(await priceOf(progs.base, d.coin).catch(() => null));
+      if (d.coin < 8) setPrice(await priceOf(progs.base, d.coin).catch(() => null));
       const me = d.creator.equals(wallet) ? 0 : d.joiner.equals(wallet) ? 1 : -1;
       // a duel remembered on this device from another wallet (signed in as someone else): not ours to show
       if (me < 0) { setActiveDuel(null); return; }
@@ -144,6 +158,18 @@ export default function OnChainDuel() {
     return () => { alive = false; clearInterval(h); };
   }, [active, wallet, sponsor, progs]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!duel || duel.status !== 3 || price === null) { if (!duel || duel.status < 3) setHist([]); return; }
+    setHist((h) => (h[h.length - 1] === price ? h : [...h, price].slice(-240)));
+  }, [price, duel?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!duel || duel.status !== 2) { if (!duel || duel.status < 2) setRolledSeen(false); return; }
+    if (rolledSeen) return;
+    const h = setTimeout(() => setRolledSeen(true), 1800);
+    return () => clearTimeout(h);
+  }, [duel?.status, duel?.key.toBase58()]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const setActiveDuel = async (key: PublicKey | null) => {
     setActive(key); setDuel(null); inflight.current.clear();
     if (key) await AsyncStorage.setItem('clashy:chain:active', key.toBase58()); else await AsyncStorage.removeItem('clashy:chain:active');
@@ -156,7 +182,7 @@ export default function OnChainDuel() {
     const seed = random32();
     await AsyncStorage.setItem(secretKey(key), JSON.stringify({ seed: [...seed] } satisfies Secrets));
     const seedHash = [...(await sha256(seed))];
-    await onBase('Open duel · escrow USDC stake', () => progs.base.methods.openDuel(new BN(nonce), new BN(STAKE_USDC * USDC), MODES[mode].mask, MODES[mode].secs, new BN(900), seedHash)
+    await onBase('Open duel · escrow USDC stake', () => progs.base.methods.openDuel(new BN(nonce), new BN(stake * USDC), MODES[mode].mask, MODES[mode].secs, new BN(900), seedHash)
       .accountsPartial({ creator: wallet, payer: sponsor, duel: key, vault: P.vault(key), creatorUsdc: usdcAta(wallet), usdcMint: USDC_MINT }).rpc());
     await setActiveDuel(key);
   });
@@ -195,117 +221,148 @@ export default function OnChainDuel() {
   const setupLeft = duel && (duel.status === 1 || duel.status === 2) && !duel.onEr ? duel.matchedAt + DUEL_SETUP_SECS + 3 - Date.now() / 1000 : null;
   const me = duel && wallet ? (duel.creator.equals(wallet) ? 0 : duel.joiner.equals(wallet) ? 1 : -1) : -1;
   const sym = duel && duel.coin < 3 ? COIN_SYMBOLS[duel.coin] : '…';
-  const ready = hasPlayer && (bal ?? 0) >= STAKE_USDC;
+  const ready = hasPlayer && (bal ?? 0) >= stake;
   const myPnl = duel && me >= 0 ? duel.pnlBps[me] / 100 : 0;
   const theirPnl = duel && me >= 0 ? duel.pnlBps[1 - me] / 100 : 0;
 
+  const sym2 = duel ? (COIN_SYMBOLS[duel.coin] ?? '…') : '…';
+  const meProf = wallet ? names.get(wallet.toBase58()) : undefined;
+  const rivalKey = duel && me >= 0 ? (me === 0 ? duel.joiner : duel.creator) : null;
+  const rivalProf = rivalKey && !rivalKey.equals(PublicKey.default) ? names.get(rivalKey.toBase58()) : undefined;
+  const left = duel && duel.status === 3 && duel.startTs ? Math.max(0, duel.startTs + duel.lenSecs - Date.now() / 1000) : duel && duel.status === 4 ? 0 : null;
+  const won = duel && duel.status === 5 && duel.winner === me + 1;
+  const tie = duel && duel.status === 5 && duel.winner === 3;
+  const others = board.filter((d) => !wallet || !d.creator.equals(wallet));
+  const pot = (stake * 2 * 0.97).toFixed(2);
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 30 }}>
-      <Row style={{ gap: 10, marginBottom: 12 }}>
-        <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">On-chain duel</Txt><Txt v="small">{NET.label} · Solana + MagicBlock rollup</Txt></View>
-        <Row style={{ gap: 6 }}><LiveDot color={C.up} /><Txt v="small" color={C.up}>On chain</Txt></Row>
-      </Row>
+    <View style={{ flex: 1, backgroundColor: '#07070A' }}>
+      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+        <Row style={{ gap: 10, marginBottom: 6 }}>
+          <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          <View style={{ flex: 1 }} />
+          <Pressable onPress={() => setProof(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#15151B', borderRadius: 14, paddingHorizontal: 12, height: 34 }}>
+            <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
+          </Pressable>
+        </Row>
+        {err ? <ErrorLine msg={err} /> : null}
 
-      <WalletCard chain={chain} note={`${STAKE_USDC} USDC each · 3% rake`} need={STAKE_USDC} />
-      {err ? <ErrorLine msg={err} /> : null}
-
-      {!active || !duel || duel.status >= 5 ? (
-        <>
-          {duel && duel.status === 5 ? (
-            <Animated.View entering={FadeInDown.springify()}>
-              <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
+        {!active || !duel || duel.status >= 5 ? (
+          <>
+            {duel && duel.status === 5 ? (
+              <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', paddingTop: 6 }}>
                 <View>
-                  <ClayLoop name={duel.winner === me + 1 ? 'win' : duel.winner === 3 ? 'duel' : 'ko'} size={150} loop={duel.winner === me + 1} style={{ borderRadius: 32 }} />
-                  {duel.winner === me + 1 ? <Lottie name="confetti" size={260} style={{ position: 'absolute', left: -55, top: -60 }} /> : null}
+                  <ClayLoop name={won ? 'win' : tie ? 'duel' : 'ko'} size={170} loop={!!won} style={{ borderRadius: 36 }} />
+                  {won ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
                 </View>
-                <Txt v="title">{duel.winner === 3 ? `Dead heat · ${fmtUsdc(duel.stake)} back` : duel.winner === me + 1 ? `You won ${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : `You lost ${fmtUsdc(duel.stake)}`}</Txt>
-                <Txt v="small" color={C.muted}>{duel.winner === me + 1 ? 'The pot minus the 3% rake is in your wallet.' : duel.winner === 3 ? 'Both stakes refunded in full.' : 'Your stake went to your rival.'}</Txt>
-                <Txt v="small">Settled on Solana · {sym} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}% · rival {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Txt>
-                {duel.winner === me + 1 && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
-                <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
-              </Card>
-            </Animated.View>
-          ) : duel && duel.status === 6 ? (
-            <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-              <Txt v="title">Duel cancelled</Txt>
-              <Txt v="small" style={{ textAlign: 'center' }}>{duel.joiner.equals(PublicKey.default) ? `Nobody joined. Your ${fmtUsdc(duel.stake)} stake is back in your wallet.` : 'It never reached the rollup in time, so both stakes were refunded.'}</Txt>
-              <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
-            </Card>
-          ) : null}
-          <Row style={{ gap: 8, marginTop: 14 }}>
-            {(['crypto', 'stocks'] as const).map((k) => (
-              <Btn key={k} title={MODES[k].label} kind={mode === k ? 'white' : 'ghost'} h={40} style={{ flex: 1 }} onPress={() => setMode(k)} />
-            ))}
-          </Row>
-          <Txt v="small" style={{ marginTop: 6 }}>VRF rolls one of {MODES[mode].note} for both of you; you each call up or down, sealed. Best call wins the pot.</Txt>
-          <Btn title={busy === 'open' ? 'Opening…' : `Open a duel · ${STAKE_USDC} USDC`} h={58} style={{ marginTop: 10, borderRadius: 18 }} disabled={!ready || !!busy} onPress={open} />
-          <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Challenge board</Txt>
-          {boardErr ? <ErrorLine msg={boardErr} /> : null}
-          {board.filter((d) => !wallet || !d.creator.equals(wallet)).length === 0 ? (
-            <Card style={{ alignItems: 'center', padding: 16 }}><Txt v="small" style={{ textAlign: 'center' }}>No open duels from other players right now. Open one, then join it from a second device or browser tab.</Txt></Card>
-          ) : board.filter((d) => !wallet || !d.creator.equals(wallet)).map((d) => (
-            <Card key={d.key.toBase58()} style={{ marginBottom: 8, padding: 12 }}>
-              <Row style={{ gap: 10 }}>
-                <View style={{ flex: 1 }}><Txt v="label">{short(d.creator.toBase58())} · {fmtUsdc(d.stake)}</Txt><Txt v="small">{d.lenSecs} s · coin rolled after you join · expires {new Date(d.expiresAt * 1000).toLocaleTimeString()}</Txt></View>
-                <Btn title="Join" h={38} disabled={!ready || !!busy} onPress={() => join(d)} />
-              </Row>
-            </Card>
-          ))}
-        </>
-      ) : (
-        <Animated.View entering={FadeInDown.springify()} style={{ marginTop: 12 }}>
-          <Card style={{ padding: 16 }}>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <Txt v="label">Duel {short(duel.key.toBase58())}</Txt>
-              <Txt v="small" color={duel.onEr ? C.brandSoft : C.muted}>{duel.onEr ? 'On the rollup' : 'On Solana'} · {DUEL_STATUS[duel.status]}</Txt>
-            </Row>
-            {duel.status === 0 ? (
-              <View style={{ alignItems: 'center', marginTop: 10 }}>
-                <ClayLoop name="duel" size={120} />
-                <Txt v="label">Waiting for an opponent</Txt>
-                <Txt v="small" style={{ textAlign: 'center' }}>Your stake is in escrow. Join from a second device or tab.</Txt>
-                {me === 0 ? <Btn title="Cancel and refund" kind="ghost" style={{ marginTop: 10 }} disabled={!!busy} onPress={cancel} /> : null}
-              </View>
-            ) : duel.status === 1 ? (
-              <Txt v="small" style={{ marginTop: 10 }}>{duel.vrfPending ? 'Matched. MagicBlock VRF is rolling the coin for both of you…' : 'Matched. Asking MagicBlock VRF for the coin…'}</Txt>
-            ) : duel.status === 2 ? (
-              <View style={{ marginTop: 10 }}>
-                <Txt v="title">{sym} rolled</Txt>
-                <Txt v="small" color={C.brandSoft}>{duel.seedsRevealed === 0b11 ? 'Rolled from both players\' seeds (VRF fallback)' : 'Rolled by MagicBlock VRF'}</Txt>
-                <Txt v="small">Pick a side. It stays sealed (commit-reveal) until both of you lock.</Txt>
-                {me >= 0 && !(duel.picksCommitted & (1 << me)) ? (
-                  <Row style={{ gap: 10, marginTop: 12 }}>
-                    <Btn title="Up ▲" kind="long" h={60} style={{ flex: 1 }} disabled={!!busy} onPress={() => pick(1, 1)} />
-                    <Btn title="Down ▼" kind="short" h={60} style={{ flex: 1 }} disabled={!!busy} onPress={() => pick(2, 1)} />
-                  </Row>
-                ) : (
-                  <Txt v="small" style={{ marginTop: 10 }}>Locked. {duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Handing the duel to the rollup…' : 'Revealing picks…') : 'Waiting for your rival to lock…'}</Txt>
-                )}
-              </View>
+                <Text style={{ fontFamily: F.display, fontSize: 52, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8, letterSpacing: -1 }}>{won ? 'YOU WON' : tie ? 'DEAD HEAT' : 'YOU LOST'}</Text>
+                <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink }}>{won ? `+${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : tie ? `${fmtUsdc(duel.stake)} back` : `−${fmtUsdc(duel.stake)}`}</Text>
+                <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{coinName(sym2)} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}% · {rivalProf?.name ?? 'rival'} {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Txt>
+                {won && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
+                <Btn title="Clash again" kind="white" h={56} style={{ marginTop: 14, alignSelf: 'stretch', borderRadius: 20 }} onPress={() => setActiveDuel(null)} />
+              </Animated.View>
+            ) : duel && duel.status === 6 ? (
+              <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 26, padding: 18, marginBottom: 6 }}>
+                <Image source={ART.stash} style={{ width: 90, height: 90 }} contentFit="contain" />
+                <Text style={{ fontFamily: F.display, fontSize: 26, color: C.ink, marginTop: 6 }}>{fmtUsdc(duel.stake)} IS BACK</Text>
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>{duel.joiner.equals(PublicKey.default) ? 'Nobody took your clash in time, so your stake went straight back to your wallet.' : 'The clash never got going, so both stakes went back. No one lost a cent.'}</Txt>
+                <Btn title="Find another rival" kind="white" style={{ marginTop: 12, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
+              </Animated.View>
             ) : null}
+
+            {!duel || duel.status === 6 || !active ? (
+              <>
+                <View style={{ alignItems: 'center', marginTop: 4 }}>
+                  <ClayLoop name="duel" size={150} style={{ borderRadius: 34 }} />
+                  <Text style={{ fontFamily: F.display, fontSize: 56, color: C.ink, letterSpacing: -1.5, marginTop: -4 }}>CLASH</Text>
+                  <Txt v="small" style={{ textAlign: 'center' }}>One coin, two calls, winner takes {pot} USDC.</Txt>
+                </View>
+                <Row style={{ gap: 10, marginTop: 18 }}>
+                  <ModeCard title="STOCKS" sub="1 hour · NVIDIA, Tesla, Apple, S&P, Alphabet" on={mode === 'stocks'} onPress={() => setMode('stocks')} art={<ClayLoop name="stocks" size={78} style={{ borderRadius: 16 }} />} />
+                  <ModeCard title="CRYPTO" sub="60 seconds · SOL, BTC, ETH" on={mode === 'crypto'} onPress={() => setMode('crypto')} art={<Row style={{ gap: -10 }}><CoinToken sym="SOL" size={44} /><CoinToken sym="BTC" size={44} /><CoinToken sym="ETH" size={44} /></Row>} />
+                </Row>
+                <Row style={{ gap: 8, marginTop: 12 }}>
+                  {[5, 10, 25].map((n) => (
+                    <Pressable key={n} onPress={() => setStake(n)} style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: stake === n ? C.ink : '#15151B', borderWidth: 1, borderColor: stake === n ? C.ink : '#23232B', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                      <Text style={{ fontFamily: F.display, fontSize: 18, color: stake === n ? '#000' : C.ink }}>${n}</Text>
+                    </Pressable>
+                  ))}
+                </Row>
+                <Pressable onPress={ready ? open : () => setProof(true)} disabled={!!busy} style={({ pressed }) => ({ marginTop: 14, height: 70, borderRadius: 24, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: C.opp, shadowOpacity: 0.6, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } })}>
+                  <Text style={{ fontFamily: F.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'OPENING…' : ready ? `FIND A RIVAL · $${stake}` : 'SET UP YOUR WALLET'}</Text>
+                </Pressable>
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Your call is sealed until both of you lock. No leverage: best call wins.</Txt>
+
+                <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 10 }}>
+                  <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink }}>OPEN CLASHES</Text>
+                  <Txt v="small">{others.length} waiting</Txt>
+                </Row>
+                {boardErr ? <ErrorLine msg={boardErr} /> : null}
+                {others.length === 0 ? (
+                  <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 22, padding: 18 }}>
+                    <Image source={ART.bellArt} style={{ width: 70, height: 70 }} contentFit="contain" />
+                    <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>No open clashes right now. Start one and the first rival in takes you on.</Txt>
+                  </View>
+                ) : others.map((d) => (
+                  <OpenClash key={d.key.toBase58()} who={names.get(d.creator.toBase58())} stake={d.stake / USDC} secs={d.lenSecs} mask={d.poolMask ?? 0b111} disabled={!ready || !!busy} onJoin={() => join(d)} />
+                ))}
+              </>
+            ) : null}
+          </>
+        ) : (
+          <Animated.View entering={FadeInDown.springify()} style={{ marginTop: 6 }}>
+            {duel.status === 0 ? (
+              <View style={{ alignItems: 'center' }}>
+                <Searching><View style={{ borderRadius: 70, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={meProf} size={110} /></View></Searching>
+                <Text style={{ fontFamily: F.display, fontSize: 36, color: C.ink, marginTop: 34 }}>FINDING A RIVAL</Text>
+                <Txt v="small" style={{ textAlign: 'center' }}>Your {fmtUsdc(duel.stake)} is in escrow on Solana. The first player to join takes you on.</Txt>
+                {me === 0 ? <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 18 }}><Txt v="label" color={C.muted}>{busy === 'cancel' ? 'Cancelling…' : 'Cancel and get it back'}</Txt></Pressable> : null}
+              </View>
+            ) : duel.status === 1 || (duel.status === 2 && !rolledSeen) ? (
+              <View style={{ alignItems: 'center' }}>
+                <FaceOff me={meProf} rival={rivalProf ?? undefined} meLabel={meProf?.name ?? 'You'} rivalLabel={rivalProf?.name ?? 'Rival'} />
+                <View style={{ height: 22 }} />
+                <CoinRoll pool={symbolsIn(duel.poolMask ?? 0b111)} landed={duel.status === 2 ? sym2 : null} />
+              </View>
+            ) : duel.status === 2 ? (
+              <View style={{ alignItems: 'center' }}>
+                <CoinToken sym={sym2} size={130} />
+                <Text style={{ fontFamily: F.display, fontSize: 40, color: C.ink, marginTop: 8 }}>{coinName(sym2).toUpperCase()}</Text>
+                <Txt v="small">{duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
+                <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
+                  {me >= 0 && !(duel.picksCommitted & (1 << me)) ? <CallButtons onUp={() => pick(1, 1)} onDown={() => pick(2, 1)} disabled={!!busy} /> : (
+                    <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
+                      <Text style={{ fontFamily: F.display, fontSize: 28, color: C.ink }}>🔒 LOCKED</Text>
+                      <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live on the rollup…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <>
+                <LiveBoard me={meProf} rival={rivalProf} myPnl={myPnl} theirPnl={theirPnl} myCall={duel.side[me]} theirCall={duel.side[1 - me]} sym={sym2} price={price} entry={duel.entryPrice} left={left} onRollup={duel.status === 3} />
+                {hist.length > 1 ? (
+                  <View style={{ marginTop: 18, backgroundColor: '#0E0E13', borderRadius: 24, paddingVertical: 10, overflow: 'hidden' }}>
+                    <LiveChart data={[duel.entryPrice, ...hist]} w={Math.min(winW, 820) - 2 * S.gutter} h={230} refLine={duel.entryPrice} refLabel="start" color={myPnl >= theirPnl ? C.brand : C.opp} />
+                  </View>
+                ) : null}
+              </>
+            )}
             {setupLeft !== null && setupLeft < DUEL_SETUP_SECS - 30 ? (
               setupLeft <= 0
-                ? <Btn title={busy === 'abort' ? 'Refunding…' : 'Your rival went quiet · refund now'} kind="white" style={{ marginTop: 12 }} disabled={!!busy} onPress={abort} />
-                : <Txt v="small" style={{ marginTop: 10 }}>If this duel never starts, the stakes come back: refund unlocks in {Math.floor(setupLeft / 60)}:{String(Math.floor(setupLeft % 60)).padStart(2, '0')}.</Txt>
+                ? <Btn title={busy === 'abort' ? 'Getting your money back…' : `${rivalProf?.name ?? 'Your rival'} went quiet · get your ${STAKE_USDC} USDC back`} kind="white" style={{ marginTop: 18 }} disabled={!!busy} onPress={abort} />
+                : <Txt v="small" style={{ marginTop: 14, textAlign: 'center' }}>If it never starts, your money comes back: unlocks in {Math.floor(setupLeft / 60)}:{String(Math.floor(setupLeft % 60)).padStart(2, '0')}.</Txt>
             ) : null}
-            {duel.status === 3 || duel.status === 4 ? (
-              <View style={{ marginTop: 10 }}>
-                <Row style={{ justifyContent: 'space-between' }}>
-                  <View><Txt v="small">You · called {duel.side[me] === 1 ? 'up' : 'down'}</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: myPnl >= 0 ? C.up : C.down }}>{myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%</Text></View>
-                  <View style={{ alignItems: 'center' }}><Txt v="small">{sym}</Txt><Txt v="label">{price ? `$${price.toFixed(2)}` : '…'}</Txt><Txt v="small">entry ${duel.entryPrice.toFixed(2)}</Txt></View>
-                  <View style={{ alignItems: 'flex-end' }}><Txt v="small">Rival · called {duel.side[1 - me] === 1 ? 'up' : 'down'}</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: theirPnl >= 0 ? C.up : C.down }}>{theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Text></View>
-                </Row>
-                <Row style={{ gap: 10, marginTop: 10 }}><Fill v={1 + myPnl / 100} color={C.brand} skew /><Fill v={1 + theirPnl / 100} color={C.opp} flip skew /></Row>
-                <Txt v="small" style={{ marginTop: 8 }}>{duel.status === 3 ? `Scored on the rollup every check · bell at ${duel.lenSecs} s` : 'Finished on the rollup · committing to Solana and settling…'}</Txt>
-              </View>
-            ) : null}
-          </Card>
-          <Hit k={duel.status === 4 && duel.ko ? 1 : 0} src={FX.ko} />
-        </Animated.View>
-      )}
+            <Hit k={duel.status === 4 && duel.ko ? 1 : 0} src={FX.ko} />
+          </Animated.View>
+        )}
+      </ScrollView>
 
-      <TxStrip txs={txs} />
-    </ScrollView>
+      <Sheet open={proof} onClose={() => setProof(false)} title="Wallet and on-chain proof">
+        <WalletCard chain={chain} note={`${STAKE_USDC} USDC each · 3% rake`} need={STAKE_USDC} />
+        <Txt v="small" style={{ marginTop: 10 }}>Every step of a clash is a real transaction: stakes in a Solana escrow, the coin from MagicBlock VRF, the live scoring on a MagicBlock rollup, the payout back on Solana.</Txt>
+        <TxStrip txs={txs} />
+      </Sheet>
+    </View>
   );
 }

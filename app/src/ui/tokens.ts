@@ -23,6 +23,9 @@ export const F = {
   medium: 'Inter_500Medium',
   semi: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
+  /** Chunky italic display type for headlines, scores and big numbers (Archivo, the wordmark's family). */
+  display: 'Archivo_900Black_Italic',
+  displayB: 'Archivo_800ExtraBold_Italic',
 } as const;
 
 export const R = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 } as const;
