@@ -9,6 +9,7 @@ import { errText, type useChain } from '@/chain/useChain';
 import { readClanServer, readMyClan, readProfile, usePoll, useProfiles } from '@/chain/social';
 import { reader } from '@/chain/reads';
 import { ProfileAvatar } from './feed';
+import { Lottie } from './lottie';
 import { Btn, Card, ErrorLine, Row, Txt } from './kit';
 import { C, F, fmtUsd } from './tokens';
 
@@ -75,7 +76,10 @@ export function WinExtras({ chain, duel, winnings }: { chain: Chain; duel: Publi
     <View style={{ alignSelf: 'stretch', marginTop: 12, gap: 10 }}>
       <Card style={{ padding: 12, backgroundColor: '#0D0D10' }}>
         {saved !== null ? (
-          <Txt v="label" color={C.up}>Saved {fmtUsd(saved)} to your Stash{p && p.saveBps ? ` (your ${p.saveBps / 100}% setting)` : ''}</Txt>
+          <Row style={{ gap: 8 }}>
+            <Lottie name="coin" size={44} />
+            <Txt v="label" color={C.up} style={{ flex: 1 }}>Saved {fmtUsd(saved)} to your Stash{p && p.saveBps ? ` (your ${p.saveBps / 100}% setting)` : ''}</Txt>
+          </Row>
         ) : (
           <>
             <Txt v="label">Keep some of it</Txt>

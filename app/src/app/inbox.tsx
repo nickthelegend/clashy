@@ -9,6 +9,7 @@ import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@/chain/wallet';
 import { readBoard, readChannel, readClanServer, readMyClan, readProfile, readStash, usePoll, useProfiles, ago } from '@/chain/social';
 import { ProfileAvatar } from '@/ui/feed';
+import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, fmtUsd } from '@/ui/tokens';
@@ -67,7 +68,7 @@ export default function Inbox() {
       </Row>
       <View style={{ borderRadius: 22, padding: 16, backgroundColor: '#F0468C' }}>
         <Row style={{ gap: 12 }}>
-          <Image source={ART.streak} style={{ width: 54, height: 54 }} contentFit="contain" />
+          <Lottie name="flame" size={58} loop />
           <View style={{ flex: 1 }}>
             <Txt v="title" color="#fff" style={{ fontSize: 24, fontStyle: 'italic' }}>{streak > 0 ? `${streak}-DAY STREAK` : 'START A STREAK'}</Txt>
             <Txt v="small" color="#FFE3EE">Save, invest or play once a day to keep it. {p?.bestDayStreak ? `Best ${p.bestDayStreak}.` : ''}</Txt>
