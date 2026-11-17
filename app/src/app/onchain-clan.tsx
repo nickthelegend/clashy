@@ -4,7 +4,7 @@
 // Wars: a captain stakes part of the chest against a rival clan; the rival captain accepts with the same
 // stake; when the window ends the clan with the better return takes the pot (minus rake) into its chest.
 import { Buffer } from 'buffer';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -41,6 +41,8 @@ export default function OnchainClan() {
   const col = useDeskColumn(820);
   const chain = useChain();
   const { me: wallet, sponsor, progs, hasPlayer, busy, guard, onBase, err, tick } = chain;
+  // ?clan=<pubkey>: act on that squad (players can be in many); otherwise the main squad (Player.clan)
+  const { clan: wantClan } = useLocalSearchParams<{ clan?: string }>();
 
   const [clans, setClans] = useState<ClanView[]>([]);
   const [mine, setMine] = useState<ClanView | null>(null);
@@ -78,7 +80,12 @@ export default function OnchainClan() {
         });
         const all = (await rp.account.clan.all()).map((a) => toView(a.publicKey, a.account));
         const player = wallet && hasPlayer ? await rp.account.player.fetch(P.player(wallet)).catch(() => null) : null;
-        const myKey = player && !player.clan.equals(PublicKey.default) ? player.clan : null;
+        let myKey = player && !player.clan.equals(PublicKey.default) ? player.clan : null;
+        if (wantClan && wallet) {
+          let want: PublicKey | null = null;
+          try { want = new PublicKey(wantClan); } catch { want = null; }
+          if (want && (await base.getAccountInfo(P.member(want, wallet)))) myKey = want;
+        }
         const my = myKey ? all.find((c) => c.key.equals(myKey)) ?? null : null;
         const px = await Promise.all([0, 1, 2].map((i) => basePriceOf(rp, i).catch(() => null)));
         if (!alive) return;
@@ -118,7 +125,7 @@ export default function OnchainClan() {
     const h = setInterval(load, 2000);
     const c = setInterval(() => setNow(Date.now() / 1000), 500);
     return () => { alive = false; clearInterval(h); clearInterval(c); };
-  }, [progs, wallet, hasPlayer, tick]);
+  }, [progs, wallet, hasPlayer, tick, wantClan]);
 
   const captain = !!(mine && wallet && mine.captain.equals(wallet));
   const warLocked = !!mine && !mine.war.equals(PublicKey.default);

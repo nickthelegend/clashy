@@ -9,3 +9,4 @@ assets/gen-nov17/logs/
 assets/gen-nov17/vlogs/
 assets/gen-nov17/frames/
 app/dist-devwallet/
+app/dist-*/
