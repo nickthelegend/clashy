@@ -10,7 +10,7 @@ import { useDeskColumn } from '@/ui/layout';
 import { BackBtn, Btn, Card, ErrorLine, Row, Txt } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
 
-type Move = { sig: string; at: number; delta: number; game: boolean };
+type Move = { sig: string; at: number; delta: number; game: boolean; what: string | null };
 const explorerTx = (sig: string) => `https://explorer.solana.com/tx/${sig}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`;
 
 /** The last USDC moves of this wallet's USDC account, from the chain (token balance before/after each transaction). */
@@ -25,7 +25,10 @@ async function history(owner: import('@solana/web3.js').PublicKey): Promise<Move
     const amt = (list: typeof tx.meta.preTokenBalances) => Number(list?.find((b) => b.accountIndex === idx)?.uiTokenAmount.amount ?? 0);
     const delta = (amt(tx.meta.postTokenBalances) - amt(tx.meta.preTokenBalances)) / USDC;
     if (!delta) return [];
-    return [{ sig: sigs[i].signature, at: (sigs[i].blockTime ?? 0) * 1000, delta, game: keys.includes(PROGRAM_ID.toBase58()) }];
+    const logs = (tx.meta.logMessages ?? []).join('\n');
+    const what = /Instruction: StashInvest/.test(logs) ? 'Saved and invested from the Stash' : /Instruction: StashSave/.test(logs) ? (/Instruction: TransferChecked/.test(logs) ? 'Paid · round-up saved' : 'Saved to the Stash')
+      : /Instruction: StashWithdraw/.test(logs) ? 'Taken out of the Stash' : /Instruction: (DepositChest|WithdrawChest)/.test(logs) ? (delta < 0 ? 'Into the clan chest' : 'Out of the clan chest') : null;
+    return [{ sig: sigs[i].signature, at: (sigs[i].blockTime ?? 0) * 1000, delta, game: keys.includes(PROGRAM_ID.toBase58()), what }];
   });
 }
 
@@ -88,7 +91,7 @@ export default function Wallet() {
           ) : moves.map((m) => (
             <Pressable key={m.sig} onPress={() => Linking.openURL(explorerTx(m.sig))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
               <View style={{ flex: 1 }}>
-                <Txt v="label">{m.game ? (m.delta < 0 ? 'Staked in a game' : 'Back from a game') : m.delta < 0 ? 'Sent' : 'Received'}</Txt>
+                <Txt v="label">{m.what ?? (m.game ? (m.delta < 0 ? 'Staked in a game' : 'Back from a game') : m.delta < 0 ? 'Sent' : 'Received')}</Txt>
                 <Txt v="small">{m.at ? new Date(m.at).toLocaleString() : ''} · {short(m.sig)}</Txt>
               </View>
               <Txt v="label" color={m.delta >= 0 ? C.up : C.ink}>{m.delta >= 0 ? '+' : '−'}{Math.abs(m.delta).toFixed(2)} USDC</Txt>

@@ -159,8 +159,8 @@ export default function StashScreen() {
 
           <Section title="Goal" sub={goal > 0 ? `${fmtUsd(goal)}${s?.goalName ? ` for ${s.goalName}` : ''}` : 'Save toward something'}>
             <Row style={{ gap: 8 }}>
-              <TextInput value={goalName} onChangeText={setGoalName} placeholder="New phone" placeholderTextColor={C.muted} maxLength={24} style={[field, { flex: 1.4 }]} />
-              <TextInput value={goalAmt} onChangeText={setGoalAmt} placeholder="USDC" placeholderTextColor={C.muted} keyboardType="decimal-pad" style={[field, { flex: 1 }]} />
+              <TextInput value={goalName} onChangeText={setGoalName} placeholder="New phone" placeholderTextColor={C.muted} maxLength={24} style={[field, { flex: 1.4, minWidth: 0 }]} />
+              <TextInput value={goalAmt} onChangeText={setGoalAmt} placeholder="USDC" placeholderTextColor={C.muted} keyboardType="decimal-pad" style={[field, { flex: 1, minWidth: 0 }]} />
               <Btn title={busy === 'goal' ? '…' : 'Set'} h={44} disabled={!!busy || !goalAmt} onPress={setGoal} />
             </Row>
           </Section>

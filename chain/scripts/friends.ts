@@ -293,6 +293,42 @@ async function rex() {
     await sleep(2000);
   }
 }
+
+// Lux talks in the clan's #general (on the rollup) once a member has opened it: answers new messages from players
+// with the clan's real numbers. Nothing he says is made up.
+const DELEGATION = new PublicKey('DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh');
+let luxSeen = -1;
+async function luxSay(clan: PublicKey, text: string) {
+  const chan = P.channel(clan, 0);
+  const info = await base.getAccountInfo(chan);
+  if (!info || !info.owner.equals(DELEGATION)) return;
+  await sendEr(programFor(F.Lux, true).methods.postMessage(text.slice(0, 120), 0, PublicKey.default).accountsPartial({ author: F.Lux.publicKey, channel: chan, member: P.member(clan, F.Lux.publicKey) }), F.Lux);
+  log('Lux', `said in #general: ${text}`);
+}
+async function luxChat(clan: PublicKey) {
+  const chan = P.channel(clan, 0);
+  const info = await base.getAccountInfo(chan);
+  if (!info || !info.owner.equals(DELEGATION)) return;
+  const c = await erProgram.account.channel.fetch(chan);
+  const count = Number(c.count);
+  if (luxSeen < 0) { luxSeen = count; if (count === 0) await luxSay(clan, 'gm crew. Lux here, I put 10 USDC in the chest.'); return; }
+  for (let k = luxSeen; k < count; k++) {
+    const m = c.msgs[k % c.msgs.length];
+    if (isFriend(m.author)) continue;
+    const said = Buffer.from(m.text.slice(0, m.len)).toString('utf8').toLowerCase();
+    const cl = await baseProgram.account.clan.fetch(clan);
+    const chest = (Number(cl.chest) / 1e6).toFixed(2);
+    const reply = m.kind === 1 ? 'Duel posted. Good luck, tell us how it went.'
+      : /\bgm\b|hello|hi\b|hey/.test(said) ? `gm! Chest is at ${chest} USDC.`
+      : /chest|vote|trade/.test(said) ? `Chest ${chest} USDC, ${cl.openVotes} vote${cl.openVotes === 1 ? '' : 's'} open. I vote yes on proposals.`
+      : `Noted. Chest is at ${chest} USDC.`;
+    await sleep(2500);
+    await luxSay(clan, reply);
+  }
+  const after = await erProgram.account.channel.fetch(chan);
+  luxSeen = Number(after.count);
+}
+
 async function lux() {
   const kp = F.Lux;
   const prog = programFor(kp);
@@ -319,8 +355,10 @@ async function lux() {
           voted.add(p.publicKey.toBase58());
           await prog.methods.vote(true).accountsPartial({ wallet: kp.publicKey, ...pay, clan, member: P.member(clan, kp.publicKey), proposal: p.publicKey, vote: P.vote(p.publicKey, kp.publicKey) }).rpc();
           log('Lux', `voted yes on proposal #${p.account.id}`);
+          await luxSay(clan, `Voted yes on proposal #${p.account.id}.`);
         }
       }
+      if (clan) await luxChat(clan);
     } catch (e) { err('Lux', e); }
     await sleep(2500);
   }

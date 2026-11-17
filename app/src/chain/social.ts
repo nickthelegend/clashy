@@ -44,6 +44,8 @@ export async function readProfiles(): Promise<Map<string, Profile>> {
   return new Map(all.map(({ account }) => [account.owner.toBase58(), toProfile(account)]));
 }
 export const useProfiles = () => usePoll(readProfiles, 10_000);
+/** Accounts made by chain/tests (handles t_... and b_...): real on the local chain, kept off public boards. */
+export const isTestAccount = (p?: Profile) => !!p && /^(t|b)_/.test(p.name);
 export async function readProfile(owner: PublicKey): Promise<Profile | null> {
   const p = await reader.account.profile.fetchNullable(P.profile(owner));
   return p ? toProfile(p) : null;
@@ -116,3 +118,54 @@ export const ago = (ts: number) => {
   const s = Math.max(0, Date.now() / 1000 - ts);
   return s < 60 ? `${Math.floor(s)}s` : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : `${Math.floor(s / 86400)}d`;
 };
+
+export type ClanServer = {
+  key: PublicKey; name: string; crest: number; captain: PublicKey; members: PublicKey[]; chest: number; wins: number; losses: number;
+  openVotes: number; atWar: boolean; xp: number; level: number; levelFloor: number; levelNext: number;
+};
+/** Clan level from on-chain facts only: 300 XP a war won, 100 a member, 10 per USDC in the chest. */
+export function clanLevel(wins: number, members: number, chest: number) {
+  const xp = wins * 300 + members * 100 + Math.floor(chest) * 10;
+  const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+  return { xp, level, levelFloor: (level - 1) ** 2 * 100, levelNext: level ** 2 * 100 };
+}
+export async function readClanServer(clan: PublicKey): Promise<ClanServer | null> {
+  const c = await reader.account.clan.fetchNullable(clan);
+  if (!c) return null;
+  const members = await reader.account.member.all([{ memcmp: { offset: 8, bytes: clan.toBase58() } }]);
+  const chest = Number(c.chest) / 1e6;
+  return {
+    key: clan, name: text(c.name), crest: c.crest, captain: c.captain, members: members.map((m) => m.account.wallet), chest,
+    wins: c.wins, losses: c.losses, openVotes: c.openVotes, atWar: !c.war.equals(PublicKey.default), ...clanLevel(c.wins, c.members, chest),
+  };
+}
+/** The clan this wallet belongs to (default key when none). */
+export async function readMyClan(owner: PublicKey): Promise<PublicKey | null> {
+  const p = await reader.account.player.fetchNullable(P.player(owner));
+  return p && !p.clan.equals(PublicKey.default) ? p.clan : null;
+}
+
+export type ChatMsg = { i: number; author: PublicKey; ts: number; kind: number; refkey: PublicKey; text: string };
+/** A clan channel on the rollup, oldest first. Null when the channel has not been opened yet. */
+export async function readChannel(clan: PublicKey, id = 0): Promise<{ count: number; msgs: ChatMsg[] } | null> {
+  const key = P.channel(clan, id);
+  const state = await channelState(clan, id);
+  if (state === 'none') return null;
+  // while delegated, the rollup holds the live copy
+  const c = await (state === 'live' ? erReader : reader).account.channel.fetchNullable(key);
+  if (!c) return null;
+  const count = Number(c.count);
+  const n = Math.min(count, c.msgs.length);
+  const msgs: ChatMsg[] = [];
+  for (let k = count - n; k < count; k++) {
+    const m = c.msgs[k % c.msgs.length];
+    msgs.push({ i: k, author: m.author, ts: Number(m.ts), kind: m.kind, refkey: m.refkey, text: text(m.text, m.len) });
+  }
+  return { count, msgs };
+}
+const DELEGATION = new PublicKey('DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh');
+/** 'none' (not opened), 'base' (opened, not yet on the rollup) or 'live' (delegated: posting works). */
+export async function channelState(clan: PublicKey, id = 0): Promise<'none' | 'base' | 'live'> {
+  const info = await base.getAccountInfo(P.channel(clan, id));
+  return !info ? 'none' : info.owner.equals(DELEGATION) ? 'live' : 'base';
+}
