@@ -28,6 +28,12 @@ const SRC = {
   onInvest: [require('../../assets/video/onboard-invest-loop.mp4'), require('../../assets/video/onboard-invest-loop.webp')],
   onSquad: [require('../../assets/video/onboard-squad-loop.mp4'), require('../../assets/video/onboard-squad-loop.webp')],
   clanCity: [require('../../assets/video/clan-banner-loop.mp4'), require('../../assets/video/clan-banner-loop.webp')],
+  cupBig: [require('../../assets/video/cup-big-loop.mp4'), require('../../assets/video/cup-big-loop.webp')],
+  bell: [require('../../assets/video/inbox-bell-loop.mp4'), require('../../assets/video/inbox-bell-loop.webp')],
+  megaphone: [require('../../assets/video/megaphone-loop.mp4'), require('../../assets/video/megaphone-loop.webp')],
+  gift: [require('../../assets/video/gift-loop.mp4'), require('../../assets/video/gift-loop.webp')],
+  podium: [require('../../assets/video/podium-loop.mp4'), require('../../assets/video/podium-loop.webp')],
+  clubhouse: [require('../../assets/video/clubhouse-loop.mp4'), require('../../assets/video/clubhouse-loop.webp')],
   journey: [require('../../assets/video/journey-hero-loop.mp4'), require('../../assets/video/journey-hero-loop.webp')],
 } as const;
 export type ClayName = keyof typeof SRC;
