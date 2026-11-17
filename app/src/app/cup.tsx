@@ -75,7 +75,7 @@ export default function Cup() {
           <Txt v="small" color="#fff" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.6 }}>LIVE · ENDS MONDAY 00:00 UTC</Txt>
         </View>
         <Txt v="title" style={{ fontSize: 44, marginTop: 8, fontFamily: F.display, letterSpacing: -1 }}>WEEKLY CUP</Txt>
-        <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>Profit on your Stash stock positions, plus duel winnings settled this week.</Txt>
+        <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>Profit on the stocks in your Stash, plus clash winnings this week.</Txt>
       </View>
       <Row style={{ gap: 8, marginTop: 14 }}>
         {['DAYS', 'HRS', 'MIN', 'SEC'].map((k, i) => (
@@ -90,7 +90,7 @@ export default function Cup() {
         <View style={{ alignItems: 'center', marginTop: 24 }}>
           <Image source={ART.podium} style={{ width: 120, height: 120 }} contentFit="contain" />
           <Txt v="h2" style={{ marginTop: 8 }}>Nobody on the board yet</Txt>
-          <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>Back a call with a stock from your Stash, or win a duel, to get ranked.</Txt>
+          <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>Buy a stock from your Stash or win a clash to get ranked.</Txt>
         </View>
       ) : (
         <>
@@ -122,12 +122,12 @@ export default function Cup() {
             ))}
           </View>
           <View style={{ marginTop: 14, backgroundColor: C.s1, borderRadius: 18, padding: 12, borderWidth: 1.5, borderColor: myIdx >= 0 ? C.opp : C.s2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Txt v="label" style={{ width: 34 }}>{myIdx >= 0 ? `${myIdx + 1}th` : '–'}</Txt>
+            <Txt v="label" style={{ width: 34 }}>{myIdx >= 0 ? `#${myIdx + 1}` : '–'}</Txt>
             <View style={{ flex: 1 }}>
               <Txt v="label">{myIdx >= 0 ? 'You' : 'Not ranked yet'}</Txt>
-              <Txt v="small">{myIdx >= 0 ? `${rows[myIdx].total >= 0 ? '+' : '−'}${fmtUsd(Math.abs(rows[myIdx].total))} this week` : 'Back a call or win a duel'}</Txt>
+              <Txt v="small">{myIdx >= 0 ? `${rows[myIdx].total >= 0 ? '+' : '−'}${fmtUsd(Math.abs(rows[myIdx].total))} this week` : 'Buy a stock or win a clash'}</Txt>
             </View>
-            <Btn title="Play" h={36} onPress={() => router.replace('/')} />
+            <Btn title="Play" h={40} onPress={() => router.push('/arena')} />
           </View>
         </>
       )}

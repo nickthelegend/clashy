@@ -82,3 +82,15 @@ export const Jar = ({ size = 22, color = '#fff' }: P) => (
     <Path d="M8 4h8M9 4v2.5C6.5 7.5 5 9.6 5 12.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5.5c0-2.9-1.5-5-4-6V4" /><Path d="M9.5 13h5" />
   </Svg>
 );
+export const Plus = ({ size = 22, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2.4} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
+);
+export const ArrowUp = ({ size = 22, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 19V5M6 11l6-6 6 6" /></Svg>
+);
+export const ArrowDown = ({ size = 22, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 5v14M6 13l6 6 6-6" /></Svg>
+);
+export const Copy = ({ size = 18, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 9h10v10H9z" /><Path d="M5 15V5h10" /></Svg>
+);

@@ -19,7 +19,7 @@ export const ONBOARDED_KEY = 'clashy:onboarded';
 const SLIDES: { loop: ClayName; title: string; body: string }[] = [
   { loop: 'onSpend', title: 'Spend. Save the change.', body: 'Pay anyone in USDC and round up: the change lands in your Stash, in the same transaction.' },
   { loop: 'onInvest', title: 'Savings into stocks.', body: 'Buy real tokenized stocks like NVIDIA, Apple and the S&P 500 from your Stash, from $5. The shares are yours.' },
-  { loop: 'onSquad', title: 'Call it with your crew.', body: 'Post calls with your real position, duel friends for 5 USDC, and climb the Weekly Cup with your clan.' },
+  { loop: 'onSquad', title: 'Call it with your crew.', body: 'Post calls with your real position, clash friends for $5, and climb the Weekly Cup with your squad.' },
 ];
 
 function NameStep({ onDone }: { onDone: () => void }) {
@@ -43,7 +43,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
       <View style={{ alignItems: 'center' }}>
         <Image source={AVATARS[avatar]} style={{ width: 120, height: 120, borderRadius: 60 }} contentFit="cover" />
         <Txt v="title" style={{ marginTop: 16, fontSize: 30 }}>Pick your name</Txt>
-        <Txt v="body" color="#B9B9C2" style={{ marginTop: 6, textAlign: 'center' }}>It's on your calls, duels and clan. Yours alone, on chain.</Txt>
+        <Txt v="body" color="#B9B9C2" style={{ marginTop: 6, textAlign: 'center' }}>It's on your calls, clashes and squads. Yours alone, on chain.</Txt>
       </View>
       <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: C.s1, borderRadius: 14, paddingHorizontal: 14, height: 52 }}>
         <Txt v="label" color={C.muted} style={{ fontSize: 18 }}>@</Txt>
@@ -51,7 +51,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
           autoCapitalize="none" autoCorrect={false} autoFocus style={{ flex: 1, color: C.ink, fontFamily: F.semi, fontSize: 18, marginLeft: 4 }} />
         <Txt v="small" style={{ fontSize: 12 }}>{name.length}/16</Txt>
       </View>
-      <Txt v="small" style={{ marginTop: 14, marginBottom: 8 }}>Pick your clay</Txt>
+      <Txt v="small" style={{ marginTop: 14, marginBottom: 8 }}>Pick your look</Txt>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
         {AVATARS.map((src, i) => (
           <Pressable key={i} onPress={() => { Haptics.selectionAsync(); setAvatar(i); }} style={{ borderRadius: 28, borderWidth: 3, borderColor: avatar === i ? C.brand : 'transparent' }}>

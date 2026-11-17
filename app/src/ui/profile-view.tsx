@@ -91,7 +91,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
     'giant-slayer': !!top && history.some((d) => d.won && d.rival.equals(top)),
   };
   const how: Record<string, string> = {
-    top10: 'Reach the top 10 on the leaderboard', streak: 'Win 9 clashes in a row', 500: 'Play 500 clashes', captain: 'Captain a clan',
+    top10: 'Reach the top 10 on the leaderboard', streak: 'Win 9 clashes in a row', 500: 'Play 500 clashes', captain: 'Captain a squad',
     'first-ko': 'Win a clash by knockout', 'giant-slayer': 'Beat the #1 player',
   };
   const progress: Record<string, string> = {

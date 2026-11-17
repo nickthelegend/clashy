@@ -45,7 +45,7 @@ export async function readProfiles(): Promise<Map<string, Profile>> {
 }
 export const useProfiles = () => usePoll(readProfiles, 10_000);
 /** Accounts made by chain/tests (handles t_... and b_...): real on the local chain, kept off public boards. */
-export const isTestAccount = (p?: Profile) => !!p && /^(t|b)_/.test(p.name);
+export const isTestAccount = (p?: Profile) => !!p && (/^(t|b)_/.test(p.name) || /_tester$/.test(p.name));
 export async function readProfile(owner: PublicKey): Promise<Profile | null> {
   const p = await reader.account.profile.fetchNullable(P.profile(owner));
   return p ? toProfile(p) : null;

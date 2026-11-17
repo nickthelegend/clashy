@@ -216,7 +216,7 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={{ marginTop: 8 }}>
-        <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'calls', label: 'Calls' }, { key: 'duels', label: 'Duel results' }]} />
+        <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'calls', label: 'Calls' }, { key: 'duels', label: 'Clash results' }]} />
       </View>
       {likeErr ? <ErrorLine msg={likeErr} /> : null}
 
@@ -229,7 +229,7 @@ export default function HomeScreen() {
         ))
       ) : feed.status === 'loading' ? <SkeletonRows n={3} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : (
         <>
-          {f!.settled.length === 0 ? <Pending art={ART.duels} title="No duels settled yet" body="Duel results show here, live from the Clashy program." action="Open a duel" onAction={() => router.push('/onchain')} />
+          {f!.settled.length === 0 ? <Pending art={ART.duels} title="No clashes settled yet" body="Clash results show here, live from the Clashy program." action="Start a clash" onAction={() => router.push('/onchain')} />
             : f!.settled.map((d) => <DuelResult key={d.key.toBase58()} d={d} name={nameOf} />)}
         </>
       )}
