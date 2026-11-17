@@ -4,3 +4,7 @@ dist/
 *.log
 .env
 .env.*
+assets/gen-nov17/bad/
+assets/gen-nov17/logs/
+assets/gen-nov17/vlogs/
+assets/gen-nov17/frames/

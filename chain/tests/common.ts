@@ -1,6 +1,7 @@
 // Shared harness for the Clashy end-to-end tests against the local MagicBlock stack
 // (scripts/localnet.sh): base layer :8999, Ephemeral Rollup :7799.
-// Prices are real: the crank reads Coinbase Exchange's public ticker and pushes it on chain.
+// Prices are real: the crank reads Coinbase Exchange's public ticker (SOL, BTC, ETH) and Jupiter's price API
+// (tokenized stocks: the xStocks themselves, which trade on Solana around the clock) and pushes them on chain.
 import * as anchor from '@coral-xyz/anchor';
 import { BN, Program } from '@coral-xyz/anchor';
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
@@ -26,11 +27,20 @@ export const LOCAL_VRF_QUEUE = new PublicKey('GKE6d7iv8kCBrsxr78W3xVdjGLLLJnxsGi
 /** MagicBlock's VRF base queue with their hosted oracles on devnet and mainnet. */
 export const BASE_VRF_QUEUE = new PublicKey('Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh');
 export const PRICE_SCALE = 1_000_000;
-export const COINS = [
+export type CoinSource = { symbol: string; product?: string; mint?: string };
+/** Config coins in order. Crypto prices from Coinbase; stocks are xStocks priced by Jupiter (24/7, on-chain trading). */
+export const COINS: CoinSource[] = [
   { symbol: 'SOL', product: 'SOL-USD' },
   { symbol: 'BTC', product: 'BTC-USD' },
   { symbol: 'ETH', product: 'ETH-USD' },
+  { symbol: 'NVDA', mint: 'Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh' },
+  { symbol: 'TSLA', mint: 'XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB' },
+  { symbol: 'AAPL', mint: 'XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp' },
+  { symbol: 'SPY', mint: 'XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W' },
+  { symbol: 'GOOGL', mint: 'XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN' },
 ];
+/** Pool mask for duels on the stocks only (coins 3..7). */
+export const STOCK_MASK = 0b1111_1000;
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const sha256 = (...parts: Buffer[]) => createHash('sha256').update(Buffer.concat(parts)).digest();
@@ -75,6 +85,14 @@ export const P = {
   position: (clan: PublicKey, id: number | bigint) => pda(Buffer.from('position'), clan.toBuffer(), le64(id)),
   war: (a: PublicKey, b: PublicKey, nonce: number | bigint) => pda(Buffer.from('war'), a.toBuffer(), b.toBuffer(), le64(nonce)),
   tour: (creator: PublicKey, nonce: number | bigint) => pda(Buffer.from('tour'), creator.toBuffer(), le64(nonce)),
+  profile: (owner: PublicKey) => pda(Buffer.from('profile'), owner.toBuffer()),
+  handle: (name: string) => pda(Buffer.from('handle'), Buffer.from(name)),
+  registry: pda(Buffer.from('registry')),
+  stash: (owner: PublicKey) => pda(Buffer.from('stash'), owner.toBuffer()),
+  stashVault: (owner: PublicKey) => pda(Buffer.from('stashv'), owner.toBuffer()),
+  holding: (owner: PublicKey, mint: PublicKey) => pda(Buffer.from('hold'), owner.toBuffer(), mint.toBuffer()),
+  channel: (clan: PublicKey, id: number) => pda(Buffer.from('chan'), clan.toBuffer(), Buffer.from([id])),
+  board: (id: number) => pda(Buffer.from('board'), Buffer.from([id])),
 };
 
 export async function until<T>(what: string, timeoutMs: number, probe: () => Promise<T | null | undefined | false>): Promise<T> {
@@ -94,6 +112,48 @@ export async function coinbasePrice(product: string): Promise<bigint> {
   const j = (await r.json()) as { price: string };
   const [i, f = ''] = j.price.split('.');
   return BigInt(i) * 1_000_000n + BigInt((f + '000000').slice(0, 6));
+}
+
+const scale6 = (price: string | number) => {
+  const [i, f = ''] = String(typeof price === 'number' ? price.toFixed(6) : price).split('.');
+  return BigInt(i) * 1_000_000n + BigInt((f + '000000').slice(0, 6));
+};
+
+/** Live USD prices of tokens on Solana from Jupiter's price API (one request for all mints). Throws on any gap.
+ *  Jupiter's free API is rate-limited, so a reading is reused for 5 s; on a 429 the last reading is used while it
+ *  is under 30 s old, and after that the error is thrown (stale prices are never pushed as fresh). */
+let jupCache: { at: number; key: string; px: Map<string, bigint> } | null = null;
+export async function jupiterPrices(mints: string[]): Promise<Map<string, bigint>> {
+  const key = mints.join(',');
+  if (jupCache && jupCache.key === key && Date.now() - jupCache.at < 5_000) return jupCache.px;
+  try {
+    const px = await fetchJupiterPrices(mints);
+    jupCache = { at: Date.now(), key, px };
+    return px;
+  } catch (e) {
+    if (jupCache && jupCache.key === key && Date.now() - jupCache.at < 30_000 && /429/.test((e as Error).message)) return jupCache.px;
+    throw e;
+  }
+}
+async function fetchJupiterPrices(mints: string[]): Promise<Map<string, bigint>> {
+  const r = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mints.join(',')}`, { headers: { Accept: 'application/json' } });
+  if (!r.ok) throw new Error(`Jupiter price API answered HTTP ${r.status}`);
+  const j = (await r.json()) as Record<string, { usdPrice?: number }>;
+  const out = new Map<string, bigint>();
+  for (const m of mints) {
+    const p = j[m]?.usdPrice;
+    if (!p || !(p > 0)) throw new Error(`Jupiter has no price for ${m}`);
+    out.set(m, scale6(p));
+  }
+  return out;
+}
+
+/** Live prices for every config coin, in config order. */
+export async function livePrices(): Promise<bigint[]> {
+  const mints = COINS.filter((c) => c.mint).map((c) => c.mint!);
+  const [jup, ...cb] = await Promise.all([mints.length ? jupiterPrices(mints) : Promise.resolve(new Map()), ...COINS.filter((c) => c.product).map((c) => coinbasePrice(c.product!))]);
+  let k = 0;
+  return COINS.map((c) => (c.mint ? (jup as Map<string, bigint>).get(c.mint)! : (cb[k++] as bigint)));
 }
 
 export async function fundedKeypair(sol = 20) {
@@ -167,7 +227,8 @@ export async function sendEr(builder: { transaction(): Promise<Transaction> }, s
   try {
     sig = await er.sendRawTransaction(tx.serialize());
   } catch (e) {
-    const logs = (e as { logs?: string[] }).logs ?? [];
+    const x = e as { logs?: string[]; getLogs?: (c: Connection) => Promise<string[]> };
+    const logs = x.logs?.length ? x.logs : ((await x.getLogs?.(er).catch(() => [])) ?? []);
     throw new Error(`rollup rejected the transaction: ${(e as Error).message}\n${logs.join('\n')}`);
   }
   const status = await until(`rollup confirmation of ${sig.slice(0, 10)}`, 30_000, async () => {
@@ -199,6 +260,7 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
   if (!(await baseProgram.account.config.fetch(P.config)).vrfQueue.equals(queue)) {
     await baseProgram.methods.setVrfQueue().accountsPartial({ authority: authority.publicKey, queue }).rpc();
   }
+  const startPx = await livePrices();
   for (let i = 0; i < COINS.length; i++) {
     const feed = P.feed(i);
     let info = await base.getAccountInfo(feed);
@@ -210,7 +272,7 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
       info = await base.getAccountInfo(feed);
     }
     if (info!.owner.equals(programId)) {
-      await baseProgram.methods.pushPrice(new BN((await coinbasePrice(COINS[i].product)).toString())).accountsPartial({ crank: authority.publicKey, feed }).rpc();
+      await baseProgram.methods.pushPrice(new BN(startPx[i].toString())).accountsPartial({ crank: authority.publicKey, feed }).rpc();
       await baseProgram.methods.delegateFeed(i).accountsPartial({ authority: authority.publicKey, feed }).remainingAccounts([{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }]).rpc();
     }
   }
@@ -221,21 +283,29 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
     }
   }
   await pushBasePrices();
+  // the public calls feed lives on the rollup
+  if (!(await base.getAccountInfo(P.board(0)))) {
+    await baseProgram.methods.openBoard(0).accountsPartial({ authority: authority.publicKey, board: P.board(0) }).rpc();
+  }
+  if ((await base.getAccountInfo(P.board(0)))!.owner.equals(programId)) {
+    await baseProgram.methods.delegateBoard(0).accountsPartial({ authority: authority.publicKey, board: P.board(0) }).remainingAccounts([{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }]).rpc();
+  }
   // the rollup clones delegated feeds on first use
   for (let i = 0; i < COINS.length; i++) await until(`feed ${i} on the rollup`, 30_000, () => er.getAccountInfo(P.feed(i)));
+  await until('the calls board on the rollup', 30_000, () => er.getAccountInfo(P.board(0)));
   return (await baseProgram.account.config.fetch(P.config));
 }
 
 /** Crank: pushes live Coinbase prices into the delegated feeds on the rollup. Returns the prices pushed. */
 export async function pushPrices(): Promise<bigint[]> {
-  const prices = await Promise.all(COINS.map((c) => coinbasePrice(c.product)));
+  const prices = await livePrices();
   await Promise.all(prices.map((p, i) => sendEr(erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority, authority)));
   return prices;
 }
 
 /** Crank: writes live prices into the Solana-side base feeds, all coins in one transaction. */
 export async function pushBasePrices(prices?: bigint[]): Promise<bigint[]> {
-  const px = prices ?? (await Promise.all(COINS.map((c) => coinbasePrice(c.product))));
+  const px = prices ?? (await livePrices());
   const ixs = await Promise.all(px.map((p, i) => baseProgram.methods.pushBasePrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.baseFeed(i) }).instruction()));
   const tx = new Transaction().add(...ixs);
   await sendAndConfirmTransaction(base, tx, [authority], { commitment: 'confirmed' });

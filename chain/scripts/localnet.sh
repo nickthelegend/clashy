@@ -6,8 +6,11 @@
 #   :7799  rollup   ephemeral-validator pointed at the base layer
 #          vrf      MagicBlock's vrf-oracle answering their local test queue
 #          usdc     mainnet USDC's mint address, loaded with a local mint authority (test USDC)
+#          stocks   a mainnet snapshot of five xStocks and their Orca Whirlpool USDC pools, plus the Whirlpool
+#                   and Token-2022 programs (scripts/fork-stocks.ts), so the Stash buys real tokenized stocks
 #
 # CLASHY_RESET=1 starts both from genesis (they share one ledger dir, so they are always reset together).
+# The old ledger is kept, renamed to .localnet/ledger-<time>, never deleted by this script.
 # Ledgers live in chain/.localnet on the SSD, not in /tmp on the boot disk.
 set -euo pipefail
 
@@ -33,7 +36,10 @@ if [ "${CLASHY_RESET:-}" = "1" ]; then
   for p in "$BASE_PORT" "$ER_PORT"; do lsof -nP -iTCP:"$p" -sTCP:LISTEN -t 2>/dev/null | xargs kill -9 2>/dev/null || true; done
   pkill -f "vrf-oracle --rpc-url http://$HOST:$BASE_PORT" 2>/dev/null || true
   sleep 2
-  rm -rf "$DIR/ledger" "$DIR/er"
+  STAMP=$(date +%Y%m%d-%H%M%S)
+  [ -d "$DIR/ledger" ] && mv "$DIR/ledger" "$DIR/ledger-$STAMP"
+  [ -d "$DIR/er" ] && mv "$DIR/er" "$DIR/er-$STAMP"
+  echo "old ledgers kept as $DIR/ledger-$STAMP and $DIR/er-$STAMP"
 fi
 
 COMMITTOR=ComtrB2KEaWgXsW1dhr1xYL4Ht4Bjj3gXnnL6KMdABq
@@ -49,6 +55,11 @@ EXTRA=()
 USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 npx tsx scripts/usdc-mint.ts "$DIR/usdc-mint.json"
 EXTRA+=(--account "$USDC_MINT" "$DIR/usdc-mint.json")
+# Tokenized stocks from mainnet (snapshot once; rerun scripts/fork-stocks.ts and reset to refresh it).
+FORK="$DIR/fork"
+[ -s "$FORK/stocks.json" ] || npx tsx scripts/fork-stocks.ts
+for f in "$FORK"/accounts/*.json; do EXTRA+=(--account "$(basename "$f" .json)" "$f"); done
+for so in "$FORK"/programs/*.so; do EXTRA+=(--bpf-program "$(basename "$so" .so)" "$so"); done
 # The sponsor pays every fee and rent so players only ever hold USDC. Made once, never printed.
 SPONSOR=.keys/local-sponsor.json
 [ -s "$SPONSOR" ] || solana-keygen new --no-bip39-passphrase --silent --outfile "$SPONSOR" >/dev/null 2>&1
@@ -56,7 +67,7 @@ SPONSOR=.keys/local-sponsor.json
 if up "$BASE_PORT"; then echo "base already up on :$BASE_PORT"; else
   echo "starting base on :$BASE_PORT"
   mb-test-validator --rpc-port "$BASE_PORT" --ledger "$DIR/ledger" --faucet-port 9898 \
-    --limit-ledger-size 50000000 ${EXTRA[@]+"${EXTRA[@]}"} >"$DIR/base.log" 2>&1 &
+    --limit-ledger-size 5000000 ${EXTRA[@]+"${EXTRA[@]}"} >"$DIR/base.log" 2>&1 &
   wait_rpc "$BASE_PORT" base
 fi
 

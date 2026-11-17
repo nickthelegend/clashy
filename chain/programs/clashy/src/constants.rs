@@ -17,6 +17,15 @@ pub const WAR_SEED: &[u8] = b"war";
 pub const TOUR_SEED: &[u8] = b"tour";
 /// The one PDA that owns every vault token account (duel and tournament escrows, war pots, clan chests).
 pub const AUTH_SEED: &[u8] = b"auth";
+/// A player's public profile: handle, avatar, their own spending limits and day streak.
+pub const PROFILE_SEED: &[u8] = b"profile";
+/// Reserves a handle so two players cannot take the same name.
+pub const HANDLE_SEED: &[u8] = b"handle";
+/// A player's savings jar (the Stash) and its USDC vault.
+pub const STASH_SEED: &[u8] = b"stash";
+pub const STASH_VAULT_SEED: &[u8] = b"stashv";
+/// A clan chat channel (a ring buffer of recent messages, live on the MagicBlock rollup).
+pub const CHANNEL_SEED: &[u8] = b"chan";
 
 /// Prices are stored as integer USD with 6 decimals.
 pub const PRICE_SCALE: u64 = 1_000_000;
@@ -28,7 +37,8 @@ pub const NO_COIN: u8 = 255;
 /// Stakes are USDC base units (6 decimals): 1_000_000 = 1 USDC.
 pub const MIN_STAKE: u64 = 1_000_000; // 1 USDC
 pub const MIN_DUEL_SECS: u32 = 30;
-pub const MAX_DUEL_SECS: u32 = 3_600;
+/// Up to a day: quick 60 s duels and slow market duels on tokenized stocks.
+pub const MAX_DUEL_SECS: u32 = 86_400;
 pub const MAX_LEVERAGE: u16 = 100;
 pub const MAX_CHALLENGE_SECS: i64 = 7 * 86_400;
 /// A matched duel must reach the rollup within this; otherwise anyone can abort it (refund or forfeit).
@@ -70,3 +80,37 @@ pub const VRF_BASE_QUEUE: Pubkey = pubkey!("Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDer
 pub const VRF_PROGRAM_ID: Pubkey = pubkey!("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
 /// MagicBlock delegation program: owns delegated accounts on Solana while they live in a rollup.
 pub const DELEGATION_PROGRAM_ID: Pubkey = pubkey!("DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh");
+
+/// Handles: 3 to 16 characters, lowercase letters, digits and underscore.
+pub const NAME_LEN: usize = 16;
+pub const MIN_NAME_LEN: usize = 3;
+pub const AVATARS: u8 = 20;
+/// A new profile's daily stake limit (the player can lower it any time; raising it waits a day).
+pub const DEFAULT_DAILY_LIMIT: u64 = 50_000_000; // 50 USDC
+pub const LIMIT_RAISE_DELAY: i64 = 86_400;
+/// A self-imposed break can be at most this long, and cannot be shortened once taken.
+pub const MAX_BREAK_SECS: i64 = 30 * 86_400;
+pub const DAY_SECS: i64 = 86_400;
+pub const GOAL_NAME_LEN: usize = 24;
+/// Chat: messages kept per channel and the longest message.
+pub const CHAT_MSGS: usize = 24;
+pub const CHAT_TEXT: usize = 120;
+pub const MAX_CHANNELS: u8 = 4;
+
+/// Counts profiles; each profile gets a number (used for one-like-per-player on feed posts).
+pub const REGISTRY_SEED: &[u8] = b"registry";
+/// A player's position in one tokenized stock: shares bought through the Stash and their USDC cost.
+pub const HOLDING_SEED: &[u8] = b"hold";
+/// The public calls feed (a ring of recent posts, live on the MagicBlock rollup).
+pub const BOARD_SEED: &[u8] = b"board";
+pub const BOARD_POSTS: usize = 24;
+pub const POST_TEXT: usize = 140;
+/// Players who can like posts: one bit each (profile numbers below this).
+pub const LIKE_BITS: usize = 1024;
+/// Orca Whirlpool: the AMM the Stash buys and sells tokenized stocks through.
+pub const WHIRLPOOL_PROGRAM_ID: Pubkey = pubkey!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
+pub const MEMO_PROGRAM_ID: Pubkey = pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+/// Whirlpool `swap_v2` instruction discriminator: sha256("global:swap_v2")[..8].
+pub const WHIRLPOOL_SWAP_V2: [u8; 8] = [43, 4, 237, 11, 26, 201, 30, 98];
+pub const MIN_SQRT_PRICE_X64: u128 = 4295048016;
+pub const MAX_SQRT_PRICE_X64: u128 = 79226673515401279992447579055;
