@@ -337,6 +337,10 @@ export default function OnChainDuel() {
                     </View>
                   )}
                 </View>
+                <View style={{ alignSelf: 'stretch', marginTop: 26, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18 }}>
+                  <FaceOff me={meProf} rival={rivalProf} meLabel={meProf?.name ?? 'You'} rivalLabel={rivalProf?.name ?? 'Rival'} size={60} />
+                  <Txt v="small" style={{ textAlign: 'center', marginTop: 12 }}>Winner takes {fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}. Calls stay sealed until you both lock.</Txt>
+                </View>
               </View>
             ) : (
               <>
