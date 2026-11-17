@@ -15,6 +15,20 @@ const SRC = {
   line: [require('../../assets/video/tile-line-loop.mp4'), require('../../assets/video/tile-line-loop.webp')],
   cup: [require('../../assets/video/tile-cup-loop.mp4'), require('../../assets/video/tile-cup-loop.webp')],
   win: [require('../../assets/video/win-loop.mp4'), require('../../assets/video/win-loop.webp')],
+  stash: [require('../../assets/video/stash-jar-loop.mp4'), require('../../assets/video/stash-jar-loop.webp')],
+  roundup: [require('../../assets/video/roundup-coin-loop.mp4'), require('../../assets/video/roundup-coin-loop.webp')],
+  streak: [require('../../assets/video/streak-flame-loop.mp4'), require('../../assets/video/streak-flame-loop.webp')],
+  limits: [require('../../assets/video/limit-shield-loop.mp4'), require('../../assets/video/limit-shield-loop.webp')],
+  clock: [require('../../assets/video/market-clock-loop.mp4'), require('../../assets/video/market-clock-loop.webp')],
+  chat: [require('../../assets/video/chat-bubbles-loop.mp4'), require('../../assets/video/chat-bubbles-loop.webp')],
+  spend: [require('../../assets/video/spend-card-loop.mp4'), require('../../assets/video/spend-card-loop.webp')],
+  goal: [require('../../assets/video/goal-target-loop.mp4'), require('../../assets/video/goal-target-loop.webp')],
+  stocks: [require('../../assets/video/stocks-loop.mp4'), require('../../assets/video/stocks-loop.webp')],
+  onSpend: [require('../../assets/video/onboard-spend-loop.mp4'), require('../../assets/video/onboard-spend-loop.webp')],
+  onInvest: [require('../../assets/video/onboard-invest-loop.mp4'), require('../../assets/video/onboard-invest-loop.webp')],
+  onSquad: [require('../../assets/video/onboard-squad-loop.mp4'), require('../../assets/video/onboard-squad-loop.webp')],
+  clanCity: [require('../../assets/video/clan-banner-loop.mp4'), require('../../assets/video/clan-banner-loop.webp')],
+  journey: [require('../../assets/video/journey-hero-loop.mp4'), require('../../assets/video/journey-hero-loop.webp')],
 } as const;
 export type ClayName = keyof typeof SRC;
 // explicit size: on web the <video> otherwise keeps its intrinsic 960 px size despite inset 0
