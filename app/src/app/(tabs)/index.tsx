@@ -15,7 +15,7 @@ import { STOCKS } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar, STOCK_ART, Thread } from '@/ui/feed';
 import { useCreate } from '@/ui/create';
-import { Bell, Jar } from '@/ui/icons';
+import { Bell, Jar, Search as SearchI } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
@@ -41,7 +41,7 @@ function DuelResult({ d, name }: { d: FeedDuel; name: (k: PublicKey) => string }
   const wi = d.winner === 1 ? 0 : 1;
   const koed = !tie && !!(d.ko & (1 << (1 - wi)));
   return (
-    <Card style={{ padding: 14, marginBottom: 8 }}>
+    <Pressable onPress={() => router.push(`/match/${d.key.toBase58()}` as Href)}><Card style={{ padding: 14, marginBottom: 8 }}>
       <Row style={{ gap: 10 }}>
         <Avatar name={(tie ? d.creator : w).toBase58()} size={38} />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -50,7 +50,7 @@ function DuelResult({ d, name }: { d: FeedDuel; name: (k: PublicKey) => string }
         </View>
         {!tie ? <Txt v="label" color={C.up}>{(d.pnlBps[wi] / 100 >= 0 ? '+' : '') + (d.pnlBps[wi] / 100).toFixed(1)}%</Txt> : null}
       </Row>
-    </Card>
+    </Card></Pressable>
   );
 }
 
@@ -134,6 +134,9 @@ export default function HomeScreen() {
         ) : desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         {wallet.status === 'out' ? <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} /> : (
           <Row style={{ gap: 8 }}>
+            <Pressable onPress={() => router.push('/search' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+              <SearchI size={18} color={C.ink} />
+            </Pressable>
             <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <Bell size={18} color={C.ink} />
             </Pressable>
@@ -206,7 +209,7 @@ export default function HomeScreen() {
         <Pressable onPress={() => openCall(null)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#1B1B21' : C.s1, borderRadius: 22, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: '#1F1F26' })}>
           <ProfileAvatar p={myProfile} size={40} />
           <View style={{ flex: 1 }}>
-            <Txt v="title" style={{ fontFamily: F.display, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
+            <Txt v="title" style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
             <Txt v="small" style={{ marginTop: 1 }}>Post it with your real position</Txt>
           </View>
           <Row style={{ gap: -8 }}>

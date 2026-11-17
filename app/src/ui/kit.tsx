@@ -224,11 +224,15 @@ export const ART = {
   onSquad: require('../../assets/art/onboard-squad.webp'),
   clanCity: require('../../assets/art/clan-banner.webp'),
   journey: require('../../assets/art/journey-hero.webp'),
-  stockNVDA: require('../../assets/art/stock-nvda.webp'),
-  stockTSLA: require('../../assets/art/stock-tsla.webp'),
-  stockAAPL: require('../../assets/art/stock-aapl.webp'),
-  stockSPY: require('../../assets/art/stock-spy.webp'),
-  stockGOOGL: require('../../assets/art/stock-googl.webp'),
+  stockNVDA: require('../../assets/logos/nvda.png'),
+  logoSOL: require('../../assets/logos/sol.png'),
+  logoBTC: require('../../assets/logos/btc.png'),
+  logoETH: require('../../assets/logos/eth.png'),
+  logoUSDC: require('../../assets/logos/usdc.png'),
+  stockTSLA: require('../../assets/logos/tsla.png'),
+  stockAAPL: require('../../assets/logos/aapl.png'),
+  stockSPY: require('../../assets/logos/spy.png'),
+  stockGOOGL: require('../../assets/logos/googl.png'),
   duels: require('../../assets/art/empty-duels.webp'),
   clan: require('../../assets/art/empty-clan.webp'),
   bell: require('../../assets/art/empty-notifications.webp'),
@@ -340,11 +344,8 @@ export const Art = ({ src, size = 96, radius = 18 }: { src: number; size?: numbe
     <Image source={src} style={{ width: size, height: size }} contentFit="contain" />
   </View>
 );
-/** The wordmark as type: "clashy" in the display face, the y in the rival's pink. */
 export const Wordmark = ({ height = 26 }: { height?: number }) => (
-  <Text accessibilityRole="header" style={{ fontFamily: F.display, fontSize: height * 1.25, lineHeight: height * 1.4, color: C.ink, letterSpacing: -0.5 }}>
-    clash<Text style={{ color: C.opp }}>y</Text>
-  </Text>
+  <Image source={ART.wordmark} style={{ height, width: height * (1280 / 300) }} contentFit="contain" />
 );
 
 export const Pending = ({ title, body, action, onAction, art }: { title: string; body: string; action?: string; onAction?: () => void; art?: number }) => (

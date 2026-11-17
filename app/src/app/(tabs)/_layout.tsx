@@ -1,4 +1,5 @@
-// Tab bar: Home · Play · + · Squads · You. The + is not a screen: it opens the Start-something drawer.
+// Custom tab bar: flat black like pump.fun, icons only, raised indigo Arena square in the middle.
+// CreateProvider wraps the tabs so any screen can open the "What's your call?" drawer (Home and Reply use it).
 import * as Haptics from 'expo-haptics';
 import { usePathname } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
@@ -6,29 +7,23 @@ import type { TabTriggerSlotProps } from 'expo-router/ui';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Shield, Swords, User } from '@/ui/icons';
-import { CreateProvider, useCreate } from '@/ui/create';
-import { Txt } from '@/ui/kit';
+import { Chat, Home, Shield, Swords, User } from '@/ui/icons';
+import { CreateProvider } from '@/ui/create';
 import { C } from '@/ui/tokens';
 import { RightRail, Sidebar } from '@/ui/desk';
 import { pref, useLayout } from '@/ui/layout';
 
 type TB = Omit<TabTriggerSlotProps, 'ref'> & { icon: (c: string) => React.ReactNode; center?: boolean };
-function TabBtn({ icon, isFocused, label, ref: _r, ...props }: TB & { ref?: unknown; label: string }) {
+function TabBtn({ icon, isFocused, center, ref: _r, ...props }: TB & { ref?: unknown }) {
+  if (center)
+    return (
+      <Pressable {...props} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 42, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', opacity: isFocused ? 1 : 0.92 }}>
+        {icon('#fff')}
+      </Pressable>
+    );
   return (
-    <Pressable {...props} onPressIn={() => Haptics.selectionAsync()} style={{ width: 62, height: 50, alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+    <Pressable {...props} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 48, alignItems: 'center', justifyContent: 'center' }}>
       {icon(isFocused ? C.ink : C.dim)}
-      <Txt v="small" color={isFocused ? C.ink : C.dim} style={{ fontSize: 10, fontFamily: 'Inter_600SemiBold' }}>{label}</Txt>
-    </Pressable>
-  );
-}
-
-/** The raised + in the middle: opens the Start-something drawer. */
-function PlusBtn() {
-  const { openMenu } = useCreate();
-  return (
-    <Pressable onPressIn={() => Haptics.selectionAsync()} onPress={openMenu} style={({ pressed }) => ({ width: 60, height: 46, borderRadius: 16, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }], shadowColor: C.brand, shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 4 } })}>
-      <Txt v="title" color="#fff" style={{ fontSize: 30, lineHeight: 32, marginTop: -2 }}>+</Txt>
     </Pressable>
   );
 }
@@ -42,6 +37,7 @@ export default function TabsLayout() {
   const routes = (
     <TabList style={{ display: 'none' }}>
       <TabTrigger name="index" href="/" />
+      <TabTrigger name="chats" href="/chats" />
       <TabTrigger name="arena" href="/arena" />
       <TabTrigger name="clans" href="/clans" />
       <TabTrigger name="profile" href="/profile" />
@@ -65,12 +61,12 @@ export default function TabsLayout() {
     <CreateProvider>
       <Tabs style={{ flex: 1, backgroundColor: C.bg }}>
         <TabSlot style={{ flex: 1 }} />
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 6, paddingBottom: Math.max(insets.bottom, 8), backgroundColor: '#0A0A0D', borderTopWidth: 1, borderTopColor: '#1A1A20' }}>
-          <TabTrigger name="index" asChild><TabBtn label="Home" icon={(c) => <Home size={23} color={c} />} /></TabTrigger>
-          <TabTrigger name="arena" asChild><TabBtn label="Play" icon={(c) => <Swords size={22} color={c} />} /></TabTrigger>
-          <PlusBtn />
-          <TabTrigger name="clans" asChild><TabBtn label="Squads" icon={(c) => <Shield size={23} color={c} />} /></TabTrigger>
-          <TabTrigger name="profile" asChild><TabBtn label="You" icon={(c) => <User size={23} color={c} />} /></TabTrigger>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: Math.max(insets.bottom, 10), backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line }}>
+          <TabTrigger name="index" asChild><TabBtn icon={(c) => <Home size={24} color={c} />} /></TabTrigger>
+          <TabTrigger name="chats" asChild><TabBtn icon={(c) => <Chat size={24} color={c} />} /></TabTrigger>
+          <TabTrigger name="arena" asChild><TabBtn center icon={(c) => <Swords size={22} color={c} />} /></TabTrigger>
+          <TabTrigger name="clans" asChild><TabBtn icon={(c) => <Shield size={24} color={c} />} /></TabTrigger>
+          <TabTrigger name="profile" asChild><TabBtn icon={(c) => <User size={24} color={c} />} /></TabTrigger>
         </View>
         {routes}
       </Tabs>

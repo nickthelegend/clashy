@@ -40,7 +40,7 @@ function ChallengeCard({ m, mine, onAccept }: { m: ChatMsg; mine: boolean; onAcc
     <View style={{ marginTop: 6, backgroundColor: CARD, borderRadius: 16, borderWidth: 1, borderColor: open ? 'rgba(240,70,140,0.45)' : HAIR, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center', maxWidth: 420 }}>
       <Image source={ART.tileDuel} style={{ width: 46, height: 46 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Txt v="label" style={{ fontFamily: F.displayB, fontSize: 15 }}>CLASH ME</Txt>
+        <Txt v="label" style={{ fontFamily: F.semi, fontSize: 15 }}>Clash me</Txt>
         <Txt v="small" lines={1}>{STAKE} USDC each · one coin · 60 s</Txt>
         <Row style={{ gap: 5, marginTop: 3 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: open ? C.opp : C.dim }} />
@@ -124,7 +124,7 @@ export default function ClanChat() {
   const Empty = ({ title, body, action, onAction, disabled }: { title: string; body: string; action?: string; onAction?: () => void; disabled?: boolean }) => (
     <View style={{ alignItems: 'center', marginTop: 36, paddingHorizontal: 20 }}>
       <ClayLoop name="chat" size={140} style={{ borderRadius: 28 }} />
-      <Txt v="title" style={{ marginTop: 10, fontFamily: F.display, fontSize: 22, textAlign: 'center' }}>{title}</Txt>
+      <Txt v="title" style={{ marginTop: 10, fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, textAlign: 'center' }}>{title}</Txt>
       <Txt v="small" style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
       {action ? <Btn title={action} h={50} style={{ marginTop: 14, alignSelf: 'stretch' }} disabled={disabled} onPress={onAction} /> : null}
     </View>

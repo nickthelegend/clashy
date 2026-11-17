@@ -62,7 +62,7 @@ export function SheetTile({ art, title, line, onPress, accent = C.brand }: { art
     <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 22, backgroundColor: pressed ? '#22222A' : '#1B1B21', marginBottom: 10, borderWidth: 1, borderColor: '#26262E' })}>
       <View style={{ width: 58, height: 58, borderRadius: 18, backgroundColor: accent + '22', alignItems: 'center', justifyContent: 'center' }}>{art}</View>
       <View style={{ flex: 1 }}>
-        <Txt v="title" style={{ fontFamily: F.display, fontSize: 19, letterSpacing: -0.2 }}>{title}</Txt>
+        <Txt v="title" style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.2 }}>{title}</Txt>
         <Txt v="small" style={{ marginTop: 2 }}>{line}</Txt>
       </View>
       <Txt v="label" color={C.muted} style={{ fontSize: 20 }}>›</Txt>

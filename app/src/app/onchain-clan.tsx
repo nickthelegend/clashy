@@ -234,7 +234,7 @@ export default function OnchainClan() {
                 <Image source={crestSrc(mine.crest)} style={{ width: 36, height: 36 }} contentFit="contain" />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontFamily: F.display, fontSize: 19, color: C.ink, letterSpacing: -0.3 }}>{mine.name}</Text>
+                <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 19, color: C.ink, letterSpacing: -0.3 }}>{mine.name}</Text>
                 <Row style={{ gap: 6 }}>
                   <Txt v="small" color={GOLD} style={{ fontFamily: F.displayB, fontSize: 11.5 }}>LV {level?.level ?? 1}</Txt>
                   <Txt v="small" lines={1} style={{ fontSize: 11.5, flexShrink: 1 }}>{mine.members} member{mine.members === 1 ? '' : 's'}{captain ? ' · you lead' : ''}</Txt>
@@ -258,12 +258,12 @@ export default function OnchainClan() {
         ) : status === 'setup' || status === 'error' ? (
           <ArtCard art={<ClayLoop name="stash" size={110} style={{ borderRadius: 24 }} />} title="Setup required" body={chain.wallet.error ?? 'The wallet could not start on this device.'} />
         ) : status === 'out' ? (
-          <ArtCard art={<ClayLoop name="clubhouse" size={150} style={{ borderRadius: 28 }} />} title="SIGN IN TO SEE YOUR SQUAD" body="Your squad's chest, its trade votes and its wars live on Solana. Sign in with email or Google; every fee is on Clashy.">
+          <ArtCard art={<ClayLoop name="clubhouse" size={150} style={{ borderRadius: 28 }} />} title="Sign in to see your squad" body="Your squad's chest, its trade votes and its wars live on Solana. Sign in with email or Google; every fee is on Clashy.">
             <Btn title="Sign in" kind="white" h={52} onPress={() => chain.wallet.login?.()} />
           </ArtCard>
         ) : !mine ? (
           <ArtCard art={<ClayLoop name="clubhouse" size={150} style={{ borderRadius: 28 }} />}
-            title={wantClan ? "YOU'RE NOT IN THIS SQUAD" : 'NO SQUAD YET'}
+            title={wantClan ? "You're not in this squad" : 'No squad yet'}
             body={wantClan ? 'Only members see the chest and vote on its trades. Find it in Discover and join to get a share.' : 'Join a squad to pool a chest with friends, vote on trades together and fight other squads.'}>
             <Btn title="Discover squads" h={52} onPress={() => router.push('/squads/discover' as Href)} />
           </ArtCard>
@@ -275,9 +275,9 @@ export default function OnchainClan() {
               <View style={{ padding: 16 }}>
                 <Row style={{ alignItems: 'flex-start', gap: 10 }}>
                   <View style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                    <Txt v="small" color="#B9B9C3" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1.1 }}>SQUAD CHEST</Txt>
+                    <Txt v="small" color="#B9B9C3" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1.1 }}>Squad chest</Txt>
                     <View style={{ marginTop: 10 }}><PnlPill label="Trades" usd={usd(mine.score)} /></View>
-                    {warLocked ? <View style={{ marginTop: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(240,70,140,0.18)', borderRadius: 10, paddingHorizontal: 9, height: 26, justifyContent: 'center' }}><Txt v="small" color={C.opp} style={{ fontFamily: F.bold, fontSize: 11 }}>AT WAR</Txt></View> : null}
+                    {warLocked ? <View style={{ marginTop: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(240,70,140,0.18)', borderRadius: 10, paddingHorizontal: 9, height: 26, justifyContent: 'center' }}><Txt v="small" color={C.opp} style={{ fontFamily: F.bold, fontSize: 11 }}>At war</Txt></View> : null}
                   </View>
                   <ClayLoop name="stash" size={92} style={{ borderRadius: 22 }} />
                 </Row>
@@ -302,11 +302,11 @@ export default function OnchainClan() {
             </Animated.View>
 
             {/* trades */}
-            <SectionHead title="TRADES" sub={openProps.length ? `${openProps.length} vote${openProps.length === 1 ? '' : 's'} open` : 'Proposed and voted by the squad'}
+            <SectionHead title="Trades" sub={openProps.length ? `${openProps.length} vote${openProps.length === 1 ? '' : 's'} open` : 'Proposed and voted by the squad'}
               right={<HeadAction label="Propose" disabled={!!busy} onPress={() => { setErr(undefined); setProposing(true); }} />} />
             {errHere('trades')}
             {openProps.length === 0 ? (
-              <ArtCard art={<Image source={ART.coinsPile} style={{ width: 84, height: 84 }} contentFit="contain" />} title="NO OPEN VOTES" body={mine.chest === 0 ? 'Add to the chest first: an empty chest has nothing to trade.' : 'Call a move on SOL, BTC or ETH and the squad votes on it for 60 seconds.'}>
+              <ArtCard art={<Image source={ART.coinsPile} style={{ width: 84, height: 84 }} contentFit="contain" />} title="No open votes" body={mine.chest === 0 ? 'Add to the chest first: an empty chest has nothing to trade.' : 'Call a move on SOL, BTC or ETH and the squad votes on it for 60 seconds.'}>
                 <Btn title="Propose a trade" h={48} disabled={!!busy || mine.chest === 0} onPress={() => { setErr(undefined); setProposing(true); }} />
               </ArtCard>
             ) : openProps.map((p) => {
@@ -335,7 +335,7 @@ export default function OnchainClan() {
 
             {positions.length ? (
               <>
-                <SectionHead title="IN PLAY" sub="Live P&L at the current price; booked to the squad score at close" />
+                <SectionHead title="In play" sub="Live P&L at the current price; booked to the squad score at close" />
                 {positions.slice(0, 8).map((p) => {
                   const px = prices[p.coin] ?? null;
                   const live = p.open && px ? (p.notional * pnlBps(p.entry, px, p.side, p.lev)) / 10_000 : p.pnl;
@@ -358,7 +358,7 @@ export default function OnchainClan() {
             ) : null}
 
             {/* squad war */}
-            <SectionHead title="SQUAD WAR" sub={activeWars.length ? undefined : `Stake ${fmtUsd(WAR_STAKE_USDC)} from the chest · best return takes the pot`}
+            <SectionHead title="Squad war" sub={activeWars.length ? undefined : `Stake ${fmtUsd(WAR_STAKE_USDC)} from the chest · best return takes the pot`}
               right={captain && activeWars.length === 0 ? <HeadAction label="Challenge" color={C.opp} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : undefined} />
             {errHere('war')}
             {activeWars.map((w) => {
@@ -380,9 +380,9 @@ export default function OnchainClan() {
                   <View style={{ alignItems: 'center', marginBottom: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: live ? 'rgba(240,70,140,0.18)' : '#1A1A20', borderRadius: 14, paddingHorizontal: 12, height: 28 }}>
                       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: live && left ? C.opp : GOLD }} />
-                      <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{!live ? (weA ? `WAITING FOR ${themName.toUpperCase()}` : 'CHALLENGE RECEIVED') : left ? 'WAR IS LIVE' : 'FINAL BELL'}</Txt>
+                      <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{!live ? (weA ? `Waiting for ${themName}` : 'Challenge received') : left ? 'War is live' : 'Final bell'}</Txt>
                     </View>
-                    {live ? <Text style={{ fontFamily: F.display, fontSize: 48, color: C.ink, marginTop: 6, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{left ? fmtLeft(left) : '0:00'}</Text> : null}
+                    {live ? <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 6, fontVariant: ['tabular-nums'] }}>{left ? fmtLeft(left) : '0:00'}</Text> : null}
                     <Txt v="small">Pot {fmtUsd(usd(w.stake * 2))} · {fmtUsd(usd(w.stake))} from each chest</Txt>
                   </View>
                   <SquadVersus us={us?.crest ?? null} them={them?.crest ?? null} usName={us?.name ?? 'Us'} themName={themName}
@@ -395,20 +395,20 @@ export default function OnchainClan() {
                         <Txt v="small" style={{ textAlign: 'center' }}>{weA ? `${fmtUsd(usd(w.stake))} is staked from your chest. The war starts when ${themName} accepts.` : `${themName} challenged your squad. Accepting stakes ${fmtUsd(usd(w.stake))} from your chest.`}</Txt>
                         {captain ? (weA
                           ? <Btn title={busy === `cancelwar-${w.nonce}` ? 'Withdrawing…' : 'Withdraw the challenge'} kind="ghost" h={46} style={{ marginTop: 12, borderRadius: 23 }} disabled={!!busy} onPress={() => at('war', () => cancelWar(w))} />
-                          : <View style={{ marginTop: 12 }}><BigGo title={busy === `accept-${w.nonce}` ? 'ACCEPTING…' : `ACCEPT · STAKE ${fmtUsd(usd(w.stake))}`} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => at('war', () => acceptWar(w))} /></View>)
+                          : <View style={{ marginTop: 12 }}><BigGo title={busy === `accept-${w.nonce}` ? 'Accepting…' : `Accept · stake ${fmtUsd(usd(w.stake))}`} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => at('war', () => acceptWar(w))} /></View>)
                           : <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>Your captain decides.</Txt>}
                         {captain && !weA && mine.chest < 2 * w.stake ? <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>The chest needs at least {fmtUsd(usd(2 * w.stake))} to accept.</Txt> : null}
                       </>
                     ) : left === 0 ? (A && B && (A.positionsOpen > 0 || B.positionsOpen > 0)
                       ? <Txt v="small" color={C.opp} style={{ textAlign: 'center' }}>Time is up. Every open trade must be closed (anyone can now) before the war settles.</Txt>
-                      : <BigGo title={busy === `settlewar-${w.nonce}` ? 'SETTLING…' : 'SETTLE THE WAR'} color={C.ink} fg="#000" disabled={!!busy} onPress={() => at('war', () => settleWar(w))} />)
+                      : <BigGo title={busy === `settlewar-${w.nonce}` ? 'Settling…' : 'Settle the war'} color={C.ink} fg="#000" disabled={!!busy} onPress={() => at('war', () => settleWar(w))} />)
                       : <Txt v="small" style={{ textAlign: 'center' }}>Return on each starting chest from closed trades. Best return when the clock hits zero takes the pot.</Txt>}
                   </View>
                 </Animated.View>
               );
             })}
             {activeWars.length === 0 ? (
-              <ArtCard art={<ClayLoop name="war" width={220} height={124} style={{ borderRadius: 20 }} cover />} title={captain ? 'PICK A FIGHT' : 'NO WAR RIGHT NOW'}
+              <ArtCard art={<ClayLoop name="war" width={220} height={124} style={{ borderRadius: 20 }} cover />} title={captain ? 'Pick a fight' : 'No war right now'}
                 body={captain ? `Stake ${fmtUsd(WAR_STAKE_USDC)} of the chest against a rival squad. Whoever trades the better return over the window takes both stakes.` : 'Your captain can challenge a rival squad. Whoever trades the better return takes both stakes.'}>
                 {captain ? <Btn title="Challenge a squad" kind="short" h={50} style={{ borderRadius: 25 }} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : null}
               </ArtCard>
@@ -425,7 +425,7 @@ export default function OnchainClan() {
             ) : null}
 
             {/* members */}
-            <SectionHead title="MEMBERS" sub={`${mine.members} in the squad · ${mine.wins}W ${mine.losses}L in wars`} />
+            <SectionHead title="Members" sub={`${mine.members} in the squad · ${mine.wins}W ${mine.losses}L in wars`} />
             {memberKeys ? (
               <MemberRow members={[...memberKeys].sort((a, b) => Number(mine.captain.equals(b)) - Number(mine.captain.equals(a))).map((k) => ({
                 key: k.toBase58(), p: names.get(k.toBase58()), name: names.get(k.toBase58())?.name ?? short(k.toBase58()), captain: mine.captain.equals(k), me: !!wallet && k.equals(wallet),
@@ -478,7 +478,7 @@ export default function OnchainClan() {
         {mine ? <Pills items={SIZES.map((s) => ({ key: s.key, label: s.label, sub: fmtUsd(usd((mine.chest * +s.key) / 10_000)) }))} value={size} onChange={setSize} /> : null}
         {err && spot === 'trades' ? <ErrorLine msg={err} /> : null}
         <View style={{ marginTop: 16 }}>
-          <BigGo title={busy === 'propose' ? 'PROPOSING…' : `PROPOSE ${dir === 1 ? '▲ UP' : '▼ DOWN'} ON ${COIN_SYMBOLS[+coin]}`} color={dir === 1 ? C.up : C.down} fg={dir === 1 ? '#03140A' : '#fff'}
+          <BigGo title={busy === 'propose' ? 'Proposing…' : `Propose ${dir === 1 ? '▲ UP' : '▼ DOWN'} on ${COIN_SYMBOLS[+coin]}`} color={dir === 1 ? C.up : C.down} fg={dir === 1 ? '#03140A' : '#fff'}
             disabled={!!busy || !mine || mine.chest === 0} onPress={() => at('trades', propose)} />
         </View>
         {mine && mine.chest === 0 ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Add to the chest first: an empty chest has nothing to trade.</Txt> : null}
@@ -498,7 +498,7 @@ export default function OnchainClan() {
         <Pills items={WAR_LENGTHS.map((l) => ({ key: l.key, label: l.label }))} value={warLen} onChange={setWarLen} />
         {err && spot === 'war' ? <ErrorLine msg={err} /> : null}
         <View style={{ marginTop: 16 }}>
-          <BigGo title={busy === 'declare' ? 'SENDING…' : rival ? `CHALLENGE ${rival.toUpperCase()}` : 'PICK A RIVAL'} disabled={!!busy || !rival || !mine || mine.chest < 2 * WAR_STAKE_USDC * USDC} onPress={() => at('war', declare)} />
+          <BigGo title={busy === 'declare' ? 'Sending…' : rival ? `Challenge ${rival}` : 'Pick a rival'} disabled={!!busy || !rival || !mine || mine.chest < 2 * WAR_STAKE_USDC * USDC} onPress={() => at('war', declare)} />
         </View>
         {mine && mine.chest < 2 * WAR_STAKE_USDC * USDC ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>The chest needs at least {fmtUsd(2 * WAR_STAKE_USDC)} to stake {fmtUsd(WAR_STAKE_USDC)}.</Txt> : null}
       </Sheet>

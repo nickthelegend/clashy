@@ -140,7 +140,7 @@ export default function StashScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-        <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink }}>STASH</Text>
+        <Txt v="title">Stash</Txt>
       </Row>
 
       {!me || hasProfile === false ? (
@@ -190,8 +190,8 @@ export default function StashScreen() {
           <Pressable onPress={() => setPanel('goal')} style={({ pressed }) => ({ marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 24, padding: 14, backgroundColor: '#0F1A12', borderWidth: 1, borderColor: '#1F3A26', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <Image source={ART.goal} style={{ width: 64, height: 64 }} contentFit="contain" />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="small" color="#8FD8A4" style={{ fontFamily: F.bold, letterSpacing: 0.6, fontSize: 11 }}>{goal > 0 ? 'YOUR GOAL' : 'SAVE FOR SOMETHING'}</Txt>
-              <Text style={{ fontFamily: F.display, fontSize: 20, color: C.ink, marginTop: 2 }} numberOfLines={1}>{goal > 0 ? (s?.goalName || 'My goal') : 'Set a goal'}</Text>
+              <Txt v="small" color="#8FD8A4" style={{ fontFamily: F.bold, letterSpacing: 0.6, fontSize: 11 }}>{goal > 0 ? 'Your goal' : 'Save for something'}</Txt>
+              <Text style={{ fontFamily: F.semi, fontSize: 20, color: C.ink, marginTop: 2 }} numberOfLines={1}>{goal > 0 ? (s?.goalName || 'My goal') : 'Set a goal'}</Text>
               {goal > 0 ? (
                 <>
                   <View style={{ height: 8, borderRadius: 4, backgroundColor: '#1D2B21', overflow: 'hidden', marginTop: 8 }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: C.up, borderRadius: 4 }} /></View>
@@ -204,7 +204,7 @@ export default function StashScreen() {
 
           {/* stocks */}
           <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 4 }}>
-            <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink }}>STOCKS</Text>
+            <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>Stocks</Text>
             <Txt v="small">Real shares · via Orca</Txt>
           </Row>
           {STOCKS.map((st) => {
@@ -215,11 +215,13 @@ export default function StashScreen() {
             const profit = held && pos!.cost > 0 ? value - pos!.cost : 0;
             return (
               <Row key={st.symbol} style={{ gap: 12, paddingVertical: 10 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center' }}><Image source={STOCK_ART[st.symbol]} style={{ width: 40, height: 40 }} contentFit="contain" /></View>
+                <Pressable onPress={() => router.push(`/stock/${st.symbol}` as never)} style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Image source={STOCK_ART[st.symbol]} style={{ width: 44, height: 44 }} contentFit="contain" />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Txt v="label" lines={1}>{st.name}</Txt>
                   <Txt v="small" lines={1}>{held ? `${pos!.shares.toFixed(4)} ${st.symbol}` : st.symbol} · {price ? fmtUsd(price) : '…'}</Txt>
                 </View>
+                </Pressable>
                 {held ? (
                   <Pressable onPress={() => setSell(st)} style={{ alignItems: 'flex-end', marginRight: 4 }}>
                     <Txt v="label">{fmtUsd(value)}</Txt>
@@ -234,13 +236,13 @@ export default function StashScreen() {
           })}
 
           {/* automatic saving and your limits */}
-          <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink, marginTop: 28, marginBottom: 10 }}>ON AUTOPILOT</Text>
+          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 10 }}>On autopilot</Text>
           <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
             <SetRow art={ART.roundup} title="Round-ups" value={(prof?.roundupStep ?? 0) > 0 ? `To next $${prof!.roundupStep}` : 'Off'} onPress={() => setPanel('roundup')} />
             <SetRow art={ART.spend} title="Pay someone" value="Rounds up" onPress={() => setPanel('pay')} />
             <SetRow art={ART.gift} title="Save from wins" value={(prof?.saveBps ?? 0) > 0 ? `${prof!.saveBps / 100}% of each win` : 'Off'} onPress={() => setPanel('wins')} />
           </View>
-          <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink, marginTop: 28, marginBottom: 4 }}>YOUR LIMITS</Text>
+          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>Your limits</Text>
           <Txt v="small" style={{ marginBottom: 10 }}>Set by you, enforced by the Clashy program on every stake. No app can go past them, ours included.</Txt>
           <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
             <SetRow art={ART.limits} title="Daily stake limit" value={prof ? `${fmtUsd(prof.dailyLimit)} · ${fmtUsd(stakedToday)} used` : '…'} onPress={() => setPanel('limit')} />

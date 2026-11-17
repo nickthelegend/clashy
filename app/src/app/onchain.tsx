@@ -255,7 +255,7 @@ export default function OnChainDuel() {
                   <ClayLoop name={won ? 'win' : tie ? 'duel' : 'ko'} size={170} loop={!!won} style={{ borderRadius: 36 }} />
                   {won ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
                 </View>
-                <Text style={{ fontFamily: F.display, fontSize: 52, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8, letterSpacing: -1 }}>{won ? 'YOU WON' : tie ? 'DEAD HEAT' : 'YOU LOST'}</Text>
+                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : tie ? 'Dead heat' : 'You lost'}</Text>
                 <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink }}>{won ? `+${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : tie ? `${fmtUsdc(duel.stake)} back` : `−${fmtUsdc(duel.stake)}`}</Text>
                 <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{coinName(sym2)} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}% · {rivalProf?.name ?? 'rival'} {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Txt>
                 {won && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
@@ -274,27 +274,27 @@ export default function OnChainDuel() {
               <>
                 <View style={{ alignItems: 'center', marginTop: 4 }}>
                   <ClayLoop name="duel" size={150} style={{ borderRadius: 34 }} />
-                  <Text style={{ fontFamily: F.display, fontSize: 56, color: C.ink, letterSpacing: -1.5, marginTop: -4 }}>CLASH</Text>
+                  <Text style={{ fontFamily: F.bold, fontSize: 42, letterSpacing: -1.4, color: C.ink, marginTop: -4 }}>Clash</Text>
                   <Txt v="small" style={{ textAlign: 'center' }}>One coin, two calls, winner takes {pot} USDC.</Txt>
                 </View>
                 <Row style={{ gap: 10, marginTop: 18 }}>
-                  <ModeCard title="STOCKS" sub="1 hour · NVIDIA, Tesla, Apple, S&P, Alphabet" on={mode === 'stocks'} onPress={() => setMode('stocks')} art={<ClayLoop name="stocks" size={78} style={{ borderRadius: 16 }} />} />
-                  <ModeCard title="CRYPTO" sub="60 seconds · SOL, BTC, ETH" on={mode === 'crypto'} onPress={() => setMode('crypto')} art={<Row style={{ gap: -10 }}><CoinToken sym="SOL" size={44} /><CoinToken sym="BTC" size={44} /><CoinToken sym="ETH" size={44} /></Row>} />
+                  <ModeCard title="Stocks" sub="1 hour · NVIDIA, Tesla, Apple, S&P, Alphabet" on={mode === 'stocks'} onPress={() => setMode('stocks')} art={<ClayLoop name="stocks" size={78} style={{ borderRadius: 16 }} />} />
+                  <ModeCard title="Crypto" sub="60 seconds · SOL, BTC, ETH" on={mode === 'crypto'} onPress={() => setMode('crypto')} art={<Row style={{ gap: -10 }}><CoinToken sym="SOL" size={44} /><CoinToken sym="BTC" size={44} /><CoinToken sym="ETH" size={44} /></Row>} />
                 </Row>
                 <Row style={{ gap: 8, marginTop: 12 }}>
                   {[5, 10, 25].map((n) => (
                     <Pressable key={n} onPress={() => setStake(n)} style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: stake === n ? C.ink : '#15151B', borderWidth: 1, borderColor: stake === n ? C.ink : '#23232B', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                      <Text style={{ fontFamily: F.display, fontSize: 18, color: stake === n ? '#000' : C.ink }}>${n}</Text>
+                      <Text style={{ fontFamily: F.semi, fontSize: 18, color: stake === n ? '#000' : C.ink }}>${n}</Text>
                     </Pressable>
                   ))}
                 </Row>
                 <Pressable onPress={ready ? open : () => setProof(true)} disabled={!!busy} style={({ pressed }) => ({ marginTop: 14, height: 70, borderRadius: 24, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: C.opp, shadowOpacity: 0.6, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } })}>
-                  <Text style={{ fontFamily: F.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'OPENING…' : ready ? `FIND A RIVAL · $${stake}` : 'SET UP YOUR WALLET'}</Text>
+                  <Text style={{ fontFamily: F.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'Opening…' : ready ? `Find a rival · $${stake}` : 'Set up your wallet'}</Text>
                 </Pressable>
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Your call is sealed until both of you lock. No leverage: best call wins.</Txt>
 
                 <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 10 }}>
-                  <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink }}>OPEN CLASHES</Text>
+                  <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink }}>Open clashes</Text>
                   <Txt v="small">{others.length} waiting</Txt>
                 </Row>
                 {boardErr ? <ErrorLine msg={boardErr} /> : null}
@@ -314,7 +314,7 @@ export default function OnChainDuel() {
             {duel.status === 0 ? (
               <View style={{ alignItems: 'center' }}>
                 <Searching><View style={{ borderRadius: 70, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={meProf} size={110} /></View></Searching>
-                <Text style={{ fontFamily: F.display, fontSize: 36, color: C.ink, marginTop: 34 }}>FINDING A RIVAL</Text>
+                <Text style={{ fontFamily: F.display, fontSize: 36, color: C.ink, marginTop: 34 }}>Finding a rival</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>Your {fmtUsdc(duel.stake)} is in escrow on Solana. The first player to join takes you on.</Txt>
                 {me === 0 ? <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 18 }}><Txt v="label" color={C.muted}>{busy === 'cancel' ? 'Cancelling…' : 'Cancel and get it back'}</Txt></Pressable> : null}
               </View>
@@ -327,13 +327,13 @@ export default function OnChainDuel() {
             ) : duel.status === 2 ? (
               <View style={{ alignItems: 'center' }}>
                 <CoinToken sym={sym2} size={130} />
-                <Text style={{ fontFamily: F.display, fontSize: 40, color: C.ink, marginTop: 8 }}>{coinName(sym2).toUpperCase()}</Text>
+                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2).toUpperCase()}</Text>
                 <Txt v="small">{duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
                 <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
                   {me >= 0 && !(duel.picksCommitted & (1 << me)) ? <CallButtons onUp={() => pick(1, 1)} onDown={() => pick(2, 1)} disabled={!!busy} /> : (
                     <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
-                      <Text style={{ fontFamily: F.display, fontSize: 28, color: C.ink }}>🔒 LOCKED</Text>
-                      <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live on the rollup…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
+                      <Text style={{ fontFamily: F.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>
+                      <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
                     </View>
                   )}
                 </View>
@@ -345,9 +345,9 @@ export default function OnChainDuel() {
             ) : (
               <>
                 <LiveBoard me={meProf} rival={rivalProf} myPnl={myPnl} theirPnl={theirPnl} myCall={duel.side[me]} theirCall={duel.side[1 - me]} sym={sym2} price={price} entry={duel.entryPrice} left={left} onRollup={duel.status === 3} />
-                {hist.length > 1 ? (
+                {price !== null ? (
                   <View style={{ marginTop: 18, backgroundColor: '#0E0E13', borderRadius: 24, paddingVertical: 10, overflow: 'hidden' }}>
-                    <LiveChart data={[duel.entryPrice, ...hist]} w={Math.min(winW, 820) - 2 * S.gutter} h={230} refLine={duel.entryPrice} refLabel="start" color={myPnl >= theirPnl ? C.brand : C.opp} />
+                    <LiveChart data={[duel.entryPrice, ...hist, price]} w={Math.min(winW, 820) - 2 * S.gutter} h={230} refLine={duel.entryPrice} refLabel="start" color={myPnl >= theirPnl ? C.brand : C.opp} />
                   </View>
                 ) : null}
               </>

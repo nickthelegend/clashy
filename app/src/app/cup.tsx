@@ -72,13 +72,13 @@ export default function Cup() {
       <View style={{ alignItems: 'center', marginTop: -6 }}>
         <ClayLoop name="cupBig" size={170} style={{ borderRadius: 24 }} />
         <View style={{ backgroundColor: C.opp, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 }}>
-          <Txt v="small" color="#fff" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.6 }}>LIVE · ENDS MONDAY 00:00 UTC</Txt>
+          <Txt v="small" color="#fff" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.6 }}>Live · ends Monday 00:00 UTC</Txt>
         </View>
-        <Txt v="title" style={{ fontSize: 44, marginTop: 8, fontFamily: F.display, letterSpacing: -1 }}>WEEKLY CUP</Txt>
+        <Txt v="title" style={{ fontSize: 44, marginTop: 8, fontFamily: F.display, letterSpacing: -1 }}>Weekly Cup</Txt>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>Profit on the stocks in your Stash, plus clash winnings this week.</Txt>
       </View>
       <Row style={{ gap: 8, marginTop: 14 }}>
-        {['DAYS', 'HRS', 'MIN', 'SEC'].map((k, i) => (
+        {['Days', 'Hrs', 'Min', 'Sec'].map((k, i) => (
           <View key={k} style={{ flex: 1, backgroundColor: i === 3 ? C.brand : C.s1, borderRadius: 14, paddingVertical: 10, alignItems: 'center' }}>
             <Txt v="title" style={{ fontSize: 26 }} color={i === 3 ? '#fff' : C.ink}>{String(parts[i]).padStart(2, '0')}</Txt>
             <Txt v="small" color={i === 3 ? '#DDE1FF' : C.muted} style={{ fontSize: 10, fontFamily: F.semi }}>{k}</Txt>

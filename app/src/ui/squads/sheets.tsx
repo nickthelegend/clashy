@@ -67,13 +67,13 @@ export function CreateSquadSheet({ open, onClose, chain, onCreated }: { open: bo
         </View>
         <Txt v="small" style={{ marginTop: 8, textAlign: 'center' }}>You're the captain. A shared USDC chest, two chat channels and squad wars.</Txt>
       </View>
-      <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginBottom: 6 }}>NAME</Txt>
+      <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginBottom: 6 }}>Name</Txt>
       <View style={{ height: 52, borderRadius: 16, backgroundColor: '#1C1C23', borderWidth: 1, borderColor: name ? C.brand : HAIR, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }}>
         <TextInput value={name} onChangeText={setName} placeholder="e.g. diamond-hands" placeholderTextColor={C.dim} maxLength={24} autoCorrect={false} autoCapitalize="none"
           onSubmitEditing={create} style={{ flex: 1, color: C.ink, fontFamily: F.semi, fontSize: 16, height: 50 }} />
         <Txt v="small" color={bytes > 24 ? C.down : C.dim} style={{ fontVariant: ['tabular-nums'] }}>{bytes}/24</Txt>
       </View>
-      <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginTop: 16, marginBottom: 8 }}>CREST</Txt>
+      <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginTop: 16, marginBottom: 8 }}>Crest</Txt>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {CRESTS.map((src, i) => (
           <Pressable key={i} onPress={() => setCrest(i)} accessibilityLabel={`Crest ${i + 1}`}
@@ -121,7 +121,7 @@ export function SquadSheet({ squad, rank, mine, profiles, chain, onClose, onOpen
             <SquadBanner crest={s.crest} height={118} />
             {rank > 0 && rank <= 3 ? (
               <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 10, paddingHorizontal: 9, height: 24, justifyContent: 'center' }}>
-                <Txt v="small" color={GOLD} style={{ fontFamily: F.displayB, fontSize: 12 }}>#{rank} SQUAD</Txt>
+                <Txt v="small" color={GOLD} style={{ fontFamily: F.semi, fontSize: 12 }}>#{rank} SQUAD</Txt>
               </View>
             ) : null}
             <View style={{ paddingHorizontal: 14, paddingTop: 34, paddingBottom: 14 }}>
