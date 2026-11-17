@@ -64,13 +64,13 @@ export default function Inbox() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 40 }}>
       <Row style={{ gap: 10, marginBottom: 14 }}>
         <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-        <Txt v="title" style={{ fontSize: 30, flex: 1, fontFamily: F.display }}>INBOX</Txt>
+        <Txt v="title" style={{ flex: 1 }}>Inbox</Txt>
       </Row>
       <View style={{ borderRadius: 22, padding: 16, backgroundColor: '#F0468C' }}>
         <Row style={{ gap: 12 }}>
           <Lottie name="flame" size={58} loop />
           <View style={{ flex: 1 }}>
-            <Txt v="title" color="#fff" style={{ fontSize: 26, fontFamily: F.display }}>{streak > 0 ? `${streak}-DAY STREAK` : 'START A STREAK'}</Txt>
+            <Txt v="title" color="#fff" style={{ fontSize: 26, fontFamily: F.display }}>{streak > 0 ? `${streak}-day streak` : 'Start a streak'}</Txt>
             <Txt v="small" color="#FFE3EE">Save, invest or play once a day to keep it. {p?.bestDayStreak ? `Best ${p.bestDayStreak}.` : ''}</Txt>
           </View>
         </Row>
@@ -84,7 +84,7 @@ export default function Inbox() {
       </View>
       <Txt v="small" style={{ marginTop: 8 }}>{doneToday ? 'Today counts. Come back tomorrow to keep it going.' : streak > 0 ? 'Not yet today: save, invest or play to keep your streak.' : 'Save, invest or play today to start one.'}</Txt>
 
-      <Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 6 }}>NEW</Txt>
+      <Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 6 }}>New</Txt>
       {!me ? <Pending art={ART.bellArt} title="Sign in" body="Replies, likes, squad challenges and votes show here." action="Sign in" onAction={() => wallet.login?.()} />
         : inbox.status === 'loading' ? <SkeletonRows n={4} /> : inbox.status === 'error' ? <Txt v="small">{inbox.error}</Txt> : inbox.data.length === 0 ? (
           <Pending art={ART.bellArt} title="All caught up" body="Post a call or join a squad: replies, likes, challenges and votes land here." />

@@ -320,7 +320,7 @@ async function luxChat(clan: PublicKey) {
     const said = Buffer.from(m.text.slice(0, m.len)).toString('utf8').toLowerCase();
     const cl = await baseProgram.account.clan.fetch(clan);
     const chest = (Number(cl.chest) / 1e6).toFixed(2);
-    const reply = m.kind === 1 ? 'Duel posted. Good luck, tell us how it went.'
+    const reply = m.kind === 1 ? 'Clash posted. Good luck, tell us how it went.'
       : /\bgm\b|hello|hi\b|hey/.test(said) ? `gm! Chest is at ${chest} USDC.`
       : /chest|vote|trade/.test(said) ? `Chest ${chest} USDC, ${cl.openVotes} vote${cl.openVotes === 1 ? '' : 's'} open. I vote yes on proposals.`
       : `Noted. Chest is at ${chest} USDC.`;

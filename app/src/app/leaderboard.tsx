@@ -32,7 +32,7 @@ export default function Leaderboard() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 32 }}>
       <Row style={{ gap: 10 }}><BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/arena' as Href))} /></Row>
-      <Text style={{ fontFamily: F.display, fontSize: 40, color: C.ink, marginTop: 10 }}>LEADERBOARD</Text>
+      <Txt v="title" style={{ marginTop: 10 }}>Leaderboard</Txt>
       <Txt v="small" style={{ marginTop: 2 }}>All-time clashers. A win is +25 points, a loss −15.</Txt>
 
       {board.status === 'loading' || profiles.status === 'loading' ? <SkeletonRows n={5} /> : board.status === 'error' ? <ErrorLine msg={board.error} /> : rows.length === 0 ? (
@@ -84,7 +84,7 @@ export default function Leaderboard() {
           </View>
 
           <View style={{ marginTop: 12, backgroundColor: C.s1, borderRadius: 20, padding: 12, borderWidth: 1.5, borderColor: mine ? C.brand : C.s2, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontFamily: F.display, fontSize: 20, color: mine ? C.brandSoft : C.muted, width: 40 }}>{mine ? `#${myIdx + 1}` : '–'}</Text>
+            <Text style={{ fontFamily: F.semi, fontSize: 20, color: mine ? C.brandSoft : C.muted, width: 40 }}>{mine ? `#${myIdx + 1}` : '–'}</Text>
             <View style={{ flex: 1 }}>
               <Txt v="label">{mine ? 'Your rank' : 'Not ranked yet'}</Txt>
               <Txt v="small">{mine ? `${rankFor(mine.rp).label} · ${mine.wins}W ${mine.losses}L` : 'Win one clash to get on the board'}</Txt>
@@ -94,7 +94,7 @@ export default function Leaderboard() {
         </>
       )}
 
-      <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink, marginTop: 28, marginBottom: 4 }}>THE LADDER</Text>
+      <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>The ladder</Text>
       <Txt v="small" style={{ marginBottom: 12 }}>Ten ranks from Rookie to Legend. Points come only from settled clashes.</Txt>
       <RankStrip current={mine ? rankFor(mine.rp).n : 1} />
     </ScrollView>

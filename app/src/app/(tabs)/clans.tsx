@@ -169,16 +169,16 @@ export default function Squads() {
               </View>
 
               <Group title="CHALLENGES" />
-              <Channel name="clashes" glyph={(c) => <Swords size={14} color={c} />} badge={openDuels.length ? `${openDuels.length} OPEN` : undefined} live={liveDuels.length > 0} unread={openDuels.length > 0}
-                sub={openDuels.length ? `${[...new Set(openDuels.map((d) => nameOf(d.creator)))].join(', ')} want${openDuels.length === 1 ? 's' : ''} a clash` : liveDuels.length ? `${liveDuels.length} live on the rollup` : 'No open clashes right now'}
+              <Channel name="clashes" glyph={(c) => <Swords size={14} color={c} />} badge={openDuels.length ? `${openDuels.length} open` : undefined} live={liveDuels.length > 0} unread={openDuels.length > 0}
+                sub={openDuels.length ? `${[...new Set(openDuels.map((d) => nameOf(d.creator)))].join(', ')} want${openDuels.length === 1 ? 's' : ''} a clash` : liveDuels.length ? `${liveDuels.length} live now` : 'No open clashes right now'}
                 onPress={() => router.push('/onchain' as Href)} />
               <Channel name="weekly-cup" glyph={(c) => <Crown size={15} color={c} />} live sub={`Ends in ${cupLeft()} · best calls win`} onPress={() => router.push('/cup' as Href)} />
 
               <Group title="PORTFOLIO" />
-              <Channel name="chest" glyph="$" badge={current.openVotes ? `${current.openVotes} VOTE${current.openVotes === 1 ? '' : 'S'}` : undefined} badgeColor={GOLD} unread={current.openVotes > 0}
+              <Channel name="chest" glyph="$" badge={current.openVotes ? `${current.openVotes} vote${current.openVotes === 1 ? '' : 's'}` : undefined} badgeColor={GOLD} unread={current.openVotes > 0}
                 sub={`$${current.chest.toFixed(2)} USDC · trades ${fmtPnl(current.scorePnl)}`} onPress={openChest} />
 
-              <Group title={`LOBBY — ${s ? s.members.length : current.members}`} right={busyIn.size ? <Txt v="small" color={C.up} style={{ fontSize: 11, fontFamily: F.semi }}>{busyIn.size} clashing</Txt> : null} />
+              <Group title={`Lobby — ${s ? s.members.length : current.members}`} right={busyIn.size ? <Txt v="small" color={C.up} style={{ fontSize: 11, fontFamily: F.semi }}>{busyIn.size} clashing</Txt> : null} />
               {!s ? <SkeletonRows n={2} /> : [...s.members].sort((a, b) => Number(busyIn.has(b.toBase58())) - Number(busyIn.has(a.toBase58())) || Number(s.captain.equals(b)) - Number(s.captain.equals(a))).map((mk) => {
                 const p = prof.get(mk.toBase58());
                 const duel = liveDuels.find((d) => d.creator.equals(mk) || d.joiner.equals(mk));
@@ -210,7 +210,7 @@ export default function Squads() {
                 const unread = Math.max(0, (meta?.count ?? 0) - seenOf(sn, current.key, c.id));
                 const last = meta?.last;
                 return (
-                  <Channel key={c.id} name={c.name} unread={unread > 0} badge={unread ? `${unread > 99 ? '99+' : unread} NEW` : undefined} badgeColor={C.opp} count={unread ? undefined : meta?.count}
+                  <Channel key={c.id} name={c.name} unread={unread > 0} badge={unread ? `${unread > 99 ? '99+' : unread} new` : undefined} badgeColor={C.opp} count={unread ? undefined : meta?.count}
                     sub={!meta ? 'Loading…' : last ? `${nameOf(last.author)}: ${last.kind === 1 ? 'posted a clash challenge' : last.text}` : meta.state === 'none' ? 'Not opened yet · tap to open' : 'No messages yet · say gm'}
                     onPress={() => openChat(c.id)} />
                 );
@@ -246,8 +246,8 @@ function EmptySquads({ signedOut, onLogin, onCreate }: { signedOut: boolean; onL
       <View style={{ borderRadius: 24, overflow: 'hidden', backgroundColor: CARD, borderWidth: 1, borderColor: HAIR }}>
         <ClayLoop name="clubhouse" width="100%" height={210} cover />
         <View style={{ padding: 16, paddingTop: 12 }}>
-          <Txt v="title" style={{ fontFamily: F.display, fontSize: 26, letterSpacing: -0.4, lineHeight: 30 }}>JOIN YOUR FIRST SQUAD</Txt>
-          <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }} color="#B9B9C3">A crew with a shared USDC chest you trade by vote, live chat on the rollup, clashes and squad wars. Join as many as you like.</Txt>
+          <Txt v="title" style={{ fontFamily: F.display, fontSize: 26, letterSpacing: -0.4, lineHeight: 30 }}>Join your first squad</Txt>
+          <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }} color="#B9B9C3">A crew with a shared USDC chest you trade by vote, live chat, clashes and squad wars. Join as many as you like.</Txt>
           {signedOut ? <Btn title="Sign in" kind="white" h={52} style={{ marginTop: 14 }} onPress={onLogin} /> : (
             <>
               <Btn title="Discover squads" h={52} style={{ marginTop: 14 }} onPress={() => router.push('/squads/discover' as Href)} />

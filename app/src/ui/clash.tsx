@@ -7,7 +7,7 @@ import Animated, { Easing, FadeIn, FadeInDown, ZoomIn, useAnimatedStyle, useShar
 import type { Profile } from '@/chain/social';
 import { COIN_SYMBOLS } from '@/chain/client';
 import { ProfileAvatar, STOCK_ART } from './feed';
-import { Txt } from './kit';
+import { ART, Txt } from './kit';
 import { C, F, fmtUsd } from './tokens';
 
 const COIN_NAME: Record<string, string> = { SOL: 'Solana', BTC: 'Bitcoin', ETH: 'Ethereum', NVDA: 'NVIDIA', TSLA: 'Tesla', AAPL: 'Apple', SPY: 'S&P 500', GOOGL: 'Alphabet' };
@@ -15,9 +15,12 @@ const COIN_COLOR: Record<string, string> = { SOL: '#9B6BFF', BTC: '#F7931A', ETH
 export const coinName = (sym: string) => COIN_NAME[sym] ?? sym;
 export const symbolsIn = (mask: number) => COIN_SYMBOLS.filter((_, i) => mask & (1 << i));
 
-/** A coin or stock as a big token: clay art for stocks, a lettered disc for crypto. */
+/** Real logos for the crypto coins (the stocks' logos are STOCK_ART). */
+const COIN_LOGO: Record<string, number> = { SOL: ART.logoSOL, BTC: ART.logoBTC, ETH: ART.logoETH };
+/** A coin or stock as a token: its real logo in a circle (a lettered disc only for an unknown symbol). */
 export function CoinToken({ sym, size = 120 }: { sym: string; size?: number }) {
-  if (STOCK_ART[sym]) return <Image source={STOCK_ART[sym]} style={{ width: size, height: size }} contentFit="contain" />;
+  const logo = STOCK_ART[sym] ?? COIN_LOGO[sym];
+  if (logo) return <Image source={logo} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" />;
   const c = COIN_COLOR[sym] ?? C.brand;
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: c, alignItems: 'center', justifyContent: 'center', borderWidth: size * 0.06, borderColor: 'rgba(255,255,255,0.35)' }}>
@@ -35,10 +38,10 @@ export function FaceOff({ me, rival, meLabel = 'You', rivalLabel, size = 92 }: {
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
       <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', width: size + 30 }}>
         <View style={{ borderRadius: size, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={me} size={size} /></View>
-        <Txt v="label" style={{ marginTop: 8, fontFamily: F.displayB, fontSize: 16 }} lines={1}>{meLabel}</Txt>
+        <Txt v="label" style={{ marginTop: 8, fontFamily: F.semi, fontSize: 16 }} lines={1}>{meLabel}</Txt>
       </Animated.View>
       <Animated.View style={vs}>
-        <Text style={{ fontFamily: F.display, fontSize: 40, color: '#FFC94A', textShadowColor: C.opp, textShadowRadius: 12 }}>VS</Text>
+        <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#FFC94A', textShadowColor: C.opp, textShadowRadius: 12 }}>VS</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(120).springify()} style={{ alignItems: 'center', width: size + 30 }}>
         <View style={{ borderRadius: size, borderWidth: 4, borderColor: rival ? C.opp : '#2A2A33', padding: 3 }}>
@@ -48,7 +51,7 @@ export function FaceOff({ me, rival, meLabel = 'You', rivalLabel, size = 92 }: {
             </View>
           ) : <ProfileAvatar p={rival} size={size} />}
         </View>
-        <Txt v="label" style={{ marginTop: 8, fontFamily: F.displayB, fontSize: 16 }} lines={1} color={rival === null ? C.muted : C.ink}>{rivalLabel ?? 'Rival'}</Txt>
+        <Txt v="label" style={{ marginTop: 8, fontFamily: F.semi, fontSize: 16 }} lines={1} color={rival === null ? C.muted : C.ink}>{rivalLabel ?? 'Rival'}</Txt>
       </Animated.View>
     </View>
   );
@@ -70,7 +73,7 @@ export function CoinRoll({ pool, landed, size = 150 }: { pool: string[]; landed?
           <CoinToken sym={sym} size={size} />
         </Animated.View>
       </View>
-      <Text style={{ fontFamily: F.display, fontSize: 34, color: C.ink, marginTop: 12, letterSpacing: -0.5 }}>{landed ? coinName(sym).toUpperCase() : 'ROLLING…'}</Text>
+      <Text style={{ fontFamily: F.display, fontSize: 34, color: C.ink, marginTop: 12, letterSpacing: -0.5 }}>{landed ? coinName(sym).toUpperCase() : 'Rolling…'}</Text>
       <Txt v="small" color={landed ? '#FFC94A' : C.muted}>{landed ? 'Rolled by MagicBlock VRF' : 'MagicBlock VRF is picking one for both of you'}</Txt>
     </View>
   );
@@ -80,7 +83,7 @@ export function CoinRoll({ pool, landed, size = 150 }: { pool: string[]; landed?
 export function CallButtons({ onUp, onDown, disabled }: { onUp: () => void; onDown: () => void; disabled?: boolean }) {
   const big = (label: string, arrow: string, color: string, on: () => void) => (
     <Pressable onPress={on} disabled={disabled} style={({ pressed }) => ({ flex: 1, height: 132, borderRadius: 28, backgroundColor: color, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }], opacity: disabled ? 0.5 : 1, shadowColor: color, shadowOpacity: 0.6, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
-      <Text style={{ fontFamily: F.display, fontSize: 44, color: '#0A0A0D', lineHeight: 46 }}>{arrow}</Text>
+      <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#0A0A0D', lineHeight: 46 }}>{arrow}</Text>
       <Text style={{ fontFamily: F.display, fontSize: 34, color: '#0A0A0D' }}>{label}</Text>
     </Pressable>
   );
@@ -105,7 +108,7 @@ export function LiveBoard({ me, rival, myPnl, theirPnl, myCall, theirCall, sym, 
       <View style={{ alignItems: 'center', marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: onRollup ? 'rgba(240,70,140,0.16)' : '#1A1A20', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 }}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.opp }} />
-          <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{onRollup ? 'LIVE ON THE ROLLUP' : 'FINAL BELL · SETTLING'}</Txt>
+          <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{onRollup ? 'LIVE' : 'Final bell · settling'}</Txt>
         </View>
         <Text style={{ fontFamily: F.display, fontSize: 64, color: C.ink, marginTop: 10, letterSpacing: -1 }}>{left !== null ? (left >= 60 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : `${Math.ceil(left)}`) : '…'}</Text>
         <Txt v="small">{coinName(sym)} {price ? fmtUsd(price) : '…'} · {move >= 0 ? '+' : ''}{move.toFixed(3)}% since the start</Txt>
@@ -152,12 +155,12 @@ export function OpenClash({ who, stake, secs, mask, onJoin, disabled }: { who?: 
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{who?.name ?? 'Someone'} wants a clash</Txt>
         <Row2>
-          <Badge text={stocks ? 'STOCKS · 1H' : secs >= 3600 ? '1 HOUR' : `CRYPTO · ${secs}S`} color={stocks ? '#FFC94A' : C.brandSoft} />
+          <Badge text={stocks ? 'Stocks · 1h' : secs >= 3600 ? '1 hour' : `Crypto · ${secs}s`} color={stocks ? '#FFC94A' : C.brandSoft} />
           <Txt v="small">{fmtUsd(stake)} each</Txt>
         </Row2>
       </View>
       <Pressable onPress={onJoin} disabled={disabled} style={({ pressed }) => ({ backgroundColor: C.opp, borderRadius: 16, paddingHorizontal: 16, height: 42, justifyContent: 'center', opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-        <Text style={{ fontFamily: F.display, fontSize: 17, color: '#fff' }}>CLASH</Text>
+        <Text style={{ fontFamily: F.semi, fontSize: 17, color: '#fff' }}>Clash</Text>
       </Pressable>
     </Animated.View>
   );

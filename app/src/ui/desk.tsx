@@ -79,7 +79,7 @@ export function RightRail() {
       <View style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 14, gap: 8 }}>
         {counts.status === 'error' ? <Txt v="small" color={C.down}>{counts.error}</Txt> : live.length ? live.slice(0, 4).map((d) => (
           <Row key={d.key.toBase58()} style={{ justifyContent: 'space-between' }}>
-            <Txt v="small" color={C.ink}>{['SOL', 'BTC', 'ETH'][d.coin] ?? '…'} · {d.stake * 2} USDC pot</Txt><Txt v="small">on the rollup</Txt>
+            <Txt v="small" color={C.ink}>{['SOL', 'BTC', 'ETH'][d.coin] ?? '…'} · {d.stake * 2} USDC pot</Txt><Txt v="small">live</Txt>
           </Row>
         )) : (
           <View style={{ alignItems: 'center', gap: 8 }}>

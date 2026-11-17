@@ -63,7 +63,7 @@ export default function DiscoverSquads() {
         </Row>
 
         <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
-          <Txt v="title" style={{ fontFamily: F.display, fontSize: 34, letterSpacing: -0.6, lineHeight: 38 }}>SQUADS</Txt>
+          <Txt v="title">Squads</Txt>
           <Pressable onPress={() => n && router.dismissTo('/clans' as Href)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
             {mine.status === 'ready' && mine.data.length ? (
               <Row>{mine.data.slice(0, 4).map((s, i) => (
@@ -108,13 +108,13 @@ export default function DiscoverSquads() {
 
           {myBest && !q ? (
             <>
-              <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginTop: 18, marginBottom: 4 }}>YOUR BEST SQUAD</Txt>
+              <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginTop: 18, marginBottom: 4 }}>Your best squad</Txt>
               <RankRow s={myBest} rank={rankOf(myBest.key)} mine pinned onPress={() => setOpen(myBest)} />
             </>
           ) : null}
 
           <Row style={{ marginTop: 18, marginBottom: 4 }}>
-            <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, flex: 1 }}>{q ? 'RESULTS' : 'ALL SQUADS'}</Txt>
+            <Txt v="small" color={C.muted} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, flex: 1 }}>{q ? 'Results' : 'All squads'}</Txt>
             <Txt v="small" color={C.dim} style={{ fontSize: 11 }}>P&L</Txt>
           </Row>
           {loading ? <SkeletonRows n={5} square /> : board.status === 'error' ? <ErrorLine msg={board.error} onRetry={board.reload} /> : list.length === 0 ? (
@@ -142,7 +142,7 @@ function RankRow({ s, rank, mine, pinned, onPress }: { s: SquadRank; rank: numbe
       borderRadius: 16, backgroundColor: pinned ? 'rgba(91,108,255,0.10)' : pressed ? '#111116' : 'transparent', borderWidth: pinned ? 1 : 0, borderColor: 'rgba(91,108,255,0.45)',
       borderBottomWidth: pinned ? 1 : 1, borderBottomColor: pinned ? 'rgba(91,108,255,0.45)' : '#141419',
     })}>
-      <Txt v="label" color={rank <= 3 ? GOLD : C.dim} style={{ width: 24, textAlign: 'center', fontFamily: F.displayB, fontSize: 14 }}>{rank}</Txt>
+      <Txt v="label" color={rank <= 3 ? GOLD : C.dim} style={{ width: 24, textAlign: 'center', fontFamily: F.semi, fontSize: 14 }}>{rank}</Txt>
       <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center' }}>
         <Image source={crestSrc(s.crest)} style={{ width: 42, height: 42 }} contentFit="contain" />
       </View>
@@ -150,7 +150,7 @@ function RankRow({ s, rank, mine, pinned, onPress }: { s: SquadRank; rank: numbe
         <Row style={{ gap: 6 }}>
           <Txt v="label" lines={1} style={{ fontSize: 15, flexShrink: 1 }}>{s.name}</Txt>
           {mine ? <View style={{ backgroundColor: 'rgba(91,108,255,0.22)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}><Txt v="small" color={C.brandSoft} style={{ fontSize: 9.5, fontFamily: F.bold }}>IN</Txt></View> : null}
-          {s.atWar ? <View style={{ backgroundColor: 'rgba(240,70,140,0.2)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}><Txt v="small" color={C.opp} style={{ fontSize: 9.5, fontFamily: F.bold }}>WAR</Txt></View> : null}
+          {s.atWar ? <View style={{ backgroundColor: 'rgba(240,70,140,0.2)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}><Txt v="small" color={C.opp} style={{ fontSize: 9.5, fontFamily: F.bold }}>War</Txt></View> : null}
         </Row>
         <Txt v="small" lines={1}>{s.members} member{s.members === 1 ? '' : 's'} · Lv {s.level} · chest ${s.chest.toFixed(0)}</Txt>
       </View>

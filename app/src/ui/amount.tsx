@@ -49,7 +49,7 @@ export function AmountSheet({ open, onClose, title, sub, art, presets = [5, 10, 
       {done !== null ? (
         <View style={{ alignItems: 'center', paddingVertical: 18 }}>
           <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: F.display, fontSize: 52, color: '#04120A', marginTop: -2 }}>✓</Text>
+            <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#04120A', marginTop: -2 }}>✓</Text>
           </Animated.View>
           <Animated.Text entering={FadeIn.delay(150)} style={{ fontFamily: F.semi, fontSize: 22, color: C.ink, marginTop: 18 }}>{success}</Animated.Text>
           <Animated.Text entering={FadeIn.delay(220)} style={{ fontFamily: F.semi, fontSize: 52, color: C.ink, letterSpacing: -2, marginTop: 2 }}>${done.toFixed(2)}</Animated.Text>

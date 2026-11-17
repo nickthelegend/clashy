@@ -98,7 +98,7 @@ export function WinExtras({ chain, duel, winnings }: { chain: Chain; duel: Publi
               <Txt v="label" style={{ width: 26, fontFamily: F.bold }}>{i + 1}</Txt>
               <ProfileAvatar p={names.get(r.owner.toBase58())} size={26} />
               <Txt v="label" style={{ flex: 1 }} lines={1}>{names.get(r.owner.toBase58())?.name ?? 'member'}</Txt>
-              <Txt v="small">{r.rp} RP</Txt>
+              <Txt v="small">{r.rp} pts</Txt>
             </Row>
           ))}
         </Card>

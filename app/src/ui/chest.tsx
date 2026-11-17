@@ -98,10 +98,10 @@ export function TradeCard({ sym, side, sizePct, notional, proposer, proposerName
       <Row style={{ gap: 12 }}>
         <CoinToken sym={sym} size={52} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontFamily: F.display, fontSize: 22, color: up ? C.up : C.down, letterSpacing: -0.3 }} numberOfLines={1}>{up ? '▲ UP' : '▼ DOWN'} · {sym}</Text>
+          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: up ? C.up : C.down }} numberOfLines={1}>{up ? '▲ UP' : '▼ DOWN'} · {sym}</Text>
           <Txt v="small" lines={1}>{coinName(sym)} · {sizePct}% of the chest · {fmtUsd(notional)}</Txt>
         </View>
-        {left > 0 ? <Chip text={fmtLeft(left)} color={C.ink} bg="rgba(240,70,140,0.18)" /> : <Chip text="CLOSED" />}
+        {left > 0 ? <Chip text={fmtLeft(left)} color={C.ink} bg="rgba(240,70,140,0.18)" /> : <Chip text="Closed" />}
       </Row>
       <Row style={{ gap: 8, marginTop: 12 }}>
         <ProfileAvatar p={proposer} size={22} />
@@ -130,11 +130,11 @@ export function PositionCard({ sym, side, notional, entry, now, open, pnl, actio
         <View style={{ flex: 1, minWidth: 0 }}>
           <Row style={{ gap: 6 }}>
             <Txt v="label" lines={1} color={up ? C.up : C.down} style={{ flexShrink: 1 }}>{up ? '▲ Up' : '▼ Down'} {sym}</Txt>
-            {open ? <Chip text="LIVE" color={C.up} bg={C.upBg} /> : <Chip text="CLOSED" />}
+            {open ? <Chip text="LIVE" color={C.up} bg={C.upBg} /> : <Chip text="Closed" />}
           </Row>
           <Txt v="small" lines={1} style={{ marginTop: 2 }}>{fmtUsd(notional)} · {fmtUsd(entry)} → {now !== null ? fmtUsd(now) : '…'}</Txt>
         </View>
-        <Text style={{ fontFamily: F.display, fontSize: 20, color: tone(pnl), fontVariant: ['tabular-nums'] }}>{fmtSigned(pnl)}</Text>
+        <Text style={{ fontFamily: F.semi, fontSize: 20, color: tone(pnl), fontVariant: ['tabular-nums'] }}>{fmtSigned(pnl)}</Text>
       </Row>
       {action ? <View style={{ marginTop: 10 }}>{action}</View> : null}
     </View>
@@ -163,7 +163,7 @@ export function SquadVersus({ us, them, usName, themName, usScore, themScore, us
   const side = (crest: number | null, name: string, color: string, score?: string, sub?: string, delay = 0) => (
     <Animated.View entering={FadeInDown.delay(delay).springify()} style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
       <CrestRing crest={crest} color={color} size={72} />
-      <Txt v="label" lines={1} style={{ marginTop: 8, fontFamily: F.displayB, fontSize: 15, maxWidth: '100%' }}>{name}</Txt>
+      <Txt v="label" lines={1} style={{ marginTop: 8, fontFamily: F.semi, fontSize: 15, maxWidth: '100%' }}>{name}</Txt>
       {score ? <Text style={{ fontFamily: F.display, fontSize: 26, color: score.startsWith('−') ? C.down : score.startsWith('+') ? C.up : C.ink, marginTop: 2, fontVariant: ['tabular-nums'] }}>{score}</Text> : null}
       {sub ? <Txt v="small" lines={1} style={{ fontSize: 11 }}>{sub}</Txt> : null}
     </Animated.View>
@@ -202,7 +202,7 @@ export function CoinTile({ sym, price, on, onPress }: { sym: string; price: numb
   return (
     <Pressable onPress={onPress} accessibilityLabel={coinName(sym)} style={({ pressed }) => ({ flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 12, borderRadius: 20, backgroundColor: on ? '#1E2040' : '#1B1B21', borderWidth: 2, borderColor: on ? C.brand : '#26262E', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
       <CoinToken sym={sym} size={46} />
-      <Txt v="label" style={{ marginTop: 6, fontFamily: F.displayB, fontSize: 15 }}>{sym}</Txt>
+      <Txt v="label" style={{ marginTop: 6, fontFamily: F.semi, fontSize: 15 }}>{sym}</Txt>
       <Txt v="small" lines={1} style={{ fontSize: 11 }}>{price ? fmtUsd(price) : '…'}</Txt>
     </Pressable>
   );
@@ -214,8 +214,8 @@ export function DirPick({ dir, onChange }: { dir: 1 | 2; onChange: (d: 1 | 2) =>
     const on = dir === d;
     return (
       <Pressable onPress={() => onChange(d)} style={({ pressed }) => ({ flex: 1, height: 76, borderRadius: 22, backgroundColor: on ? color : '#1B1B21', borderWidth: 2, borderColor: on ? color : '#26262E', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-        <Text style={{ fontFamily: F.display, fontSize: 22, color: on ? '#0A0A0D' : color, lineHeight: 24 }}>{arrow}</Text>
-        <Text style={{ fontFamily: F.display, fontSize: 22, color: on ? '#0A0A0D' : C.ink }}>{label}</Text>
+        <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: on ? '#0A0A0D' : color, lineHeight: 24 }}>{arrow}</Text>
+        <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: on ? '#0A0A0D' : C.ink }}>{label}</Text>
       </Pressable>
     );
   };
@@ -243,7 +243,7 @@ export function Pills<K extends string>({ items, value, onChange }: { items: { k
 export function BigGo({ title, onPress, disabled, color = C.opp, fg = '#fff' }: { title: string; onPress: () => void; disabled?: boolean; color?: string; fg?: string }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({ height: 60, borderRadius: 22, backgroundColor: color, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: color, shadowOpacity: disabled ? 0 : 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
-      <Text style={{ fontFamily: F.display, fontSize: 21, color: fg, paddingHorizontal: 16 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{title}</Text>
+      <Text style={{ fontFamily: F.semi, fontSize: 21, color: fg, paddingHorizontal: 16 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{title}</Text>
     </Pressable>
   );
 }
@@ -281,7 +281,7 @@ export function ArtCard({ art, title, body, children }: { art: ReactNode; title:
   return (
     <View style={{ alignItems: 'center', backgroundColor: CARD, borderRadius: 24, padding: 18, borderWidth: 1, borderColor: HAIR }}>
       {art}
-      <Text style={{ fontFamily: F.display, fontSize: 20, color: C.ink, marginTop: 8, textAlign: 'center' }}>{title}</Text>
+      <Text style={{ fontFamily: F.semi, fontSize: 20, color: C.ink, marginTop: 8, textAlign: 'center' }}>{title}</Text>
       <Txt v="small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 18 }}>{body}</Txt>
       {children ? <View style={{ alignSelf: 'stretch', marginTop: 14, gap: 8 }}>{children}</View> : null}
     </View>

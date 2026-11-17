@@ -92,7 +92,7 @@ export default function Wallet() {
             <Txt v="small">{wallet.signer?.kind === 'privy' ? wallet.signer.label : 'Your wallet'}</Txt>
             <View style={{ marginTop: 4 }}>{bal == null ? <Txt v="title">…</Txt> : <Money value={bal} size={56} />}</View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: C.s1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 }}>
-              <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#2775CA', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontSize: 9, fontFamily: F.bold }}>$</Text></View>
+              <Image source={ART.logoUSDC} style={{ width: 18, height: 18, borderRadius: 9 }} contentFit="cover" />
               <Txt v="small" color={C.ink}>USDC{IS_LOCAL_NET ? ' · test network' : ''} · no gas fees</Txt>
             </View>
           </View>
@@ -105,7 +105,7 @@ export default function Wallet() {
           </Row>
           {err ? <ErrorLine msg={err} /> : null}
 
-          <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink, marginTop: 26, marginBottom: 6 }}>ACTIVITY</Text>
+          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 6 }}>Activity</Text>
           {moves === null ? <SkeletonRows n={3} /> : moves.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 24 }}>
               <Image source={ART.coinsPile} style={{ width: 90, height: 90 }} contentFit="contain" />
@@ -124,7 +124,7 @@ export default function Wallet() {
             </Pressable>
           ))}
 
-          <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink, marginTop: 26, marginBottom: 8 }}>ACCOUNT</Text>
+          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 8 }}>Account</Text>
           <View style={{ backgroundColor: C.s1, borderRadius: 20, overflow: 'hidden' }}>
             <SettingRow label="View on Solana Explorer" onPress={explorer} />
             {wallet.exportKey ? <SettingRow label="Export your key" onPress={wallet.exportKey} /> : null}

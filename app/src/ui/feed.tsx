@@ -1,6 +1,7 @@
 // The calls feed: X-style posts where a call carries the author's real position in a tokenized stock, read from
 // their on-chain Holding (shares bought through the Stash, and what they cost) and marked to the live price.
 import { Image } from 'expo-image';
+import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, Share as RNShare, TextInput, View } from 'react-native';
 import { ComputeBudgetProgram, PublicKey } from '@solana/web3.js';
@@ -27,7 +28,7 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
   const profit = value !== null && holding ? value - holding.cost : null;
   const pct = profit !== null && holding && holding.cost > 0 ? (profit / holding.cost) * 100 : null;
   return (
-    <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 }}>
+    <Pressable onPress={() => router.push(`/stock/${stock.symbol}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 })}>
       <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
         <Image source={STOCK_ART[stock.symbol]} style={{ width: 40, height: 40 }} contentFit="contain" />
       </View>
@@ -55,7 +56,7 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
           <Txt v="label">{price ? fmtUsd(price) : '…'}</Txt>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -70,7 +71,7 @@ function DuelCard({ duel, author }: { duel: PublicKey; author: PublicKey }) {
   const pot = (v.stake * 2 - Math.floor((v.stake * 2 * 300) / 10_000)) / USDC;
   const sym = COIN_SYMBOLS[v.coin] ?? '?';
   return (
-    <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 }}>
+    <Pressable onPress={() => router.push(`/match/${duel.toBase58()}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 })}>
       <Image source={ART.tileDuel} style={{ width: 44, height: 44 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>Clash on {sym}</Txt>
@@ -80,7 +81,7 @@ function DuelCard({ duel, author }: { duel: PublicKey; author: PublicKey }) {
         <Txt v="small" style={{ fontSize: 11 }}>{won ? 'Won' : v.winner === 3 ? 'Draw' : 'Lost'}</Txt>
         <Txt v="label" color={won ? C.up : C.muted}>{won ? `+${fmtUsd(pot - v.stake / USDC)}` : v.winner === 3 ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Txt>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -98,7 +99,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
   return (
     <View style={{ flexDirection: 'row', gap: 12, paddingTop: reply ? 6 : 14, paddingBottom: threadBelow ? 0 : 12 }}>
       <View style={{ alignItems: 'center' }}>
-        <ProfileAvatar p={author} size={reply ? 34 : 42} />
+        <Pressable onPress={() => router.push(`/u/${post.author.toBase58()}` as Href)}><ProfileAvatar p={author} size={reply ? 34 : 42} /></Pressable>
         {threadBelow ? <View style={{ width: 2, flex: 1, backgroundColor: C.s2, marginTop: 6, borderRadius: 1 }} /> : null}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -109,7 +110,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
           <View style={{ flex: 1 }} />
           <More size={16} color={C.dim} />
         </Row>
-        <Txt v="body" style={{ marginTop: 3, fontSize: 15, lineHeight: 21 }}>{post.text}</Txt>
+        <Pressable onPress={() => router.push(`/post/${post.seq}` as Href)}><Txt v="body" style={{ marginTop: 3, fontSize: 15, lineHeight: 21 }}>{post.text}</Txt></Pressable>
         {stock ? <PositionCard stock={stock} holding={holdings.get(holdingKey(post.author, post.refkey))} price={prices[stock.symbol]} /> : null}
         {post.kind === 2 ? <DuelCard duel={post.refkey} author={post.author} /> : null}
         <Row style={{ marginTop: 10, gap: 22 }}>
@@ -150,6 +151,8 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
 }) {
   const [text, setText] = useState('');
   const [sym, setSym] = useState<string | null>(null);
+  /** Once the person picks or clears a stock chip, typing stops choosing one for them. */
+  const [picked, setPicked] = useState(false);
   const [back, setBack] = useState(0);
   const [err, setErr] = useState<string>();
   const [step, setStep] = useState<string | null>(null);
@@ -178,7 +181,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
       setStep(replyTo ? 'Replying…' : 'Posting…');
       await onEr(replyTo ? 'Reply' : stock ? `Call ${stock.symbol}` : 'Post', progs.er.methods.post(body, stock ? 1 : 0, stock ? new PublicKey(stock.mint) : PublicKey.default, replyTo ? new BN(replyTo.seq) : NO_REPLY)
         .accountsPartial({ author: owner, board: P.board(FEED_BOARD) }));
-      setText(''); setSym(null); setBack(0); onCancelReply(); onPosted();
+      setText(''); setSym(null); setBack(0); setPicked(false); onCancelReply(); onPosted();
     } catch (e) { setErr(errText(e)); } finally { setStep(null); }
   };
   if (!me) return null;
@@ -192,13 +195,16 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
       ) : null}
       <Row style={{ gap: 10, alignItems: 'flex-start' }}>
         <ProfileAvatar p={me} size={36} />
-        <TextInput value={text} onChangeText={setText} placeholder={replyTo ? 'Your reply' : "What's your call?"} placeholderTextColor={C.muted} multiline maxLength={140}
+        <TextInput value={text} onChangeText={(t) => {
+          setText(t);
+          if (!picked && !replyTo) { const hit = STOCKS.find((s) => new RegExp(`\\b(${s.symbol}|${s.name.split(' ')[0]})\\b`, 'i').test(t)); setSym(hit ? hit.symbol : null); }
+        }} placeholder={replyTo ? 'Your reply' : "What's your call?"} placeholderTextColor={C.muted} multiline maxLength={140}
           style={{ flex: 1, color: C.ink, fontFamily: F.medium, fontSize: 16, minHeight: 40, paddingTop: 8 }} />
       </Row>
       {!replyTo ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           {STOCKS.map((s) => (
-            <Pressable key={s.symbol} onPress={() => { setSym(sym === s.symbol ? null : s.symbol); setBack(0); }}
+            <Pressable key={s.symbol} onPress={() => { setPicked(true); setSym(sym === s.symbol ? null : s.symbol); setBack(0); }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: sym === s.symbol ? C.brand : C.s2 }}>
               <Image source={STOCK_ART[s.symbol]} style={{ width: 18, height: 18 }} contentFit="contain" />
               <Txt v="small" color={sym === s.symbol ? '#fff' : C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{s.symbol}</Txt>

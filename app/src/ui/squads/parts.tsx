@@ -49,7 +49,7 @@ export function LevelBar({ level, xp, floor, next }: { level: number; xp: number
     <Row style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,201,74,0.14)', borderRadius: 9, paddingLeft: 3, paddingRight: 8, height: 26 }}>
         <Image source={ART.levelStar} style={{ width: 22, height: 22 }} contentFit="contain" />
-        <Txt v="label" color={GOLD} style={{ fontFamily: F.displayB, fontSize: 13 }}>LV {level}</Txt>
+        <Txt v="label" color={GOLD} style={{ fontFamily: F.semi, fontSize: 13 }}>LV {level}</Txt>
       </View>
       <View style={{ flex: 1 }}>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: '#24242C', overflow: 'hidden' }}>
