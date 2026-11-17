@@ -106,4 +106,40 @@ pub enum ClashyError {
     PositionsOpen,
     #[msg("Withdrawals wait until the clan's open votes close")]
     VoteOpen,
+    #[msg("Names are 3 to 16 characters: lowercase letters, digits and underscore")]
+    BadHandle,
+    #[msg("Goal name is too long")]
+    BadGoalName,
+    #[msg("Pick one of the 20 avatars")]
+    BadAvatar,
+    #[msg("You are on a break you set yourself; staking opens again when it ends")]
+    OnBreak,
+    #[msg("This would go over the daily limit you set")]
+    DailyLimit,
+    #[msg("A break can be up to 30 days and cannot be shortened")]
+    BadBreak,
+    #[msg("Save at most 100 percent")]
+    BadSaveShare,
+    #[msg("Not enough USDC in your Stash")]
+    StashLow,
+    #[msg("Messages are 1 to 120 bytes")]
+    BadMessage,
+    #[msg("Only clan members can post here")]
+    NotMember,
+    #[msg("Unknown channel")]
+    BadChannel,
+    #[msg("Amount must be above zero")]
+    ZeroAmount,
+    #[msg("That pool is not this stock against USDC on Orca Whirlpool")]
+    BadPool,
+    #[msg("The swap returned less than your minimum")]
+    Slippage,
+    #[msg("Not enough shares")]
+    NotEnoughStock,
+    #[msg("Posts are 1 to 140 bytes")]
+    BadPost,
+    #[msg("Already liked")]
+    AlreadyLiked,
+    #[msg("That post is no longer on the board")]
+    PostGone,
 }

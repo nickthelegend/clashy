@@ -18,6 +18,7 @@
 //! pricing-oracle accounts; see `price.rs`.
 
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{instruction::{AccountMeta, Instruction}, program::invoke_signed};
 use solana_sha256_hasher::hashv;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer as TokenTransfer};
 use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
@@ -195,6 +196,131 @@ fn update_players(a: &mut Player, b: &mut Player, winner: u8) {
     }
 }
 
+/// UTC day index of a unix time.
+fn day_of(ts: i64) -> i64 {
+    ts.div_euclid(DAY_SECS)
+}
+
+/// Counts an active day (a stake or a save) toward the player's day streak.
+fn mark_active(p: &mut Profile, now: i64) {
+    let today = day_of(now);
+    if p.last_active_day == today {
+        return;
+    }
+    p.day_streak = if p.last_active_day == today - 1 { p.day_streak.saturating_add(1) } else { 1 };
+    p.best_day_streak = p.best_day_streak.max(p.day_streak);
+    p.last_active_day = today;
+}
+
+/// Every stake goes through here: the player's own break and daily limit are enforced on chain,
+/// so no app (ours included) can stake past them.
+fn check_stake(p: &mut Profile, amount: u64, now: i64) -> Result<()> {
+    require!(now >= p.break_until, ClashyError::OnBreak);
+    if p.pending_at != 0 && now >= p.pending_at {
+        p.daily_limit = p.pending_limit;
+        p.pending_limit = 0;
+        p.pending_at = 0;
+    }
+    let today = day_of(now);
+    if p.day != today {
+        p.day = today;
+        p.staked_today = 0;
+    }
+    let after = p.staked_today.checked_add(amount).ok_or(ClashyError::Overflow)?;
+    require!(after <= p.daily_limit, ClashyError::DailyLimit);
+    p.staked_today = after;
+    mark_active(p, now);
+    Ok(())
+}
+
+/// Handles are 3 to 16 bytes of lowercase letters, digits and underscore.
+fn check_name(name: &str) -> Result<[u8; NAME_LEN]> {
+    let b = name.as_bytes();
+    require!(b.len() >= MIN_NAME_LEN && b.len() <= NAME_LEN, ClashyError::BadHandle);
+    require!(b.iter().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == b'_'), ClashyError::BadHandle);
+    let mut out = [0u8; NAME_LEN];
+    out[..b.len()].copy_from_slice(b);
+    Ok(out)
+}
+
+fn fixed<const N: usize>(text: &str) -> Result<[u8; N]> {
+    let b = text.as_bytes();
+    require!(b.len() <= N, ClashyError::BadGoalName);
+    let mut out = [0u8; N];
+    out[..b.len()].copy_from_slice(b);
+    Ok(out)
+}
+
+/// Token balance of an SPL Token or Token-2022 account (both keep the amount at bytes 64..72).
+fn raw_amount(info: &AccountInfo) -> Result<u64> {
+    require!(*info.owner == token::ID || *info.owner == anchor_spl::token_2022::ID, ClashyError::PayoutMismatch);
+    let data = info.try_borrow_data()?;
+    require!(data.len() >= 72, ClashyError::PayoutMismatch);
+    Ok(u64::from_le_bytes(data[64..72].try_into().unwrap()))
+}
+
+/// Mint and owner of an SPL Token or Token-2022 account.
+fn token_mint_owner(info: &AccountInfo) -> Result<(Pubkey, Pubkey)> {
+    require!(*info.owner == token::ID || *info.owner == anchor_spl::token_2022::ID, ClashyError::PayoutMismatch);
+    let data = info.try_borrow_data()?;
+    require!(data.len() >= 72, ClashyError::PayoutMismatch);
+    Ok((Pubkey::new_from_array(data[0..32].try_into().unwrap()), Pubkey::new_from_array(data[32..64].try_into().unwrap())))
+}
+
+/// The parts of an Orca Whirlpool account a swap needs: (mint A, vault A, mint B, vault B).
+fn whirlpool_sides(info: &AccountInfo) -> Result<(Pubkey, Pubkey, Pubkey, Pubkey)> {
+    require_keys_eq!(*info.owner, WHIRLPOOL_PROGRAM_ID, ClashyError::BadPool);
+    let d = info.try_borrow_data()?;
+    // discriminator 8, config 32, bump 1, tick spacing 2, fee tier seed 2, fee rate 2, protocol fee 2,
+    // liquidity 16, sqrt price 16, tick 4, protocol fees owed 8 + 8 = 101 bytes before mint A
+    let o = 8 + 32 + 1 + 2 + 2 + 2 + 2 + 16 + 16 + 4 + 8 + 8;
+    require!(d.len() >= o + 32 + 32 + 16 + 32 + 32, ClashyError::BadPool);
+    let k = |at: usize| Pubkey::new_from_array(d[at..at + 32].try_into().unwrap());
+    Ok((k(o), k(o + 32), k(o + 32 + 32 + 16), k(o + 32 + 32 + 16 + 32)))
+}
+
+/// One swap through Orca Whirlpool's `swap_v2`, with `amount` of the input side. `a_to_b` sells token A.
+#[allow(clippy::too_many_arguments)]
+fn whirlpool_swap<'info>(
+    sw: &StockSwap<'info>, a_to_b: bool, amount: u64, min_out: u64, authority: &AccountInfo<'info>,
+    owner_a: &AccountInfo<'info>, owner_b: &AccountInfo<'info>, prog_a: &AccountInfo<'info>, prog_b: &AccountInfo<'info>,
+    mint_a: &AccountInfo<'info>, mint_b: &AccountInfo<'info>, signer_seeds: &[&[&[u8]]],
+) -> Result<()> {
+    let mut data = WHIRLPOOL_SWAP_V2.to_vec();
+    data.extend_from_slice(&amount.to_le_bytes());
+    data.extend_from_slice(&min_out.to_le_bytes());
+    let limit = if a_to_b { MIN_SQRT_PRICE_X64 } else { MAX_SQRT_PRICE_X64 };
+    data.extend_from_slice(&limit.to_le_bytes());
+    data.push(1); // amount is the input
+    data.push(a_to_b as u8);
+    data.push(0); // no remaining-accounts info
+    let metas = vec![
+        AccountMeta::new_readonly(prog_a.key(), false),
+        AccountMeta::new_readonly(prog_b.key(), false),
+        AccountMeta::new_readonly(MEMO_PROGRAM_ID, false),
+        AccountMeta::new_readonly(authority.key(), true),
+        AccountMeta::new(sw.whirlpool.key(), false),
+        AccountMeta::new_readonly(mint_a.key(), false),
+        AccountMeta::new_readonly(mint_b.key(), false),
+        AccountMeta::new(owner_a.key(), false),
+        AccountMeta::new(sw.vault_a.key(), false),
+        AccountMeta::new(owner_b.key(), false),
+        AccountMeta::new(sw.vault_b.key(), false),
+        AccountMeta::new(sw.tick_array_0.key(), false),
+        AccountMeta::new(sw.tick_array_1.key(), false),
+        AccountMeta::new(sw.tick_array_2.key(), false),
+        AccountMeta::new(sw.oracle.key(), false),
+    ];
+    let infos = vec![
+        prog_a.clone(), prog_b.clone(), sw.memo_program.to_account_info(), authority.clone(), sw.whirlpool.to_account_info(),
+        mint_a.clone(), mint_b.clone(), owner_a.clone(), sw.vault_a.to_account_info(), owner_b.clone(), sw.vault_b.to_account_info(),
+        sw.tick_array_0.to_account_info(), sw.tick_array_1.to_account_info(), sw.tick_array_2.to_account_info(), sw.oracle.to_account_info(),
+        sw.whirlpool_program.to_account_info(),
+    ];
+    invoke_signed(&Instruction { program_id: WHIRLPOOL_PROGRAM_ID, accounts: metas, data }, &infos, signer_seeds)?;
+    Ok(())
+}
+
 #[ephemeral]
 #[program]
 pub mod clashy {
@@ -320,6 +446,297 @@ pub mod clashy {
         Ok(())
     }
 
+
+    // ------------------------------------------------------------------ profile, limits, Stash
+
+    /// A player's handle and avatar. The handle account makes names unique.
+    pub fn create_profile(ctx: Context<CreateProfile>, name: String, avatar: u8) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        require!(avatar < AVATARS, ClashyError::BadAvatar);
+        let p = &mut ctx.accounts.profile;
+        p.owner = ctx.accounts.owner.key();
+        p.name = check_name(&name)?;
+        p.avatar = avatar;
+        p.daily_limit = DEFAULT_DAILY_LIMIT;
+        p.day = day_of(now);
+        p.save_bps = 0;
+        p.roundup_step = 0;
+        p.created_at = now;
+        p.bump = ctx.bumps.profile;
+        let r = &mut ctx.accounts.registry;
+        r.bump = ctx.bumps.registry;
+        p.number = r.profiles;
+        r.profiles = r.profiles.checked_add(1).ok_or(ClashyError::Overflow)?;
+        let h = &mut ctx.accounts.handle;
+        h.owner = ctx.accounts.owner.key();
+        h.bump = ctx.bumps.handle;
+        Ok(())
+    }
+
+    pub fn set_avatar(ctx: Context<OwnProfile>, avatar: u8) -> Result<()> {
+        require!(avatar < AVATARS, ClashyError::BadAvatar);
+        ctx.accounts.profile.avatar = avatar;
+        Ok(())
+    }
+
+    /// The player's own controls. A lower daily limit applies at once; a higher one waits a day.
+    pub fn set_limits(ctx: Context<OwnProfile>, daily_limit: u64, save_bps: u16, roundup_step: u64) -> Result<()> {
+        require!(save_bps <= BPS as u16, ClashyError::BadSaveShare);
+        let now = Clock::get()?.unix_timestamp;
+        let p = &mut ctx.accounts.profile;
+        if daily_limit <= p.daily_limit {
+            p.daily_limit = daily_limit;
+            p.pending_limit = 0;
+            p.pending_at = 0;
+        } else {
+            p.pending_limit = daily_limit;
+            p.pending_at = now + LIMIT_RAISE_DELAY;
+        }
+        p.save_bps = save_bps;
+        p.roundup_step = roundup_step;
+        Ok(())
+    }
+
+    /// A break from staking that the player sets on themselves. It can be extended, never shortened.
+    pub fn take_break(ctx: Context<OwnProfile>, secs: i64) -> Result<()> {
+        require!(secs > 0 && secs <= MAX_BREAK_SECS, ClashyError::BadBreak);
+        let now = Clock::get()?.unix_timestamp;
+        let p = &mut ctx.accounts.profile;
+        p.break_until = p.break_until.max(now + secs);
+        Ok(())
+    }
+
+    pub fn open_stash(ctx: Context<OpenStash>, goal: u64, goal_name: String) -> Result<()> {
+        let s = &mut ctx.accounts.stash;
+        s.owner = ctx.accounts.owner.key();
+        s.goal = goal;
+        s.goal_name = fixed::<GOAL_NAME_LEN>(&goal_name)?;
+        s.opened_at = Clock::get()?.unix_timestamp;
+        s.bump = ctx.bumps.stash;
+        s.vault_bump = ctx.bumps.vault;
+        s.rent_payer = ctx.accounts.payer.key();
+        Ok(())
+    }
+
+    pub fn set_goal(ctx: Context<StashOwner>, goal: u64, goal_name: String) -> Result<()> {
+        let s = &mut ctx.accounts.stash;
+        s.goal = goal;
+        s.goal_name = fixed::<GOAL_NAME_LEN>(&goal_name)?;
+        Ok(())
+    }
+
+    /// Moves USDC from the player's wallet into their Stash. `kind` records where it came from:
+    /// put in by hand, a round-up on a payment made in the same transaction, or a slice of a win.
+    pub fn stash_save(ctx: Context<StashMove>, amount: u64, kind: u8) -> Result<()> {
+        require!(amount > 0, ClashyError::ZeroAmount);
+        pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.owner_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.owner.to_account_info(), amount)?;
+        let s = &mut ctx.accounts.stash;
+        match kind {
+            save_kind::ROUNDUP => s.saved_roundup += amount,
+            save_kind::WIN => s.saved_wins += amount,
+            _ => s.saved_manual += amount,
+        }
+        s.saves += 1;
+        mark_active(&mut ctx.accounts.profile, Clock::get()?.unix_timestamp);
+        Ok(())
+    }
+
+    /// The owner can always take their savings out.
+    pub fn stash_withdraw(ctx: Context<StashMove>, amount: u64) -> Result<()> {
+        require!(amount > 0, ClashyError::ZeroAmount);
+        let vault = ctx.accounts.vault.to_account_info();
+        require!(token_amount(&vault)? >= amount, ClashyError::StashLow);
+        pay_out(&ctx.accounts.token_program.to_account_info(), &vault, &ctx.accounts.owner_usdc.to_account_info(), &ctx.accounts.auth.to_account_info(), ctx.accounts.config.auth_bump, amount)?;
+        ctx.accounts.stash.withdrawn += amount;
+        Ok(())
+    }
+
+
+    /// Buys a tokenized stock with USDC from the Stash, through Orca Whirlpool. The shares land in the
+    /// player's own token account; the cost is recorded on chain in their Holding.
+    pub fn stash_invest(ctx: Context<StashInvest>, usdc_in: u64, min_shares: u64) -> Result<()> {
+        require!(usdc_in > 0, ClashyError::ZeroAmount);
+        let usdc = ctx.accounts.config.usdc_mint;
+        let stock = ctx.accounts.sw.stock_mint.key();
+        let (mint_a, vault_a, mint_b, vault_b) = whirlpool_sides(&ctx.accounts.sw.whirlpool)?;
+        require!((mint_a == stock && mint_b == usdc) || (mint_a == usdc && mint_b == stock), ClashyError::BadPool);
+        require_keys_eq!(vault_a, ctx.accounts.sw.vault_a.key(), ClashyError::BadPool);
+        require_keys_eq!(vault_b, ctx.accounts.sw.vault_b.key(), ClashyError::BadPool);
+        let (m, o) = token_mint_owner(&ctx.accounts.sw.owner_stock)?;
+        require!(m == stock && o == ctx.accounts.owner.key(), ClashyError::PayoutMismatch);
+        let stash_vault = ctx.accounts.vault.to_account_info();
+        let usdc_before = raw_amount(&stash_vault)?;
+        require!(usdc_before >= usdc_in, ClashyError::StashLow);
+        let shares_before = raw_amount(&ctx.accounts.sw.owner_stock)?;
+        let a_to_b = mint_a == usdc; // selling USDC
+        let sw = &ctx.accounts.sw;
+        let (usdc_prog, stock_prog) = (sw.token_program.to_account_info(), sw.token_2022_program.to_account_info());
+        let (usdc_mint, stock_mint) = (sw.usdc_mint.to_account_info(), sw.stock_mint.to_account_info());
+        let stock_acc = sw.owner_stock.to_account_info();
+        let auth = ctx.accounts.auth.to_account_info();
+        let bump = [ctx.accounts.config.auth_bump];
+        let seeds: &[&[u8]] = &[AUTH_SEED, &bump];
+        if a_to_b {
+            whirlpool_swap(sw, true, usdc_in, min_shares, &auth, &stash_vault, &stock_acc, &usdc_prog, &stock_prog, &usdc_mint, &stock_mint, &[seeds])?;
+        } else {
+            whirlpool_swap(sw, false, usdc_in, min_shares, &auth, &stock_acc, &stash_vault, &stock_prog, &usdc_prog, &stock_mint, &usdc_mint, &[seeds])?;
+        }
+        let spent = usdc_before - raw_amount(&stash_vault)?;
+        let got = raw_amount(&ctx.accounts.sw.owner_stock)? - shares_before;
+        require!(got >= min_shares && got > 0, ClashyError::Slippage);
+        let h = &mut ctx.accounts.holding;
+        if h.owner == Pubkey::default() {
+            h.owner = ctx.accounts.owner.key();
+            h.mint = stock;
+            h.bump = ctx.bumps.holding;
+        }
+        h.shares += got;
+        h.cost += spent;
+        h.bought += spent;
+        mark_active(&mut ctx.accounts.profile, Clock::get()?.unix_timestamp);
+        Ok(())
+    }
+
+    /// Sells shares bought through the Stash back to USDC (into the Stash), through Orca Whirlpool.
+    pub fn stash_sell(ctx: Context<StashInvest>, shares: u64, min_usdc: u64) -> Result<()> {
+        require!(shares > 0, ClashyError::ZeroAmount);
+        require!(ctx.accounts.holding.shares >= shares, ClashyError::NotEnoughStock);
+        let usdc = ctx.accounts.config.usdc_mint;
+        let stock = ctx.accounts.sw.stock_mint.key();
+        require_keys_eq!(ctx.accounts.holding.mint, stock, ClashyError::BadPool);
+        let (mint_a, vault_a, mint_b, vault_b) = whirlpool_sides(&ctx.accounts.sw.whirlpool)?;
+        require!((mint_a == stock && mint_b == usdc) || (mint_a == usdc && mint_b == stock), ClashyError::BadPool);
+        require_keys_eq!(vault_a, ctx.accounts.sw.vault_a.key(), ClashyError::BadPool);
+        require_keys_eq!(vault_b, ctx.accounts.sw.vault_b.key(), ClashyError::BadPool);
+        let (m, o) = token_mint_owner(&ctx.accounts.sw.owner_stock)?;
+        require!(m == stock && o == ctx.accounts.owner.key(), ClashyError::PayoutMismatch);
+        let stash_vault = ctx.accounts.vault.to_account_info();
+        let usdc_before = raw_amount(&stash_vault)?;
+        let a_to_b = mint_a == stock; // selling the stock
+        let sw = &ctx.accounts.sw;
+        let (usdc_prog, stock_prog) = (sw.token_program.to_account_info(), sw.token_2022_program.to_account_info());
+        let (usdc_mint, stock_mint) = (sw.usdc_mint.to_account_info(), sw.stock_mint.to_account_info());
+        let stock_acc = sw.owner_stock.to_account_info();
+        let owner = ctx.accounts.owner.to_account_info();
+        if a_to_b {
+            whirlpool_swap(sw, true, shares, min_usdc, &owner, &stock_acc, &stash_vault, &stock_prog, &usdc_prog, &stock_mint, &usdc_mint, &[])?;
+        } else {
+            whirlpool_swap(sw, false, shares, min_usdc, &owner, &stash_vault, &stock_acc, &usdc_prog, &stock_prog, &usdc_mint, &stock_mint, &[])?;
+        }
+        let got = raw_amount(&stash_vault)? - usdc_before;
+        require!(got >= min_usdc, ClashyError::Slippage);
+        let h = &mut ctx.accounts.holding;
+        let cost_part = ((h.cost as u128) * (shares as u128) / (h.shares as u128)) as u64;
+        h.realized += got as i64 - cost_part as i64;
+        h.cost -= cost_part;
+        h.shares -= shares;
+        h.sold_usdc += got;
+        Ok(())
+    }
+
+    // ------------------------------------------------------------------ calls feed (on the rollup)
+
+    pub fn open_board(ctx: Context<OpenBoard>, id: u8) -> Result<()> {
+        let mut b = ctx.accounts.board.load_init()?;
+        b.id = id;
+        b.count = 0;
+        b.bump = ctx.bumps.board;
+        Ok(())
+    }
+
+    pub fn delegate_board(ctx: Context<DelegateBoard>, id: u8) -> Result<()> {
+        ctx.accounts.delegate_board(
+            &ctx.accounts.authority,
+            &[BOARD_SEED, &[id]],
+            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+        )?;
+        Ok(())
+    }
+
+    /// Posts to the feed (players with a profile). A call points at a stock mint and the app shows the
+    /// author's live position in it; a reply points at the post it answers.
+    pub fn post(ctx: Context<PostToBoard>, text: String, kind: u8, refkey: Pubkey, reply_to: u64) -> Result<()> {
+        let bytes = text.as_bytes();
+        require!(!bytes.is_empty() && bytes.len() <= POST_TEXT, ClashyError::BadPost);
+        let now = Clock::get()?.unix_timestamp;
+        let mut b = ctx.accounts.board.load_mut()?;
+        if reply_to != u64::MAX {
+            let i = b.posts.iter().position(|p| p.seq == reply_to && p.author != Pubkey::default()).ok_or(ClashyError::PostGone)?;
+            b.posts[i].replies = b.posts[i].replies.saturating_add(1);
+        }
+        let seq = b.count;
+        let p = &mut b.posts[(seq % BOARD_POSTS as u64) as usize];
+        p.seq = seq;
+        p.ts = now;
+        p.reply_to = reply_to;
+        p.author = ctx.accounts.author.key();
+        p.refkey = refkey;
+        p.likes = 0;
+        p.replies = 0;
+        p.kind = kind;
+        p.len = bytes.len() as u8;
+        p.text = [0; POST_TEXT];
+        p.text[..bytes.len()].copy_from_slice(bytes);
+        p.liked = [0; LIKE_BITS / 8];
+        b.count += 1;
+        Ok(())
+    }
+
+    /// One like per player per post (by profile number).
+    pub fn like(ctx: Context<LikePost>, seq: u64) -> Result<()> {
+        let n = ctx.accounts.profile.number as usize;
+        require!(n < LIKE_BITS, ClashyError::Overflow);
+        let mut b = ctx.accounts.board.load_mut()?;
+        let i = b.posts.iter().position(|p| p.seq == seq && p.author != Pubkey::default()).ok_or(ClashyError::PostGone)?;
+        let (byte, bit) = (n / 8, 1u8 << (n % 8));
+        require!(b.posts[i].liked[byte] & bit == 0, ClashyError::AlreadyLiked);
+        b.posts[i].liked[byte] |= bit;
+        b.posts[i].likes += 1;
+        Ok(())
+    }
+
+    // ------------------------------------------------------------------ clan chat (on the rollup)
+
+    pub fn open_channel(ctx: Context<OpenChannel>, id: u8) -> Result<()> {
+        require!(id < MAX_CHANNELS, ClashyError::BadChannel);
+        let mut c = ctx.accounts.channel.load_init()?;
+        c.clan = ctx.accounts.clan.key();
+        c.id = id;
+        c.count = 0;
+        c.bump = ctx.bumps.channel;
+        Ok(())
+    }
+
+    /// Moves a channel onto the MagicBlock rollup, where members post for free and instantly.
+    pub fn delegate_channel(ctx: Context<DelegateChannel>, clan: Pubkey, id: u8) -> Result<()> {
+        ctx.accounts.delegate_channel(
+            &ctx.accounts.payer,
+            &[CHANNEL_SEED, clan.as_ref(), &[id]],
+            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+        )?;
+        Ok(())
+    }
+
+    /// Posts to a clan channel (members only). Runs inside the rollup.
+    pub fn post_message(ctx: Context<PostMessage>, text: String, kind: u8, refkey: Pubkey) -> Result<()> {
+        let b = text.as_bytes();
+        require!(!b.is_empty() && b.len() <= CHAT_TEXT, ClashyError::BadMessage);
+        let now = Clock::get()?.unix_timestamp;
+        let mut c = ctx.accounts.channel.load_mut()?;
+        require_keys_eq!(c.clan, ctx.accounts.member.clan, ClashyError::NotMember);
+        let i = (c.count % CHAT_MSGS as u64) as usize;
+        let m = &mut c.msgs[i];
+        m.author = ctx.accounts.author.key();
+        m.refkey = refkey;
+        m.ts = now;
+        m.kind = kind;
+        m.len = b.len() as u8;
+        m.text = [0; CHAT_TEXT];
+        m.text[..b.len()].copy_from_slice(b);
+        c.count += 1;
+        Ok(())
+    }
+
     // ------------------------------------------------------------------ knockout duel
 
     /// Opens a duel and escrows the creator's stake. With a short expiry it is a quick-match
@@ -330,6 +747,7 @@ pub mod clashy {
         require!(expires_in > 0 && expires_in <= MAX_CHALLENGE_SECS, ClashyError::Expired);
         let cfg = &ctx.accounts.config;
         require!(math::pick_coin(&[0u8; 32], pool_mask, cfg.coin_count).is_some(), ClashyError::EmptyPool);
+        check_stake(&mut ctx.accounts.profile, stake, Clock::get()?.unix_timestamp)?;
         pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.creator_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.creator.to_account_info(), stake)?;
         let d = &mut ctx.accounts.duel;
         d.rent_payer = ctx.accounts.payer.key();
@@ -354,6 +772,7 @@ pub mod clashy {
         require!(d.status == duel_status::OPEN, ClashyError::WrongStatus);
         require!(now <= d.expires_at, ClashyError::Expired);
         require_keys_neq!(ctx.accounts.joiner.key(), d.creator, ClashyError::SelfJoin);
+        check_stake(&mut ctx.accounts.profile, d.stake, now)?;
         pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.joiner_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.joiner.to_account_info(), d.stake)?;
         d.joiner = ctx.accounts.joiner.key();
         d.seed_hash[1] = seed_hash;
@@ -976,6 +1395,8 @@ pub mod clashy {
         require!((t.count as usize) < t.max_players as usize, ClashyError::TourFull);
         let me = ctx.accounts.player.key();
         require!(!t.players[..t.count as usize].contains(&me), ClashyError::AlreadyJoined);
+        let entry = t.entry;
+        check_stake(&mut ctx.accounts.profile, entry, Clock::get()?.unix_timestamp)?;
         pay_in(&ctx.accounts.token_program.to_account_info(), &ctx.accounts.player_usdc.to_account_info(), &ctx.accounts.vault.to_account_info(), &ctx.accounts.player.to_account_info(), t.entry)?;
         let t = &mut ctx.accounts.tournament;
         let i = t.count as usize;
@@ -1298,6 +1719,8 @@ pub struct OpenDuel<'info> {
     pub config: Box<Account<'info, Config>>,
     #[account(seeds = [PLAYER_SEED, creator.key().as_ref()], bump = player.bump)]
     pub player: Account<'info, Player>,
+    #[account(mut, seeds = [PROFILE_SEED, creator.key().as_ref()], bump = profile.bump)]
+    pub profile: Box<Account<'info, Profile>>,
     #[account(init, payer = payer, space = 8 + Duel::INIT_SPACE, seeds = [DUEL_SEED, creator.key().as_ref(), &nonce.to_le_bytes()], bump)]
     pub duel: Box<Account<'info, Duel>>,
     #[account(mut, token::mint = config.usdc_mint, token::authority = creator)]
@@ -1320,6 +1743,8 @@ pub struct JoinDuel<'info> {
     pub config: Box<Account<'info, Config>>,
     #[account(seeds = [PLAYER_SEED, joiner.key().as_ref()], bump = player.bump)]
     pub player: Account<'info, Player>,
+    #[account(mut, seeds = [PROFILE_SEED, joiner.key().as_ref()], bump = profile.bump)]
+    pub profile: Box<Account<'info, Profile>>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
     pub duel: Box<Account<'info, Duel>>,
     #[account(mut, token::mint = config.usdc_mint, token::authority = joiner)]
@@ -1754,6 +2179,8 @@ pub struct JoinTournament<'info> {
     pub player: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [PROFILE_SEED, player.key().as_ref()], bump = profile.bump)]
+    pub profile: Box<Account<'info, Profile>>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
     pub tournament: Box<Account<'info, Tournament>>,
     #[account(mut, token::mint = config.usdc_mint, token::authority = player)]
@@ -1871,4 +2298,220 @@ pub struct SettleTournament<'info> {
     #[account(mut, address = tournament.rent_payer @ ClashyError::PayoutMismatch)]
     pub rent_payer: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(name: String)]
+pub struct CreateProfile<'info> {
+    pub owner: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(init, payer = payer, space = 8 + Profile::INIT_SPACE, seeds = [PROFILE_SEED, owner.key().as_ref()], bump)]
+    pub profile: Box<Account<'info, Profile>>,
+    #[account(init, payer = payer, space = 8 + Handle::INIT_SPACE, seeds = [HANDLE_SEED, name.as_bytes()], bump)]
+    pub handle: Account<'info, Handle>,
+    #[account(init_if_needed, payer = payer, space = 8 + Registry::INIT_SPACE, seeds = [REGISTRY_SEED], bump)]
+    pub registry: Account<'info, Registry>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct OwnProfile<'info> {
+    pub owner: Signer<'info>,
+    #[account(mut, seeds = [PROFILE_SEED, owner.key().as_ref()], bump = profile.bump, has_one = owner)]
+    pub profile: Box<Account<'info, Profile>>,
+}
+
+#[derive(Accounts)]
+pub struct OpenStash<'info> {
+    pub owner: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(init, payer = payer, space = 8 + Stash::INIT_SPACE, seeds = [STASH_SEED, owner.key().as_ref()], bump)]
+    pub stash: Box<Account<'info, Stash>>,
+    #[account(address = config.usdc_mint)]
+    pub usdc_mint: Box<Account<'info, Mint>>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(init, payer = payer, seeds = [STASH_VAULT_SEED, owner.key().as_ref()], bump, token::mint = usdc_mint, token::authority = auth)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct StashOwner<'info> {
+    pub owner: Signer<'info>,
+    #[account(mut, seeds = [STASH_SEED, owner.key().as_ref()], bump = stash.bump, has_one = owner)]
+    pub stash: Box<Account<'info, Stash>>,
+}
+
+#[derive(Accounts)]
+pub struct StashMove<'info> {
+    pub owner: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [PROFILE_SEED, owner.key().as_ref()], bump = profile.bump, has_one = owner)]
+    pub profile: Box<Account<'info, Profile>>,
+    #[account(mut, seeds = [STASH_SEED, owner.key().as_ref()], bump = stash.bump, has_one = owner)]
+    pub stash: Box<Account<'info, Stash>>,
+    /// CHECK: the Stash's USDC vault, checked by seeds; the token program checks the transfer.
+    #[account(mut, seeds = [STASH_VAULT_SEED, owner.key().as_ref()], bump = stash.vault_bump)]
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(mut, token::mint = config.usdc_mint, token::authority = owner)]
+    pub owner_usdc: Box<Account<'info, TokenAccount>>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(id: u8)]
+pub struct OpenChannel<'info> {
+    pub wallet: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub clan: Box<Account<'info, Clan>>,
+    #[account(seeds = [MEMBER_SEED, clan.key().as_ref(), wallet.key().as_ref()], bump = member.bump)]
+    pub member: Box<Account<'info, Member>>,
+    #[account(init, payer = payer, space = 8 + std::mem::size_of::<Channel>(), seeds = [CHANNEL_SEED, clan.key().as_ref(), &[id]], bump)]
+    pub channel: AccountLoader<'info, Channel>,
+    pub system_program: Program<'info, System>,
+}
+
+#[delegate]
+#[derive(Accounts)]
+#[instruction(clan: Pubkey, id: u8)]
+pub struct DelegateChannel<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub wallet: Signer<'info>,
+    #[account(seeds = [MEMBER_SEED, clan.as_ref(), wallet.key().as_ref()], bump = member.bump)]
+    pub member: Box<Account<'info, Member>>,
+    /// CHECK: the channel PDA, checked by seeds.
+    #[account(mut, del, seeds = [CHANNEL_SEED, clan.as_ref(), &[id]], bump)]
+    pub channel: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct PostMessage<'info> {
+    pub author: Signer<'info>,
+    #[account(mut, owner = crate::ID)]
+    pub channel: AccountLoader<'info, Channel>,
+    /// The author's membership in the channel's clan (the handler checks it is the same clan).
+    #[account(seeds = [MEMBER_SEED, member.clan.as_ref(), author.key().as_ref()], bump = member.bump, constraint = member.wallet == author.key() @ ClashyError::NotMember)]
+    pub member: Box<Account<'info, Member>>,
+}
+
+/// The Orca Whirlpool accounts one stock swap touches.
+#[derive(Accounts)]
+pub struct StockSwap<'info> {
+    /// CHECK: an Orca Whirlpool pool; its mints and vaults are checked in the handler.
+    #[account(mut, owner = WHIRLPOOL_PROGRAM_ID @ ClashyError::BadPool)]
+    pub whirlpool: UncheckedAccount<'info>,
+    /// CHECK: the tokenized stock's mint (Token-2022); checked against the pool.
+    pub stock_mint: UncheckedAccount<'info>,
+    /// CHECK: USDC's mint; checked against the config.
+    pub usdc_mint: UncheckedAccount<'info>,
+    /// CHECK: the player's own token account for the stock; mint and owner checked in the handler.
+    #[account(mut)]
+    pub owner_stock: UncheckedAccount<'info>,
+    /// CHECK: the pool's vault A, checked against the pool.
+    #[account(mut)]
+    pub vault_a: UncheckedAccount<'info>,
+    /// CHECK: the pool's vault B, checked against the pool.
+    #[account(mut)]
+    pub vault_b: UncheckedAccount<'info>,
+    /// CHECK: tick array checked by the Whirlpool program.
+    #[account(mut)]
+    pub tick_array_0: UncheckedAccount<'info>,
+    /// CHECK: tick array checked by the Whirlpool program.
+    #[account(mut)]
+    pub tick_array_1: UncheckedAccount<'info>,
+    /// CHECK: tick array checked by the Whirlpool program.
+    #[account(mut)]
+    pub tick_array_2: UncheckedAccount<'info>,
+    /// CHECK: the pool's oracle PDA, checked by the Whirlpool program.
+    #[account(mut)]
+    pub oracle: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
+    /// CHECK: the Token-2022 program.
+    #[account(address = anchor_spl::token_2022::ID)]
+    pub token_2022_program: UncheckedAccount<'info>,
+    /// CHECK: the SPL Memo program (Whirlpool's swap_v2 asks for it).
+    #[account(address = MEMO_PROGRAM_ID)]
+    pub memo_program: UncheckedAccount<'info>,
+    /// CHECK: Orca Whirlpool.
+    #[account(address = WHIRLPOOL_PROGRAM_ID)]
+    pub whirlpool_program: UncheckedAccount<'info>,
+}
+
+#[derive(Accounts)]
+pub struct StashInvest<'info> {
+    pub owner: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, constraint = sw.usdc_mint.key() == config.usdc_mint @ ClashyError::BadPool)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [PROFILE_SEED, owner.key().as_ref()], bump = profile.bump, has_one = owner)]
+    pub profile: Box<Account<'info, Profile>>,
+    #[account(seeds = [STASH_SEED, owner.key().as_ref()], bump = stash.bump, has_one = owner)]
+    pub stash: Box<Account<'info, Stash>>,
+    /// CHECK: the Stash's USDC vault, checked by seeds.
+    #[account(mut, seeds = [STASH_VAULT_SEED, owner.key().as_ref()], bump = stash.vault_bump)]
+    pub vault: UncheckedAccount<'info>,
+    /// CHECK: vault owner PDA.
+    #[account(seeds = [AUTH_SEED], bump = config.auth_bump)]
+    pub auth: UncheckedAccount<'info>,
+    #[account(init_if_needed, payer = payer, space = 8 + Holding::INIT_SPACE, seeds = [HOLDING_SEED, owner.key().as_ref(), sw.stock_mint.key().as_ref()], bump)]
+    pub holding: Box<Account<'info, Holding>>,
+    pub sw: StockSwap<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(id: u8)]
+pub struct OpenBoard<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(init, payer = authority, space = 8 + std::mem::size_of::<Board>(), seeds = [BOARD_SEED, &[id]], bump)]
+    pub board: AccountLoader<'info, Board>,
+    pub system_program: Program<'info, System>,
+}
+
+#[delegate]
+#[derive(Accounts)]
+#[instruction(id: u8)]
+pub struct DelegateBoard<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Box<Account<'info, Config>>,
+    /// CHECK: the board PDA, checked by seeds.
+    #[account(mut, del, seeds = [BOARD_SEED, &[id]], bump)]
+    pub board: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct PostToBoard<'info> {
+    pub author: Signer<'info>,
+    #[account(seeds = [PROFILE_SEED, author.key().as_ref()], bump = profile.bump)]
+    pub profile: Box<Account<'info, Profile>>,
+    #[account(mut, owner = crate::ID)]
+    pub board: AccountLoader<'info, Board>,
+}
+
+#[derive(Accounts)]
+pub struct LikePost<'info> {
+    pub liker: Signer<'info>,
+    #[account(seeds = [PROFILE_SEED, liker.key().as_ref()], bump = profile.bump)]
+    pub profile: Box<Account<'info, Profile>>,
+    #[account(mut, owner = crate::ID)]
+    pub board: AccountLoader<'info, Board>,
 }

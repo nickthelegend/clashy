@@ -30,8 +30,16 @@ import { BASE_URL, ER_URL, IS_LOCAL, USDC, USDC_MINT, base, er, giveUsdc, progra
 const PORT = Number(process.env.CLASHY_SPONSOR_PORT ?? 8790);
 const ORIGIN = process.env.CLASHY_APP_ORIGIN ?? '*';
 const idl = JSON.parse(readFileSync(new URL('../target/idl/clashy.json', import.meta.url), 'utf8')) as {
-  instructions: { name: string; discriminator: number[]; accounts: { name: string }[] }[];
+  instructions: { name: string; discriminator: number[]; accounts: IdlAccount[] }[];
 };
+type IdlAccount = { name: string; accounts?: IdlAccount[] };
+/** Nested account groups (stash_invest's `sw`) flattened in order, as they appear in the instruction. */
+const flat = (accs: IdlAccount[]): { name: string }[] => accs.flatMap((a) => (a.accounts ? flat(a.accounts) : [a]));
+/** Tokenized stocks a player may hold: the xStocks snapshotted onto the fork (scripts/fork-stocks.ts). */
+const STOCK_MINTS = new Set<string>(
+  (() => { try { return (JSON.parse(readFileSync(new URL('../.localnet/fork/stocks.json', import.meta.url), 'utf8')) as { stocks: { mint: string }[] }).stocks.map((x) => x.mint); } catch { return []; } })(),
+);
+const TOKEN_2022 = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
 /** Player-facing instructions the sponsor pays for. Admin, feed, delegation-callback and VRF-callback ones are not here. */
 const PLAYER_IXS = new Set([
@@ -40,14 +48,16 @@ const PLAYER_IXS = new Set([
   'deposit_chest', 'withdraw_chest', 'propose', 'vote', 'execute_proposal', 'reject_proposal', 'close_position',
   'declare_war', 'accept_war', 'cancel_war', 'settle_war', 'create_tournament', 'join_tournament', 'cancel_tournament',
   'request_tournament_coin', 'delegate_tournament', 'start_tournament', 'call_round', 'resolve_round', 'settle_tournament',
+  'create_profile', 'set_avatar', 'set_limits', 'take_break', 'open_stash', 'set_goal', 'stash_save', 'stash_withdraw',
+  'stash_invest', 'stash_sell', 'open_channel', 'delegate_channel', 'post_message', 'post', 'like',
 ]);
 /** Instructions that may only run on the rollup (the rest only on Solana). */
-const ER_IXS = new Set(['start_duel', 'check_duel', 'start_tournament', 'call_round', 'resolve_round']);
+const ER_IXS = new Set(['start_duel', 'check_duel', 'start_tournament', 'call_round', 'resolve_round', 'post_message', 'post', 'like']);
 const SPONSOR_SLOTS = new Set(['payer', 'rent_payer']);
 const PRIVY = process.env.CLASHY_PRIVY_APP_ID && process.env.CLASHY_PRIVY_APP_SECRET
   ? new PrivyClient(process.env.CLASHY_PRIVY_APP_ID, process.env.CLASHY_PRIVY_APP_SECRET) : null;
 const AUTH_REQUIRED = !IS_LOCAL || process.env.CLASHY_RELAY_REQUIRE_AUTH === '1';
-const byDisc = new Map(idl.instructions.map((ix) => [Buffer.from(ix.discriminator).toString('hex'), ix]));
+const byDisc = new Map(idl.instructions.map((ix) => [Buffer.from(ix.discriminator).toString('hex'), { name: ix.name, accounts: flat(ix.accounts) }]));
 
 type Layer = 'base' | 'er';
 class Refused extends Error { status = 400; }
@@ -70,10 +80,13 @@ export function vet(tx: Transaction, layer: Layer): string[] {
       continue;
     }
     if (ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID)) {
-      // create (0 or empty) / create-idempotent (1) a USDC account: [payer, ata, owner, mint, system, token]
+      // create (0 or empty) / create-idempotent (1) a USDC or tokenized-stock account: [payer, ata, owner, mint, system, token]
       if (layer !== 'base') throw new Refused('token accounts are made on Solana');
       if (ix.data.length > 1 || (ix.data.length === 1 && ix.data[0] > 1)) throw new Refused('only creating a token account');
-      if (!ix.keys[3]?.pubkey.equals(USDC_MINT)) throw new Refused('only USDC token accounts');
+      const mint = ix.keys[3]?.pubkey;
+      const usdcAcc = !!mint?.equals(USDC_MINT) && !!ix.keys[5]?.pubkey.equals(TOKEN_PROGRAM_ID);
+      const stockAcc = !!mint && STOCK_MINTS.has(mint.toBase58()) && !!ix.keys[5]?.pubkey.equals(TOKEN_2022);
+      if (!usdcAcc && !stockAcc) throw new Refused('only USDC or tokenized-stock token accounts');
       ix.keys.forEach((k, i) => { if (i !== 0 && k.pubkey.equals(me)) throw new Refused('the sponsor can only fund the account'); });
       continue;
     }

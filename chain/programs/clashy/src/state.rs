@@ -278,3 +278,164 @@ pub struct Tournament {
     /// Paid the tournament vault's rent; gets it back when the vault closes.
     pub rent_payer: Pubkey,
 }
+
+/// A player's public face and the controls they set on themselves. Every stake checks it on chain:
+/// the break, the daily limit, and the day streak.
+#[account]
+#[derive(InitSpace)]
+pub struct Profile {
+    pub owner: Pubkey,
+    pub name: [u8; NAME_LEN],
+    pub avatar: u8,
+    /// Most USDC (base units) this player can stake in one UTC day. Lowering applies at once.
+    pub daily_limit: u64,
+    /// A raise waits LIMIT_RAISE_DELAY before it applies (0 when none is pending).
+    pub pending_limit: u64,
+    pub pending_at: i64,
+    /// UTC day index of `staked_today`.
+    pub day: i64,
+    pub staked_today: u64,
+    /// No staking until this time (a break the player took).
+    pub break_until: i64,
+    /// Days in a row with at least one stake or save, and the best run.
+    pub last_active_day: i64,
+    pub day_streak: u16,
+    pub best_day_streak: u16,
+    /// Share of each win the app moves to the Stash, in basis points (the player's own setting).
+    pub save_bps: u16,
+    /// Round each payment up to this step and save the difference (USDC base units; 0 = off).
+    pub roundup_step: u64,
+    pub created_at: i64,
+    pub bump: u8,
+    /// Order in which profiles were made (from the registry).
+    pub number: u32,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct Registry {
+    pub profiles: u32,
+    pub bump: u8,
+}
+
+/// Shares of one tokenized stock bought through the Stash, with what they cost. The shares
+/// themselves sit in the player's own token account; this records the cost basis on chain so
+/// a position's profit can be shown without trusting the app.
+#[account]
+#[derive(InitSpace)]
+pub struct Holding {
+    pub owner: Pubkey,
+    pub mint: Pubkey,
+    /// Raw token units bought and not yet sold through the Stash.
+    pub shares: u64,
+    /// USDC base units paid for those shares (reduced pro rata on sells).
+    pub cost: u64,
+    pub bought: u64,
+    pub sold_usdc: u64,
+    pub realized: i64,
+    pub bump: u8,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct Handle {
+    pub owner: Pubkey,
+    pub bump: u8,
+}
+
+pub mod save_kind {
+    pub const MANUAL: u8 = 0;
+    pub const ROUNDUP: u8 = 1;
+    pub const WIN: u8 = 2;
+}
+
+/// The savings jar: USDC in a vault only its owner can take out, with a goal and a record of where
+/// the money came from (put in, round-ups on payments, slices of wins).
+#[account]
+#[derive(InitSpace)]
+pub struct Stash {
+    pub owner: Pubkey,
+    pub goal: u64,
+    pub goal_name: [u8; GOAL_NAME_LEN],
+    pub saved_manual: u64,
+    pub saved_roundup: u64,
+    pub saved_wins: u64,
+    pub withdrawn: u64,
+    pub saves: u32,
+    pub opened_at: i64,
+    pub bump: u8,
+    pub vault_bump: u8,
+    pub rent_payer: Pubkey,
+}
+
+pub mod msg_kind {
+    pub const TEXT: u8 = 0;
+    /// `refkey` is an open duel: the app shows it as a card with Accept.
+    pub const CHALLENGE: u8 = 1;
+    /// `refkey` is a settled duel the author is sharing.
+    pub const RESULT: u8 = 2;
+}
+
+#[zero_copy]
+#[repr(C)]
+pub struct ChatMsg {
+    pub author: Pubkey,
+    pub refkey: Pubkey,
+    pub ts: i64,
+    pub kind: u8,
+    pub len: u8,
+    pub text: [u8; CHAT_TEXT],
+    pub _pad: [u8; 6],
+}
+
+/// One clan channel: the last CHAT_MSGS messages in a ring. Delegated to the MagicBlock rollup, so
+/// posting is instant and costs the player nothing; members of the clan only.
+#[account(zero_copy)]
+#[repr(C)]
+pub struct Channel {
+    pub clan: Pubkey,
+    /// Messages ever posted; the newest sits at (count - 1) % CHAT_MSGS.
+    pub count: u64,
+    pub id: u8,
+    pub bump: u8,
+    pub _pad: [u8; 6],
+    pub msgs: [ChatMsg; CHAT_MSGS],
+}
+
+pub mod post_kind {
+    pub const TEXT: u8 = 0;
+    /// `refkey` is a stock mint: the post shows the author's live position in it.
+    pub const CALL: u8 = 1;
+    /// `refkey` is a settled duel.
+    pub const DUEL: u8 = 2;
+}
+
+#[zero_copy]
+#[repr(C)]
+pub struct Post {
+    pub seq: u64,
+    pub ts: i64,
+    /// Seq of the post this replies to (u64::MAX when it is not a reply).
+    pub reply_to: u64,
+    pub author: Pubkey,
+    pub refkey: Pubkey,
+    pub likes: u32,
+    pub replies: u16,
+    pub kind: u8,
+    pub len: u8,
+    pub text: [u8; POST_TEXT],
+    /// One bit per profile number: who liked it.
+    pub liked: [u8; LIKE_BITS / 8],
+    pub _pad: [u8; 4],
+}
+
+/// The public calls feed: the last BOARD_POSTS posts in a ring, live on the MagicBlock rollup.
+#[account(zero_copy)]
+#[repr(C)]
+pub struct Board {
+    pub count: u64,
+    pub id: u8,
+    pub bump: u8,
+    pub _pad: [u8; 6],
+    pub posts: [Post; BOARD_POSTS],
+}

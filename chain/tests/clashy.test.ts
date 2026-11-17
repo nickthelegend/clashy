@@ -29,6 +29,9 @@ after(async () => { await crank?.stop(); });
 async function newPlayer(usdc = 100 * USDC) {
   const kp = await usdcPlayer(usdc);
   await programFor(kp).methods.initPlayer().accountsPartial({ owner: kp.publicKey, ...pay }).rpc();
+  // every stake checks the player's own limits on chain, so every player has a profile
+  const name = `t_${kp.publicKey.toBase58().slice(0, 10).toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+  await programFor(kp).methods.createProfile(name, 0).accountsPartial({ owner: kp.publicKey, ...pay, handle: P.handle(name) }).rpc();
   return kp;
 }
 
