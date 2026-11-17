@@ -149,8 +149,8 @@ export default function HomeScreen() {
 
       {me ? (
         // net worth, the way the best trading apps lead: one big number, cents dimmed, what moved it
-        <Pressable onPress={() => router.push('/stash' as Href)} style={{ marginBottom: 16 }}>
-          <Txt v="small">Net worth</Txt>
+        <Pressable onPress={() => router.push('/portfolio' as Href)} style={{ marginBottom: 16 }}>
+          <Txt v="small">Net worth ›</Txt>
           <Money value={worth} size={46} />
           <Row style={{ gap: 8, marginTop: 4 }}>
             <View style={{ backgroundColor: stockPnl >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>

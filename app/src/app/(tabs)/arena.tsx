@@ -1,5 +1,6 @@
-// Play: every game that moves real USDC, nothing else. Clash is the hero; Royale, the squad war and the Weekly Cup
+// Play: every game, real USDC first, then Practice on paper money. Clash is the hero; Royale, the squad war and the Weekly Cup
 // sit under it, then what is happening on chain right now (open challenges, clashes live on the rollup, results).
+import type React from 'react';
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -114,6 +115,10 @@ export default function Play() {
         <GameTile title="Royale" sub="Up to 16 players" line="$2 in · last one standing" loop="royale" tint="#FFC94A" onPress={go('/onchain-royale')} />
         <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" loop="war" tint={C.brandSoft} onPress={go('/clans')} />
       </Row>
+      <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
+        <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
+        <GameTile title="Practice" sub="Paper money" line="Stocks, perps, memecoins" loop="line" tint={C.up} onPress={go('/practice')} />
+      </Row>
 
       {/* the Weekly Cup */}
       <Pressable onPress={go('/cup')} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 24, padding: 12, backgroundColor: '#1A1406', borderWidth: 1, borderColor: '#3D3010', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
@@ -164,10 +169,10 @@ export default function Play() {
   );
 }
 
-function GameTile({ title, sub, line, loop, tint, onPress }: { title: string; sub: string; line: string; loop: 'royale' | 'war'; tint: string; onPress: () => void }) {
+function GameTile({ title, sub, line, loop, art, tint, onPress }: { title: string; sub: string; line: string; loop?: 'royale' | 'war' | 'line'; art?: React.ReactNode; tint: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 26, padding: 14, backgroundColor: '#111116', borderWidth: 1, borderColor: '#23232B', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      <ClayLoop name={loop} size={96} style={{ borderRadius: 22, alignSelf: 'center' }} />
+      {loop ? <ClayLoop name={loop} size={96} style={{ borderRadius: 22, alignSelf: 'center' }} /> : <View style={{ height: 96, alignItems: 'center', justifyContent: 'center' }}>{art}</View>}
       <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 20, color: tint, marginTop: 10 }}>{title}</Text>
       <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, marginTop: 2 }}>{sub}</Txt>
       <Txt v="small" style={{ marginTop: 2 }}>{line}</Txt>

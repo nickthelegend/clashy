@@ -2,13 +2,14 @@
 // and the call composer as its own drawer. Any screen can open them through useCreate() (Reply on a post does).
 import { router, type Href } from 'expo-router';
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { PublicKey } from '@solana/web3.js';
 import { BN, USDC, usdcAta } from '@/chain/client';
 import { errText, useChain } from '@/chain/useChain';
 import { readHoldings, readProfile, readStash, usePoll, type Post } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
+import { useLiveCounts } from '@/chain/reads';
 import { Composer } from './feed';
 import { ART, Btn, ErrorLine, Row, Txt } from './kit';
 import { Lottie } from './lottie';
@@ -16,8 +17,8 @@ import { Sheet, SheetTile } from './sheet';
 import { AmountSheet } from './amount';
 import { C, F, fmtUsd } from './tokens';
 
-type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void };
-const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {} });
+type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void };
+const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {} });
 export const useCreate = () => useContext(CreateCtx);
 
 function CallDrawer({ open, onClose, replyTo }: { open: boolean; onClose: () => void; replyTo: Post | null }) {
@@ -56,15 +57,37 @@ function SaveDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+/** The Arena button in the tab bar: pick a game in a drawer. Real-money games first, then free practice. */
+function ArenaDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const counts = useLiveCounts();
+  const waiting = counts.status === 'ready' ? counts.data.openDuels : 0;
+  const go = (to: string) => () => { onClose(); setTimeout(() => router.push(to as Href), 260); };
+  const art = (src: number) => <Image source={src} style={{ width: 52, height: 52 }} contentFit="contain" />;
+  return (
+    <Sheet open={open} onClose={onClose} title="Pick your game">
+      <SheetTile art={art(ART.tileDuel)} title="Clash" line={waiting ? `1 v 1 · from $5 · ${waiting} waiting for a rival` : '1 v 1 · from $5 · a stock in 1 hour or crypto in 60 s'} accent={C.opp} onPress={go('/clash?mode=crypto')} />
+      <SheetTile art={<View style={{ flexDirection: 'row' }}><Image source={ART.logoSOL} style={{ width: 30, height: 30 }} /><Image source={ART.logoBTC} style={{ width: 30, height: 30, marginLeft: -10 }} /></View>} title="Perps clash" line="Long or short with leverage · 60 s · liquidated means out" accent="#9B6BFF" onPress={go('/clash?mode=perps')} />
+      <SheetTile art={art(ART.tileRoyale)} title="Battle royale" line="Up to 16 players · $2 in · last one standing" accent="#FFC94A" onPress={go('/onchain-royale')} />
+      <SheetTile art={art(ART.tileWar)} title="Squad war" line="Your squad's chest against another squad" accent={C.brand} onPress={go('/clans')} />
+      <SheetTile art={art(ART.tileLine)} title="Practice" line="Paper money · stocks, perps and memecoins on live prices" accent={C.up} onPress={go('/practice')} />
+      <Pressable onPress={go('/arena')} style={{ alignItems: 'center', paddingVertical: 12 }}>
+        <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>Live games, top players and results ›</Txt>
+      </Pressable>
+    </Sheet>
+  );
+}
+
 export function CreateProvider({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
   const [call, setCall] = useState(false);
   const [replyTo, setReplyTo] = useState<Post | null>(null);
   const [save, setSave] = useState(false);
+  const [arena, setArena] = useState(false);
   const ctx: Ctx = {
     openMenu: () => setMenu(true),
     openCall: (r) => { setReplyTo(r ?? null); setCall(true); },
     openSave: () => setSave(true),
+    openArena: () => setArena(true),
   };
   const go = (fn: () => void) => () => { setMenu(false); setTimeout(fn, 260); };
   return (
@@ -78,6 +101,7 @@ export function CreateProvider({ children }: { children: ReactNode }) {
       </Sheet>
       <CallDrawer open={call} onClose={() => setCall(false)} replyTo={replyTo} />
       <SaveDrawer open={save} onClose={() => setSave(false)} />
+      <ArenaDrawer open={arena} onClose={() => setArena(false)} />
     </CreateCtx.Provider>
   );
 }

@@ -115,7 +115,7 @@ export function TableRoll({ pool, landed, size = 120 }: { pool: string[]; landed
           <CoinToken sym={sym} size={size} />
         </Animated.View>
       </View>
-      <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink, marginTop: 10, letterSpacing: -0.5 }}>{landed ? coinName(sym).toUpperCase() : 'Rolling…'}</Text>
+      <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink, marginTop: 10, letterSpacing: -0.5 }}>{landed ? coinName(sym) : 'Rolling…'}</Text>
       <Txt v="small" color={landed ? GOLD : C.muted}>{landed ? 'The coin for this table' : 'Picking one coin for everyone'}</Txt>
     </View>
   );

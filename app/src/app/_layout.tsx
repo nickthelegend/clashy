@@ -71,6 +71,9 @@ export default function Root() {
           <Stack.Screen name="help" />
           <Stack.Screen name="squad/[id]" />
           <Stack.Screen name="wallet" />
+          <Stack.Screen name="portfolio" />
+          <Stack.Screen name="practice/index" />
+          <Stack.Screen name="practice/[market]" />
         </Stack>
       </ThemeProvider>
       </ClashyWallet>

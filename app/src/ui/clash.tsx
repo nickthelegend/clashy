@@ -15,6 +15,20 @@ const COIN_COLOR: Record<string, string> = { SOL: '#9B6BFF', BTC: '#F7931A', ETH
 export const coinName = (sym: string) => COIN_NAME[sym] ?? sym;
 export const symbolsIn = (mask: number) => COIN_SYMBOLS.filter((_, i) => mask & (1 << i));
 
+/** Leverage chips for a perps clash (the program allows 1x to 100x). */
+export const PERPS_LEVERAGE = [2, 5, 10, 25, 50] as const;
+/** Nonces at or above this carry a perps clash's leverage (open-time ms x 1000 + leverage). Plain clashes use open-time ms. */
+const PERPS_NONCE = 1e14;
+/**
+ * A perps clash advertises its leverage in the nonce it is opened with, so the board and the joiner know it before
+ * anyone picks. Each player's leverage is still sealed in their own pick and recorded by the program at reveal.
+ */
+export const perpsNonce = (lev: number) => Date.now() * 1000 + Math.max(1, Math.min(100, Math.round(lev)));
+/** The leverage a clash was opened at: 1 for a plain clash. */
+export const clashLev = (nonce: number) => (nonce >= PERPS_NONCE ? Math.max(1, Math.min(100, nonce % 1000)) : 1);
+/** Where a leveraged position is liquidated (a 100% loss): entry x (1 - 1/lev) long, entry x (1 + 1/lev) short. */
+export const liqPrice = (entry: number, call: number, lev: number) => (call === 2 ? entry * (1 + 1 / lev) : entry * (1 - 1 / lev));
+
 /** Real logos for the crypto coins (the stocks' logos are STOCK_ART). */
 const COIN_LOGO: Record<string, number> = { SOL: ART.logoSOL, BTC: ART.logoBTC, ETH: ART.logoETH };
 /** A coin or stock as a token: its real logo in a circle (a lettered disc only for an unknown symbol). */
@@ -73,14 +87,14 @@ export function CoinRoll({ pool, landed, size = 150 }: { pool: string[]; landed?
           <CoinToken sym={sym} size={size} />
         </Animated.View>
       </View>
-      <Text style={{ fontFamily: F.display, fontSize: 34, color: C.ink, marginTop: 12, letterSpacing: -0.5 }}>{landed ? coinName(sym).toUpperCase() : 'Rolling…'}</Text>
+      <Text style={{ fontFamily: F.display, fontSize: 34, color: C.ink, marginTop: 12, letterSpacing: -0.5 }}>{landed ? coinName(sym) : 'Rolling…'}</Text>
       <Txt v="small" color={landed ? '#FFC94A' : C.muted}>{landed ? 'Rolled by MagicBlock VRF' : 'MagicBlock VRF is picking one for both of you'}</Txt>
     </View>
   );
 }
 
 /** The two giant calls. */
-export function CallButtons({ onUp, onDown, disabled }: { onUp: () => void; onDown: () => void; disabled?: boolean }) {
+export function CallButtons({ onUp, onDown, disabled, upLabel = 'UP', downLabel = 'DOWN' }: { onUp: () => void; onDown: () => void; disabled?: boolean; upLabel?: string; downLabel?: string }) {
   const big = (label: string, arrow: string, color: string, on: () => void) => (
     <Pressable onPress={on} disabled={disabled} style={({ pressed }) => ({ flex: 1, height: 132, borderRadius: 28, backgroundColor: color, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }], opacity: disabled ? 0.5 : 1, shadowColor: color, shadowOpacity: 0.6, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
       <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#0A0A0D', lineHeight: 46 }}>{arrow}</Text>
@@ -89,15 +103,17 @@ export function CallButtons({ onUp, onDown, disabled }: { onUp: () => void; onDo
   );
   return (
     <View style={{ flexDirection: 'row', gap: 12 }}>
-      {big('UP', '▲', C.up, onUp)}
-      {big('DOWN', '▼', C.down, onDown)}
+      {big(upLabel, '▲', C.up, onUp)}
+      {big(downLabel, '▼', C.down, onDown)}
     </View>
   );
 }
 
 /** Live tug-of-war: both scores, a bar that leans to whoever is ahead, the clock. */
-export function LiveBoard({ me, rival, myPnl, theirPnl, myCall, theirCall, sym, price, entry, left, onRollup }: {
+export function LiveBoard({ me, rival, myPnl, theirPnl, myCall, theirCall, sym, price, entry, left, onRollup, perps }: {
   me?: Profile; rival?: Profile; myPnl: number; theirPnl: number; myCall: number; theirCall: number; sym: string; price: number | null; entry: number; left: number | null; onRollup: boolean;
+  /** A perps clash: each side's leverage and whether the chain knocked it out. */
+  perps?: { myLev: number; theirLev: number; myKo: boolean; theirKo: boolean };
 }) {
   const lead = Math.max(-1, Math.min(1, (myPnl - theirPnl) * 40));
   const pct = 50 + lead * 45;
@@ -122,15 +138,36 @@ export function LiveBoard({ me, rival, myPnl, theirPnl, myCall, theirCall, sym, 
         <ProfileAvatar p={rival} size={46} />
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-        <View>
-          <Text style={{ fontFamily: F.display, fontSize: 30, color: myPnl >= 0 ? C.up : C.down }}>{fmt(myPnl)}</Text>
-          <Txt v="small">You called {myCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ fontFamily: F.display, fontSize: 30, color: theirPnl >= 0 ? C.up : C.down }}>{fmt(theirPnl)}</Text>
-          <Txt v="small">{rival?.name ?? 'Rival'} called {theirCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
-        </View>
+        {perps ? (
+          <>
+            <PerpsSide pnl={myPnl} call={myCall} lev={perps.myLev} ko={perps.myKo} entry={entry} who="You" />
+            <PerpsSide pnl={theirPnl} call={theirCall} lev={perps.theirLev} ko={perps.theirKo} entry={entry} who={rival?.name ?? 'Rival'} right />
+          </>
+        ) : (
+          <>
+            <View>
+              <Text style={{ fontFamily: F.display, fontSize: 30, color: myPnl >= 0 ? C.up : C.down }}>{fmt(myPnl)}</Text>
+              <Txt v="small">You called {myCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontFamily: F.display, fontSize: 30, color: theirPnl >= 0 ? C.up : C.down }}>{fmt(theirPnl)}</Text>
+              <Txt v="small">{rival?.name ?? 'Rival'} called {theirCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
+            </View>
+          </>
+        )}
       </View>
+    </View>
+  );
+}
+
+/** One side of a perps clash: leveraged return, position, liquidation price, and "Liquidated" once knocked out. */
+function PerpsSide({ pnl, call, lev, ko, entry, who, right }: { pnl: number; call: number; lev: number; ko: boolean; entry: number; who: string; right?: boolean }) {
+  const out = ko || pnl <= -100;
+  return (
+    <View style={{ flex: 1, alignItems: right ? 'flex-end' : 'flex-start' }}>
+      <Txt v="title" color={out ? C.down : pnl >= 0 ? C.up : C.down} style={{ fontFamily: F.bold }}>{out ? 'Liquidated' : `${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%`}</Txt>
+      <Txt v="small" color={C.ink} style={{ textAlign: right ? 'right' : 'left' }}>{who} · {call === 2 ? 'Short' : 'Long'} {lev}×</Txt>
+      <Txt v="small" style={{ textAlign: right ? 'right' : 'left' }}>{out ? 'Lost the whole stake' : `Liquidated at ${entry ? fmtUsd(liqPrice(entry, call, lev)) : '…'}`}</Txt>
     </View>
   );
 }
@@ -147,7 +184,7 @@ export function ModeCard({ title, sub, art, on, onPress }: { title: string; sub:
 }
 
 /** One open clash on the board. */
-export function OpenClash({ who, stake, secs, mask, onJoin, disabled }: { who?: Profile; stake: number; secs: number; mask: number; onJoin: () => void; disabled?: boolean }) {
+export function OpenClash({ who, stake, secs, mask, lev = 1, onJoin, disabled }: { who?: Profile; stake: number; secs: number; mask: number; lev?: number; onJoin: () => void; disabled?: boolean }) {
   const stocks = (mask & 0b1111_1000) !== 0 && (mask & 0b111) === 0;
   return (
     <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#15151B', borderRadius: 22, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#23232B' }}>
@@ -155,7 +192,9 @@ export function OpenClash({ who, stake, secs, mask, onJoin, disabled }: { who?: 
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{who?.name ?? 'Someone'} wants a clash</Txt>
         <Row2>
-          <Badge text={stocks ? 'Stocks · 1h' : secs >= 3600 ? '1 hour' : `Crypto · ${secs}s`} color={stocks ? '#FFC94A' : C.brandSoft} />
+          {lev > 1
+            ? <Badge text={`${lev}× perps`} color={C.opp} />
+            : <Badge text={stocks ? 'Stocks · 1h' : secs >= 3600 ? '1 hour' : `Crypto · ${secs}s`} color={stocks ? '#FFC94A' : C.brandSoft} />}
           <Txt v="small">{fmtUsd(stake)} each</Txt>
         </Row2>
       </View>
