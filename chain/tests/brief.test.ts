@@ -182,3 +182,28 @@ describe('calls feed and clan chat on the MagicBlock rollup', () => {
     await assert.rejects(sendEr(programFor(out, true).methods.postMessage('let me in', 0, PublicKey.default).accountsPartial({ author: out.publicKey, channel: chan, member: P.member(clan, out.publicKey) }), out));
   });
 });
+
+describe('squads: a player can be in any number', () => {
+  test('create one squad, join two more, leave one; the first stays the main squad', async () => {
+    const a = await newProfile(30 * USDC);
+    const b = await newProfile(0);
+    const c = await newProfile(0);
+    const tag = (Date.now() % 1_000_000).toString(36);
+    const mk = async (kp: Keypair, name: string) => {
+      const clan = P.clan(name);
+      await programFor(kp).methods.createClan(name, 2).accountsPartial({ founder: kp.publicKey, ...pay, clan, chest: P.chest(clan), member: P.member(clan, kp.publicKey), usdcMint: USDC_MINT }).rpc();
+      return clan;
+    };
+    const s1 = await mk(a, `sq1${tag}`);
+    const s2 = await mk(b, `sq2${tag}`);
+    const s3 = await mk(c, `sq3${tag}`);
+    for (const clan of [s2, s3]) await programFor(a).methods.joinClan().accountsPartial({ wallet: a.publicKey, ...pay, clan, member: P.member(clan, a.publicKey) }).rpc();
+    for (const clan of [s1, s2, s3]) assert.ok(await base.getAccountInfo(P.member(clan, a.publicKey)), 'a member of all three');
+    assert.ok((await baseProgram.account.player.fetch(P.player(a.publicKey))).clan.equals(s1), 'the first squad is the main one');
+    await programFor(a).methods.leaveClan().accountsPartial({ wallet: a.publicKey, clan: s3, member: P.member(s3, a.publicKey), rentPayer: sponsor.publicKey }).rpc();
+    assert.equal(await base.getAccountInfo(P.member(s3, a.publicKey)), null, 'left the third');
+    assert.ok((await baseProgram.account.player.fetch(P.player(a.publicKey))).clan.equals(s1), 'still main in the first');
+    // leaving a squad you are not in is refused (no member account)
+    await assert.rejects(programFor(a).methods.leaveClan().accountsPartial({ wallet: a.publicKey, clan: s3, member: P.member(s3, a.publicKey), rentPayer: sponsor.publicKey }).rpc());
+  });
+});

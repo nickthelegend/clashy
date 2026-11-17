@@ -3525,6 +3525,9 @@ export type Clashy = {
         },
         {
           "name": "member",
+          "docs": [
+            "Membership is proven by this account existing (seeds), not by the player's main squad."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
