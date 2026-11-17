@@ -31,9 +31,9 @@ export function usePoll<T>(read: () => Promise<T>, ms: number, deps: unknown[] =
 
 const text = (bytes: number[], len?: number) => Buffer.from(len === undefined ? bytes.filter((b) => b !== 0) : bytes.slice(0, len)).toString('utf8');
 
-export type Profile = { owner: PublicKey; name: string; avatar: number; number: number; dayStreak: number; bestDayStreak: number; dailyLimit: number; pendingLimit: number; pendingAt: number; stakedToday: number; day: number; breakUntil: number; saveBps: number; roundupStep: number };
+export type Profile = { owner: PublicKey; name: string; avatar: number; number: number; dayStreak: number; bestDayStreak: number; lastActiveDay: number; dailyLimit: number; pendingLimit: number; pendingAt: number; stakedToday: number; day: number; breakUntil: number; saveBps: number; roundupStep: number };
 const toProfile = (p: anchor.IdlAccounts<Clashy>['profile']): Profile => ({
-  owner: p.owner, name: text(p.name), avatar: p.avatar, number: p.number, dayStreak: p.dayStreak, bestDayStreak: p.bestDayStreak,
+  owner: p.owner, name: text(p.name), avatar: p.avatar, number: p.number, dayStreak: p.dayStreak, bestDayStreak: p.bestDayStreak, lastActiveDay: Number(p.lastActiveDay),
   dailyLimit: Number(p.dailyLimit) / 1e6, pendingLimit: Number(p.pendingLimit) / 1e6, pendingAt: Number(p.pendingAt), stakedToday: Number(p.stakedToday) / 1e6,
   day: Number(p.day), breakUntil: Number(p.breakUntil), saveBps: p.saveBps, roundupStep: Number(p.roundupStep) / 1e6,
 });

@@ -2,7 +2,7 @@
 // sending real transactions through the program (the sponsor pays fees and rent). Nothing here is simulated: every
 // join, pick, call, deposit, vote and war is a signed transaction on the local Solana fork or the MagicBlock rollup.
 //
-//   Kai   joins any duel someone else opens, locks a sealed random side at 50x, reveals.
+//   Kai   joins any duel someone else opens, locks a sealed random call (up or down, no leverage), reveals.
 //   Mira  keeps one open challenge on the board and runs it as creator when someone joins (VRF, rollup, checks, settle).
 //   Ash, Bo  join any Royale lobby someone else hosts and call every round.
 //   Sol   hosts a Royale (2 USDC, 3 seats) and runs it as host once someone joins.
@@ -73,14 +73,14 @@ async function playPick(who: string, kp: Keypair, duel: PublicKey, d: Duel, secr
   const prog = programFor(kp);
   const i = d.creator.equals(kp.publicKey) ? 0 : 1;
   if (d.status === 2 && !(d.picksCommitted & (1 << i))) {
-    const hash = sha256(duel.toBuffer(), kp.publicKey.toBuffer(), Buffer.from([secret.side]), Buffer.from(new Uint16Array([50]).buffer), secret.salt);
+    const hash = sha256(duel.toBuffer(), kp.publicKey.toBuffer(), Buffer.from([secret.side]), Buffer.from(new Uint16Array([1]).buffer), secret.salt);
     await prog.methods.commitPick([...hash]).accountsPartial({ signer: kp.publicKey, duel }).rpc();
     secret.committed = true;
     log(who, `locked a sealed pick on ${duel.toBase58().slice(0, 6)}…`);
   }
   if (d.status === 2 && d.picksCommitted === 0b11 && !(d.picksRevealed & (1 << i))) {
-    await prog.methods.revealPick(secret.side, 50, [...secret.salt]).accountsPartial({ signer: kp.publicKey, duel }).rpc();
-    log(who, `revealed ${secret.side === 1 ? 'long' : 'short'} 50x`);
+    await prog.methods.revealPick(secret.side, 1, [...secret.salt]).accountsPartial({ signer: kp.publicKey, duel }).rpc();
+    log(who, `called ${secret.side === 1 ? 'up' : 'down'}`);
   }
 }
 
@@ -129,9 +129,11 @@ async function mira() {
         const nonce = Date.now();
         duel = P.duel(kp.publicKey, nonce);
         secret = { side: Math.random() < 0.5 ? 1 : 2, salt: randomBytes(32), committed: false };
-        await prog.methods.openDuel(new BN(nonce), new BN(5 * USDC), 0b111, 60, new BN(1800), [...sha256(randomBytes(32))])
+        // half her challenges are slow one-hour calls on the stocks, half 60 s on crypto
+        const stocks = Math.random() < 0.5;
+        await prog.methods.openDuel(new BN(nonce), new BN(5 * USDC), stocks ? 0b1111_1000 : 0b111, stocks ? 3600 : 60, new BN(1800), [...sha256(randomBytes(32))])
           .accountsPartial({ creator: kp.publicKey, ...pay, duel, vault: P.vault(duel), creatorUsdc: usdcAta(kp.publicKey), usdcMint: USDC_MINT }).rpc();
-        log('Mira', `opened a 5 USDC challenge ${duel.toBase58().slice(0, 6)}… on the board`);
+        log('Mira', `opened a 5 USDC ${stocks ? 'one-hour stock' : '60 s crypto'} challenge ${duel.toBase58().slice(0, 6)}… on the board`);
       }
       const r = await live<Duel>('duel', duel);
       if (!r) { duel = null; continue; }
