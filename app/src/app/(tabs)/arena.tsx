@@ -20,21 +20,17 @@ import { ScrollView } from 'react-native';
 type Kind = 'usdc' | 'practice' | 'preview';
 type Mode = { key: string; title: string; who: string; line: string; art: number; banner?: number; live: boolean; kind: Kind };
 const MODES: Mode[] = [
-  { key: 'onchain', title: 'Knockout duel', who: '1 v 1 · 5 USDC each · 60 s', line: 'Quick match a rival for 5 USDC. MagicBlock VRF rolls one coin for both of you, picks are sealed, the duel is scored live on a MagicBlock rollup and paid out on Solana.', art: ART.tileDuel, banner: ART.bannerDuel, live: true, kind: 'usdc' },
+  { key: 'onchain', title: 'Market duel', who: '1 v 1 · 5 USDC · stocks 1 h or crypto 60 s', line: 'MagicBlock VRF rolls one real stock (NVIDIA, Tesla, Apple, S&P 500, Alphabet) or crypto for both of you. Call up or down, sealed. The best call takes the pot. No leverage.', art: ART.tileDuel, banner: ART.bannerDuel, live: true, kind: 'usdc' },
+  { key: 'stash', title: 'Stash', who: 'Save and invest · from $5', line: 'Round-ups on what you pay, a slice of every win, and real tokenized stocks bought through Orca. Yours to take out any time.', art: ART.stash, live: true, kind: 'usdc' },
   { key: 'onchain-royale', title: 'Royale', who: '2–16 players · 2 USDC entry · 10 s rounds', line: 'Call up or down every round on a coin rolled by MagicBlock VRF. Wrong call loses a heart. Survivors split the pot.', art: ART.tileRoyale, banner: ART.bannerRoyale, live: true, kind: 'usdc' },
   { key: 'onchain-clan', title: 'Clan chest', who: 'Your crew · a shared USDC chest', line: 'Pool USDC with your clan, propose a trade, vote by chest share, and the captain executes it at the live price.', art: ART.coinsPile ?? ART.crown, live: true, kind: 'usdc' },
   { key: 'war', title: 'Clan war', who: 'Clan vs clan · USDC from each chest', line: 'Stake USDC from your chest against a rival clan. Best return from the trades you close in the window takes the pot.', art: ART.tileWar, banner: ART.bannerWar, live: true, kind: 'usdc' },
-  { key: 'ko', title: 'Practice duel', who: '1 v 1 · 60 s · no money', line: 'The knockout duel on a live price against a practice rival. Pick long or short. Hit your knockout line and you are out.', art: ART.tileDuel, live: true, kind: 'practice' },
-  { key: 'clash', title: 'Coin clash', who: '1 v 1 · pick any coin · 60 s', line: 'You pick any coin against a practice rival on another coin. Best % in 60 s wins.', art: ART.ko, live: true, kind: 'practice' },
-  { key: 'diamond', title: 'Diamond Hands', who: 'Solo · max 3 min', line: 'Buy with leverage and hold as long as you dare. A knockout trails your peak. Sell before it catches you.', art: ART.tileDiamond, banner: ART.bannerDiamond, live: true, kind: 'practice' },
   { key: 'streak', title: 'Hot Streak', who: 'Solo · a call every 5 s', line: 'Higher or lower, every 5 seconds. The combo grows with your streak. One miss ends it.', art: ART.ko, live: true, kind: 'practice' },
-  { key: 'snipe', title: 'Peak Snipe', who: 'Solo · 30 s · one tap', line: 'Hold a live coin for 30 seconds. One tap to sell. Score how close you got to the top.', art: ART.tileBounty, live: true, kind: 'practice' },
   { key: 'cup', title: 'Daily Cup', who: 'One run a day', line: 'One coin of the day. One shot at Draw the line. New cup at 00:00 UTC.', art: ART.tileCup, banner: ART.bannerCup, live: true, kind: 'practice' },
   { key: 'line', title: 'Draw the line', who: 'Solo · any major coin', line: 'Draw the next 60 s with your finger. The closer your line, the higher your score.', art: ART.tileLine, banner: ART.bannerLine, live: true, kind: 'practice' },
   { key: 'royale', title: 'Practice Royale', who: 'Solo · 10 s rounds', line: 'Call up or down on a live coin. Wrong call loses a life.', art: ART.tileRoyale, live: true, kind: 'practice' },
   { key: 'skirmish', title: 'Clan Skirmish', who: 'You vs a practice clan · best of 5', line: 'Each round rolls a coin. Make the call for your side. First to 3 rounds wins.', art: ART.tileWar, live: true, kind: 'practice' },
   { key: 'chest', title: 'Practice chest', who: 'Clan chest on this device', line: 'Try the clan chest without money: propose, vote, execute and close on live prices.', art: ART.coinsPile ?? ART.crown, live: true, kind: 'practice' },
-  { key: 'bounty', title: 'Bounty', who: 'Preview', line: 'Put a price on your head. Beat it and take it. Not playable yet: your practice records show what a bounty would be.', art: ART.tileBounty, banner: ART.bannerBounty, live: false, kind: 'preview' },
 ];
 const BADGE: Record<Kind, { label: string; color: string; bg: string }> = {
   usdc: { label: 'USDC', color: C.up, bg: C.upBg },
@@ -53,6 +49,7 @@ const play = (key: string, stake: number) => {
   else if (key === 'royale') router.push('/game/royale');
   else if (key === 'war') router.push('/onchain-clan');
   else if (key === 'onchain') router.push('/onchain');
+  else if (key === 'stash') router.push('/stash' as never);
   else if (key === 'onchain-royale') router.push('/onchain-royale');
   else if (key === 'onchain-clan') router.push('/onchain-clan');
   else if (key === 'streak') router.push('/game/streak');
@@ -62,7 +59,6 @@ const play = (key: string, stake: number) => {
   else if (key === 'diamond') router.push('/game/diamond');
   else if (key === 'cup') router.push('/game/cup');
   else if (key === 'bounty') router.push('/game/bounty');
-  else if (key === 'ko') router.push({ pathname: '/duel/match', params: { stake: String(stake) } });
   else router.push({ pathname: '/duel/amount', params: { id: 'SOL', stake: String(stake) } });
 };
 
