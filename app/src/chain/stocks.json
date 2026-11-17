@@ -1,0 +1,60 @@
+{
+ "snapshotAt": "2026-11-17T08:00:57.196Z",
+ "stocks": [
+  {
+   "symbol": "NVDA",
+   "name": "NVIDIA",
+   "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+   "pool": "6R4r93V5fcMzc13CL2enEepDSYcr4Qx3ptZBDwudTXCo",
+   "vaultA": "FaHQ9Ny2U2RkcdapsKVr9pvnt4Mg7n92NdKnvyRzuibH",
+   "vaultB": "5TSHEwRAgHLTYkchrUNiKUL2RvuZgdh3vExbMptWrHoX",
+   "tickSpacing": 2,
+   "stockIsA": true,
+   "coin": 3
+  },
+  {
+   "symbol": "TSLA",
+   "name": "Tesla",
+   "mint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
+   "pool": "9p7abUFv31ycgu9kckvnoqMMvBy67dqTDM2m6HP9xokN",
+   "vaultA": "7AmJBD4kP72fY7xTncNgy1kPVp5TzsYs34zzUeotqbbe",
+   "vaultB": "2NfTohqtneNa5bphKGw1MZNKdyAbV4B7mZDwtkxnYPhN",
+   "tickSpacing": 2,
+   "stockIsA": true,
+   "coin": 4
+  },
+  {
+   "symbol": "AAPL",
+   "name": "Apple",
+   "mint": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+   "pool": "Djdm88bGU5NLHvMEWCZqsbLGd28vL8KeS2mxejTnPzoW",
+   "vaultA": "HgEdPsXdbi15x94DUVsbrvdf6Fc8Wdp5PbaDT9JTo8bN",
+   "vaultB": "EnwJjGQZyKjVqWbqYKHGFrmuS7DpowTrAyDzYNn6asdU",
+   "tickSpacing": 2,
+   "stockIsA": true,
+   "coin": 5
+  },
+  {
+   "symbol": "SPY",
+   "name": "S&P 500",
+   "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
+   "pool": "gef4pD5g6GJSjX7hfXKUfhCVpE89BzX9TXnXJNW6kSt",
+   "vaultA": "4uaNbrnccYS8faYwgZgUVGLwNr3P6t3qYyfmhq21gpHq",
+   "vaultB": "6pYFU9shKFEeaddgLQ5tS6oUNhh1BhMeZomLAx3XZr9N",
+   "tickSpacing": 1,
+   "stockIsA": true,
+   "coin": 6
+  },
+  {
+   "symbol": "GOOGL",
+   "name": "Alphabet",
+   "mint": "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN",
+   "pool": "GxgCVoHKS4yWz2DqYML2vgXDLVHCwGSy76MMjbKejnZk",
+   "vaultA": "GqK2WruMaPQfrTXtBMvFiwFWFFRamiQSF5buB1Li2b87",
+   "vaultB": "BrNhG5Au9WCaPjKr9BGb5wGCMvhjSffBaGNgPw1jxZPX",
+   "tickSpacing": 8,
+   "stockIsA": true,
+   "coin": 7
+  }
+ ]
+}

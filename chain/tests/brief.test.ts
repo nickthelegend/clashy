@@ -8,7 +8,7 @@ import { before, describe, test } from 'node:test';
 import { createTransferCheckedInstruction } from '@solana/spl-token';
 import { ComputeBudgetProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import {
-  BN, Keypair, P, PublicKey, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, erProgram, lamports,
+  BN, Keypair, P, PublicKey, TEST_BOARD, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, erProgram, lamports,
   programFor, randomSeed, sendEr, sha256, sponsor, tokenBalance, usdcAta, usdcOf, usdcPlayer,
 } from './common.ts';
 import { createStockAtaIx, minShares, minUsdc, stock, stockAta, swapAccounts } from './stocks.ts';
@@ -142,7 +142,7 @@ describe('calls feed and clan chat on the MagicBlock rollup', () => {
   test('post a call on a stock, reply, like once', async () => {
     const a = await newProfile(0);
     const b = await newProfile(0);
-    const board = P.board(0);
+    const board = P.board(TEST_BOARD);
     const nvda = new PublicKey(stock('NVDA').mint);
     const before = (await erProgram.account.board.fetch(board)).count.toNumber();
     await sendEr(programFor(a, true).methods.post('Holding NVDA through earnings', 1, nvda, NONE).accountsPartial({ author: a.publicKey, board }), a);

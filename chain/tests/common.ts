@@ -39,6 +39,9 @@ export const COINS: CoinSource[] = [
   { symbol: 'SPY', mint: 'XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W' },
   { symbol: 'GOOGL', mint: 'XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN' },
 ];
+/** The app's public calls feed, and the board end-to-end tests post to (never the public one). */
+export const FEED_BOARD = 1;
+export const TEST_BOARD = 9;
 /** Pool mask for duels on the stocks only (coins 3..7). */
 export const STOCK_MASK = 0b1111_1000;
 
@@ -283,16 +286,19 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
     }
   }
   await pushBasePrices();
-  // the public calls feed lives on the rollup
-  if (!(await base.getAccountInfo(P.board(0)))) {
-    await baseProgram.methods.openBoard(0).accountsPartial({ authority: authority.publicKey, board: P.board(0) }).rpc();
-  }
-  if ((await base.getAccountInfo(P.board(0)))!.owner.equals(programId)) {
-    await baseProgram.methods.delegateBoard(0).accountsPartial({ authority: authority.publicKey, board: P.board(0) }).remainingAccounts([{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }]).rpc();
+  // boards live on the rollup: the app's public calls feed, and a separate one end-to-end tests post to
+  for (const id of [FEED_BOARD, TEST_BOARD]) {
+    if (!(await base.getAccountInfo(P.board(id)))) {
+      await baseProgram.methods.openBoard(id).accountsPartial({ authority: authority.publicKey, board: P.board(id) }).rpc();
+    }
+    if ((await base.getAccountInfo(P.board(id)))!.owner.equals(programId)) {
+      await baseProgram.methods.delegateBoard(id).accountsPartial({ authority: authority.publicKey, board: P.board(id) }).remainingAccounts([{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }]).rpc();
+    }
   }
   // the rollup clones delegated feeds on first use
   for (let i = 0; i < COINS.length; i++) await until(`feed ${i} on the rollup`, 30_000, () => er.getAccountInfo(P.feed(i)));
-  await until('the calls board on the rollup', 30_000, () => er.getAccountInfo(P.board(0)));
+  await until('the calls board on the rollup', 30_000, () => er.getAccountInfo(P.board(FEED_BOARD)));
+  await until('the test board on the rollup', 30_000, () => er.getAccountInfo(P.board(TEST_BOARD)));
   return (await baseProgram.account.config.fetch(P.config));
 }
 

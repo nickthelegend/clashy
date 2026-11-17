@@ -8,14 +8,19 @@
 //   Sol   hosts a Royale (2 USDC, 3 seats) and runs it as host once someone joins.
 //   Rex   captains a rival clan with a 30 USDC chest; accepts any war declared on it and settles wars that are over.
 //   Lux   joins the newest clan someone else captains, puts 10 USDC in its chest and votes yes on its proposals.
+//   All   have a name and a Stash; now and then one buys a real xStock from its Stash (through Orca) and posts a call
+//         about it on the feed, with the live numbers in the text; others reply with their own positions and like
+//         posts (the player's too). Keys persist in .localnet/friends so names stay theirs across runs.
 //
 //   npx tsx scripts/friends.ts            (Ctrl-C to stop; local fork only)
 import { randomBytes } from 'node:crypto';
-import type { Keypair, PublicKey } from '@solana/web3.js';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { ComputeBudgetProgram, Keypair, PublicKey } from '@solana/web3.js';
 import {
-  BN, IS_LOCAL, LOCAL_ER_VALIDATOR, P, USDC, USDC_MINT, baseProgram, er, erProgram, programFor, sendEr, sha256, sleep, sponsor,
-  usdcAta, usdcOf, usdcPlayer,
+  BN, COINS, FEED_BOARD, IS_LOCAL, LOCAL_ER_VALIDATOR, P, USDC, USDC_MINT, base, baseProgram, er, erProgram, giveUsdc, programFor, sendEr, sha256, sleep, sponsor,
+  usdcAta, usdcOf,
 } from '../tests/common.ts';
+import { STOCKS, createStockAtaIx, minShares, swapAccounts } from '../tests/stocks.ts';
 
 if (!IS_LOCAL) throw new Error('Friends only play on the local fork');
 const NO_COIN = 255;
@@ -24,13 +29,26 @@ const pay = { payer: sponsor.publicKey };
 const log = (who: string, msg: string) => console.log(`${new Date().toISOString().slice(11, 19)} ${who.padEnd(4)} ${msg}`);
 const err = (who: string, e: unknown) => log(who, `! ${String((e as Error).message ?? e).split('\n')[0].slice(0, 160)}`);
 
-async function friend(name: string, usdc = 100) {
-  const kp = await usdcPlayer(usdc * USDC);
-  await programFor(kp).methods.initPlayer().accountsPartial({ owner: kp.publicKey, ...pay }).rpc();
-  log(name, `${kp.publicKey.toBase58()} · ${(await usdcOf(kp.publicKey)) / USDC} USDC · 0 SOL`);
+const names = ['Kai', 'Mira', 'Ash', 'Bo', 'Sol', 'Rex', 'Lux'] as const;
+type Name = (typeof names)[number];
+/** On-chain handles (3+ characters) and clay avatars. */
+const HANDLE: Record<Name, [string, number]> = { Kai: ['kai', 0], Mira: ['mira', 8], Ash: ['ash', 3], Bo: ['beau', 11], Sol: ['sol', 6], Rex: ['rex', 5], Lux: ['lux', 4] };
+const KEYS = new URL('../.localnet/friends/', import.meta.url);
+async function friend(name: Name, usdc = 100) {
+  mkdirSync(KEYS, { recursive: true });
+  const file = new URL(`${name.toLowerCase()}.json`, KEYS);
+  const known = existsSync(file);
+  const kp = known ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(file, 'utf8')))) : Keypair.generate();
+  if (!known) writeFileSync(file, JSON.stringify([...kp.secretKey]), { mode: 0o600 });
+  const prog = programFor(kp);
+  if ((await usdcOf(kp.publicKey)) < 40 * USDC) await giveUsdc(kp.publicKey, usdc * USDC);
+  if (!(await base.getAccountInfo(P.player(kp.publicKey)))) await prog.methods.initPlayer().accountsPartial({ owner: kp.publicKey, ...pay }).rpc();
+  const [handle, avatar] = HANDLE[name];
+  if (!(await base.getAccountInfo(P.profile(kp.publicKey)))) await prog.methods.createProfile(handle, avatar).accountsPartial({ owner: kp.publicKey, ...pay, handle: P.handle(handle) }).rpc();
+  if (!(await base.getAccountInfo(P.stash(kp.publicKey)))) await prog.methods.openStash(new BN(0), '').accountsPartial({ owner: kp.publicKey, ...pay, usdcMint: USDC_MINT }).rpc();
+  log(name, `@${handle} ${kp.publicKey.toBase58()} · ${(await usdcOf(kp.publicKey)) / USDC} USDC · 0 SOL`);
   return kp;
 }
-const names = ['Kai', 'Mira', 'Ash', 'Bo', 'Sol', 'Rex', 'Lux'] as const;
 const F: Record<(typeof names)[number], Keypair> = {} as never;
 for (const n of names) F[n] = await friend(n);
 const isFriend = (pk: PublicKey) => names.some((n) => F[n].publicKey.equals(pk));
@@ -242,11 +260,19 @@ type War = { clanA: PublicKey; clanB: PublicKey; nonce: BN; status: number; endT
 async function rex() {
   const kp = F.Rex;
   const prog = programFor(kp);
-  const name = `rex-crew-${Date.now().toString(36).slice(-3)}`;
-  const clan = P.clan(name);
-  await prog.methods.createClan(name, 4).accountsPartial({ founder: kp.publicKey, ...pay, clan, chest: P.chest(clan), member: P.member(clan, kp.publicKey), usdcMint: USDC_MINT }).rpc();
-  await prog.methods.depositChest(new BN(30 * USDC)).accountsPartial({ wallet: kp.publicKey, clan, member: P.member(clan, kp.publicKey), chest: P.chest(clan), walletUsdc: usdcAta(kp.publicKey) }).rpc();
-  log('Rex', `captain of "${name}" with a 30 USDC chest: declare war on it from your clan`);
+  // Rex keeps his key across runs, so he may already captain his clan
+  const mine = (await baseProgram.account.player.fetch(P.player(kp.publicKey))).clan;
+  let clan: PublicKey;
+  if (!mine.equals(PublicKey.default)) {
+    clan = mine;
+    log('Rex', `captain of clan ${clan.toBase58().slice(0, 6)}…: declare war on it from your clan`);
+  } else {
+    const name = `rex-crew-${Date.now().toString(36).slice(-3)}`;
+    clan = P.clan(name);
+    await prog.methods.createClan(name, 4).accountsPartial({ founder: kp.publicKey, ...pay, clan, chest: P.chest(clan), member: P.member(clan, kp.publicKey), usdcMint: USDC_MINT }).rpc();
+    await prog.methods.depositChest(new BN(30 * USDC)).accountsPartial({ wallet: kp.publicKey, clan, member: P.member(clan, kp.publicKey), chest: P.chest(clan), walletUsdc: usdcAta(kp.publicKey) }).rpc();
+    log('Rex', `captain of "${name}" with a 30 USDC chest: declare war on it from your clan`);
+  }
   for (;;) {
     try {
       for (const a of await baseProgram.account.war.all()) {
@@ -270,7 +296,8 @@ async function rex() {
 async function lux() {
   const kp = F.Lux;
   const prog = programFor(kp);
-  let clan: PublicKey | null = null;
+  const was = (await baseProgram.account.player.fetch(P.player(kp.publicKey))).clan;
+  let clan: PublicKey | null = was.equals(PublicKey.default) ? null : was;
   const voted = new Set<string>();
   // only clans started after the friends came online (a real player's new clan), never leftovers from earlier runs
   const old = new Set((await baseProgram.account.clan.all()).map((c) => c.publicKey.toBase58()));
@@ -299,5 +326,87 @@ async function lux() {
   }
 }
 
+
+// ---------------------------------------------------------------- everyone: calls, replies and likes on the feed
+const NONE = new BN('18446744073709551615');
+const COIN_OF = Object.fromEntries(COINS.map((c, i) => [c.symbol, i]));
+async function feedPrice(symbol: string) {
+  const f = await baseProgram.account.priceFeed.fetch(P.baseFeed(COIN_OF[symbol]));
+  return Number(f.price) / 1e6;
+}
+const pickOf = <T>(xs: readonly T[]) => xs[Math.floor(Math.random() * xs.length)];
+/** What each friend likes to buy. */
+const TASTE: Record<Name, string[]> = { Kai: ['NVDA', 'TSLA'], Mira: ['AAPL', 'SPY'], Ash: ['TSLA'], Bo: ['GOOGL', 'NVDA'], Sol: ['SPY'], Rex: ['NVDA', 'GOOGL'], Lux: ['AAPL', 'SPY', 'TSLA'] };
+const firstPrice = new Map<string, number>();
+
+/** One friend buys a real xStock from its Stash and posts a call carrying the live numbers. */
+async function call(name: Name) {
+  const kp = F[name];
+  const prog = programFor(kp);
+  const sym = pickOf(TASTE[name]);
+  const st = STOCKS.find((x) => x.symbol === sym)!;
+  const amt = pickOf([5, 5, 10]);
+  if ((await usdcOf(kp.publicKey)) < (amt + 5) * USDC) await giveUsdc(kp.publicKey, 50 * USDC);
+  const raw = BigInt(amt * USDC);
+  await prog.methods.stashInvest(new BN(raw.toString()), new BN((await minShares(base, st, raw)).toString()))
+    .accountsPartial({ owner: kp.publicKey, ...pay, holding: P.holding(kp.publicKey, new PublicKey(st.mint)), sw: await swapAccounts(base, kp.publicKey, USDC_MINT, st, true) })
+    .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), createStockAtaIx(sponsor.publicKey, kp.publicKey, st),
+      await prog.methods.stashSave(new BN(raw.toString()), 0).accountsPartial({ owner: kp.publicKey, ownerUsdc: usdcAta(kp.publicKey) }).instruction()]).rpc();
+  const h = await baseProgram.account.holding.fetch(P.holding(kp.publicKey, new PublicKey(st.mint)));
+  const px = await feedPrice(sym);
+  const first = firstPrice.get(sym) ?? px;
+  firstPrice.set(sym, first);
+  const move = ((px - first) / first) * 100;
+  const total = Number(h.cost) / 1e6;
+  const text = pickOf([
+    `${st.name} at $${px.toFixed(2)}. Added $${amt}, now $${total.toFixed(0)} in.`,
+    `Buying $${amt} more ${sym} at $${px.toFixed(2)}. Slow money.`,
+    `${sym} ${move >= 0 ? 'up' : 'down'} ${Math.abs(move).toFixed(2)}% since I started watching. $${amt} more from my Stash.`,
+    `Saved it, now investing it: $${amt} of ${sym} at $${px.toFixed(2)}.`,
+  ]).slice(0, 140);
+  await sendEr(programFor(kp, true).methods.post(text, 1, new PublicKey(st.mint), NONE).accountsPartial({ author: kp.publicKey, board: P.board(FEED_BOARD) }), kp);
+  log(name, `bought $${amt} of ${sym} and posted a call`);
+}
+
+async function socialLoop() {
+  const replied = new Set<number>();
+  let nextCall = Date.now() + 5_000;
+  for (;;) {
+    try {
+      const b = await erProgram.account.board.fetch(P.board(FEED_BOARD));
+      const posts = b.posts.filter((p) => !p.author.equals(PublicKey.default));
+      // likes: friends like recent posts by others (once each, enforced on chain)
+      for (const p of posts.slice(-12)) {
+        if (Math.random() > 0.35) continue;
+        const n = pickOf(names);
+        const me = await baseProgram.account.profile.fetch(P.profile(F[n].publicKey));
+        if (p.author.equals(F[n].publicKey) || p.liked[me.number >> 3] & (1 << (me.number & 7))) continue;
+        await sendEr(programFor(F[n], true).methods.like(p.seq).accountsPartial({ liker: F[n].publicKey, board: P.board(FEED_BOARD) }), F[n]).catch(() => {});
+      }
+      // replies: someone answers a fresh call with their own position
+      const fresh = posts.filter((p) => p.kind === 1 && p.replyTo.toString() === NONE.toString() && !replied.has(Number(p.seq)) && Date.now() / 1000 - Number(p.ts) < 600);
+      for (const p of fresh.slice(-2)) {
+        replied.add(Number(p.seq));
+        if (Math.random() < 0.3) continue;
+        const who = pickOf(names.filter((n) => !F[n].publicKey.equals(p.author)));
+        const st = STOCKS.find((x) => x.mint === p.refkey.toBase58());
+        if (!st) continue;
+        const mine = await baseProgram.account.holding.fetchNullable(P.holding(F[who].publicKey, p.refkey));
+        const px = await feedPrice(st.symbol);
+        const text = mine && Number(mine.shares) > 0
+          ? `Same. I hold $${((Number(mine.shares) / 1e8) * px).toFixed(2)} of ${st.symbol}, paid $${(Number(mine.cost) / 1e6).toFixed(2)}.`
+          : pickOf([`Not in ${st.symbol} yet. $${px.toFixed(2)} feels high to me.`, `Watching ${st.symbol} at $${px.toFixed(2)}. Might join tomorrow.`]);
+        await sendEr(programFor(F[who], true).methods.post(text.slice(0, 140), 0, PublicKey.default, p.seq).accountsPartial({ author: F[who].publicKey, board: P.board(FEED_BOARD) }), F[who]);
+        log(who, `replied to post #${p.seq}`);
+      }
+      if (Date.now() > nextCall) {
+        await call(pickOf(names));
+        nextCall = Date.now() + 90_000 + Math.random() * 90_000;
+      }
+    } catch (e) { err('feed', e); }
+    await sleep(8000);
+  }
+}
+
 log('all', 'friends are online');
-await Promise.all([kai(), mira(), joiner('Ash'), joiner('Bo'), solHost(), rex(), lux()]);
+await Promise.all([kai(), mira(), joiner('Ash'), joiner('Bo'), solHost(), rex(), lux(), socialLoop()]);

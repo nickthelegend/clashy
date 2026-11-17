@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, TextInput, View } from 'react-native';
 import { PublicKey, type Transaction } from '@solana/web3.js';
-import { IS_LOCAL_NET, NET, P, PROGRAM_ID, base, faucetUsdc, getSponsor, programs, sendSponsored, sendUsdc, usdcBalance } from './client';
+import { BN, IS_LOCAL_NET, NET, P, PROGRAM_ID, USDC_MINT, base, faucetUsdc, getSponsor, programs, sendSponsored, sendUsdc, usdcBalance } from './client';
 import { useWallet } from './wallet';
 import { Btn, Card, Row, Txt } from '@/ui/kit';
 import { C, F } from '@/ui/tokens';
@@ -35,6 +35,9 @@ export function useChain(foldLabels: string[] = []) {
   /** USDC in the player's wallet (whole USDC). */
   const [bal, setBal] = useState<number | null>(null);
   const [hasPlayer, setHasPlayer] = useState(false);
+  /** null until the first read: whether this wallet has picked a name (profile) and opened a Stash. */
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const [hasStash, setHasStash] = useState(false);
   const [txs, setTxs] = useState<Tx[]>([]);
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState<string | null>(null);
@@ -90,8 +93,8 @@ export function useChain(foldLabels: string[] = []) {
     let alive = true;
     const run = async () => {
       try {
-        const [b, p] = await Promise.all([usdcBalance(me), base.getAccountInfo(P.player(me))]);
-        if (alive) { setBal(b); setHasPlayer(!!p); }
+        const [b, p, prof, st] = await Promise.all([usdcBalance(me), base.getAccountInfo(P.player(me)), base.getAccountInfo(P.profile(me)), base.getAccountInfo(P.stash(me))]);
+        if (alive) { setBal(b); setHasPlayer(!!p); setHasProfile(!!prof); setHasStash(!!st); }
       } catch (e) { if (alive) setErr(`Cannot reach ${NET.label} (${NET.base}): ${(e as Error).message}`); }
     };
     run();
@@ -110,9 +113,23 @@ export function useChain(foldLabels: string[] = []) {
     setTick((n) => n + 1);
   });
 
+  /** Joining Clashy: test USDC (local fork), then the player account, the name and avatar, and the Stash. Sponsored. */
+  const join = (name: string, avatar: number) => guard('join', async () => {
+    if (!me || !progs || !sponsor) throw new Error('The relay is offline; try again in a minute');
+    const handle = name.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,16}$/.test(handle)) throw new Error('Names are 3 to 16 characters: a-z, 0-9 and _');
+    if (await base.getAccountInfo(P.handle(handle))) throw new Error(`@${handle} is taken`);
+    if ((bal ?? 0) < 1 && sponsor.faucet) await faucetUsdc(me);
+    const pay = { payer: sponsor.sponsor };
+    if (!hasPlayer) await onBase('Create player account', () => progs.base.methods.initPlayer().accountsPartial({ owner: me, ...pay }).rpc());
+    if (!hasProfile) await onBase(`Claim @${handle}`, () => progs.base.methods.createProfile(handle, avatar).accountsPartial({ owner: me, ...pay, handle: P.handle(handle) }).rpc());
+    if (!hasStash) await onBase('Open your Stash', () => progs.base.methods.openStash(new BN(0), '').accountsPartial({ owner: me, ...pay, usdcMint: USDC_MINT }).rpc());
+    setTick((n) => n + 1);
+  });
+
   return {
-    wallet, me, signer, sponsor: sponsor?.sponsor ?? null, faucet: !!sponsor?.faucet, progs, bal, hasPlayer, txs, err, setErr, busy, guard,
-    onBase, onEr, setup, tick, refresh: () => setTick((n) => n + 1),
+    wallet, me, signer, sponsor: sponsor?.sponsor ?? null, faucet: !!sponsor?.faucet, progs, bal, hasPlayer, hasProfile, hasStash, txs, err, setErr, busy, guard,
+    onBase, onEr, setup, join, tick, refresh: () => setTick((n) => n + 1),
   };
 }
 

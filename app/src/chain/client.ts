@@ -42,7 +42,11 @@ export const fmtUsdc = (units: number, dp = 2) => `${(units / USDC).toFixed(dp)}
 export const base = new Connection(NET.base, 'confirmed');
 export const er = new Connection(NET.er, 'confirmed');
 export const PROGRAM_ID = new PublicKey((idl as { address: string }).address);
-export const COIN_SYMBOLS = ['SOL', 'BTC', 'ETH'];
+/** Config coins in order: crypto (Coinbase prices) then tokenized stocks (xStocks, Jupiter prices). */
+export const COIN_SYMBOLS = ['SOL', 'BTC', 'ETH', 'NVDA', 'TSLA', 'AAPL', 'SPY', 'GOOGL'];
+/** Pool masks for duels: the three cryptos, or the five stocks. */
+export const CRYPTO_MASK = 0b0000_0111;
+export const STOCK_MASK = 0b1111_1000;
 
 /** What signs for the player: their Privy wallet, or a device-held test key on the local stack. */
 export type WalletSigner = {
@@ -110,13 +114,9 @@ export async function sendSponsored(tx: Transaction, layer: Layer, signer: Walle
   return sig;
 }
 
-/** Withdraw: sends `amount` USDC (whole units) from the player's USDC account to any Solana address. The sponsor pays
- *  the fee and, if the receiver has no USDC account yet, its rent. */
-export async function sendUsdc(signer: WalletSigner, to: PublicKey, amount: number): Promise<string> {
-  const { sponsor } = await getSponsor();
-  const units = BigInt(Math.round(amount * USDC));
-  if (units <= 0n) throw new Error('Enter an amount above 0');
-  if (to.equals(signer.publicKey)) throw new Error('That is your own wallet');
+/** Paying someone in USDC: create their USDC account if needed (the sponsor pays its rent), then TransferChecked
+ *  `units` out of the payer's own USDC account. Both instructions are the only token moves the relay sponsors. */
+export function usdcPayIxs(sponsor: PublicKey, from: PublicKey, to: PublicKey, units: bigint | number) {
   const dest = usdcAta(to);
   const createIdem = new TransactionInstruction({
     programId: ATA_PROGRAM,
@@ -129,17 +129,27 @@ export async function sendUsdc(signer: WalletSigner, to: PublicKey, amount: numb
   });
   const data = Buffer.alloc(10);
   data.writeUInt8(12, 0); // TransferChecked
-  data.writeBigUInt64LE(units, 1);
+  data.writeBigUInt64LE(BigInt(units), 1);
   data.writeUInt8(6, 9);
   const transfer = new TransactionInstruction({
     programId: TOKEN_PROGRAM,
     keys: [
-      { pubkey: usdcAta(signer.publicKey), isSigner: false, isWritable: true }, { pubkey: USDC_MINT, isSigner: false, isWritable: false },
-      { pubkey: dest, isSigner: false, isWritable: true }, { pubkey: signer.publicKey, isSigner: true, isWritable: false },
+      { pubkey: usdcAta(from), isSigner: false, isWritable: true }, { pubkey: USDC_MINT, isSigner: false, isWritable: false },
+      { pubkey: dest, isSigner: false, isWritable: true }, { pubkey: from, isSigner: true, isWritable: false },
     ],
     data,
   });
-  return sendSponsored(new Transaction().add(createIdem, transfer), 'base', signer);
+  return [createIdem, transfer];
+}
+
+/** Withdraw: sends `amount` USDC (whole units) from the player's USDC account to any Solana address. The sponsor pays
+ *  the fee and, if the receiver has no USDC account yet, its rent. */
+export async function sendUsdc(signer: WalletSigner, to: PublicKey, amount: number): Promise<string> {
+  const { sponsor } = await getSponsor();
+  const units = BigInt(Math.round(amount * USDC));
+  if (units <= 0n) throw new Error('Enter an amount above 0');
+  if (to.equals(signer.publicKey)) throw new Error('That is your own wallet');
+  return sendSponsored(new Transaction().add(...usdcPayIxs(sponsor, signer.publicKey, to, units)), 'base', signer);
 }
 
 /** Local fork only: 100 test USDC from the relay's faucet. */
@@ -185,7 +195,18 @@ export const P = {
   vote: (proposal: PublicKey, wallet: PublicKey) => pda(Buffer.from('vote'), proposal.toBuffer(), wallet.toBuffer()),
   position: (clan: PublicKey, id: number | bigint) => pda(Buffer.from('position'), clan.toBuffer(), le64(id)),
   tour: (creator: PublicKey, nonce: number | bigint) => pda(Buffer.from('tour'), creator.toBuffer(), le64(nonce)),
+  profile: (owner: PublicKey) => pda(Buffer.from('profile'), owner.toBuffer()),
+  handle: (name: string) => pda(Buffer.from('handle'), Buffer.from(name)),
+  stash: (owner: PublicKey) => pda(Buffer.from('stash'), owner.toBuffer()),
+  stashVault: (owner: PublicKey) => pda(Buffer.from('stashv'), owner.toBuffer()),
+  holding: (owner: PublicKey, mint: PublicKey) => pda(Buffer.from('hold'), owner.toBuffer(), mint.toBuffer()),
+  channel: (clan: PublicKey, id: number) => pda(Buffer.from('chan'), clan.toBuffer(), Buffer.from([id])),
+  board: (id: number) => pda(Buffer.from('board'), Buffer.from([id])),
 };
+/** The public calls feed (board 0 held end-to-end test posts from before tests got their own board). */
+export const FEED_BOARD = 1;
+/** u64::MAX: a post that is not a reply. */
+export const NO_REPLY = new BN('18446744073709551615');
 
 export const TOUR_STATUS = ['Lobby', 'Live', 'Finished', 'Settled', 'Cancelled'] as const;
 export type TourView = {
