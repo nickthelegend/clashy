@@ -9,12 +9,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
 import { COIN_SYMBOLS, readPlayer, usdcBalance, type PlayerRecord } from '@/chain/client';
 import { readClans, useLeaderboardOnchain, useMyDuels } from '@/chain/reads';
+import { readPortfolio, readProfile, readStash, usePoll, usePrices } from '@/chain/social';
+import { ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { useWallet } from '@/chain/wallet';
 import { Crown } from '@/ui/icons';
 import { ART, Art, Avatar, BADGES, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs, rankFor } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
 
-type Tab = 'duels' | 'badges';
+type Tab = 'stocks' | 'duels' | 'badges';
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
 const Stat = ({ k, v }: { k: string; v: string }) => (
   <Card style={{ flex: 1, padding: 12 }}><Txt v="small">{k}</Txt><Txt v="h2" color={v === '–' ? C.dim : C.ink} style={{ marginTop: 4, fontSize: 20 }}>{v}</Txt></Card>
@@ -23,7 +25,7 @@ const Stat = ({ k, v }: { k: string; v: string }) => (
 export default function ProfileTab() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn();
-  const [tab, setTab] = useState<Tab>('duels');
+  const [tab, setTab] = useState<Tab>('stocks');
   const wallet = useWallet();
   const addr = wallet.signer?.publicKey ?? null;
   const [rec, setRec] = useState<PlayerRecord | null>(null);
@@ -31,6 +33,15 @@ export default function ProfileTab() {
   const [captain, setCaptain] = useState(false);
   const [readErr, setReadErr] = useState<string>();
   const board = useLeaderboardOnchain();
+  const prof = usePoll(() => (addr ? readProfile(addr) : Promise.resolve(null)), 8000, [addr?.toBase58()]);
+  const stash = usePoll(() => (addr ? readStash(addr) : Promise.resolve(null)), 8000, [addr?.toBase58()]);
+  const port = usePoll(() => (addr ? readPortfolio(addr) : Promise.resolve([])), 8000, [addr?.toBase58()]);
+  const prices = usePrices();
+  const pr = prof.status === 'ready' ? prof.data : null;
+  const px: Record<string, number> = prices.status === 'ready' ? prices.data : {};
+  const holdings = port.status === 'ready' ? port.data.filter((h) => h.shares > 0) : [];
+  const invested = holdings.reduce((a, h) => a + h.shares * (px[h.stock.symbol] ?? 0), 0);
+  const cost = holdings.reduce((a, h) => a + h.cost, 0);
   const duels = useMyDuels(addr);
   useEffect(() => {
     if (!addr) { setRec(null); setUsdc(null); return; }
@@ -64,19 +75,19 @@ export default function ProfileTab() {
     top10: 'Top 10 on the leaderboard', streak: 'Win 9 duels in a row', 500: 'Play 500 on-chain duels', captain: 'Captain an on-chain clan',
     'first-ko': 'Win a duel by knockout', 'giant-slayer': 'Beat the #1 player',
   };
-  const name = wallet.signer?.kind === 'privy' ? wallet.signer.label.split('@')[0] : me ? short(me) : 'Your profile';
+  const name = pr ? `@${pr.name}` : me ? short(me) : 'Your profile';
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
       <Image source={ART.banner} style={{ height: 112, borderRadius: 20, marginBottom: -36 }} contentFit="cover" />
       <Row style={{ gap: 14, paddingLeft: 12, alignItems: 'flex-start' }}>
         <View style={{ borderRadius: 40, borderWidth: 4, borderColor: C.bg }}>
-          <Avatar name={me ?? 'you'} size={72} />
+          {pr ? <ProfileAvatar p={pr} size={72} /> : <Avatar name={me ?? 'you'} size={72} />}
         </View>
         <View style={{ flex: 1, paddingTop: 42, minWidth: 0 }}>
           <Txt v="title" style={{ fontSize: 24 }} lines={1}>{name}</Txt>
           <Txt v="small" style={{ marginTop: 2 }} lines={1}>
-            {!me ? 'Sign in to play for USDC' : rec ? `${rankFor(rec.rp).label} · Elo ${rec.rating} · ${short(me)}` : `${short(me)} · no on-chain duels yet`}
+            {!me ? 'Sign in to save, invest and duel' : `${rankFor(rec?.rp ?? 0).label} · ${pr && pr.dayStreak > 0 ? `${pr.dayStreak}-day streak` : 'no streak yet'} · Elo ${rec?.rating ?? 1000}`}
           </Txt>
         </View>
       </Row>
@@ -90,12 +101,14 @@ export default function ProfileTab() {
       {readErr ? <ErrorLine msg={readErr} /> : null}
 
       <Row style={{ gap: 8, marginTop: 16 }}>
-        <Stat k="Win rate" v={games ? `${Math.round((rec!.wins / games) * 100)}%` : '–'} />
-        <Stat k="Wins – losses" v={rec ? `${rec.wins}–${rec.losses}` : '–'} />
+        <Stat k="Stash" v={stash.status === 'ready' && stash.data ? `$${stash.data.balance.toFixed(2)}` : '–'} />
+        <Stat k="In stocks" v={holdings.length ? `$${invested.toFixed(2)}` : '–'} />
+        <Stat k="Day streak" v={pr ? String(pr.dayStreak) : '–'} />
       </Row>
       <Row style={{ gap: 8, marginTop: 8 }}>
-        <Stat k="Elo · RP" v={rec ? `${rec.rating} · ${rec.rp}` : '–'} />
-        <Stat k="Best streak" v={rec ? String(rec.bestStreak) : '–'} />
+        <Stat k="Duels W–L" v={rec ? `${rec.wins}–${rec.losses}` : '–'} />
+        <Stat k="Win rate" v={games ? `${Math.round((rec!.wins / games) * 100)}%` : '–'} />
+        <Stat k="Elo" v={rec ? String(rec.rating) : '–'} />
       </Row>
 
       {/* rank card → leaderboard */}
@@ -109,9 +122,28 @@ export default function ProfileTab() {
       </Pressable>
 
       <View style={{ marginTop: 18 }}>
-        <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'duels', label: 'Duels' }, { key: 'badges', label: 'Badges' }]} />
+        <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'stocks', label: 'Stocks' }, { key: 'duels', label: 'Duels' }, { key: 'badges', label: 'Badges' }]} />
       </View>
-      {tab === 'badges' ? (
+      {tab === 'stocks' ? (
+        holdings.length === 0 ? (
+          <Pending art={ART.stash} title="No stocks yet" body="Buy a real stock from your Stash, from $5. Your positions show here and on your calls." action="Open Stash" onAction={() => router.push('/stash' as never)} />
+        ) : (
+          <>
+            {holdings.map((h) => {
+              const v = h.shares * (px[h.stock.symbol] ?? 0);
+              const pl = v - h.cost;
+              return (
+                <Row key={h.stock.symbol} style={{ gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
+                  <Image source={STOCK_ART[h.stock.symbol]} style={{ width: 40, height: 40 }} contentFit="contain" />
+                  <View style={{ flex: 1 }}><Txt v="label">{h.stock.name}</Txt><Txt v="small">{h.shares.toFixed(4)} sh · paid ${h.cost.toFixed(2)}</Txt></View>
+                  <View style={{ alignItems: 'flex-end' }}><Txt v="label">${v.toFixed(2)}</Txt><Txt v="small" color={pl >= 0 ? C.up : C.down}>{pl >= 0 ? '+' : '−'}${Math.abs(pl).toFixed(2)}</Txt></View>
+                </Row>
+              );
+            })}
+            <Txt v="small" style={{ marginTop: 8 }}>Total ${invested.toFixed(2)} on ${cost.toFixed(2)} paid · at live prices</Txt>
+          </>
+        )
+      ) : tab === 'badges' ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {BADGES.map((b) => (
             <View key={b.key} style={{ width: '47%', backgroundColor: C.s1, borderRadius: 18, padding: 12, alignItems: 'center' }}>

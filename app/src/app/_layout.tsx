@@ -41,6 +41,8 @@ export default function Root() {
           <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
           <Stack.Screen name="leaderboard" />
           <Stack.Screen name="stash" />
+          <Stack.Screen name="cup" />
+          <Stack.Screen name="clan-chat" />
           <Stack.Screen name="ranked" />
           <Stack.Screen name="onchain" options={{ gestureEnabled: false }} />
           <Stack.Screen name="onchain-clan" />

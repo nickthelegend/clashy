@@ -1,14 +1,14 @@
 // Serves the production web build (npx expo export -p web → dist/) as a single-page app: real files as they are,
 // every other path falls back to index.html so deep links like /onchain work. No dependencies.
 //
-//   node scripts/serve-web.mjs [port]      (default 8099)
+//   node scripts/serve-web.mjs [port] [dir]   (default 8099, dist; the device-wallet test build is dist-devwallet)
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('../dist/', import.meta.url));
 const port = Number(process.argv[2] ?? 8099);
+const root = fileURLToPath(new URL(`../${process.argv[3] ?? 'dist'}/`, import.meta.url));
 const types = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',

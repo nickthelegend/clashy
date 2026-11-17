@@ -12,7 +12,7 @@ import { errText, useChain } from '@/chain/useChain';
 import { readHoldings, readStash, useBoard, usePoll, usePrices, useProfiles, type Post } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
-import { Composer, JoinCard, Thread } from '@/ui/feed';
+import { Composer, Thread } from '@/ui/feed';
 import { Jar } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
@@ -97,6 +97,8 @@ export default function HomeScreen() {
     } catch (e) { setLikeErr(errText(e)); } finally { setLiking(null); }
   };
   useEffect(() => { if (replyTo) setTab('calls'); }, [replyTo]);
+  // signed in without a name: finish onboarding first
+  useEffect(() => { if (me && hasProfile === false) router.replace('/welcome?step=name' as Href); }, [me?.toBase58(), hasProfile]); // eslint-disable-line react-hooks/exhaustive-deps
   const f = feed.status === 'ready' ? feed.data : null;
 
   return (
@@ -128,7 +130,7 @@ export default function HomeScreen() {
             <Btn title="Sign in to post" h={36} style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => wallet.login?.()} />
           </View>
         </View>
-      ) : me && hasProfile === false ? <JoinCard chain={chain} /> : null}
+      ) : null}
 
       {myProfile ? (
         <Composer chain={chain} me={myProfile} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPosted={() => { board.reload(); holdings.reload(); stash.reload(); }}

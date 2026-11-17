@@ -297,16 +297,16 @@ export const AVATARS = [
 /** Rank tiers, lowest first. */
 /** Ten ranked tiers with degen names, each with its own clay emblem (rank-1 … rank-10). Points needed to reach each tier. */
 export const RANKS: { n: number; key: string; label: string; pts: number; color: string; src: number }[] = [
-  { n: 1, key: 'exit-liquidity', label: 'Exit Liquidity', pts: 0, color: '#8A8A94', src: require('../../assets/art/rank-1.webp') },
-  { n: 2, key: 'paper-hands', label: 'Paper Hands', pts: 100, color: '#C9B79C', src: require('../../assets/art/rank-2.webp') },
-  { n: 3, key: 'bagholder', label: 'Bagholder', pts: 250, color: '#CD7F4A', src: require('../../assets/art/rank-3.webp') },
-  { n: 4, key: 'dip-buyer', label: 'Dip Buyer', pts: 450, color: '#B8C4D6', src: require('../../assets/art/rank-4.webp') },
-  { n: 5, key: 'ape', label: 'Ape', pts: 700, color: '#FFC94A', src: require('../../assets/art/rank-5.webp') },
-  { n: 6, key: 'degen', label: 'Degen', pts: 1000, color: '#8E9AFF', src: require('../../assets/art/rank-6.webp') },
-  { n: 7, key: 'diamond-hands', label: 'Diamond Hands', pts: 1400, color: '#5AC8FA', src: require('../../assets/art/rank-7.webp') },
-  { n: 8, key: 'chad', label: 'Chad', pts: 1900, color: '#FFB547', src: require('../../assets/art/rank-8.webp') },
-  { n: 9, key: 'whale', label: 'Whale', pts: 2500, color: '#F0468C', src: require('../../assets/art/rank-9.webp') },
-  { n: 10, key: 'the-house', label: 'The House', pts: 3300, color: '#FFD66B', src: require('../../assets/art/rank-10.webp') },
+  { n: 1, key: 'exit-liquidity', label: 'Rookie', pts: 0, color: '#8A8A94', src: require('../../assets/art/rank-1.webp') },
+  { n: 2, key: 'paper-hands', label: 'Saver', pts: 100, color: '#C9B79C', src: require('../../assets/art/rank-2.webp') },
+  { n: 3, key: 'bagholder', label: 'Starter', pts: 250, color: '#CD7F4A', src: require('../../assets/art/rank-3.webp') },
+  { n: 4, key: 'dip-buyer', label: 'Steady', pts: 450, color: '#B8C4D6', src: require('../../assets/art/rank-4.webp') },
+  { n: 5, key: 'ape', label: 'Investor', pts: 700, color: '#FFC94A', src: require('../../assets/art/rank-5.webp') },
+  { n: 6, key: 'degen', label: 'Analyst', pts: 1000, color: '#8E9AFF', src: require('../../assets/art/rank-6.webp') },
+  { n: 7, key: 'diamond-hands', label: 'Long-Term', pts: 1400, color: '#5AC8FA', src: require('../../assets/art/rank-7.webp') },
+  { n: 8, key: 'chad', label: 'Strategist', pts: 1900, color: '#FFB547', src: require('../../assets/art/rank-8.webp') },
+  { n: 9, key: 'whale', label: 'Expert', pts: 2500, color: '#F0468C', src: require('../../assets/art/rank-9.webp') },
+  { n: 10, key: 'the-house', label: 'Legend', pts: 3300, color: '#FFD66B', src: require('../../assets/art/rank-10.webp') },
 ];
 export const rankFor = (pts: number) => [...RANKS].reverse().find((r) => pts >= r.pts) ?? RANKS[0];
 export const CRESTS = [

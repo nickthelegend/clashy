@@ -62,7 +62,8 @@ export default function OnchainClan() {
   // proposal form
   const [coin, setCoin] = useState<'0' | '1' | '2'>('0');
   const [dir, setDir] = useState<'1' | '2'>('1');
-  const [lev, setLev] = useState<'2' | '5' | '10' | '20'>('5');
+  // clan trades are unleveraged: the chest moves 1:1 with the price, like owning it
+  const lev = '1';
   const [size, setSize] = useState<'2500' | '5000' | '10000'>('5000');
 
   useEffect(() => {
@@ -137,7 +138,7 @@ export default function OnchainClan() {
   const leave = guard('leave', () => onBase(`Leave ${mine!.name}`, () => progs!.base.methods.leaveClan().accountsPartial({ wallet: wallet!, clan: mine!.key, member: P.member(mine!.key, wallet!), rentPayer: sponsor! }).rpc()));
   const propose = guard('propose', async () => {
     const prop = P.proposal(mine!.key, mine!.proposals);
-    const what = `${dir === '1' ? 'Long' : 'Short'} ${COIN_SYMBOLS[+coin]} ${lev}× · ${+size / 100}% of chest`;
+    const what = `${dir === '1' ? 'Long' : 'Short'} ${COIN_SYMBOLS[+coin]} · ${+size / 100}% of chest`;
     await onBase(`Propose ${what}`, () => progs!.base.methods.propose(+coin, +dir, +lev, +size, new BN(VOTE_SECS)).accountsPartial({ wallet: wallet!, payer: sponsor!, clan: mine!.key, member: P.member(mine!.key, wallet!), proposal: prop }).rpc());
   });
   const vote = (p: PropView, yes: boolean) => guard(`vote-${p.id}`, () => onBase(`Vote ${yes ? 'yes' : 'no'} on #${p.id}`, () => progs!.base.methods.vote(yes).accountsPartial({ wallet: wallet!, payer: sponsor!, clan: mine!.key, member: P.member(mine!.key, wallet!), proposal: p.key, vote: P.vote(p.key, wallet!) }).rpc()))();
@@ -251,7 +252,6 @@ export default function OnchainClan() {
           <Card style={{ padding: 14 }}>
             <Chips items={COIN_SYMBOLS.map((s, i) => ({ key: String(i) as '0' | '1' | '2', label: `${s}${prices[i] ? ` $${prices[i]!.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : ''}` }))} value={coin} onChange={setCoin} />
             <Chips items={[{ key: '1', label: 'Long ▲' }, { key: '2', label: 'Short ▼' }]} value={dir} onChange={setDir} />
-            <Chips items={(['2', '5', '10', '20'] as const).map((k) => ({ key: k, label: `${k}×` }))} value={lev} onChange={setLev} />
             <Chips items={[{ key: '2500', label: '25% of chest' }, { key: '5000', label: '50%' }, { key: '10000', label: '100%' }]} value={size} onChange={setSize} />
             <Btn title={busy === 'propose' ? 'Proposing…' : `Put it to a vote · ${VOTE_SECS} s`} kind={dir === '1' ? 'long' : 'short'} disabled={!!busy || mine.chest === 0} onPress={propose} />
             <Txt v="small" style={{ marginTop: 8 }}>{mine.chest === 0 ? 'Deposit first: an empty chest has nothing to trade.' : `Passes with more yes than no, early once yes holds over half of all shares. Size: ${usdc((mine.chest * +size) / 10_000)} USDC notional.`}</Txt>
