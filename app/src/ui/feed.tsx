@@ -10,6 +10,7 @@ import { ago, holdingKey, likedBy, reader, usePoll, type Holding, type Post, typ
 import { STOCKS, createStockAtaIx, minSharesFor, stockByMint, swapAccounts, type Stock } from '@/chain/stocks';
 import { ART, AVATARS, Btn, ErrorLine, Row, Txt } from './kit';
 import { Heart, More, Reply, Share } from './icons';
+import { Lottie } from './lottie';
 import { C, F, fmtUsd } from './tokens';
 
 export const STOCK_ART: Record<string, number> = { NVDA: ART.stockNVDA, TSLA: ART.stockTSLA, AAPL: ART.stockAAPL, SPY: ART.stockSPY, GOOGL: ART.stockGOOGL };
@@ -92,6 +93,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
   const author = profiles.get(post.author.toBase58());
   const stock = post.kind === 1 ? stockByMint(post.refkey.toBase58()) : undefined;
   const liked = me ? likedBy(post, me.number) : false;
+  const [pop, setPop] = useState(false);
   const share = () => RNShare.share({ message: `${nameOf(author, post.author)} on Clashy: "${post.text}"${stock ? ` · ${stock.symbol}` : ''}` }).catch(() => {});
   return (
     <View style={{ flexDirection: 'row', gap: 12, paddingTop: reply ? 6 : 14, paddingBottom: threadBelow ? 0 : 12 }}>
@@ -115,7 +117,8 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
           <Pressable onPress={() => onReply(post)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Reply size={17} color={C.muted} /><Txt v="small">{post.replies || ''}</Txt>
           </Pressable>
-          <Pressable onPress={() => onLike(post)} disabled={liked || liking === post.seq} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <Pressable onPress={() => { if (!liked && me) setPop(true); onLike(post); }} disabled={liked || liking === post.seq} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            {pop ? <Lottie name="heart" size={56} style={{ position: 'absolute', left: -19, top: -19 }} onDone={() => setPop(false)} /> : null}
             <Heart size={17} color={liked ? C.opp : C.muted} filled={liked} /><Txt v="small" color={liked ? C.opp : C.muted}>{post.likes || ''}</Txt>
           </Pressable>
           <View style={{ flex: 1 }} />

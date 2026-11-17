@@ -12,6 +12,7 @@ import { errText, short, useChain } from '@/chain/useChain';
 import { readPortfolio, readProfile, readStash, usePoll, usePrices } from '@/chain/social';
 import { SHARE, STOCKS, createStockAtaIx, minSharesFor, minUsdcFor, swapAccounts, type Stock } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
+import { Lottie } from '@/ui/lottie';
 import { STOCK_ART } from '@/ui/feed';
 import { BackBtn, Btn, Card, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -37,6 +38,8 @@ export default function StashScreen() {
   const port = usePoll(() => (me ? readPortfolio(me) : Promise.resolve([])), 5000, [me?.toBase58(), chain.tick]);
   const prices = usePrices();
   const [busy, setBusy] = useState<string | null>(null);
+  const [coin, setCoin] = useState(0);
+  const [dropping, setDropping] = useState(false);
   const [err, setErr] = useState<string>();
   const [payTo, setPayTo] = useState('');
   const [payAmt, setPayAmt] = useState('');
@@ -48,7 +51,7 @@ export default function StashScreen() {
   const run = (name: string, fn: () => Promise<unknown>) => async () => {
     if (busy) return;
     setBusy(name); setErr(undefined);
-    try { await fn(); chain.refresh(); stash.reload(); port.reload(); profile.reload(); } catch (e) { setErr(errText(e)); } finally { setBusy(null); }
+    try { await fn(); if (/^(save|buy|pay)/.test(name)) { setCoin((n) => n + 1); setDropping(true); } chain.refresh(); stash.reload(); port.reload(); profile.reload(); } catch (e) { setErr(errText(e)); } finally { setBusy(null); }
   };
   const save = (usdc: number) => run(`save${usdc}`, async () => {
     if ((bal ?? 0) < usdc) throw new Error(`Your wallet has ${(bal ?? 0).toFixed(2)} USDC`);
@@ -128,7 +131,9 @@ export default function StashScreen() {
       ) : (
         <>
           <View style={{ backgroundColor: C.s1, borderRadius: 24, padding: 18, flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-            <ClayLoop name="stash" size={112} style={{ borderRadius: 20 }} />
+            {/* while a save lands, the coin-drop animation takes the jar's place, then the loop comes back */}
+            {dropping ? <View style={{ width: 112, height: 112, borderRadius: 20, backgroundColor: '#000' }}><Lottie key={coin} name="coin" size={112} onDone={() => setDropping(false)} /></View>
+              : <ClayLoop name="stash" size={112} style={{ borderRadius: 20 }} />}
             <View style={{ flex: 1 }}>
               <Txt v="small">In your Stash</Txt>
               <Txt v="title" style={{ fontSize: 34 }}>{s ? fmtUsd(s.balance) : '…'}</Txt>

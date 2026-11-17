@@ -15,6 +15,7 @@ import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain'
 import { ClayLoop } from '@/ui/clay';
 import { FX, Fill, Hit } from '@/ui/fx';
 import { WinExtras } from '@/ui/result';
+import { Lottie } from '@/ui/lottie';
 import { BackBtn, Btn, Card, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
@@ -214,7 +215,10 @@ export default function OnChainDuel() {
           {duel && duel.status === 5 ? (
             <Animated.View entering={FadeInDown.springify()}>
               <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-                <ClayLoop name={duel.winner === me + 1 ? 'win' : duel.winner === 3 ? 'duel' : 'ko'} size={150} loop={duel.winner === me + 1} style={{ borderRadius: 32 }} />
+                <View>
+                  <ClayLoop name={duel.winner === me + 1 ? 'win' : duel.winner === 3 ? 'duel' : 'ko'} size={150} loop={duel.winner === me + 1} style={{ borderRadius: 32 }} />
+                  {duel.winner === me + 1 ? <Lottie name="confetti" size={260} style={{ position: 'absolute', left: -55, top: -60 }} /> : null}
+                </View>
                 <Txt v="title">{duel.winner === 3 ? `Dead heat · ${fmtUsdc(duel.stake)} back` : duel.winner === me + 1 ? `You won ${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : `You lost ${fmtUsdc(duel.stake)}`}</Txt>
                 <Txt v="small" color={C.muted}>{duel.winner === me + 1 ? 'The pot minus the 3% rake is in your wallet.' : duel.winner === 3 ? 'Both stakes refunded in full.' : 'Your stake went to your rival.'}</Txt>
                 <Txt v="small">Settled on Solana · {sym} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}% · rival {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Txt>
