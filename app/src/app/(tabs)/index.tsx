@@ -13,7 +13,7 @@ import { readHoldings, readStash, useBoard, usePoll, usePrices, useProfiles, typ
 import { STOCKS } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
 import { Composer, Thread } from '@/ui/feed';
-import { Jar } from '@/ui/icons';
+import { Bell, Jar } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
@@ -107,6 +107,9 @@ export default function HomeScreen() {
         {desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         {wallet.status === 'out' ? <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} /> : (
           <Row style={{ gap: 8 }}>
+            <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+              <Bell size={17} color={C.ink} />
+            </Pressable>
             <Pressable onPress={() => router.push('/stash' as Href)} style={{ height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: C.s2, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Jar size={17} color={C.ink} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{stash.status === 'ready' && stash.data ? `$${stash.data.balance.toFixed(2)}` : 'Stash'}</Txt>
             </Pressable>

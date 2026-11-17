@@ -4,9 +4,9 @@ import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
 import { Pressable, Share as RNShare, TextInput, View } from 'react-native';
 import { ComputeBudgetProgram, PublicKey } from '@solana/web3.js';
-import { BN, NO_REPLY, P, USDC, usdcAta, FEED_BOARD } from '@/chain/client';
+import { BN, COIN_SYMBOLS, NO_REPLY, P, USDC, readDuel, usdcAta, FEED_BOARD } from '@/chain/client';
 import { errText, type useChain } from '@/chain/useChain';
-import { ago, holdingKey, likedBy, type Holding, type Post, type Profile } from '@/chain/social';
+import { ago, holdingKey, likedBy, reader, usePoll, type Holding, type Post, type Profile } from '@/chain/social';
 import { STOCKS, createStockAtaIx, minSharesFor, stockByMint, swapAccounts, type Stock } from '@/chain/stocks';
 import { ART, AVATARS, Btn, ErrorLine, Row, Txt } from './kit';
 import { Heart, More, Reply, Share } from './icons';
@@ -58,6 +58,31 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
   );
 }
 
+
+/** A shared duel result: coin, both calls and the payout, read from the settled duel account. */
+function DuelCard({ duel, author }: { duel: PublicKey; author: PublicKey }) {
+  const d = usePoll(() => readDuel(reader, duel), 30000, [duel.toBase58()]);
+  const v = d.status === 'ready' ? d.data : null;
+  if (!v || v.status !== 5) return null;
+  const i = v.creator.equals(author) ? 0 : 1;
+  const won = v.winner === i + 1;
+  const pot = (v.stake * 2 - Math.floor((v.stake * 2 * 300) / 10_000)) / USDC;
+  const sym = COIN_SYMBOLS[v.coin] ?? '?';
+  return (
+    <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 }}>
+      <Image source={ART.tileDuel} style={{ width: 44, height: 44 }} contentFit="contain" />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Txt v="label" lines={1}>Duel on {sym}</Txt>
+        <Txt v="small" lines={1}>{v.entryPrice.toFixed(2)} → {v.exitPrice.toFixed(2)} · settled on Solana</Txt>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Txt v="small" style={{ fontSize: 11 }}>{won ? 'Won' : v.winner === 3 ? 'Draw' : 'Lost'}</Txt>
+        <Txt v="label" color={won ? C.up : C.muted}>{won ? `+${fmtUsd(pot - v.stake / USDC)}` : v.winner === 3 ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Txt>
+      </View>
+    </View>
+  );
+}
+
 type ItemProps = {
   post: Post; profiles: Map<string, Profile>; holdings: Map<string, Holding>; prices: Record<string, number>;
   me?: Profile; onReply: (p: Post) => void; onLike: (p: Post) => void; liking: number | null; threadBelow?: boolean; reply?: boolean;
@@ -84,6 +109,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
         </Row>
         <Txt v="body" style={{ marginTop: 3, fontSize: 15, lineHeight: 21 }}>{post.text}</Txt>
         {stock ? <PositionCard stock={stock} holding={holdings.get(holdingKey(post.author, post.refkey))} price={prices[stock.symbol]} /> : null}
+        {post.kind === 2 ? <DuelCard duel={post.refkey} author={post.author} /> : null}
         <Row style={{ marginTop: 10, gap: 22 }}>
           <Pressable onPress={share} hitSlop={8}><Share size={17} color={C.muted} /></Pressable>
           <Pressable onPress={() => onReply(post)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>

@@ -14,6 +14,7 @@ import { reader } from '@/chain/reads';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { ClayLoop } from '@/ui/clay';
 import { FX, Fill, Hit } from '@/ui/fx';
+import { WinExtras } from '@/ui/result';
 import { BackBtn, Btn, Card, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
@@ -23,12 +24,15 @@ type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
 const DUEL_SETUP_SECS = 600;
 /** Each player's stake, in USDC. */
 const STAKE_USDC = 5;
+/** Two kinds of duel: a 60 s call on crypto, or a slow one-hour call on a real stock (no leverage either way). */
+const MODES = { crypto: { mask: 0b0000_0111, secs: 60, label: 'Crypto · 60 s', note: 'SOL, BTC or ETH' }, stocks: { mask: 0b1111_1000, secs: 3600, label: 'Stocks · 1 hour', note: 'NVIDIA, Tesla, Apple, S&P 500 or Alphabet' } } as const;
 const secretKey = (duel: PublicKey) => `clashy:chain:secret:${duel.toBase58()}`;
 
 export default function OnChainDuel() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(820);
   const chain = useChain(['Check duel']);
+  const [mode, setMode] = useState<keyof typeof MODES>('crypto');
   const { me: wallet, sponsor, progs, bal, hasPlayer, txs, err, setErr, busy, guard, onBase, onEr } = chain;
   const [board, setBoard] = useState<DuelView[]>([]);
   const [boardErr, setBoardErr] = useState<string>();
@@ -151,7 +155,7 @@ export default function OnChainDuel() {
     const seed = random32();
     await AsyncStorage.setItem(secretKey(key), JSON.stringify({ seed: [...seed] } satisfies Secrets));
     const seedHash = [...(await sha256(seed))];
-    await onBase('Open duel · escrow USDC stake', () => progs.base.methods.openDuel(new BN(nonce), new BN(STAKE_USDC * USDC), 0b111, 60, new BN(900), seedHash)
+    await onBase('Open duel · escrow USDC stake', () => progs.base.methods.openDuel(new BN(nonce), new BN(STAKE_USDC * USDC), MODES[mode].mask, MODES[mode].secs, new BN(900), seedHash)
       .accountsPartial({ creator: wallet, payer: sponsor, duel: key, vault: P.vault(key), creatorUsdc: usdcAta(wallet), usdcMint: USDC_MINT }).rpc());
     await setActiveDuel(key);
   });
@@ -213,7 +217,8 @@ export default function OnChainDuel() {
                 <ClayLoop name={duel.winner === me + 1 ? 'win' : duel.winner === 3 ? 'duel' : 'ko'} size={150} loop={duel.winner === me + 1} style={{ borderRadius: 32 }} />
                 <Txt v="title">{duel.winner === 3 ? `Dead heat · ${fmtUsdc(duel.stake)} back` : duel.winner === me + 1 ? `You won ${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : `You lost ${fmtUsdc(duel.stake)}`}</Txt>
                 <Txt v="small" color={C.muted}>{duel.winner === me + 1 ? 'The pot minus the 3% rake is in your wallet.' : duel.winner === 3 ? 'Both stakes refunded in full.' : 'Your stake went to your rival.'}</Txt>
-                <Txt v="small">Settled on Solana · {sym} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(1)}% · rival {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(1)}%</Txt>
+                <Txt v="small">Settled on Solana · {sym} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}% · rival {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Txt>
+                {duel.winner === me + 1 && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
                 <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
               </Card>
             </Animated.View>
@@ -224,7 +229,13 @@ export default function OnChainDuel() {
               <Btn title="New duel" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
             </Card>
           ) : null}
-          <Btn title={busy === 'open' ? 'Opening…' : `Open a duel · ${STAKE_USDC} USDC`} h={58} style={{ marginTop: 14, borderRadius: 18 }} disabled={!ready || !!busy} onPress={open} />
+          <Row style={{ gap: 8, marginTop: 14 }}>
+            {(['crypto', 'stocks'] as const).map((k) => (
+              <Btn key={k} title={MODES[k].label} kind={mode === k ? 'white' : 'ghost'} h={40} style={{ flex: 1 }} onPress={() => setMode(k)} />
+            ))}
+          </Row>
+          <Txt v="small" style={{ marginTop: 6 }}>VRF rolls one of {MODES[mode].note} for both of you; you each call up or down, sealed. Best call wins the pot.</Txt>
+          <Btn title={busy === 'open' ? 'Opening…' : `Open a duel · ${STAKE_USDC} USDC`} h={58} style={{ marginTop: 10, borderRadius: 18 }} disabled={!ready || !!busy} onPress={open} />
           <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Challenge board</Txt>
           {boardErr ? <ErrorLine msg={boardErr} /> : null}
           {board.filter((d) => !wallet || !d.creator.equals(wallet)).length === 0 ? (
@@ -261,8 +272,8 @@ export default function OnChainDuel() {
                 <Txt v="small">Pick a side. It stays sealed (commit-reveal) until both of you lock.</Txt>
                 {me >= 0 && !(duel.picksCommitted & (1 << me)) ? (
                   <Row style={{ gap: 10, marginTop: 12 }}>
-                    <Btn title="Long ▲ 50×" kind="long" h={60} style={{ flex: 1 }} disabled={!!busy} onPress={() => pick(1, 50)} />
-                    <Btn title="Short ▼ 50×" kind="short" h={60} style={{ flex: 1 }} disabled={!!busy} onPress={() => pick(2, 50)} />
+                    <Btn title="Up ▲" kind="long" h={60} style={{ flex: 1 }} disabled={!!busy} onPress={() => pick(1, 1)} />
+                    <Btn title="Down ▼" kind="short" h={60} style={{ flex: 1 }} disabled={!!busy} onPress={() => pick(2, 1)} />
                   </Row>
                 ) : (
                   <Txt v="small" style={{ marginTop: 10 }}>Locked. {duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Handing the duel to the rollup…' : 'Revealing picks…') : 'Waiting for your rival to lock…'}</Txt>
@@ -277,9 +288,9 @@ export default function OnChainDuel() {
             {duel.status === 3 || duel.status === 4 ? (
               <View style={{ marginTop: 10 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
-                  <View><Txt v="small">You · {duel.side[me] === 1 ? 'long' : 'short'} {duel.lev[me]}×</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: myPnl >= 0 ? C.up : C.down }}>{myPnl >= 0 ? '+' : ''}{myPnl.toFixed(1)}%</Text></View>
+                  <View><Txt v="small">You · called {duel.side[me] === 1 ? 'up' : 'down'}</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: myPnl >= 0 ? C.up : C.down }}>{myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}%</Text></View>
                   <View style={{ alignItems: 'center' }}><Txt v="small">{sym}</Txt><Txt v="label">{price ? `$${price.toFixed(2)}` : '…'}</Txt><Txt v="small">entry ${duel.entryPrice.toFixed(2)}</Txt></View>
-                  <View style={{ alignItems: 'flex-end' }}><Txt v="small">Rival · {duel.side[1 - me] === 1 ? 'long' : 'short'}</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: theirPnl >= 0 ? C.up : C.down }}>{theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(1)}%</Text></View>
+                  <View style={{ alignItems: 'flex-end' }}><Txt v="small">Rival · called {duel.side[1 - me] === 1 ? 'up' : 'down'}</Txt><Text style={{ fontFamily: F.bold, fontSize: 32, color: theirPnl >= 0 ? C.up : C.down }}>{theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Text></View>
                 </Row>
                 <Row style={{ gap: 10, marginTop: 10 }}><Fill v={1 + myPnl / 100} color={C.brand} skew /><Fill v={1 + theirPnl / 100} color={C.opp} flip skew /></Row>
                 <Txt v="small" style={{ marginTop: 8 }}>{duel.status === 3 ? `Scored on the rollup every check · bell at ${duel.lenSecs} s` : 'Finished on the rollup · committing to Solana and settling…'}</Txt>
