@@ -57,3 +57,28 @@ export const WalletI = ({ size, color = '#fff' }: P) => (
 export const Collapse = ({ size, color = '#fff', open = true }: P & { open?: boolean }) => (
   <Svg {...base(size)} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 4h18v16H3z" /><Path d="M9 4v16" /><Path d={open ? 'm16 10-2 2 2 2' : 'm14 10 2 2-2 2'} /></Svg>
 );
+export const Reply = ({ size = 18, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 5h16v11H9l-5 4z" />
+  </Svg>
+);
+export const Heart = ({ size = 18, color = '#fff', filled }: P & { filled?: boolean }) => (
+  <Svg {...base(size)} stroke={color} fill={filled ? color : 'none'} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 20s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.5 2.7C19.5 15.4 12 20 12 20z" />
+  </Svg>
+);
+export const Share = ({ size = 18, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 15V4M7.5 8.5 12 4l4.5 4.5" /><Path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
+  </Svg>
+);
+export const More = ({ size = 18, color = '#fff' }: P) => (
+  <Svg {...base(size)} fill={color}>
+    <Circle cx="5" cy="12" r="1.6" /><Circle cx="12" cy="12" r="1.6" /><Circle cx="19" cy="12" r="1.6" />
+  </Svg>
+);
+export const Jar = ({ size = 22, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M8 4h8M9 4v2.5C6.5 7.5 5 9.6 5 12.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5.5c0-2.9-1.5-5-4-6V4" /><Path d="M9.5 13h5" />
+  </Svg>
+);

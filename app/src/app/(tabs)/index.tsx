@@ -1,54 +1,50 @@
-import { Image } from 'expo-image';
-// Home (Nick's pick, Nov 15): H2 live stories on top, H4 one-time "Play now" card, H5 feed. Everything in the stories
-// and the feed is read from the Clashy program on chain: duels live on the rollup, open challenges you can take in one
-// tap, settled results and clan wars. Nothing here is invented.
-import { ClayLoop } from '@/ui/clay';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+// Home: the calls feed. Players post calls on tokenized stocks with their real position attached (shares bought
+// through the Stash and what they cost, both on chain, marked to the live price), reply in threads and like once.
+// Posts live on the MagicBlock rollup; profiles, positions and prices are read from Solana. Nothing is invented.
+import { router, type Href } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COIN_SYMBOLS, usdcBalance } from '@/chain/client';
+import { PublicKey } from '@solana/web3.js';
+import { BN, COIN_SYMBOLS, P, FEED_BOARD } from '@/chain/client';
 import { useFeed, type FeedDuel } from '@/chain/reads';
-import { useWallet } from '@/chain/wallet';
+import { errText, useChain } from '@/chain/useChain';
+import { readHoldings, readStash, useBoard, usePoll, usePrices, useProfiles, type Post } from '@/chain/social';
+import { STOCKS } from '@/chain/stocks';
+import { ClayLoop } from '@/ui/clay';
+import { Composer, JoinCard, Thread } from '@/ui/feed';
+import { Jar } from '@/ui/icons';
+import { Avatar, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
-import { Bolt } from '@/ui/icons';
-import { ART, Avatar, Btn, Card, ErrorLine, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark } from '@/ui/kit';
 import { C, F, S } from '@/ui/tokens';
 
-type Tab = 'foryou' | 'clans';
+type Tab = 'calls' | 'duels';
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
-const ago = (ts: number) => {
-  const s = Math.max(0, Date.now() / 1000 - ts);
-  return s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : `${Math.floor(s / 86400)} d ago`;
-};
 
 /** A story bubble: one duel live on the rollup right now. */
 const Story = ({ d }: { d: FeedDuel }) => (
-  <Pressable onPress={() => router.push('/onchain')} style={{ width: 66, alignItems: 'center' }}>
-    <View style={{ width: 64, height: 64, borderRadius: 32, padding: 2.5, backgroundColor: C.brand }}>
-      <View style={{ flex: 1, borderRadius: 30, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
-        <Txt v="label" color="#fff" style={{ fontSize: 13 }}>{COIN_SYMBOLS[d.coin] ?? '…'}</Txt>
+  <Pressable onPress={() => router.push('/onchain')} style={{ width: 62, alignItems: 'center' }}>
+    <View style={{ width: 58, height: 58, borderRadius: 29, padding: 2.5, backgroundColor: C.brand }}>
+      <View style={{ flex: 1, borderRadius: 27, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+        <Txt v="label" color="#fff" style={{ fontSize: 12 }}>{COIN_SYMBOLS[d.coin] ?? '…'}</Txt>
       </View>
     </View>
-    <Txt v="small" color={C.ink} style={{ marginTop: 6, fontSize: 12 }} lines={1}>{d.stake * 2} USDC</Txt>
+    <Txt v="small" color={C.ink} style={{ marginTop: 5, fontSize: 11 }} lines={1}>{d.stake * 2} USDC</Txt>
   </Pressable>
 );
 
-function Result({ d, me }: { d: FeedDuel; me?: string }) {
-  const [a, b] = [d.creator.toBase58(), d.joiner.toBase58()];
-  const name = (k: string) => (k === me ? 'You' : short(k));
+function DuelResult({ d, name }: { d: FeedDuel; name: (k: PublicKey) => string }) {
   const tie = d.winner === 3;
-  const w = d.winner === 1 ? a : b;
-  const l = d.winner === 1 ? b : a;
+  const [w, l] = d.winner === 1 ? [d.creator, d.joiner] : [d.joiner, d.creator];
   const wi = d.winner === 1 ? 0 : 1;
   const koed = !tie && !!(d.ko & (1 << (1 - wi)));
   return (
     <Card style={{ padding: 14, marginBottom: 8 }}>
       <Row style={{ gap: 10 }}>
-        <Avatar name={tie ? a : w} size={38} />
+        <Avatar name={(tie ? d.creator : w).toBase58()} size={38} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt v="label" lines={2}>{tie ? `${name(a)} and ${name(b)} drew` : `${name(w)} ${koed ? 'knocked out' : 'beat'} ${name(l)}`} on {COIN_SYMBOLS[d.coin] ?? '?'}</Txt>
-          <Txt v="small" style={{ marginTop: 2 }}>{d.entry.toFixed(2)} → {d.exit.toFixed(2)} · {tie ? 'both refunded' : `won ${(d.stake * 2 - (d.stake * 2 * 300) / 10_000).toFixed(2)} USDC`} · {ago(d.ts)}</Txt>
+          <Txt v="label" lines={2}>{tie ? `${name(d.creator)} and ${name(d.joiner)} drew` : `${name(w)} ${koed ? 'knocked out' : 'beat'} ${name(l)}`} on {COIN_SYMBOLS[d.coin] ?? '?'}</Txt>
+          <Txt v="small" style={{ marginTop: 2 }}>{d.entry.toFixed(2)} → {d.exit.toFixed(2)} · {tie ? 'both refunded' : `won ${(d.stake * 2 * 0.97).toFixed(2)} USDC`}</Txt>
         </View>
         {!tie ? <Txt v="label" color={C.up}>{(d.pnlBps[wi] / 100 >= 0 ? '+' : '') + (d.pnlBps[wi] / 100).toFixed(1)}%</Txt> : null}
       </Row>
@@ -59,95 +55,104 @@ function Result({ d, me }: { d: FeedDuel; me?: string }) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn();
-  const [tab, setTab] = useState<Tab>('foryou');
   const { desk } = useLayout();
-  const [showPlay, setShowPlay] = useState(true); // one-time card; dismissing hides it for this session
+  const [tab, setTab] = useState<Tab>('calls');
+  const [replyTo, setReplyTo] = useState<Post | null>(null);
+  const [liking, setLiking] = useState<number | null>(null);
+  const [likeErr, setLikeErr] = useState<string>();
+  const chain = useChain();
+  const { me, wallet, bal, hasProfile, progs, onEr } = chain;
+  const board = useBoard();
+  const profiles = useProfiles();
+  const prices = usePrices();
   const feed = useFeed();
-  const wallet = useWallet();
-  const me = wallet.signer?.publicKey;
-  const [bal, setBal] = useState<number | null>(null);
-  useEffect(() => {
-    if (!me) { setBal(null); return; }
-    let alive = true;
-    const run = () => usdcBalance(me).then((b) => alive && setBal(b)).catch(() => {});
-    run();
-    const h = setInterval(run, 5000);
-    return () => { alive = false; clearInterval(h); };
-  }, [me?.toBase58()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const posts = board.status === 'ready' ? board.data : [];
+  const profMap = profiles.status === 'ready' ? profiles.data : new Map();
+  const myProfile = me ? profMap.get(me.toBase58()) : undefined;
+
+  // every (author, stock) on a call, plus my own positions for the composer
+  const pairs = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { owner: PublicKey; mint: PublicKey }[] = [];
+    const add = (owner: PublicKey, mint: PublicKey) => { const k = `${owner.toBase58()}:${mint.toBase58()}`; if (!seen.has(k)) { seen.add(k); out.push({ owner, mint }); } };
+    posts.filter((p) => p.kind === 1).forEach((p) => add(p.author, p.refkey));
+    if (me) STOCKS.forEach((s) => add(me, new PublicKey(s.mint)));
+    return out;
+  }, [posts.map((p) => p.seq).join(','), me?.toBase58()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const holdings = usePoll(() => readHoldings(pairs), 6000, [pairs.map((x) => `${x.owner.toBase58()}${x.mint.toBase58()}`).join(',')]);
+  const stash = usePoll(() => (me ? readStash(me) : Promise.resolve(null)), 6000, [me?.toBase58()]);
+  const holdMap = holdings.status === 'ready' ? holdings.data : new Map();
+  const px = prices.status === 'ready' ? prices.data : {};
+
+  const top = posts.filter((p) => p.replyTo === null || !posts.some((q) => q.seq === p.replyTo));
+  const repliesOf = (seq: number) => posts.filter((p) => p.replyTo === seq).sort((a, b) => a.seq - b.seq);
+  const nameOf = (k: PublicKey) => profMap.get(k.toBase58())?.name ?? short(k.toBase58());
+
+  const like = async (p: Post) => {
+    if (!progs || !me) { wallet.login?.(); return; }
+    setLiking(p.seq); setLikeErr(undefined);
+    try {
+      await onEr('Like', progs.er.methods.like(new BN(p.seq)).accountsPartial({ liker: me, board: P.board(FEED_BOARD) }));
+      board.reload();
+    } catch (e) { setLikeErr(errText(e)); } finally { setLiking(null); }
+  };
+  useEffect(() => { if (replyTo) setTab('calls'); }, [replyTo]);
   const f = feed.status === 'ready' ? feed.data : null;
-  const open = f ? f.open.filter((d) => d.creator.toBase58() !== me?.toBase58()) : [];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 24 }}>
-      <Row style={{ justifyContent: 'space-between', marginBottom: 14 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+      <Row style={{ justifyContent: 'space-between', marginBottom: 12 }}>
         {desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
-        {wallet.status === 'out' ? <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} />
-          : <Btn title={me ? (bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`) : 'Wallet'} kind={me ? 'ghost' : 'brand'} h={36} onPress={() => router.push('/wallet')} />}
+        {wallet.status === 'out' ? <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} /> : (
+          <Row style={{ gap: 8 }}>
+            <Pressable onPress={() => router.push('/stash' as Href)} style={{ height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: C.s2, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Jar size={17} color={C.ink} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{stash.status === 'ready' && stash.data ? `$${stash.data.balance.toFixed(2)}` : 'Stash'}</Txt>
+            </Pressable>
+            <Btn title={bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`} kind="ghost" h={36} onPress={() => router.push('/wallet')} />
+          </Row>
+        )}
       </Row>
 
-      {/* H2: live now. Each bubble is a duel being scored on the MagicBlock rollup right now. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginBottom: 14 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10, alignItems: 'center' }}>
-        {f && f.live.length ? f.live.map((d) => <Story key={d.key.toBase58()} d={d} />) : (
-          <View style={{ justifyContent: 'center', paddingVertical: 8, maxWidth: 320 }}>
-            <Txt v="small" style={{ lineHeight: 17 }}>{f ? 'No duels live right now. Open one and it shows here while it plays on the rollup.' : 'Loading what is live…'}</Txt>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* H4: one-time Play now card */}
-      {showPlay ? (
-        <View style={{ borderRadius: 22, padding: 16, backgroundColor: C.brand, marginBottom: 18, overflow: 'hidden' }}>
-          <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <View style={{ flex: 1, paddingRight: 10 }}>
-              <Txt v="small" color="#D6DBFF" style={{ fontFamily: F.semi, letterSpacing: 0.6, fontSize: 11 }}>QUICK MATCH</Txt>
-              <Txt v="title" color="#fff" style={{ marginTop: 4, fontSize: desk ? 34 : undefined }}>Play now</Txt>
-              <Txt v="small" color="#DDE1FF" style={{ marginTop: 2 }}>Duel a rival for 5 USDC: one coin for both of you, long or short, best % in 60 s.</Txt>
-            </View>
-            {desk ? <ClayLoop name="hero" width={260} height={146} style={{ borderRadius: 14 }} /> : <ClayLoop name="duel" size={78} style={{ borderRadius: 18 }} />}
-          </Row>
-          <Row style={{ gap: 8, marginTop: 14 }}>
-            <Btn title="Find a duel" kind="white" style={{ flex: 1 }} icon={<Bolt size={16} color="#000" />} onPress={() => router.push('/onchain')} />
-            <Btn title="Practice" kind="ghost" style={{ flex: 0.7, backgroundColor: 'rgba(255,255,255,0.16)' }} onPress={() => router.push('/duel/match')} />
-            <Btn title="Not now" kind="ghost" style={{ flex: 0.6, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setShowPlay(false)} />
-          </Row>
-        </View>
+      {f && f.live.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginBottom: 12 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
+          {f.live.map((d) => <Story key={d.key.toBase58()} d={d} />)}
+        </ScrollView>
       ) : null}
 
-      <Pressable onPress={() => router.push('/discover')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.s1, borderRadius: 18, padding: 14, marginBottom: 18 }}>
-        <Image source={ART.radar} style={{ width: 40, height: 40 }} contentFit="contain" />
-        <View style={{ flex: 1 }}><Txt v="label">Trending on Solana</Txt><Txt v="small" style={{ marginTop: 2 }}>Live coins from DexScreener. Open one, or practice a duel on it.</Txt></View>
-        <Txt v="small" style={{ fontFamily: F.semi, fontSize: 18 }}>›</Txt>
-      </Pressable>
+      {wallet.status === 'out' ? (
+        <View style={{ borderRadius: 22, backgroundColor: C.s1, padding: 16, marginBottom: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          <ClayLoop name="stocks" size={84} style={{ borderRadius: 16 }} />
+          <View style={{ flex: 1 }}>
+            <Txt v="h2">Calls with skin in the game</Txt>
+            <Txt v="small" style={{ marginTop: 4 }}>Every position here is real: shares of real stocks, bought on chain, at the price they paid.</Txt>
+            <Btn title="Sign in to post" h={36} style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => wallet.login?.()} />
+          </View>
+        </View>
+      ) : me && hasProfile === false ? <JoinCard chain={chain} /> : null}
 
-      {/* H5: the feed, from the chain */}
-      <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'foryou', label: 'For you' }, { key: 'clans', label: 'Clans' }]} />
-      {feed.status === 'loading' ? <SkeletonRows n={3} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : tab === 'foryou' ? (
+      {myProfile ? (
+        <Composer chain={chain} me={myProfile} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onPosted={() => { board.reload(); holdings.reload(); stash.reload(); }}
+          stashBalance={stash.status === 'ready' ? stash.data?.balance ?? 0 : null} myHoldings={holdMap} />
+      ) : null}
+
+      <View style={{ marginTop: 8 }}>
+        <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'calls', label: 'Calls' }, { key: 'duels', label: 'Duel results' }]} />
+      </View>
+      {likeErr ? <ErrorLine msg={likeErr} /> : null}
+
+      {tab === 'calls' ? (
+        board.status === 'loading' ? <SkeletonRows n={4} /> : board.status === 'error' ? <ErrorLine msg={board.error} onRetry={board.reload} /> : top.length === 0 ? (
+          <Pending art={ART.chat} title="No calls yet" body="Post the first call: pick a stock, say why, and back it from your Stash so your position shows." />
+        ) : top.map((p) => (
+          <Thread key={p.seq} post={p} replies={repliesOf(p.seq)} profiles={profMap} holdings={holdMap} prices={px} me={myProfile}
+            onReply={(x) => (myProfile ? setReplyTo(x) : wallet.login?.())} onLike={like} liking={liking} />
+        ))
+      ) : feed.status === 'loading' ? <SkeletonRows n={3} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : (
         <>
-          {open.map((d) => (
-            <Card key={d.key.toBase58()} style={{ padding: 14, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(91,108,255,0.45)' }}>
-              <Row style={{ gap: 10 }}>
-                <Avatar name={d.creator.toBase58()} size={38} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Txt v="label" lines={1}>{short(d.creator.toBase58())} wants a duel</Txt>
-                  <Txt v="small" style={{ marginTop: 2 }}>{d.stake} USDC each · coin rolled by VRF when you join</Txt>
-                </View>
-                <Btn title="Join" h={36} onPress={() => router.push('/onchain')} />
-              </Row>
-            </Card>
-          ))}
-          {f!.settled.map((d) => <Result key={d.key.toBase58()} d={d} me={me?.toBase58()} />)}
-          {open.length === 0 && f!.settled.length === 0 ? (
-            <Pending art={ART.bell} title="Nothing on chain yet" body="Open challenges and settled duels show here, live from the Clashy program." action="Open a duel" onAction={() => router.push('/onchain')} />
-          ) : null}
+          {f!.settled.length === 0 ? <Pending art={ART.duels} title="No duels settled yet" body="Duel results show here, live from the Clashy program." action="Open a duel" onAction={() => router.push('/onchain')} />
+            : f!.settled.map((d) => <DuelResult key={d.key.toBase58()} d={d} name={nameOf} />)}
         </>
-      ) : f!.wars.length === 0 ? (
-        <Pending art={ART.clan} title="No clan wars settled yet" body="When a clan war settles, its result shows here." action="Open clans" onAction={() => router.push('/clans')} />
-      ) : f!.wars.map((w, i) => (
-        <Card key={i} style={{ padding: 14, marginBottom: 8 }}>
-          <Txt v="label">{w.winner === 3 ? `${w.a} and ${w.b} tied` : `${w.winner === 1 ? w.a : w.b} beat ${w.winner === 1 ? w.b : w.a}`}</Txt>
-          <Txt v="small" style={{ marginTop: 2 }}>{w.a} {(w.returns[0] / 100).toFixed(2)}% vs {w.b} {(w.returns[1] / 100).toFixed(2)}% · pot {w.pot.toFixed(2)} USDC · {ago(w.ts)}</Txt>
-        </Card>
-      ))}
+      )}
     </ScrollView>
   );
 }

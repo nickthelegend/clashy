@@ -1182,6 +1182,115 @@
       ]
     },
     {
+      "name": "create_profile",
+      "docs": [
+        "A player's handle and avatar. The handle account makes names unique."
+      ],
+      "discriminator": [
+        225,
+        205,
+        234,
+        143,
+        17,
+        186,
+        50,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "handle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  97,
+                  110,
+                  100,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "name"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "avatar",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "create_tournament",
       "discriminator": [
         158,
@@ -1486,6 +1595,410 @@
         {
           "name": "duration",
           "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "delegate_board",
+      "discriminator": [
+        111,
+        167,
+        6,
+        152,
+        230,
+        48,
+        8,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "buffer_board",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "board"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_board",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "board"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_board",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "board"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "board",
+          "writable": true
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "delegate_channel",
+      "docs": [
+        "Moves a channel onto the MagicBlock rollup, where members post for free and instantly."
+      ],
+      "discriminator": [
+        218,
+        18,
+        146,
+        113,
+        52,
+        187,
+        159,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "buffer_channel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "channel"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_channel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "channel"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_channel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "channel"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "channel",
+          "writable": true
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "clan",
+          "type": "pubkey"
+        },
+        {
+          "name": "id",
+          "type": "u8"
         }
       ]
     },
@@ -2745,6 +3258,30 @@
           }
         },
         {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "joiner"
+              }
+            ]
+          }
+        },
+        {
           "name": "duel",
           "writable": true,
           "pda": {
@@ -2845,6 +3382,30 @@
                   105,
                   103
                 ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player"
               }
             ]
           }
@@ -2991,6 +3552,183 @@
       "args": []
     },
     {
+      "name": "like",
+      "docs": [
+        "One like per player per post (by profile number)."
+      ],
+      "discriminator": [
+        116,
+        148,
+        16,
+        9,
+        250,
+        48,
+        5,
+        114
+      ],
+      "accounts": [
+        {
+          "name": "liker",
+          "signer": true
+        },
+        {
+          "name": "profile",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "liker"
+              }
+            ]
+          }
+        },
+        {
+          "name": "board",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "seq",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "open_board",
+      "discriminator": [
+        78,
+        99,
+        223,
+        200,
+        178,
+        142,
+        47,
+        166
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "board",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "open_channel",
+      "discriminator": [
+        91,
+        45,
+        253,
+        71,
+        140,
+        166,
+        107,
+        109
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "clan"
+        },
+        {
+          "name": "member",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clan"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "channel",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "open_duel",
       "docs": [
         "Opens a duel and escrows the creator's stake. With a short expiry it is a quick-match",
@@ -3047,6 +3785,30 @@
                   121,
                   101,
                   114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
                 ]
               },
               {
@@ -3164,6 +3926,268 @@
               32
             ]
           }
+        }
+      ]
+    },
+    {
+      "name": "open_stash",
+      "discriminator": [
+        20,
+        235,
+        22,
+        88,
+        145,
+        2,
+        128,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104,
+                  118
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "goal",
+          "type": "u64"
+        },
+        {
+          "name": "goal_name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "post",
+      "docs": [
+        "Posts to the feed (players with a profile). A call points at a stock mint and the app shows the",
+        "author's live position in it; a reply points at the post it answers."
+      ],
+      "discriminator": [
+        223,
+        96,
+        234,
+        236,
+        158,
+        106,
+        145,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "author",
+          "signer": true
+        },
+        {
+          "name": "profile",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "author"
+              }
+            ]
+          }
+        },
+        {
+          "name": "board",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "type": "u8"
+        },
+        {
+          "name": "refkey",
+          "type": "pubkey"
+        },
+        {
+          "name": "reply_to",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "post_message",
+      "docs": [
+        "Posts to a clan channel (members only). Runs inside the rollup."
+      ],
+      "discriminator": [
+        214,
+        50,
+        100,
+        209,
+        38,
+        34,
+        7,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "author",
+          "signer": true
+        },
+        {
+          "name": "channel",
+          "writable": true
+        },
+        {
+          "name": "member",
+          "docs": [
+            "The author's membership in the channel's clan (the handler checks it is the same clan)."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "member.clan",
+                "account": "Member"
+              },
+              {
+                "kind": "account",
+                "path": "author"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "kind",
+          "type": "u8"
+        },
+        {
+          "name": "refkey",
+          "type": "pubkey"
         }
       ]
     },
@@ -4016,6 +5040,58 @@
       ]
     },
     {
+      "name": "set_avatar",
+      "discriminator": [
+        35,
+        44,
+        230,
+        191,
+        57,
+        199,
+        184,
+        248
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile"
+          ]
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "avatar",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "set_coin",
       "docs": [
         "Sets coin `index` to read from `feed` (a Clashy PriceFeed or a MagicBlock oracle account)."
@@ -4125,6 +5201,123 @@
         {
           "name": "validator",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_goal",
+      "discriminator": [
+        36,
+        91,
+        124,
+        161,
+        86,
+        107,
+        200,
+        74
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "stash"
+          ]
+        },
+        {
+          "name": "stash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "goal",
+          "type": "u64"
+        },
+        {
+          "name": "goal_name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "set_limits",
+      "docs": [
+        "The player's own controls. A lower daily limit applies at once; a higher one waits a day."
+      ],
+      "discriminator": [
+        207,
+        50,
+        250,
+        67,
+        211,
+        33,
+        70,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile"
+          ]
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "daily_limit",
+          "type": "u64"
+        },
+        {
+          "name": "save_bps",
+          "type": "u16"
+        },
+        {
+          "name": "roundup_step",
+          "type": "u64"
         }
       ]
     },
@@ -4775,6 +5968,817 @@
       "args": []
     },
     {
+      "name": "stash_invest",
+      "docs": [
+        "Buys a tokenized stock with USDC from the Stash, through Orca Whirlpool. The shares land in the",
+        "player's own token account; the cost is recorded on chain in their Holding."
+      ],
+      "discriminator": [
+        67,
+        203,
+        224,
+        243,
+        45,
+        106,
+        83,
+        135
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile",
+            "stash"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stash",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104,
+                  118
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "holding",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  111,
+                  108,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "sw.stock_mint",
+                "account": "StockSwap"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sw",
+          "accounts": [
+            {
+              "name": "whirlpool",
+              "writable": true
+            },
+            {
+              "name": "stock_mint"
+            },
+            {
+              "name": "usdc_mint"
+            },
+            {
+              "name": "owner_stock",
+              "writable": true
+            },
+            {
+              "name": "vault_a",
+              "writable": true
+            },
+            {
+              "name": "vault_b",
+              "writable": true
+            },
+            {
+              "name": "tick_array_0",
+              "writable": true
+            },
+            {
+              "name": "tick_array_1",
+              "writable": true
+            },
+            {
+              "name": "tick_array_2",
+              "writable": true
+            },
+            {
+              "name": "oracle",
+              "writable": true
+            },
+            {
+              "name": "token_program",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            },
+            {
+              "name": "token_2022_program",
+              "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+            },
+            {
+              "name": "memo_program",
+              "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+            },
+            {
+              "name": "whirlpool_program",
+              "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+            }
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "usdc_in",
+          "type": "u64"
+        },
+        {
+          "name": "min_shares",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "stash_save",
+      "docs": [
+        "Moves USDC from the player's wallet into their Stash. `kind` records where it came from:",
+        "put in by hand, a round-up on a payment made in the same transaction, or a slice of a win."
+      ],
+      "discriminator": [
+        4,
+        14,
+        254,
+        57,
+        124,
+        194,
+        1,
+        81
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile",
+            "stash"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104,
+                  118
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "kind",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "stash_sell",
+      "docs": [
+        "Sells shares bought through the Stash back to USDC (into the Stash), through Orca Whirlpool."
+      ],
+      "discriminator": [
+        196,
+        252,
+        18,
+        163,
+        192,
+        9,
+        225,
+        141
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile",
+            "stash"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stash",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104,
+                  118
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "holding",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  111,
+                  108,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "sw.stock_mint",
+                "account": "StockSwap"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sw",
+          "accounts": [
+            {
+              "name": "whirlpool",
+              "writable": true
+            },
+            {
+              "name": "stock_mint"
+            },
+            {
+              "name": "usdc_mint"
+            },
+            {
+              "name": "owner_stock",
+              "writable": true
+            },
+            {
+              "name": "vault_a",
+              "writable": true
+            },
+            {
+              "name": "vault_b",
+              "writable": true
+            },
+            {
+              "name": "tick_array_0",
+              "writable": true
+            },
+            {
+              "name": "tick_array_1",
+              "writable": true
+            },
+            {
+              "name": "tick_array_2",
+              "writable": true
+            },
+            {
+              "name": "oracle",
+              "writable": true
+            },
+            {
+              "name": "token_program",
+              "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            },
+            {
+              "name": "token_2022_program",
+              "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+            },
+            {
+              "name": "memo_program",
+              "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+            },
+            {
+              "name": "whirlpool_program",
+              "address": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+            }
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "shares",
+          "type": "u64"
+        },
+        {
+          "name": "min_usdc",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "stash_withdraw",
+      "docs": [
+        "The owner can always take their savings out."
+      ],
+      "discriminator": [
+        147,
+        125,
+        6,
+        52,
+        121,
+        74,
+        170,
+        195
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile",
+            "stash"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stash",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  115,
+                  104,
+                  118
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "auth",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_usdc",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "take_break",
+      "docs": [
+        "A break from staking that the player sets on themselves. It can be extended, never shortened."
+      ],
+      "discriminator": [
+        48,
+        120,
+        169,
+        107,
+        195,
+        195,
+        154,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "profile"
+          ]
+        },
+        {
+          "name": "profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "secs",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "tournament_coin_callback",
       "discriminator": [
         234,
@@ -5137,6 +7141,32 @@
   ],
   "accounts": [
     {
+      "name": "Board",
+      "discriminator": [
+        79,
+        48,
+        160,
+        63,
+        153,
+        132,
+        240,
+        56
+      ]
+    },
+    {
+      "name": "Channel",
+      "discriminator": [
+        49,
+        159,
+        99,
+        106,
+        220,
+        87,
+        219,
+        88
+      ]
+    },
+    {
       "name": "Clan",
       "discriminator": [
         179,
@@ -5189,6 +7219,32 @@
       ]
     },
     {
+      "name": "Handle",
+      "discriminator": [
+        150,
+        96,
+        143,
+        54,
+        64,
+        147,
+        63,
+        63
+      ]
+    },
+    {
+      "name": "Holding",
+      "discriminator": [
+        23,
+        96,
+        64,
+        250,
+        235,
+        191,
+        0,
+        144
+      ]
+    },
+    {
       "name": "Member",
       "discriminator": [
         54,
@@ -5228,6 +7284,19 @@
       ]
     },
     {
+      "name": "Profile",
+      "discriminator": [
+        184,
+        101,
+        165,
+        188,
+        95,
+        63,
+        127,
+        188
+      ]
+    },
+    {
       "name": "Proposal",
       "discriminator": [
         26,
@@ -5238,6 +7307,32 @@
         136,
         53,
         33
+      ]
+    },
+    {
+      "name": "Registry",
+      "discriminator": [
+        47,
+        174,
+        110,
+        246,
+        184,
+        182,
+        252,
+        218
+      ]
+    },
+    {
+      "name": "Stash",
+      "discriminator": [
+        154,
+        19,
+        11,
+        205,
+        56,
+        69,
+        175,
+        234
       ]
     },
     {
@@ -5581,9 +7676,255 @@
       "code": 6051,
       "name": "VoteOpen",
       "msg": "Withdrawals wait until the clan's open votes close"
+    },
+    {
+      "code": 6052,
+      "name": "BadHandle",
+      "msg": "Names are 3 to 16 characters: lowercase letters, digits and underscore"
+    },
+    {
+      "code": 6053,
+      "name": "BadGoalName",
+      "msg": "Goal name is too long"
+    },
+    {
+      "code": 6054,
+      "name": "BadAvatar",
+      "msg": "Pick one of the 20 avatars"
+    },
+    {
+      "code": 6055,
+      "name": "OnBreak",
+      "msg": "You are on a break you set yourself; staking opens again when it ends"
+    },
+    {
+      "code": 6056,
+      "name": "DailyLimit",
+      "msg": "This would go over the daily limit you set"
+    },
+    {
+      "code": 6057,
+      "name": "BadBreak",
+      "msg": "A break can be up to 30 days and cannot be shortened"
+    },
+    {
+      "code": 6058,
+      "name": "BadSaveShare",
+      "msg": "Save at most 100 percent"
+    },
+    {
+      "code": 6059,
+      "name": "StashLow",
+      "msg": "Not enough USDC in your Stash"
+    },
+    {
+      "code": 6060,
+      "name": "BadMessage",
+      "msg": "Messages are 1 to 120 bytes"
+    },
+    {
+      "code": 6061,
+      "name": "NotMember",
+      "msg": "Only clan members can post here"
+    },
+    {
+      "code": 6062,
+      "name": "BadChannel",
+      "msg": "Unknown channel"
+    },
+    {
+      "code": 6063,
+      "name": "ZeroAmount",
+      "msg": "Amount must be above zero"
+    },
+    {
+      "code": 6064,
+      "name": "BadPool",
+      "msg": "That pool is not this stock against USDC on Orca Whirlpool"
+    },
+    {
+      "code": 6065,
+      "name": "Slippage",
+      "msg": "The swap returned less than your minimum"
+    },
+    {
+      "code": 6066,
+      "name": "NotEnoughStock",
+      "msg": "Not enough shares"
+    },
+    {
+      "code": 6067,
+      "name": "BadPost",
+      "msg": "Posts are 1 to 140 bytes"
+    },
+    {
+      "code": 6068,
+      "name": "AlreadyLiked",
+      "msg": "Already liked"
+    },
+    {
+      "code": 6069,
+      "name": "PostGone",
+      "msg": "That post is no longer on the board"
     }
   ],
   "types": [
+    {
+      "name": "Board",
+      "docs": [
+        "The public calls feed: the last BOARD_POSTS posts in a ring, live on the MagicBlock rollup."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "count",
+            "type": "u64"
+          },
+          {
+            "name": "id",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "posts",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Post"
+                  }
+                },
+                24
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Channel",
+      "docs": [
+        "One clan channel: the last CHAT_MSGS messages in a ring. Delegated to the MagicBlock rollup, so",
+        "posting is instant and costs the player nothing; members of the clan only."
+      ],
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "clan",
+            "type": "pubkey"
+          },
+          {
+            "name": "count",
+            "docs": [
+              "Messages ever posted; the newest sits at (count - 1) % CHAT_MSGS."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "id",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "msgs",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "ChatMsg"
+                  }
+                },
+                24
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ChatMsg",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "author",
+            "type": "pubkey"
+          },
+          {
+            "name": "refkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "kind",
+            "type": "u8"
+          },
+          {
+            "name": "len",
+            "type": "u8"
+          },
+          {
+            "name": "text",
+            "type": {
+              "array": [
+                "u8",
+                120
+              ]
+            }
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "Clan",
       "type": {
@@ -6107,6 +8448,73 @@
       }
     },
     {
+      "name": "Handle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Holding",
+      "docs": [
+        "Shares of one tokenized stock bought through the Stash, with what they cost. The shares",
+        "themselves sit in the player's own token account; this records the cost basis on chain so",
+        "a position's profit can be shown without trusting the app."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "shares",
+            "docs": [
+              "Raw token units bought and not yet sold through the Stash."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "cost",
+            "docs": [
+              "USDC base units paid for those shares (reduced pro rata on sells)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bought",
+            "type": "u64"
+          },
+          {
+            "name": "sold_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "realized",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "Member",
       "type": {
         "kind": "struct",
@@ -6196,6 +8604,87 @@
       }
     },
     {
+      "name": "Post",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seq",
+            "type": "u64"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "reply_to",
+            "docs": [
+              "Seq of the post this replies to (u64::MAX when it is not a reply)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "author",
+            "type": "pubkey"
+          },
+          {
+            "name": "refkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "likes",
+            "type": "u32"
+          },
+          {
+            "name": "replies",
+            "type": "u16"
+          },
+          {
+            "name": "kind",
+            "type": "u8"
+          },
+          {
+            "name": "len",
+            "type": "u8"
+          },
+          {
+            "name": "text",
+            "type": {
+              "array": [
+                "u8",
+                140
+              ]
+            }
+          },
+          {
+            "name": "liked",
+            "docs": [
+              "One bit per profile number: who liked it."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          },
+          {
+            "name": "_pad",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "PriceFeed",
       "docs": [
         "Clashy-owned price feed. Delegated to the ER and updated about every second by the crank;",
@@ -6219,6 +8708,115 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Profile",
+      "docs": [
+        "A player's public face and the controls they set on themselves. Every stake checks it on chain:",
+        "the break, the daily limit, and the day streak."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "avatar",
+            "type": "u8"
+          },
+          {
+            "name": "daily_limit",
+            "docs": [
+              "Most USDC (base units) this player can stake in one UTC day. Lowering applies at once."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pending_limit",
+            "docs": [
+              "A raise waits LIMIT_RAISE_DELAY before it applies (0 when none is pending)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pending_at",
+            "type": "i64"
+          },
+          {
+            "name": "day",
+            "docs": [
+              "UTC day index of `staked_today`."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "staked_today",
+            "type": "u64"
+          },
+          {
+            "name": "break_until",
+            "docs": [
+              "No staking until this time (a break the player took)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "last_active_day",
+            "docs": [
+              "Days in a row with at least one stake or save, and the best run."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "day_streak",
+            "type": "u16"
+          },
+          {
+            "name": "best_day_streak",
+            "type": "u16"
+          },
+          {
+            "name": "save_bps",
+            "docs": [
+              "Share of each win the app moves to the Stash, in basis points (the player's own setting)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "roundup_step",
+            "docs": [
+              "Round each payment up to this step and save the difference (USDC base units; 0 = off)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "number",
+            "docs": [
+              "Order in which profiles were made (from the registry)."
+            ],
+            "type": "u32"
           }
         ]
       }
@@ -6280,6 +8878,22 @@
       }
     },
     {
+      "name": "Registry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "profiles",
+            "type": "u32"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "RoundResolved",
       "type": {
         "kind": "struct",
@@ -6303,6 +8917,71 @@
           {
             "name": "alive",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Stash",
+      "docs": [
+        "The savings jar: USDC in a vault only its owner can take out, with a goal and a record of where",
+        "the money came from (put in, round-ups on payments, slices of wins)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "goal",
+            "type": "u64"
+          },
+          {
+            "name": "goal_name",
+            "type": {
+              "array": [
+                "u8",
+                24
+              ]
+            }
+          },
+          {
+            "name": "saved_manual",
+            "type": "u64"
+          },
+          {
+            "name": "saved_roundup",
+            "type": "u64"
+          },
+          {
+            "name": "saved_wins",
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn",
+            "type": "u64"
+          },
+          {
+            "name": "saves",
+            "type": "u32"
+          },
+          {
+            "name": "opened_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          },
+          {
+            "name": "rent_payer",
+            "type": "pubkey"
           }
         ]
       }
