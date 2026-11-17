@@ -14,7 +14,9 @@ import { SHARE, STOCKS, createStockAtaIx, minSharesFor, minUsdcFor, swapAccounts
 import { ClayLoop } from '@/ui/clay';
 import { Lottie } from '@/ui/lottie';
 import { STOCK_ART } from '@/ui/feed';
-import { BackBtn, Btn, Card, ErrorLine, Row, Txt } from '@/ui/kit';
+import { BackBtn, Btn, Card, ErrorLine, Money, Row, Txt } from '@/ui/kit';
+import { AmountSheet } from '@/ui/amount';
+import { Sheet, SheetTile } from '@/ui/sheet';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
@@ -40,6 +42,9 @@ export default function StashScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [coin, setCoin] = useState(0);
   const [dropping, setDropping] = useState(false);
+  const [amt, setAmt] = useState<{ kind: 'add' | 'out' | 'buy'; st?: Stock } | null>(null);
+  const [pickStock, setPickStock] = useState(false);
+  const after = () => { setCoin((c) => c + 1); setDropping(true); chain.refresh(); stash.reload(); port.reload(); };
   const [err, setErr] = useState<string>();
   const [payTo, setPayTo] = useState('');
   const [payAmt, setPayAmt] = useState('');
@@ -60,8 +65,8 @@ export default function StashScreen() {
   const takeOut = (usdc: number) => run(`out${usdc}`, async () => {
     await onBase(`Take ${usdc.toFixed(2)} USDC out`, () => progs!.base.methods.stashWithdraw(new BN(Math.round(usdc * USDC))).accountsPartial({ owner: me!, ownerUsdc: usdcAta(me!) }).rpc());
   });
-  const buy = (st: Stock, usdc: number) => run(`buy${st.symbol}${usdc}`, async () => {
-    const raw = usdc * USDC;
+  const buyNow = async (st: Stock, usdc: number) => {
+    const raw = Math.round(usdc * USDC);
     const pre = [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), createStockAtaIx(sponsor!, me!, st)];
     const inStash = Math.round((s?.balance ?? 0) * USDC);
     if (inStash < raw) {
@@ -72,7 +77,7 @@ export default function StashScreen() {
     const sw = await swapAccounts(me!, st, true);
     await onBase(`Buy ${usdc} USDC of ${st.symbol}`, () => progs!.base.methods.stashInvest(new BN(raw), new BN(min))
       .accountsPartial({ owner: me!, payer: sponsor!, holding: P.holding(me!, new PublicKey(st.mint)), sw }).preInstructions(pre).rpc());
-  });
+  };
   const sellAll = (st: Stock, shares: number) => run(`sell${st.symbol}`, async () => {
     const raw = Math.floor(shares * SHARE);
     const min = await minUsdcFor(st, raw);
@@ -113,6 +118,7 @@ export default function StashScreen() {
   const goal = s?.goal ?? 0;
   const pct = goal > 0 ? Math.min(1, (s?.balance ?? 0) / goal) : 0;
   const invested = port.status === 'ready' ? port.data.reduce((a, x) => a + x.shares * (px[x.stock.symbol] ?? 0), 0) : 0;
+  const stockProfit = port.status === 'ready' ? port.data.reduce((a, x) => a + (x.shares > 0 ? x.shares * (px[x.stock.symbol] ?? 0) - x.cost : 0), 0) : 0;
   const now = Date.now() / 1000;
 
   return (
@@ -130,22 +136,32 @@ export default function StashScreen() {
         </Card>
       ) : (
         <>
-          <View style={{ backgroundColor: C.s1, borderRadius: 24, padding: 18, flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-            {/* while a save lands, the coin-drop animation takes the jar's place, then the loop comes back */}
-            {dropping ? <View style={{ width: 112, height: 112, borderRadius: 20, backgroundColor: '#000' }}><Lottie key={coin} name="coin" size={112} onDone={() => setDropping(false)} /></View>
-              : <ClayLoop name="stash" size={112} style={{ borderRadius: 20 }} />}
+          {/* the total, the way the best money apps lead: one big number, cents dimmed */}
+          <Row style={{ alignItems: 'center', gap: 14 }}>
             <View style={{ flex: 1 }}>
-              <Txt v="small">In your Stash</Txt>
-              <Txt v="title" style={{ fontSize: 34 }}>{s ? fmtUsd(s.balance) : '…'}</Txt>
-              <Txt v="small">{invested > 0 ? `+ ${fmtUsd(invested)} in stocks` : 'USDC, yours to take out any time'}</Txt>
-              {goal > 0 ? (
-                <View style={{ marginTop: 10 }}>
-                  <View style={{ height: 8, borderRadius: 4, backgroundColor: C.s2, overflow: 'hidden' }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: C.up }} /></View>
-                  <Txt v="small" style={{ marginTop: 4 }}>{Math.round(pct * 100)}% of {fmtUsd(goal)}{s?.goalName ? ` · ${s.goalName}` : ''}</Txt>
+              <Txt v="small">Stash + stocks</Txt>
+              <Money value={(s?.balance ?? 0) + invested} size={46} />
+              <Row style={{ gap: 8, marginTop: 2 }}>
+                <View style={{ backgroundColor: stockProfit >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Txt v="small" color={stockProfit >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{stockProfit >= 0 ? '+' : '−'}${Math.abs(stockProfit).toFixed(2)}</Txt>
                 </View>
-              ) : null}
+                <Txt v="small">on stocks · ${(s?.balance ?? 0).toFixed(2)} cash</Txt>
+              </Row>
             </View>
-          </View>
+            {dropping ? <View style={{ width: 96, height: 96, borderRadius: 20, backgroundColor: '#000' }}><Lottie key={coin} name="coin" size={96} onDone={() => setDropping(false)} /></View>
+              : <ClayLoop name="stash" size={96} style={{ borderRadius: 20 }} />}
+          </Row>
+          {goal > 0 ? (
+            <View style={{ marginTop: 12 }}>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: C.s2, overflow: 'hidden' }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: C.up }} /></View>
+              <Txt v="small" style={{ marginTop: 4 }}>{Math.round(pct * 100)}% of {fmtUsd(goal)}{s?.goalName ? ` · ${s.goalName}` : ''}</Txt>
+            </View>
+          ) : null}
+          <Row style={{ gap: 8, marginTop: 16 }}>
+            <Pressable onPress={() => setAmt({ kind: 'add' })} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label" color="#04120A">Add</Txt></Pressable>
+            <Pressable onPress={() => setAmt({ kind: 'out' })} disabled={!s || s.balance <= 0} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', opacity: !s || s.balance <= 0 ? 0.5 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label">Take out</Txt></Pressable>
+            <Pressable onPress={() => setPickStock(true)} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label" color="#000">Invest</Txt></Pressable>
+          </Row>
           {s ? (
             <Row style={{ gap: 8, marginTop: 10 }}>
               {[['Put in', s.savedManual], ['Round-ups', s.savedRoundup], ['From wins', s.savedWins]].map(([k, v]) => (
@@ -154,13 +170,6 @@ export default function StashScreen() {
             </Row>
           ) : null}
           {err ? <ErrorLine msg={err} /> : null}
-
-          <Section title="Add or take out" sub={`Wallet ${bal === null ? '…' : `${bal.toFixed(2)} USDC`} · moves are instant and free`}>
-            <Row style={{ gap: 6, flexWrap: 'wrap' }}>
-              {[5, 10, 25].map((n) => <Pressable key={n} onPress={save(n)} disabled={!!busy} style={chip(false)}><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{busy === `save${n}` ? '…' : `+ $${n}`}</Txt></Pressable>)}
-              {s && s.balance > 0 ? <Pressable onPress={takeOut(s.balance)} disabled={!!busy} style={chip(false)}><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{busy?.startsWith('out') ? '…' : 'Take it all out'}</Txt></Pressable> : null}
-            </Row>
-          </Section>
 
           <Section title="Goal" sub={goal > 0 ? `${fmtUsd(goal)}${s?.goalName ? ` for ${s.goalName}` : ''}` : 'Save toward something'}>
             <Row style={{ gap: 8 }}>
@@ -184,7 +193,7 @@ export default function StashScreen() {
                     <Txt v="small" lines={1}>{price ? fmtUsd(price) : '…'}{pos && pos.shares > 0 ? ` · ${pos.shares.toFixed(4)} sh · ${fmtUsd(value)}` : ''}</Txt>
                     {pos && pos.shares > 0 ? <Txt v="small" color={profit >= 0 ? C.up : C.down}>{profit >= 0 ? '+' : '−'}{fmtUsd(Math.abs(profit))} on {fmtUsd(pos.cost)}</Txt> : null}
                   </View>
-                  <Pressable onPress={buy(st, 5)} disabled={!!busy} style={chip(false)}><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{busy === `buy${st.symbol}5` ? '…' : 'Buy $5'}</Txt></Pressable>
+                  <Pressable onPress={() => setAmt({ kind: 'buy', st })} disabled={!!busy} style={chip(false)}><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>Buy</Txt></Pressable>
                   {pos && pos.shares > 0 ? <Pressable onPress={sellAll(st, pos.shares)} disabled={!!busy} style={chip(false)}><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{busy === `sell${st.symbol}` ? '…' : 'Sell'}</Txt></Pressable> : null}
                 </Row>
               );
@@ -250,6 +259,22 @@ export default function StashScreen() {
           </Section>
         </>
       )}
+      <AmountSheet open={amt?.kind === 'add'} onClose={() => setAmt(null)} title="Add to your Stash" sub={`From your wallet · ${(bal ?? 0).toFixed(2)} USDC`} max={bal ?? 0} presets={[5, 10, 25]}
+        confirm={(n) => `Save $${n.toFixed(2)}`} success="Saved to your Stash" successSub="It can't be staked. Take it out any time."
+        onConfirm={async (n) => { await onBase(`Save ${n} USDC`, () => progs!.base.methods.stashSave(new BN(Math.round(n * USDC)), 0).accountsPartial({ owner: me!, ownerUsdc: usdcAta(me!) }).rpc()); after(); }} />
+      <AmountSheet open={amt?.kind === 'out'} onClose={() => setAmt(null)} title="Take out" sub={`To your wallet · ${(s?.balance ?? 0).toFixed(2)} USDC in the Stash`} max={s?.balance ?? 0} presets={[5, 10]}
+        confirm={(n) => `Take out $${n.toFixed(2)}`} success="Back in your wallet" successSub="Your Stash is yours: no lockups, no fees."
+        onConfirm={async (n) => { await onBase(`Take ${n} USDC out`, () => progs!.base.methods.stashWithdraw(new BN(Math.round(n * USDC))).accountsPartial({ owner: me!, ownerUsdc: usdcAta(me!) }).rpc()); after(); }} />
+      <AmountSheet open={amt?.kind === 'buy'} onClose={() => setAmt(null)} title={amt?.st ? `Buy ${amt.st.name}` : 'Buy'} sub={amt?.st ? `${amt.st.symbol} at ${px[amt.st.symbol] ? fmtUsd(px[amt.st.symbol]) : '…'} · from your Stash, topped up from your wallet` : undefined}
+        art={amt?.st ? <Image source={STOCK_ART[amt.st.symbol]} style={{ width: 80, height: 80 }} contentFit="contain" /> : undefined} min={1} max={(s?.balance ?? 0) + (bal ?? 0)} presets={[5, 10, 25]}
+        confirm={(n) => `Buy $${n.toFixed(2)} of ${amt?.st?.symbol ?? ''}`} success={`You own more ${amt?.st?.name ?? ''}`} successSub="Real tokenized shares, bought through Orca, now in your own wallet."
+        onConfirm={async (n) => { if (amt?.st) { await buyNow(amt.st, n); after(); } }} />
+      <Sheet open={pickStock} onClose={() => setPickStock(false)} title="Invest in">
+        {STOCKS.map((st) => (
+          <SheetTile key={st.symbol} art={<Image source={STOCK_ART[st.symbol]} style={{ width: 50, height: 50 }} contentFit="contain" />} title={st.name} line={`${st.symbol} · ${px[st.symbol] ? fmtUsd(px[st.symbol]) : '…'}`}
+            onPress={() => { setPickStock(false); setTimeout(() => setAmt({ kind: 'buy', st }), 260); }} />
+        ))}
+      </Sheet>
     </ScrollView>
   );
 }

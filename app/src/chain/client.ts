@@ -255,7 +255,7 @@ export type DuelView = {
   key: PublicKey; creator: PublicKey; joiner: PublicKey; nonce: number; stake: number; status: number; coin: number;
   lenSecs: number; expiresAt: number; side: number[]; lev: number[]; picksCommitted: number; picksRevealed: number;
   seedsRevealed: number; vrfPending: boolean; entryPrice: number; exitPrice: number; startTs: number; pnlBps: number[]; ko: number; winner: number;
-  onEr: boolean; matchedAt: number;
+  onEr: boolean; matchedAt: number; poolMask: number;
 };
 
 /** Reads a duel from wherever it lives right now (the rollup while delegated, otherwise Solana). */
@@ -270,7 +270,7 @@ export async function readDuel(prog: Program<Clashy>, key: PublicKey): Promise<D
     key, creator: d.creator, joiner: d.joiner, nonce: Number(d.nonce), stake: Number(d.stake), status: d.status, coin: d.coin,
     lenSecs: d.lenSecs, expiresAt: Number(d.expiresAt), side: [...d.side], lev: [...d.lev], picksCommitted: d.picksCommitted,
     picksRevealed: d.picksRevealed, seedsRevealed: d.seedsRevealed, vrfPending: d.vrfPending, entryPrice: Number(d.entryPrice) / 1e6, exitPrice: Number(d.exitPrice) / 1e6,
-    startTs: Number(d.startTs), pnlBps: d.pnlBps.map((x: BN) => Number(x)), ko: d.ko, winner: d.winner, onEr, matchedAt: Number(d.matchedAt),
+    startTs: Number(d.startTs), pnlBps: d.pnlBps.map((x: BN) => Number(x)), ko: d.ko, winner: d.winner, onEr, matchedAt: Number(d.matchedAt), poolMask: d.poolMask,
   };
 }
 
