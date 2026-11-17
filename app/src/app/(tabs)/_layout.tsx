@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Chat, Home, Shield, Swords, User } from '@/ui/icons';
-import { CreateProvider } from '@/ui/create';
+import { CreateProvider, useCreate } from '@/ui/create';
 import { C } from '@/ui/tokens';
 import { RightRail, Sidebar } from '@/ui/desk';
 import { pref, useLayout } from '@/ui/layout';
@@ -24,6 +24,16 @@ function TabBtn({ icon, isFocused, center, ref: _r, ...props }: TB & { ref?: unk
   return (
     <Pressable {...props} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 48, alignItems: 'center', justifyContent: 'center' }}>
       {icon(isFocused ? C.ink : C.dim)}
+    </Pressable>
+  );
+}
+
+/** The raised Arena square: same look as before, but it opens the game picker drawer. */
+function ArenaBtn({ on }: { on: boolean }) {
+  const { openArena } = useCreate();
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Play" onPressIn={() => Haptics.selectionAsync()} onPress={openArena} style={{ width: 56, height: 42, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', opacity: on ? 1 : 0.92 }}>
+      <Swords size={22} color="#fff" />
     </Pressable>
   );
 }
@@ -64,7 +74,7 @@ export default function TabsLayout() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: Math.max(insets.bottom, 10), backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line }}>
           <TabTrigger name="index" asChild><TabBtn icon={(c) => <Home size={24} color={c} />} /></TabTrigger>
           <TabTrigger name="chats" asChild><TabBtn icon={(c) => <Chat size={24} color={c} />} /></TabTrigger>
-          <TabTrigger name="arena" asChild><TabBtn center icon={(c) => <Swords size={22} color={c} />} /></TabTrigger>
+          <ArenaBtn on={path.startsWith('/arena')} />
           <TabTrigger name="clans" asChild><TabBtn icon={(c) => <Shield size={24} color={c} />} /></TabTrigger>
           <TabTrigger name="profile" asChild><TabBtn icon={(c) => <User size={24} color={c} />} /></TabTrigger>
         </View>

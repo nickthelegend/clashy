@@ -225,7 +225,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         <Image source={rank.src} style={{ width: 44, height: 44 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Row style={{ justifyContent: 'space-between' }}>
-            <Txt v="label" style={{ fontFamily: F.semi, fontSize: 16 }} color={rank.color}>{rank.label.toUpperCase()}</Txt>
+            <Txt v="label" style={{ fontFamily: F.semi, fontSize: 16 }} color={rank.color}>{rank.label}</Txt>
             <Txt v="small" lines={1}>{next ? `${r?.rp ?? 0} / ${next.pts} RP to ${next.label}` : `${r?.rp ?? 0} RP · top tier`}</Txt>
           </Row>
           <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s2, marginTop: 8, overflow: 'hidden' }}>

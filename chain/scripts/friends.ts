@@ -2,7 +2,8 @@
 // sending real transactions through the program (the sponsor pays fees and rent). Nothing here is simulated: every
 // join, pick, call, deposit, vote and war is a signed transaction on the local Solana fork or the MagicBlock rollup.
 //
-//   Kai   joins any duel someone else opens, locks a sealed random call (up or down, no leverage), reveals.
+//   Kai   joins any duel someone else opens, locks a sealed random call (up or down, at the clash's advertised
+//         leverage: 1x, or a perps clash's 2x-50x), reveals.
 //   Mira  keeps one open challenge on the board and runs it as creator when someone joins (VRF, rollup, checks, settle).
 //   Ash, Bo  join any Royale lobby someone else hosts and call every round.
 //   Sol   hosts a Royale (2 USDC, 3 seats) and runs it as host once someone joins.
@@ -69,18 +70,22 @@ type Duel = { creator: PublicKey; joiner: PublicKey; nonce: BN; status: number; 
 type Tour = { creator: PublicKey; nonce: BN; status: number; coin: number; count: number; maxPlayers: number; players: PublicKey[]; lives: number[]; calls: number[]; vrfPending: boolean; roundStartedAt: BN; roundSecs: number; round: number };
 
 /** Sealed pick for a duel this friend plays: commit once rolled, reveal once both committed. */
-async function playPick(who: string, kp: Keypair, duel: PublicKey, d: Duel, secret: { side: number; salt: Buffer; committed: boolean }) {
+/** The app opens a perps clash with nonce = open-time ms x 1000 + leverage; a plain clash's nonce is open-time ms (lev 1). */
+const clashLev = (nonce: number) => (nonce >= 1e14 ? Math.max(1, Math.min(100, nonce % 1000)) : 1);
+type Secret = { side: number; lev: number; salt: Buffer; committed: boolean };
+
+async function playPick(who: string, kp: Keypair, duel: PublicKey, d: Duel, secret: Secret) {
   const prog = programFor(kp);
   const i = d.creator.equals(kp.publicKey) ? 0 : 1;
   if (d.status === 2 && !(d.picksCommitted & (1 << i))) {
-    const hash = sha256(duel.toBuffer(), kp.publicKey.toBuffer(), Buffer.from([secret.side]), Buffer.from(new Uint16Array([1]).buffer), secret.salt);
+    const hash = sha256(duel.toBuffer(), kp.publicKey.toBuffer(), Buffer.from([secret.side]), Buffer.from(new Uint16Array([secret.lev]).buffer), secret.salt);
     await prog.methods.commitPick([...hash]).accountsPartial({ signer: kp.publicKey, duel }).rpc();
     secret.committed = true;
     log(who, `locked a sealed pick on ${duel.toBase58().slice(0, 6)}…`);
   }
   if (d.status === 2 && d.picksCommitted === 0b11 && !(d.picksRevealed & (1 << i))) {
-    await prog.methods.revealPick(secret.side, 1, [...secret.salt]).accountsPartial({ signer: kp.publicKey, duel }).rpc();
-    log(who, `called ${secret.side === 1 ? 'up' : 'down'}`);
+    await prog.methods.revealPick(secret.side, secret.lev, [...secret.salt]).accountsPartial({ signer: kp.publicKey, duel }).rpc();
+    log(who, `called ${secret.side === 1 ? 'up' : 'down'}${secret.lev > 1 ? ` at ${secret.lev}x` : ''}`);
   }
 }
 
@@ -89,7 +94,7 @@ async function kai() {
   const kp = F.Kai;
   const prog = programFor(kp);
   const done = new Set<string>();
-  const secrets = new Map<string, { side: number; salt: Buffer; committed: boolean }>();
+  const secrets = new Map<string, Secret>();
   for (;;) {
     try {
       const now = Date.now() / 1000;
@@ -106,7 +111,7 @@ async function kai() {
         if (t) {
           done.add(t.publicKey.toBase58());
           await prog.methods.joinDuel([...sha256(randomBytes(32))]).accountsPartial({ joiner: kp.publicKey, duel: t.publicKey, vault: P.vault(t.publicKey), joinerUsdc: usdcAta(kp.publicKey) }).rpc();
-          secrets.set(t.publicKey.toBase58(), { side: Math.random() < 0.5 ? 1 : 2, salt: randomBytes(32), committed: false });
+          secrets.set(t.publicKey.toBase58(), { side: Math.random() < 0.5 ? 1 : 2, lev: clashLev(Number(t.account.nonce)), salt: randomBytes(32), committed: false });
           log('Kai', `joined a ${Number(t.account.stake) / USDC} USDC duel from ${t.account.creator.toBase58().slice(0, 4)}…`);
         }
       }
@@ -121,14 +126,14 @@ async function mira() {
   const prog = programFor(kp);
   const erProg = programFor(kp, true);
   let duel: PublicKey | null = null;
-  let secret = { side: 1, salt: randomBytes(32), committed: false };
+  let secret: Secret = { side: 1, lev: 1, salt: randomBytes(32), committed: false };
   let lastCheck = 0;
   for (;;) {
     try {
       if (!duel) {
         const nonce = Date.now();
         duel = P.duel(kp.publicKey, nonce);
-        secret = { side: Math.random() < 0.5 ? 1 : 2, salt: randomBytes(32), committed: false };
+        secret = { side: Math.random() < 0.5 ? 1 : 2, lev: 1, salt: randomBytes(32), committed: false };
         // half her challenges are slow one-hour calls on the stocks, half 60 s on crypto
         const stocks = Math.random() < 0.5;
         await prog.methods.openDuel(new BN(nonce), new BN(5 * USDC), stocks ? 0b1111_1000 : 0b111, stocks ? 3600 : 60, new BN(1800), [...sha256(randomBytes(32))])

@@ -16,15 +16,17 @@
 // Besides game actions it pays for one plain-money move: sending USDC out of the player's own USDC account
 // (TransferChecked on the USDC mint, signed by the player), so a USDC-only wallet can always withdraw.
 // On the local stack it also runs a test-USDC faucet (the local mint authority is the local admin key).
+// Read-only: GET /history?range=1h|24h|7d serves the prices the crank recorded (scripts/price-history.ts).
 //
 //   npx tsx scripts/sponsor.ts              (port 8790; CLASHY_SPONSOR_PORT to change)
 import http from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { ComputeBudgetProgram, PublicKey, Transaction, type Connection } from '@solana/web3.js';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { PrivyClient } from '@privy-io/server-auth';
 import { fileURLToPath } from 'node:url';
 try { process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url))); } catch { /* no chain/.env: Privy checks off */ }
+import { SAMPLE_EVERY_SECS, downsample, readSamples, type Sample } from './price-history.ts';
 import { BASE_URL, ER_URL, IS_LOCAL, USDC, USDC_MINT, base, er, giveUsdc, programId, sponsor, tokenBalance, usdcAta } from '../tests/common.ts';
 
 const PORT = Number(process.env.CLASHY_SPONSOR_PORT ?? 8790);
@@ -179,6 +181,73 @@ async function faucet(body: { owner?: string }) {
   return { usdc: (await tokenBalance(usdcAta(owner))) / USDC };
 }
 
+/** The crank's recorded prices over the last hour, day or week: at most 300 real samples, oldest first. */
+const RANGES: Record<string, number> = { '1h': 3_600, '24h': 86_400, '7d': 7 * 86_400 };
+function history(range: string | null) {
+  const secs = RANGES[range ?? ''];
+  if (!secs) throw new Refused(`range must be one of ${Object.keys(RANGES).join(', ')}`);
+  let all: Sample[];
+  try { all = readSamples(); } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+    throw Object.assign(new Refused(`No price history yet: chain/.localnet/price-history.jsonl does not exist. Run scripts/crank.ts, it records a sample every minute.`), { status: 503 });
+  }
+  const since = Math.floor(Date.now() / 1000) - secs;
+  const inRange = all.filter((s) => s.t >= since);
+  return { range, every: SAMPLE_EVERY_SECS, first: all[0]?.t ?? null, last: all.at(-1)?.t ?? null, count: inRange.length, points: downsample(inRange, 300) };
+}
+
+/**
+ * Read-only market data proxy for Practice: every player's app shares one cached stream of Jupiter reads instead of
+ * each browser hitting Jupiter's anonymous rate limit. Only the listed public GET endpoints pass; responses (and
+ * Jupiter's own errors, with their status) are cached briefly per URL. Nothing is invented: a failure is passed on.
+ */
+const JUP_UPSTREAMS: Record<string, string> = { lite: 'https://lite-api.jup.ag', perps: 'https://perps-api.jup.ag' };
+const JUP_ALLOWED = [/^\/lite\/price\/v3\?/, /^\/lite\/tokens\/v2\/(search|tag|toptrending|toporganicscore|toptraded|recent)\b/, /^\/perps\/v1\/pool-info\?/];
+const jupCache = new Map<string, { at: number; status: number; body: string; pending?: Promise<void> }>();
+const jupTtl = (path: string) => (path.startsWith('/lite/price') ? 10_000 : path.startsWith('/perps') ? 30_000 : 60_000);
+async function jupProxy(path: string): Promise<{ status: number; body: string }> {
+  if (!JUP_ALLOWED.some((r) => r.test(path))) return { status: 404, body: JSON.stringify({ error: 'not a proxied market endpoint' }) };
+  const hit = jupCache.get(path);
+  if (hit && Date.now() - hit.at < jupTtl(path)) return hit;
+  if (hit?.pending) { await hit.pending; return jupCache.get(path)!; }
+  const [, up, ...rest] = path.split('/');
+  const entry = { at: hit?.at ?? 0, status: hit?.status ?? 502, body: hit?.body ?? '', pending: undefined as Promise<void> | undefined };
+  entry.pending = (async () => {
+    try {
+      const r = await fetch(`${JUP_UPSTREAMS[up]}/${rest.join('/')}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(10_000) });
+      const body = await r.text();
+      // keep the last good answer through a rate limit for up to a minute, so a 429 burst does not blank every client
+      // market lists keep their last good answer through any error; a price older than a minute is dropped instead
+      if (r.ok || !hit?.body || (path.startsWith('/lite/price') && Date.now() - hit.at > 60_000)) { entry.status = r.status; entry.body = body; }
+    } catch (e) {
+      if (!hit?.body) { entry.status = 502; entry.body = JSON.stringify({ error: `Jupiter unreachable: ${(e as Error).message}` }); }
+    }
+    entry.at = Date.now();
+  })();
+  jupCache.set(path, entry);
+  if (jupCache.size > 500) jupCache.delete(jupCache.keys().next().value!);
+  await entry.pending; entry.pending = undefined;
+  if (entry.status === 200 && !path.startsWith('/lite/price')) saveJupLists();
+  return entry;
+}
+
+/* Market lists (tokens, perps pools) survive a relay restart: the last good answer is kept on disk and served while
+ * Jupiter rate-limits a cold relay. Prices are never persisted (a stale price would be a made-up price). */
+const JUP_DISK = fileURLToPath(new URL('../.localnet/jup-lists.json', import.meta.url));
+function saveJupLists() {
+  const keep: Record<string, { at: number; body: string }> = {};
+  for (const [k, v] of jupCache) if (v.status === 200 && !k.startsWith('/lite/price')) keep[k] = { at: v.at, body: v.body };
+  try { writeFileSync(JUP_DISK, JSON.stringify(keep)); } catch { /* best effort */ }
+}
+try {
+  const saved = JSON.parse(readFileSync(JUP_DISK, 'utf8')) as Record<string, { at: number; body: string }>;
+  // loaded as already-expired entries: the first request refreshes them, and a 429 falls back to these bodies
+  for (const [k, v] of Object.entries(saved)) jupCache.set(k, { at: Date.now() - 120_000, status: 200, body: v.body });
+} catch { /* no saved lists yet */ }
+// keep Practice's market lists warm so no player waits on a cold call
+const WARM = ['/lite/tokens/v2/toptrending/1h?limit=100', '/lite/tokens/v2/toptrending/24h?limit=100'];
+setInterval(() => { for (const p of WARM) jupProxy(p).catch(() => {}); }, 55_000).unref();
+
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
@@ -188,6 +257,14 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && req.url === '/info') {
       return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: IS_LOCAL, base: BASE_URL, er: ER_URL, privy: !!PRIVY, authRequired: AUTH_REQUIRED });
+    }
+    if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/history') {
+      return send(200, history(new URL(req.url ?? '/', 'http://relay').searchParams.get('range')));
+    }
+    if (req.method === 'GET' && (req.url ?? '').startsWith('/jup/')) {
+      const r = await jupProxy((req.url ?? '').slice(4));
+      res.writeHead(r.status, { 'content-type': 'application/json' }).end(r.body);
+      return;
     }
     if (req.method !== 'POST') return send(404, { error: 'not found' });
     let raw = '';

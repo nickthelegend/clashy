@@ -2,7 +2,7 @@
 // Two devices (or two browser tabs) are two real players. Every step is a signed transaction; the strip at
 // the bottom shows each signature, which layer it ran on, how long it took, and an explorer link.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -19,7 +19,7 @@ import { WinExtras } from '@/ui/result';
 import { Sheet } from '@/ui/sheet';
 import { ProfileAvatar } from '@/ui/feed';
 import { useProfiles } from '@/chain/social';
-import { CallButtons, CoinRoll, CoinToken, FaceOff, LiveBoard, ModeCard, OpenClash, Searching, coinName, symbolsIn } from '@/ui/clash';
+import { CallButtons, CoinRoll, CoinToken, FaceOff, LiveBoard, ModeCard, OpenClash, PERPS_LEVERAGE, Searching, clashLev, coinName, perpsNonce, symbolsIn } from '@/ui/clash';
 import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -30,15 +30,29 @@ type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
 const DUEL_SETUP_SECS = 600;
 /** Each player's stake, in USDC. */
 const STAKE_USDC = 5;
-/** Two kinds of duel: a 60 s call on crypto, or a slow one-hour call on a real stock (no leverage either way). */
-const MODES = { crypto: { mask: 0b0000_0111, secs: 60, label: 'Crypto · 60 s', note: 'SOL, BTC or ETH' }, stocks: { mask: 0b1111_1000, secs: 3600, label: 'Stocks · 1 hour', note: 'NVIDIA, Tesla, Apple, S&P 500 or Alphabet' } } as const;
+/** Three kinds of clash: a 60 s call on crypto, a slow one-hour call on a real stock (both without leverage), or perps:
+ *  60 s on crypto with leverage, where a side that loses its whole stake is liquidated and loses on the spot. */
+const MODES = {
+  crypto: { mask: 0b0000_0111, secs: 60, label: 'Crypto · 60 s', note: 'SOL, BTC or ETH' },
+  stocks: { mask: 0b1111_1000, secs: 3600, label: 'Stocks · 1 hour', note: 'NVIDIA, Tesla, Apple, S&P 500 or Alphabet' },
+  perps: { mask: 0b0000_0111, secs: 60, label: 'Perps · 60 s', note: 'SOL, BTC or ETH with leverage' },
+} as const;
+type Mode = keyof typeof MODES;
+const isMode = (m: unknown): m is Mode => typeof m === 'string' && m in MODES;
 const secretKey = (duel: PublicKey) => `clashy:chain:secret:${duel.toBase58()}`;
 
 export default function OnChainDuel() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(820);
   const chain = useChain(['Check duel']);
-  const [mode, setMode] = useState<keyof typeof MODES>('crypto');
+  // the Arena drawer links here as /clash?mode=perps (or stocks / crypto)
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<Mode>(isMode(params.mode) ? params.mode : 'crypto');
+  useEffect(() => { if (isMode(params.mode)) setMode(params.mode); }, [params.mode]);
+  const [lev, setLev] = useState<number>(10);
+  /** Arriving from the game picker (a ?mode= link) means "start a new one": a remembered clash that already
+   *  ended (settled or cancelled) gives way to the lobby once, instead of showing its old result. */
+  const freshFromPicker = useRef(!!params.mode);
   const [stake, setStake] = useState(STAKE_USDC);
   const { me: wallet, sponsor, progs, bal, hasPlayer, txs, err, setErr, busy, guard, onBase, onEr } = chain;
   const [board, setBoard] = useState<DuelView[]>([]);
@@ -174,10 +188,16 @@ export default function OnChainDuel() {
     setActive(key); setDuel(null); inflight.current.clear();
     if (key) await AsyncStorage.setItem('clashy:chain:active', key.toBase58()); else await AsyncStorage.removeItem('clashy:chain:active');
   };
+  useEffect(() => {
+    if (!freshFromPicker.current || !duel) return;
+    freshFromPicker.current = false;
+    if (duel.status >= 5) setActiveDuel(null);
+  }, [duel?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const open = guard('open', async () => {
     if (!progs || !wallet || !sponsor) return;
-    const nonce = Date.now();
+    // a perps clash carries its leverage in the nonce, so the board and the joiner see it before anyone picks
+    const nonce = mode === 'perps' ? perpsNonce(lev) : Date.now();
     const key = P.duel(wallet, nonce);
     const seed = random32();
     await AsyncStorage.setItem(secretKey(key), JSON.stringify({ seed: [...seed] } satisfies Secrets));
@@ -233,6 +253,11 @@ export default function OnChainDuel() {
   const won = duel && duel.status === 5 && duel.winner === me + 1;
   const tie = duel && duel.status === 5 && duel.winner === 3;
   const others = board.filter((d) => !wallet || !d.creator.equals(wallet));
+  /** The leverage this clash was opened at (1 = a plain clash); both players pick at it. */
+  const duelLev = duel ? clashLev(duel.nonce) : 1;
+  const perps = duelLev > 1;
+  const koMe = !!duel && me >= 0 && !!(duel.ko & (1 << me));
+  const koThem = !!duel && me >= 0 && !!(duel.ko & (1 << (1 - me)));
   const pot = (stake * 2 * 0.97).toFixed(2);
 
   return (
@@ -255,9 +280,10 @@ export default function OnChainDuel() {
                   <ClayLoop name={won ? 'win' : tie ? 'duel' : 'ko'} size={170} loop={!!won} style={{ borderRadius: 36 }} />
                   {won ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
                 </View>
-                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : tie ? 'Dead heat' : 'You lost'}</Text>
+                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : koMe && !koThem ? 'Liquidated' : tie ? 'Dead heat' : 'You lost'}</Text>
+                {duel.ko ? <Txt v="label" color={koMe && !koThem ? C.down : koThem && !koMe ? C.up : C.ink} style={{ textAlign: 'center' }}>{koMe && koThem ? 'Both sides liquidated' : koMe ? `Liquidated · your ${duel.lev[me]}× position lost its whole stake` : `Liquidated · ${rivalProf?.name ?? 'your rival'} lost it all at ${duel.lev[1 - me]}×`}</Txt> : null}
                 <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink }}>{won ? `+${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : tie ? `${fmtUsdc(duel.stake)} back` : `−${fmtUsdc(duel.stake)}`}</Text>
-                <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{coinName(sym2)} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {myPnl >= 0 ? '+' : ''}{myPnl.toFixed(2)}% · {rivalProf?.name ?? 'rival'} {theirPnl >= 0 ? '+' : ''}{theirPnl.toFixed(2)}%</Txt>
+                <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{coinName(sym2)} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {koMe ? 'liquidated' : `${myPnl >= 0 ? '+' : ''}${myPnl.toFixed(2)}%`}{duel.lev[me] > 1 ? ` at ${duel.lev[me]}×` : ''} · {rivalProf?.name ?? 'rival'} {koThem ? 'liquidated' : `${theirPnl >= 0 ? '+' : ''}${theirPnl.toFixed(2)}%`}{duel.lev[1 - me] > 1 ? ` at ${duel.lev[1 - me]}×` : ''}</Txt>
                 {won && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
                 <Btn title="Clash again" kind="white" h={56} style={{ marginTop: 14, alignSelf: 'stretch', borderRadius: 20 }} onPress={() => setActiveDuel(null)} />
               </Animated.View>
@@ -281,6 +307,28 @@ export default function OnChainDuel() {
                   <ModeCard title="Stocks" sub="1 hour · NVIDIA, Tesla, Apple, S&P, Alphabet" on={mode === 'stocks'} onPress={() => setMode('stocks')} art={<ClayLoop name="stocks" size={78} style={{ borderRadius: 16 }} />} />
                   <ModeCard title="Crypto" sub="60 seconds · SOL, BTC, ETH" on={mode === 'crypto'} onPress={() => setMode('crypto')} art={<Row style={{ gap: -10 }}><CoinToken sym="SOL" size={44} /><CoinToken sym="BTC" size={44} /><CoinToken sym="ETH" size={44} /></Row>} />
                 </Row>
+                <Row style={{ marginTop: 10 }}>
+                  <ModeCard title="Perps" sub="Crypto with leverage · 60 s · get liquidated and you're out" on={mode === 'perps'} onPress={() => setMode('perps')} art={(
+                    <Row style={{ gap: 10 }}>
+                      <Row style={{ gap: -10 }}><CoinToken sym="SOL" size={44} /><CoinToken sym="BTC" size={44} /><CoinToken sym="ETH" size={44} /></Row>
+                      <View style={{ borderRadius: 12, paddingHorizontal: 10, height: 30, justifyContent: 'center', backgroundColor: mode === 'perps' ? 'rgba(255,255,255,0.18)' : 'rgba(240,70,140,0.16)' }}>
+                        <Txt v="label" color={mode === 'perps' ? '#fff' : C.opp} style={{ fontFamily: F.bold }}>Up to 50×</Txt>
+                      </View>
+                    </Row>
+                  )} />
+                </Row>
+                {mode === 'perps' ? (
+                  <View style={{ marginTop: 12 }}>
+                    <Txt v="small" style={{ marginBottom: 6 }}>Leverage · a {(100 / lev).toFixed(lev >= 25 ? 1 : 0)}% move against you liquidates you</Txt>
+                    <Row style={{ gap: 6 }}>
+                      {PERPS_LEVERAGE.map((n) => (
+                        <Pressable key={n} onPress={() => setLev(n)} accessibilityRole="button" accessibilityState={{ selected: lev === n }} style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 20, backgroundColor: lev === n ? C.opp : '#15151B', borderWidth: 1, borderColor: lev === n ? C.opp : '#23232B', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                          <Txt v="label" color={lev === n ? '#fff' : C.ink} style={{ fontFamily: F.semi, fontSize: 15 }}>{`${n}×`}</Txt>
+                        </Pressable>
+                      ))}
+                    </Row>
+                  </View>
+                ) : null}
                 <Row style={{ gap: 8, marginTop: 12 }}>
                   {[5, 10, 25].map((n) => (
                     <Pressable key={n} onPress={() => setStake(n)} style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: stake === n ? C.ink : '#15151B', borderWidth: 1, borderColor: stake === n ? C.ink : '#23232B', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
@@ -289,9 +337,9 @@ export default function OnChainDuel() {
                   ))}
                 </Row>
                 <Pressable onPress={ready ? open : () => setProof(true)} disabled={!!busy} style={({ pressed }) => ({ marginTop: 14, height: 70, borderRadius: 24, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: C.opp, shadowOpacity: 0.6, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } })}>
-                  <Text style={{ fontFamily: F.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'Opening…' : ready ? `Find a rival · $${stake}` : 'Set up your wallet'}</Text>
+                  <Text style={{ fontFamily: F.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'Opening…' : ready ? (mode === 'perps' ? `Find a rival · $${stake} at ${lev}×` : `Find a rival · $${stake}`) : 'Set up your wallet'}</Text>
                 </Pressable>
-                <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Your call is sealed until both of you lock. No leverage: best call wins.</Txt>
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{mode === 'perps' ? `You both go long or short at ${lev}×, sealed until you both lock. Best return wins, and whoever gets liquidated loses on the spot.` : 'Your call is sealed until both of you lock. No leverage: best call wins.'}</Txt>
 
                 <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 10 }}>
                   <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink }}>Open clashes</Text>
@@ -304,7 +352,7 @@ export default function OnChainDuel() {
                     <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>No open clashes right now. Start one and the first rival in takes you on.</Txt>
                   </View>
                 ) : others.map((d) => (
-                  <OpenClash key={d.key.toBase58()} who={names.get(d.creator.toBase58())} stake={d.stake / USDC} secs={d.lenSecs} mask={d.poolMask ?? 0b111} disabled={!ready || !!busy} onJoin={() => join(d)} />
+                  <OpenClash key={d.key.toBase58()} who={names.get(d.creator.toBase58())} stake={d.stake / USDC} secs={d.lenSecs} mask={d.poolMask ?? 0b111} lev={clashLev(d.nonce)} disabled={!ready || !!busy} onJoin={() => join(d)} />
                 ))}
               </>
             ) : null}
@@ -327,10 +375,10 @@ export default function OnChainDuel() {
             ) : duel.status === 2 ? (
               <View style={{ alignItems: 'center' }}>
                 <CoinToken sym={sym2} size={130} />
-                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2).toUpperCase()}</Text>
-                <Txt v="small">{duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
+                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2)}</Text>
+                <Txt v="small" style={{ textAlign: 'center' }}>{perps ? `Long or short at ${duelLev}× for ${duel.lenSecs} seconds. A ${(100 / duelLev).toFixed(duelLev >= 25 ? 1 : 0)}% move against you and you're liquidated.` : duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
                 <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
-                  {me >= 0 && !(duel.picksCommitted & (1 << me)) ? <CallButtons onUp={() => pick(1, 1)} onDown={() => pick(2, 1)} disabled={!!busy} /> : (
+                  {me >= 0 && !(duel.picksCommitted & (1 << me)) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : (
                     <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
                       <Text style={{ fontFamily: F.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>
                       <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
@@ -344,7 +392,8 @@ export default function OnChainDuel() {
               </View>
             ) : (
               <>
-                <LiveBoard me={meProf} rival={rivalProf} myPnl={myPnl} theirPnl={theirPnl} myCall={duel.side[me]} theirCall={duel.side[1 - me]} sym={sym2} price={price} entry={duel.entryPrice} left={left} onRollup={duel.status === 3} />
+                <LiveBoard me={meProf} rival={rivalProf} myPnl={myPnl} theirPnl={theirPnl} myCall={duel.side[me]} theirCall={duel.side[1 - me]} sym={sym2} price={price} entry={duel.entryPrice} left={left} onRollup={duel.status === 3}
+                  perps={perps || duel.lev.some((l) => l > 1) ? { myLev: duel.lev[me] || duelLev, theirLev: duel.lev[1 - me] || duelLev, myKo: koMe, theirKo: koThem } : undefined} />
                 {price !== null ? (
                   <View style={{ marginTop: 18, backgroundColor: '#0E0E13', borderRadius: 24, paddingVertical: 10, overflow: 'hidden' }}>
                     <LiveChart data={[duel.entryPrice, ...hist, price]} w={Math.min(winW, 820) - 2 * S.gutter} h={230} refLine={duel.entryPrice} refLabel="start" color={myPnl >= theirPnl ? C.brand : C.opp} />
