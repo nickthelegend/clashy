@@ -30,11 +30,11 @@ async function readInbox(me: PublicKey) {
     const [server, chat] = await Promise.all([readClanServer(clan), readChannel(clan, 0)]);
     for (const msg of chat?.msgs ?? []) {
       if (msg.kind === 1 && !msg.author.equals(me) && Date.now() / 1000 - msg.ts < 3600) {
-        items.push({ key: `c${msg.i}`, ts: msg.ts, who: msg.author, title: 'challenged the clan to a duel', body: msg.text, action: { label: 'Play', to: '/onchain' } });
+        items.push({ key: `c${msg.i}`, ts: msg.ts, who: msg.author, title: 'wants a clash in your squad', body: msg.text, action: { label: 'Play', to: '/onchain' } });
       }
     }
     if (server && server.openVotes > 0) {
-      items.push({ key: 'votes', ts: Date.now() / 1000, art: ART.stash, title: `${server.openVotes} clan vote${server.openVotes === 1 ? '' : 's'} open`, body: `${server.name}'s chest is waiting on your vote.`, action: { label: 'Vote', to: '/onchain-clan' } });
+      items.push({ key: 'votes', ts: Date.now() / 1000, art: ART.stash, title: `${server.openVotes} squad vote${server.openVotes === 1 ? '' : 's'} open`, body: `${server.name}'s chest is waiting on your vote.`, action: { label: 'Vote', to: '/clans' } });
     }
   }
   if (stash && stash.goal > 0) {
@@ -64,7 +64,7 @@ export default function Inbox() {
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 40 }}>
       <Row style={{ gap: 10, marginBottom: 14 }}>
         <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-        <Txt v="title" style={{ fontSize: 26, flex: 1 }}>Inbox</Txt>
+        <Txt v="title" style={{ fontSize: 30, flex: 1, fontFamily: F.display }}>INBOX</Txt>
       </Row>
       <View style={{ borderRadius: 22, padding: 16, backgroundColor: '#F0468C' }}>
         <Row style={{ gap: 12 }}>
@@ -85,9 +85,9 @@ export default function Inbox() {
       <Txt v="small" style={{ marginTop: 8 }}>{doneToday ? 'Today counts. Come back tomorrow to keep it going.' : streak > 0 ? 'Not yet today: save, invest or play to keep your streak.' : 'Save, invest or play today to start one.'}</Txt>
 
       <Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 6 }}>NEW</Txt>
-      {!me ? <Pending art={ART.bellArt} title="Sign in" body="Replies, likes, clan challenges and votes show here." action="Sign in" onAction={() => wallet.login?.()} />
+      {!me ? <Pending art={ART.bellArt} title="Sign in" body="Replies, likes, squad challenges and votes show here." action="Sign in" onAction={() => wallet.login?.()} />
         : inbox.status === 'loading' ? <SkeletonRows n={4} /> : inbox.status === 'error' ? <Txt v="small">{inbox.error}</Txt> : inbox.data.length === 0 ? (
-          <Pending art={ART.bellArt} title="All caught up" body="Post a call or join a clan: replies, likes, challenges and votes land here." />
+          <Pending art={ART.bellArt} title="All caught up" body="Post a call or join a squad: replies, likes, challenges and votes land here." />
         ) : inbox.data.map((it) => (
           <Row key={it.key} style={{ gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
             {it.who ? <ProfileAvatar p={names.get(it.who.toBase58())} size={40} /> : <Image source={it.art} style={{ width: 40, height: 40 }} contentFit="contain" />}

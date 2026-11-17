@@ -326,7 +326,7 @@ export const BADGES: { key: string; label: string; src: number }[] = [
   { key: 'top10', label: 'Top 10', src: require('../../assets/art/badge-top10.webp') },
   { key: 'streak', label: '9 win streak', src: require('../../assets/art/badge-streak.webp') },
   { key: '500', label: '500 duels', src: require('../../assets/art/badge-500.webp') },
-  { key: 'captain', label: 'Clan captain', src: require('../../assets/art/badge-captain.webp') },
+  { key: 'captain', label: 'Squad captain', src: require('../../assets/art/badge-captain.webp') },
   { key: 'first-ko', label: 'First knockout', src: require('../../assets/art/badge-first-ko.webp') },
   { key: 'giant-slayer', label: 'Giant slayer', src: require('../../assets/art/badge-giant-slayer.webp') },
 ];
@@ -340,8 +340,11 @@ export const Art = ({ src, size = 96, radius = 18 }: { src: number; size?: numbe
     <Image source={src} style={{ width: size, height: size }} contentFit="contain" />
   </View>
 );
+/** The wordmark as type: "clashy" in the display face, the y in the rival's pink. */
 export const Wordmark = ({ height = 26 }: { height?: number }) => (
-  <Image source={ART.wordmark} style={{ height, width: height * (1280 / 300) }} contentFit="contain" />
+  <Text accessibilityRole="header" style={{ fontFamily: F.display, fontSize: height * 1.25, lineHeight: height * 1.4, color: C.ink, letterSpacing: -0.5 }}>
+    clash<Text style={{ color: C.opp }}>y</Text>
+  </Text>
 );
 
 export const Pending = ({ title, body, action, onAction, art }: { title: string; body: string; action?: string; onAction?: () => void; art?: number }) => (

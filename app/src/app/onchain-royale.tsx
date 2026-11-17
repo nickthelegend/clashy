@@ -1,23 +1,29 @@
 // On-chain Royale: entries escrowed on Solana, the tournament handed to a MagicBlock rollup, every round each
 // player calls up or down on one coin, wrong or missing calls cost a life, and the survivors split the pot on
 // Solana. Any player's device resolves a round once its timer runs out (resolve_round is permissionless).
+// The look lives in ui/royale.tsx; wallet and transaction proof live in the bottom drawer.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, NET, P, PublicKey, TOUR_STATUS, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView,
+  BN, COIN_SYMBOLS, NET, P, PublicKey, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView,
 } from '@/chain/client';
 import { reader } from '@/chain/reads';
+import { useProfiles, type Profile } from '@/chain/social';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
+import { CallButtons, coinName } from '@/ui/clash';
 import { ClayLoop } from '@/ui/clay';
-import { FX } from '@/ui/fx';
-import { Art, ART, BackBtn, Btn, Card, Chips, ErrorLine, LiveDot, Row, Tag, Txt } from '@/ui/kit';
+import { FX, Hit, RoundBanner } from '@/ui/fx';
+import { ART, BackBtn, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, S } from '@/ui/tokens';
+import { Lottie } from '@/ui/lottie';
+import { BigCta, EDGE, GOLD, Hearts, HowItWorks, OpenRoyale, RoundRing, SURFACE, Segmented, StatusPill, Table, TableRoll, type Seat } from '@/ui/royale';
+import { Sheet } from '@/ui/sheet';
+import { C, F, S, fmtUsd } from '@/ui/tokens';
 
 const ACTIVE = 'clashy:chain:tour';
 const NO_COIN = 255;
@@ -25,28 +31,49 @@ const NO_COIN = 255;
 const ENTRY_USDC = 2;
 const ROUND_SECS = 10;
 const MAX_ROUNDS = 10;
-const usd = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const Heart = ({ on }: { on: boolean }) => <Image source={on ? FX.heart : FX.heartBroken} style={{ width: 20, height: 20, opacity: on ? 1 : 0.5 }} contentFit="contain" />;
+/** The program's rake, in basis points. */
+const RAKE_BPS = 300;
+/** Lobbies older than this go under "Older": they are real and still open, but most likely abandoned. */
+const STALE_MIN = 30;
+/** The Royale coin is rolled from the three cryptos. */
+const POOL = COIN_SYMBOLS.slice(0, 3);
+const ago = (ms: number) => {
+  const m = Math.max(0, Math.round(ms / 60_000));
+  if (m < 1) return 'opened just now';
+  if (m < 60) return `opened ${m} min ago`;
+  const h = Math.round(m / 60);
+  return h < 48 ? `opened ${h} h ago` : `opened ${Math.round(h / 24)} days ago`;
+};
+/** What the survivors share once a table is full: every entry minus the rake, as the program computes it. */
+const potAfterRake = (entryBase: number, n: number) => (entryBase * n - Math.floor((entryBase * n * RAKE_BPS) / 10_000)) / USDC;
 
 export default function OnchainRoyale() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(820);
   const chain = useChain(['Resolve round']);
   const { me: wallet, sponsor, progs, hasPlayer, bal, busy, guard, onBase, onEr, err, setErr } = chain;
+  const profiles = useProfiles();
+  const names: Map<string, Profile> = profiles.status === 'ready' ? profiles.data : new Map();
 
   const [active, setActive] = useState<PublicKey | null>(null);
   const [tour, setTour] = useState<TourView | null>(null);
   const [lobby, setLobby] = useState<TourView[]>([]);
+  const [lobbyErr, setLobbyErr] = useState<string>();
   const [price, setPrice] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now() / 1000);
+  const [proof, setProof] = useState(false);
+  const [showOld, setShowOld] = useState(false);
   const inflight = useRef(new Set<string>());
+  /** My hearts as last seen, to flash a broken heart the moment I lose one. */
+  const myLives = useRef<number | null>(null);
+  const [lostK, setLostK] = useState(0);
 
   // host form (the coin is rolled by MagicBlock VRF once the Royale is created)
   const [seats, setSeats] = useState<'2' | '4' | '8' | '16'>('4');
   const [lives, setLives] = useState<'1' | '2' | '3'>('2');
 
   const setActiveTour = async (k: PublicKey | null) => {
-    setActive(k); setTour(null);
+    setActive(k); setTour(null); myLives.current = null;
     if (k) await AsyncStorage.setItem(ACTIVE, k.toBase58()); else await AsyncStorage.removeItem(ACTIVE);
   };
   useEffect(() => { AsyncStorage.getItem(ACTIVE).then((v) => v && setActive(new PublicKey(v))).catch(() => {}); }, []);
@@ -61,13 +88,16 @@ export default function OnchainRoyale() {
       try {
         const all = await rp.account.tournament.all();
         const open = await Promise.all(all.filter((a) => a.account.status === 0).map((a) => readTour(rp, a.publicKey)));
-        if (alive) setLobby((open.filter(Boolean) as TourView[]).filter((t) => t.status === 0 && !t.onEr).sort((a, b) => b.nonce - a.nonce));
-      } catch (e) { if (alive) setErr(`Cannot read tournaments from ${NET.label}: ${errText(e)}`); }
+        if (alive) {
+          setLobby((open.filter(Boolean) as TourView[]).filter((t) => t.status === 0 && !t.onEr).sort((a, b) => b.nonce - a.nonce));
+          setLobbyErr(undefined);
+        }
+      } catch (e) { if (alive) setLobbyErr(`Cannot read open Royales from ${NET.label}: ${errText(e)}`); }
     };
     load();
     const h = setInterval(load, 3000);
     return () => { alive = false; clearInterval(h); };
-  }, [progs]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [progs]);
 
   // the active tournament's state machine, polled every second
   useEffect(() => {
@@ -138,140 +168,239 @@ export default function OnchainRoyale() {
 
   const me = tour && wallet ? tour.players.findIndex((p) => p.equals(wallet)) : -1;
   const isHost = !!(tour && wallet && tour.creator.equals(wallet));
-  const sym = tour && tour.coin < 3 ? COIN_SYMBOLS[tour.coin] : 'VRF…';
+  const sym = tour && tour.coin < 3 ? COIN_SYMBOLS[tour.coin] : null;
   const left = tour ? Math.max(0, tour.roundStartedAt + tour.roundSecs - now) : 0;
   const move = tour && price ? price - tour.roundPrice : 0;
+  const movePct = tour && price && tour.roundPrice ? (move / tour.roundPrice) * 100 : 0;
   const ready = hasPlayer && (bal ?? 0) >= ENTRY_USDC;
   /** The pot in USDC. */
   const pot = tour ? (tour.entry * tour.count) / USDC : 0;
   const top = tour ? Math.max(0, ...tour.lives) : 0;
   // payout exactly as the program does it: rake = floor(pot * 300 bps), survivors split the rest
   const survivors = tour && top > 0 ? tour.lives.filter((l) => l === top).length : 0;
-  const payout = tour ? (tour.entry * tour.count - Math.floor((tour.entry * tour.count * 300) / 10_000)) / USDC : 0;
+  const payout = tour ? potAfterRake(tour.entry, tour.count) : 0;
   const survived = !!tour && top > 0 && me >= 0 && tour.lives[me] === top;
   const share = survivors ? payout / survivors : 0;
+  const aliveNow = tour ? tour.lives.filter((l) => l > 0).length : 0;
+
+  // a broken heart flashes the moment a resolved round takes one of mine
+  useEffect(() => {
+    if (!tour || me < 0) return;
+    const l = tour.lives[me];
+    if (myLives.current !== null && l < myLives.current) setLostK((k) => k + 1);
+    myLives.current = l;
+  }, [tour?.lives.join(','), me]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const nameOf = (k: PublicKey) => (wallet && k.equals(wallet) ? 'You' : names.get(k.toBase58())?.name ?? `Player ${k.toBase58().slice(0, 4)}`);
+  const seatsOf = (t: TourView, winnersOnly = false): Seat[] => t.players.map((p, i) => ({
+    key: p.toBase58(), profile: names.get(p.toBase58()), name: nameOf(p), lives: t.lives[i], you: !!wallet && p.equals(wallet), host: p.equals(t.creator),
+    called: t.calls[i] !== 0, winner: winnersOnly && top > 0 && t.lives[i] === top,
+  }));
+
+  const fresh = lobby.filter((t) => Date.now() - t.nonce < STALE_MIN * 60_000);
+  const older = lobby.filter((t) => Date.now() - t.nonce >= STALE_MIN * 60_000);
+  const lobbyCard = (t: TourView, stale: boolean) => {
+    const mine = !!wallet && t.players.some((p) => p.equals(wallet));
+    return (
+      <OpenRoyale key={t.key.toBase58()} host={names.get(t.creator.toBase58())} hostName={nameOf(t.creator)} taken={t.count} max={t.maxPlayers} lives={t.startLives}
+        pot={(t.entry * t.count) / USDC} age={`${(t.entry / USDC).toFixed(0)} USDC in · ${ago(Date.now() - t.nonce)}`} mine={mine} stale={stale}
+        disabled={!!busy} onOpen={() => setActiveTour(t.key)} onJoin={() => (ready ? join(t) : setProof(true))} />
+    );
+  };
+
+  const inGame = !!active && !!tour && tour.status < 3;
+  const over = !!active && !!tour && tour.status >= 3;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 30 }}>
-      <Row style={{ gap: 10, marginBottom: 12 }}>
-        <BackBtn onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Txt v="h2">On-chain Royale</Txt><Txt v="small">{NET.label} · rounds on the MagicBlock rollup</Txt></View>
-        <Row style={{ gap: 6 }}><LiveDot color={C.up} /><Txt v="small" color={C.up}>On chain</Txt></Row>
-      </Row>
+    <View style={{ flex: 1, backgroundColor: '#07070A' }}>
+      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+        <Row style={{ gap: 10, marginBottom: 6 }}>
+          <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+          <View style={{ flex: 1 }} />
+          <Pressable onPress={() => setProof(true)} accessibilityRole="button" accessibilityLabel="Wallet and on-chain proof"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: SURFACE, borderRadius: 16, paddingHorizontal: 12, height: 44 }}>
+            <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
+          </Pressable>
+        </Row>
+        {err ? <ErrorLine msg={err} /> : null}
 
-      <WalletCard chain={chain} note={`entry ${ENTRY_USDC} USDC · ${ROUND_SECS} s rounds · 3% rake`} need={ENTRY_USDC} />
-      {err ? <ErrorLine msg={err} /> : null}
-
-      {!active || !tour || tour.status >= 3 ? (
-        <>
-          {tour && tour.status === 3 ? (
-            <Animated.View entering={FadeInDown.springify()}>
-              <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-                <ClayLoop name={survived ? 'win' : 'royale'} size={150} loop style={{ borderRadius: 32 }} />
-                <Txt v="title">{!survived ? 'Knocked out.' : survivors === 1 ? 'Last one standing.' : `You survived with ${survivors - 1} other${survivors === 2 ? '' : 's'}.`}</Txt>
-                {survivors ? <Txt v="label" style={{ textAlign: 'center', marginTop: 2 }}>Survivor{survivors === 1 ? '' : 's'}: {tour.players.filter((_, i) => tour.lives[i] === top).map((p) => (wallet && p.equals(wallet) ? 'you' : short(p.toBase58()))).join(', ')}</Txt> : null}
-                <Txt v="small" style={{ textAlign: 'center' }}>{survived ? `You won ${share.toFixed(2)} USDC · ` : ''}Settled on Solana · {tour.round} round{tour.round === 1 ? '' : 's'} on {sym} · {survivors} survivor{survivors === 1 ? '' : 's'} split {payout.toFixed(2)} USDC</Txt>
-                <Btn title="Back to the lobby" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />
-              </Card>
+        {over && tour ? (
+          tour.status === 3 ? (
+            /* ---------- results ---------- */
+            <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', paddingTop: 6 }}>
+              <View>
+                <ClayLoop name={survived ? 'win' : me >= 0 ? 'ko' : 'royale'} size={170} loop={survived} style={{ borderRadius: 36 }} />
+                {survived ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
+              </View>
+              <Text style={{ fontFamily: F.display, fontSize: 38, color: me < 0 ? C.ink : survived ? C.up : C.down, marginTop: 8, letterSpacing: -1, textAlign: 'center' }}>
+                {me < 0 ? 'ROYALE OVER' : survived ? 'YOU SURVIVED' : 'KNOCKED OUT'}
+              </Text>
+              {me >= 0 ? (
+                <Text style={{ fontFamily: F.display, fontSize: 30, color: survived ? GOLD : C.ink }}>{survived ? `+${share.toFixed(2)} USDC` : `−${(tour.entry / USDC).toFixed(2)} USDC`}</Text>
+              ) : null}
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>
+                {survivors === 0 ? 'Nobody had a heart left.' : survivors === 1 ? 'Last one standing took the pot.' : `${survivors} survivors split ${payout.toFixed(2)} USDC.`}
+                {' '}{tour.round} round{tour.round === 1 ? '' : 's'} on {sym ? coinName(sym) : 'the coin'}.
+              </Txt>
+              <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
+                <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink, textAlign: 'center', marginBottom: 14 }}>THE TABLE</Text>
+                <Table seats={seatsOf(tour, true)} startLives={tour.startLives} />
+              </View>
+              <BigCta title="BACK TO THE LOBBY" color={C.ink} onPress={() => setActiveTour(null)} />
             </Animated.View>
-          ) : tour && tour.status === 4 ? (
-            <Card style={{ alignItems: 'center', padding: 16, marginTop: 12 }}>
-              <Txt v="title">Royale cancelled</Txt>
-              <Txt v="small" style={{ textAlign: 'center' }}>It never started, so every entry ({ENTRY_USDC} USDC each) went back to its player.</Txt>
-              <Btn title="Back to the lobby" kind="white" style={{ marginTop: 10, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />
-            </Card>
-          ) : null}
-
-          <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Host a Royale</Txt>
-          <Card style={{ padding: 14 }}>
-            <Row style={{ gap: 12, marginBottom: 10 }}>
-              <Art src={ART.tileRoyale} size={64} radius={16} />
-              <Txt v="small" style={{ flex: 1 }}>MagicBlock VRF rolls one coin for everyone. Every {ROUND_SECS} s, call it up or down. A wrong call or no call costs a life. Up to {MAX_ROUNDS} rounds; whoever has the most lives left splits the pot.</Txt>
-            </Row>
-            <Txt v="small" style={{ marginBottom: 4 }}>Seats</Txt>
-            <Chips items={(['2', '4', '8', '16'] as const).map((k) => ({ key: k, label: k }))} value={seats} onChange={setSeats} />
-            <Txt v="small" style={{ marginBottom: 4 }}>Lives</Txt>
-            <Chips items={(['1', '2', '3'] as const).map((k) => ({ key: k, label: `${k} ♥` }))} value={lives} onChange={setLives} />
-            <Btn title={busy === 'host' ? 'Hosting…' : `Host and join · ${ENTRY_USDC} USDC`} disabled={!ready || !!busy} onPress={host} />
-          </Card>
-
-          <Txt v="h2" style={{ marginTop: 20, marginBottom: 8 }}>Open lobbies</Txt>
-          {lobby.length === 0 ? (
-            <Card style={{ alignItems: 'center', padding: 16 }}><Txt v="small" style={{ textAlign: 'center' }}>No open Royales on {NET.label}. Host one, then join it from a second device or browser tab.</Txt></Card>
-          ) : lobby.map((t) => (
-            <Card key={t.key.toBase58()} style={{ marginBottom: 8, padding: 12 }}>
-              <Row style={{ gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Txt v="label">{t.coin < 3 ? COIN_SYMBOLS[t.coin] : 'Coin rolling'} · {t.count}/{t.maxPlayers} seats · {t.startLives} ♥</Txt>
-                  <Txt v="small">Entry {(t.entry / USDC).toFixed(2)} USDC · host {short(t.creator.toBase58())} · opened {Math.max(0, Math.round((Date.now() - t.nonce) / 60_000))} min ago</Txt>
-                </View>
-                {wallet && t.players.some((p) => p.equals(wallet))
-                  ? <Btn title="Open" kind="ghost" h={38} onPress={() => setActiveTour(t.key)} />
-                  : <Btn title={t.count >= t.maxPlayers ? 'Full' : 'Join'} kind={t.count >= t.maxPlayers ? 'ghost' : 'brand'} h={38} disabled={!ready || !!busy || t.count >= t.maxPlayers} onPress={() => join(t)} />}
-              </Row>
-            </Card>
-          ))}
-        </>
-      ) : (
-        <Animated.View entering={FadeInDown.springify()}>
-          <Card style={{ marginTop: 12, padding: 16 }}>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <Txt v="label">Royale {short(active.toBase58())}</Txt>
-              <Txt v="small" color={tour.onEr ? C.brandSoft : C.muted}>{tour.onEr ? 'On the rollup' : 'On Solana'} · {TOUR_STATUS[tour.status]}</Txt>
-            </Row>
-            <Row style={{ marginTop: 12, gap: 8 }}>
-              {[['Pot · USDC', pot.toFixed(2)], ['Coin', sym], tour.status === 1 ? ['Round', `${tour.round}/${tour.maxRounds}`] : ['Seats', `${tour.count}/${tour.maxPlayers}`]].map(([k, v]) => (
-                <View key={k} style={{ flex: 1, backgroundColor: C.s2, borderRadius: 12, padding: 10 }}><Txt v="small" lines={1}>{k}</Txt><Txt v="label" lines={1}>{v}</Txt></View>
-              ))}
-            </Row>
-
+          ) : (
+            /* ---------- cancelled ---------- */
+            <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 26, padding: 18, marginTop: 6 }}>
+              <Image source={ART.stash} style={{ width: 90, height: 90 }} contentFit="contain" />
+              <Text style={{ fontFamily: F.display, fontSize: 26, color: C.ink, marginTop: 6, textAlign: 'center' }}>{(tour.entry / USDC).toFixed(2)} USDC IS BACK</Text>
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>The Royale was cancelled before round 1, so every entry went straight back to its player.</Txt>
+              <BigCta title="BACK TO THE LOBBY" color={C.ink} onPress={() => setActiveTour(null)} />
+            </Animated.View>
+          )
+        ) : inGame && tour ? (
+          <Animated.View entering={FadeInDown.springify()} style={{ marginTop: 6 }}>
             {tour.status === 0 ? (
-              <>
-                <Txt v="small" style={{ marginTop: 12 }}>{tour.coin >= 3 ? 'MagicBlock VRF is rolling the coin…' : `Rolled by MagicBlock VRF: ${sym}. `}{tour.onEr ? 'On the rollup · starting…' : isHost ? (tour.count >= 2 ? 'Everyone in? Hand it to the rollup to start round 1.' : 'Waiting for at least one more player. Join from a second device or tab.') : 'Waiting for the host to start.'}</Txt>
+              /* ---------- waiting room ---------- */
+              <View style={{ alignItems: 'center' }}>
+                <TableRoll pool={POOL} landed={sym} />
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, alignSelf: 'stretch' }}>
+                  {[['POT', fmtUsd(pot)], ['SEATS', `${tour.count}/${tour.maxPlayers}`], ['HEARTS', `${tour.startLives}`]].map(([k, v]) => (
+                    <View key={k} style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 20, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: EDGE }}>
+                      <Text style={{ fontFamily: F.bold, fontSize: 10.5, color: C.muted, letterSpacing: 1 }}>{k}</Text>
+                      <Text style={{ fontFamily: F.display, fontSize: 22, color: k === 'POT' ? GOLD : C.ink, marginTop: 2 }} numberOfLines={1}>{v}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={{ alignSelf: 'stretch', marginTop: 14, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
+                  <Table seats={seatsOf(tour)} startLives={tour.startLives} empty={Math.max(0, tour.maxPlayers - tour.count)} />
+                </View>
                 {isHost && !tour.onEr ? (
-                  <Row style={{ gap: 8, marginTop: 10 }}>
-                    <Btn title={busy === 'live' ? 'Starting…' : 'Start on the rollup'} style={{ flex: 1 }} disabled={!!busy || tour.count < 2 || tour.coin >= 3} onPress={goLive} />
-                    <Btn title="Cancel" kind="ghost" style={{ flex: 0.6 }} disabled={!!busy} onPress={cancel} />
-                  </Row>
+                  <View style={{ alignSelf: 'stretch' }}>
+                    <BigCta
+                      title={busy === 'live' ? 'STARTING…' : tour.count < 2 ? 'WAITING FOR PLAYERS' : tour.coin >= 3 ? 'ROLLING THE COIN…' : `START · ${tour.count} PLAYERS`}
+                      disabled={!!busy || tour.count < 2 || tour.coin >= 3} onPress={goLive} />
+                    <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{tour.count < 2 ? 'Share the table: anyone with a Clashy wallet can join from the lobby.' : 'Start whenever you like. Empty seats just stay empty.'}</Txt>
+                    <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 10, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                      <Txt v="label" color={C.muted}>{busy === 'cancel' ? 'Refunding…' : 'Cancel and refund everyone'}</Txt>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: 'center', marginTop: 18 }}>
+                    <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink, textAlign: 'center' }}>{tour.onEr ? 'STARTING ROUND 1…' : 'WAITING FOR THE HOST'}</Text>
+                    <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>{tour.onEr ? 'Get ready to call it.' : `${nameOf(tour.creator)} starts the Royale. Your ${(tour.entry / USDC).toFixed(2)} USDC is held safely until then.`}</Txt>
+                  </View>
+                )}
+              </View>
+            ) : tour.status === 1 ? (
+              /* ---------- live round ---------- */
+              <View style={{ alignItems: 'center' }}>
+                <RoundBanner round={tour.round} />
+                <Row style={{ gap: 8 }}>
+                  <StatusPill text={`ROUND ${tour.round} / ${tour.maxRounds}`} color={GOLD} dot={false} />
+                  <StatusPill text={`${aliveNow} LEFT`} color={C.opp} />
+                </Row>
+                <View style={{ marginTop: 16 }}><RoundRing sym={sym ?? 'SOL'} left={left} total={tour.roundSecs} /></View>
+                <Text style={{ fontFamily: F.display, fontSize: 44, color: move > 0 ? C.up : move < 0 ? C.down : C.ink, marginTop: 10, letterSpacing: -1 }}>{price ? fmtUsd(price) : '…'}</Text>
+                <Txt v="small">{sym ? coinName(sym) : 'Coin'} from {fmtUsd(tour.roundPrice)} · {movePct >= 0 ? '+' : ''}{movePct.toFixed(3)}%</Txt>
+                <Text style={{ fontFamily: F.display, fontSize: 20, color: left > 0 && left < 3 ? C.opp : C.muted, marginTop: 8 }}>{left > 0 ? `${Math.ceil(left)} S TO CALL` : 'CALLING IT…'}</Text>
+                <View style={{ alignSelf: 'stretch', marginTop: 16 }}>
+                  {me >= 0 && tour.lives[me] > 0 ? (
+                    tour.calls[me] ? (
+                      <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 24, padding: 18, borderWidth: 2, borderColor: tour.calls[me] === 1 ? C.up : C.down }}>
+                        <Text style={{ fontFamily: F.display, fontSize: 24, color: tour.calls[me] === 1 ? C.up : C.down, textAlign: 'center' }}>{tour.calls[me] === 1 ? '▲ YOU CALLED UP' : '▼ YOU CALLED DOWN'}</Text>
+                        <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>Locked in. Wrong call costs a heart when the clock hits zero.</Txt>
+                      </View>
+                    ) : <CallButtons onUp={() => call(1)} onDown={() => call(2)} disabled={!!busy || left <= 0} />
+                  ) : me >= 0 ? (
+                    <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 24, padding: 18 }}>
+                      <Text style={{ fontFamily: F.display, fontSize: 30, color: C.down }}>YOU'RE OUT</Text>
+                      <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>No hearts left. Watch who outlasts the table.</Txt>
+                    </View>
+                  ) : null}
+                </View>
+                {me >= 0 && tour.lives[me] > 0 ? (
+                  <Row style={{ gap: 8, marginTop: 14 }}><Txt v="small">Your hearts</Txt><Hearts lives={tour.lives[me]} max={tour.startLives} size={22} /></Row>
+                ) : null}
+                <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
+                  <Text style={{ fontFamily: F.display, fontSize: 18, color: C.ink, textAlign: 'center', marginBottom: 14 }}>STILL STANDING · {aliveNow}</Text>
+                  <Table seats={seatsOf(tour)} startLives={tour.startLives} showCalls />
+                </View>
+              </View>
+            ) : (
+              /* ---------- final round resolved, paying out ---------- */
+              <View style={{ alignItems: 'center' }}>
+                <ClayLoop name="royale" size={150} style={{ borderRadius: 34 }} />
+                <Text style={{ fontFamily: F.display, fontSize: 34, color: C.ink, marginTop: 8, textAlign: 'center' }}>FINAL BELL</Text>
+                <Txt v="small" style={{ textAlign: 'center' }}>{tour.onEr ? 'Locking in the last round…' : `Paying ${fmtUsd(payout)} to the survivors…`}</Txt>
+                <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
+                  <Table seats={seatsOf(tour, true)} startLives={tour.startLives} />
+                </View>
+              </View>
+            )}
+            <Hit k={lostK} src={FX.heartBroken} />
+          </Animated.View>
+        ) : (
+          /* ---------- lobby ---------- */
+          <>
+            <View style={{ alignItems: 'center', marginTop: 4 }}>
+              <ClayLoop name="royale" size={150} style={{ borderRadius: 34 }} />
+              <Text style={{ fontFamily: F.display, fontSize: 56, color: C.ink, letterSpacing: -1.5, marginTop: -4 }}>ROYALE</Text>
+              <Txt v="small" style={{ textAlign: 'center' }}>{ENTRY_USDC} USDC in. Last one standing takes the pot.</Txt>
+            </View>
+            <HowItWorks secs={ROUND_SECS} />
+            <Segmented label="SEATS" value={seats} onChange={setSeats} items={(['2', '4', '8', '16'] as const).map((k) => ({ key: k, label: k }))} />
+            <Segmented label="HEARTS EACH" value={lives} onChange={setLives} items={(['1', '2', '3'] as const).map((k) => ({
+              key: k,
+              label: (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={{ fontFamily: F.display, fontSize: 18, color: lives === k ? '#000' : C.ink }}>{k}</Text>
+                  <Image source={FX.heart} style={{ width: 18, height: 18 }} contentFit="contain" />
+                </View>
+              ),
+            }))} />
+            <Txt v="small" style={{ textAlign: 'center', marginTop: 12 }}>
+              A full table of {seats} pays <Text style={{ fontFamily: F.bold, color: GOLD }}>{fmtUsd(potAfterRake(ENTRY_USDC * USDC, +seats))}</Text> to whoever is left.
+            </Txt>
+            <BigCta title={busy === 'host' ? 'HOSTING…' : ready ? `HOST · ${ENTRY_USDC} USDC` : 'SET UP YOUR WALLET'} disabled={!!busy} onPress={ready ? host : () => setProof(true)} />
+
+            <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 10 }}>
+              <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink }}>OPEN ROYALES</Text>
+              <Txt v="small">{fresh.length} open</Txt>
+            </Row>
+            {lobbyErr ? <ErrorLine msg={lobbyErr} /> : null}
+            {fresh.length === 0 ? (
+              <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 22, padding: 18 }}>
+                <Image source={ART.bellArt} style={{ width: 70, height: 70 }} contentFit="contain" />
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>No fresh tables right now. Host one and players can jump in from here.</Txt>
+              </View>
+            ) : fresh.map((t) => lobbyCard(t, false))}
+
+            {older.length ? (
+              <>
+                <Pressable onPress={() => setShowOld((s) => !s)} accessibilityRole="button" style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                  <Txt v="label" color={C.muted}>Older tables · {older.length}</Txt>
+                  <Txt v="small" color={C.muted}>{showOld ? 'Hide ▲' : 'Show ▼'}</Txt>
+                </Pressable>
+                {showOld ? (
+                  <>
+                    <Txt v="small" style={{ marginBottom: 8 }}>Opened over {STALE_MIN} minutes ago. Still open on chain, but the host may be gone.</Txt>
+                    {older.map((t) => lobbyCard(t, true))}
+                  </>
                 ) : null}
               </>
             ) : null}
+          </>
+        )}
+      </ScrollView>
 
-            {tour.status === 1 ? (
-              <View style={{ marginTop: 14, alignItems: 'center' }}>
-                <Txt v="small">Round {tour.round} · {sym} from {usd(tour.roundPrice)}</Txt>
-                <Txt v="title" style={{ fontSize: 40, lineHeight: 46, marginTop: 4 }} color={move > 0 ? C.up : move < 0 ? C.down : C.ink}>{price ? usd(price) : '…'}</Txt>
-                <Txt v="small" color={left < 3 ? C.opp : C.muted}>{left > 0 ? `${left.toFixed(1)} s to call` : 'Resolving on the rollup…'}</Txt>
-                {me >= 0 && tour.lives[me] > 0 ? (
-                  tour.calls[me] ? <View style={{ marginTop: 10 }}><Tag text={`You called ${tour.calls[me] === 1 ? 'up ▲' : 'down ▼'}`} color={tour.calls[me] === 1 ? C.up : C.down} /></View>
-                    : (
-                      <Row style={{ gap: 10, marginTop: 12, alignSelf: 'stretch' }}>
-                        <Btn title="Up ▲" kind="long" h={60} style={{ flex: 1 }} disabled={!!busy || left <= 0} onPress={() => call(1)} />
-                        <Btn title="Down ▼" kind="short" h={60} style={{ flex: 1 }} disabled={!!busy || left <= 0} onPress={() => call(2)} />
-                      </Row>
-                    )
-                ) : me >= 0 ? <Txt v="small" color={C.down} style={{ marginTop: 8 }}>You are out. Watch the rest.</Txt> : null}
-              </View>
-            ) : null}
-
-            {tour.status === 2 ? <Txt v="small" style={{ marginTop: 12 }}>{tour.onEr ? 'Final round done · committing to Solana…' : 'Back on Solana · paying the survivors…'}</Txt> : null}
-          </Card>
-
-          <Txt v="h2" style={{ marginTop: 18, marginBottom: 8 }}>Players</Txt>
-          <Card style={{ padding: 6 }}>
-            {tour.players.map((p, i) => (
-              <Row key={p.toBase58()} style={{ gap: 10, padding: 8 }}>
-                <Txt v="label" style={{ flex: 1 }} color={tour.lives[i] ? C.ink : C.dim}>{wallet && p.equals(wallet) ? 'You' : short(p.toBase58())}{p.equals(tour.creator) ? ' · host' : ''}</Txt>
-                {tour.status === 1 && tour.lives[i] ? <Txt v="small" color={tour.calls[i] ? C.brandSoft : C.muted}>{tour.calls[i] ? 'called' : 'thinking'}</Txt> : null}
-                <Row style={{ gap: 2 }}>{Array.from({ length: tour.startLives }, (_, h) => <Heart key={h} on={h < tour.lives[i]} />)}</Row>
-              </Row>
-            ))}
-          </Card>
-          {tour.status !== 1 ? <Btn title="Back to the lobby" kind="ghost" style={{ marginTop: 10 }} onPress={() => setActiveTour(null)} /> : null}
-        </Animated.View>
-      )}
-
-      <TxStrip txs={chain.txs} />
-    </ScrollView>
+      <Sheet open={proof} onClose={() => setProof(false)} title="Wallet and on-chain proof">
+        <WalletCard chain={chain} note={`entry ${ENTRY_USDC} USDC · ${ROUND_SECS} s rounds · 3% rake · fees and rent paid by Clashy`} need={ENTRY_USDC} />
+        <Txt v="small" style={{ marginTop: 10 }}>
+          Every step of a Royale is a real transaction on {NET.label}: entries in a Solana escrow, the coin rolled by MagicBlock VRF, every round called and resolved on a MagicBlock rollup, the survivors paid back on Solana.
+          {active ? ` This Royale: ${short(active.toBase58())}.` : ''}
+        </Txt>
+        <TxStrip txs={chain.txs} />
+      </Sheet>
+    </View>
   );
 }

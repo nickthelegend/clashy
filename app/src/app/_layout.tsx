@@ -19,6 +19,18 @@ if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
   navigator.vibrate = ((pattern: VibratePattern) => (activation && !activation.hasBeenActive ? false : vibrate(pattern))) as Navigator['vibrate'];
 }
 
+// Web: text fields draw their own focused look (the field surface), so drop the browser's blue focus ring on them;
+// buttons and links keep a visible ring for keyboard users. Also stop the rubber-band overscroll and tap flash.
+if (typeof document !== 'undefined' && !document.getElementById('clashy-web-css')) {
+  const el = document.createElement('style');
+  el.id = 'clashy-web-css';
+  el.textContent = 'input,textarea{outline:none!important;caret-color:#5B6CFF}'
+    + '[role=button]:focus-visible,a:focus-visible{outline:2px solid #AEB6FF;outline-offset:2px}'
+    + 'html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;background:#000}'
+    + 'input::placeholder,textarea::placeholder{color:#5A5A64}';
+  document.head.appendChild(el);
+}
+
 const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.bg, card: C.bg, text: C.ink, border: C.line, primary: C.brand } };
 const ONBOARDED_KEY = 'clashy:onboarded';
 
@@ -47,24 +59,10 @@ export default function Root() {
           <Stack.Screen name="inbox" />
           <Stack.Screen name="clan-chat" />
           <Stack.Screen name="squads/discover" />
-          <Stack.Screen name="ranked" />
           <Stack.Screen name="onchain" options={{ gestureEnabled: false }} />
           <Stack.Screen name="clash" options={{ gestureEnabled: false }} />
           <Stack.Screen name="onchain-clan" />
           <Stack.Screen name="onchain-royale" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/line" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/royale" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/streak" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/snipe" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/skirmish" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="clan/chest" />
-          <Stack.Screen name="game/diamond" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="game/cup" />
-          <Stack.Screen name="game/bounty" />
-          <Stack.Screen name="duel/amount" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="duel/match" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="duel/live" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="duel/result" options={{ gestureEnabled: false, animation: 'fade' }} />
         </Stack>
       </ThemeProvider>
       </ClashyWallet>

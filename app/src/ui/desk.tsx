@@ -28,7 +28,7 @@ const NAV: { name: string; label: string; icon: (c: string) => ReactNode }[] = [
   { name: 'index', label: 'Home', icon: (c) => <Home size={21} color={c} /> },
   { name: 'chats', label: 'Chats', icon: (c) => <Chat size={21} color={c} /> },
   { name: 'arena', label: 'Arena', icon: (c) => <Swords size={21} color={c} /> },
-  { name: 'clans', label: 'Clans', icon: (c) => <Shield size={21} color={c} /> },
+  { name: 'clans', label: 'Squads', icon: (c) => <Shield size={21} color={c} /> },
   { name: 'profile', label: 'Profile', icon: (c) => <User size={21} color={c} /> },
 ];
 
@@ -84,19 +84,19 @@ export function RightRail() {
         )) : (
           <View style={{ alignItems: 'center', gap: 8 }}>
             <Art src={ART.radar} size={64} radius={0} />
-            <Txt v="small" style={{ textAlign: 'center', lineHeight: 18 }}>No duel is on the rollup right now.</Txt>
+            <Txt v="small" style={{ textAlign: 'center', lineHeight: 18 }}>No clash is live right now.</Txt>
           </View>
         )}
         <Txt v="small" style={{ textAlign: 'center' }}>{c ? `${c.openDuels} open challenge${c.openDuels === 1 ? '' : 's'} · ${c.openRoyales} Royale lobb${c.openRoyales === 1 ? 'y' : 'ies'}` : ' '}</Txt>
-        <Btn title="Duel for 5 USDC" kind="ghost" h={36} onPress={() => router.push('/onchain')} />
+        <Btn title="Clash for $5" kind="ghost" h={36} onPress={() => router.push('/onchain')} />
       </View>
       <Row style={{ justifyContent: 'space-between', marginTop: 4 }}>
-        <Txt v="h2">Clans</Txt>
-        <Pressable onPress={() => router.push('/clans')}><Txt v="small">All clans</Txt></Pressable>
+        <Txt v="h2">Squads</Txt>
+        <Pressable onPress={() => router.push('/clans')}><Txt v="small">All squads</Txt></Pressable>
       </Row>
       <View style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 14, gap: 10 }}>
-        <Row style={{ gap: 10 }}><Art src={ART.crestCreate} size={40} radius={0} /><View style={{ flex: 1 }}><Txt v="label">{c ? `${c.clans} clan${c.clans === 1 ? '' : 's'} on chain` : 'Clans'}</Txt><Txt v="small">USDC chests, votes and wars</Txt></View></Row>
-        <Btn title="Open your clan" kind="ghost" h={36} onPress={() => router.push('/onchain-clan')} />
+        <Row style={{ gap: 10 }}><Art src={ART.crestCreate} size={40} radius={0} /><View style={{ flex: 1 }}><Txt v="label">{c ? `${c.clans} squad${c.clans === 1 ? '' : 's'}` : 'Clans'}</Txt><Txt v="small">USDC chests, votes and wars</Txt></View></Row>
+        <Btn title="Open your squad" kind="ghost" h={36} onPress={() => router.push('/onchain-clan')} />
       </View>
     </ScrollView>
   );

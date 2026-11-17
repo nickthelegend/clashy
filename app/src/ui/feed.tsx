@@ -73,7 +73,7 @@ function DuelCard({ duel, author }: { duel: PublicKey; author: PublicKey }) {
     <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 }}>
       <Image source={ART.tileDuel} style={{ width: 44, height: 44 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Txt v="label" lines={1}>Duel on {sym}</Txt>
+        <Txt v="label" lines={1}>Clash on {sym}</Txt>
         <Txt v="small" lines={1}>{v.entryPrice.toFixed(2)} → {v.exitPrice.toFixed(2)} · settled on Solana</Txt>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
@@ -221,7 +221,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
       ) : null}
       {err ? <ErrorLine msg={err} /> : null}
       <Row style={{ marginTop: 12, justifyContent: 'space-between' }}>
-        <Txt v="small" style={{ fontSize: 12 }}>{new TextEncoder().encode(text).length}/140 · posts live on the MagicBlock rollup</Txt>
+        <Txt v="small" style={{ fontSize: 12 }}>{new TextEncoder().encode(text).length}/140 · everyone sees it right away</Txt>
         <Btn title={step ?? (replyTo ? 'Reply' : 'Post')} h={36} disabled={!!step || !text.trim()} onPress={post} />
       </Row>
     </View>
@@ -238,7 +238,7 @@ export function JoinCard({ chain }: { chain: Chain }) {
         <Image source={ART.onSquad} style={{ width: 64, height: 96, borderRadius: 12 }} contentFit="cover" />
         <View style={{ flex: 1 }}>
           <Txt v="h2">Pick your name</Txt>
-          <Txt v="small" style={{ marginTop: 4 }}>It goes on your calls, duels and clan. Yours alone, on chain. Fees are on Clashy.</Txt>
+          <Txt v="small" style={{ marginTop: 4 }}>It goes on your calls, clashes and squads. Yours alone, on chain. Fees are on Clashy.</Txt>
         </View>
       </Row>
       <TextInput value={name} onChangeText={(t) => setName(t.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16))} placeholder="your_name" placeholderTextColor={C.muted}

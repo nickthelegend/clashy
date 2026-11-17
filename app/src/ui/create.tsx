@@ -72,7 +72,7 @@ export function CreateProvider({ children }: { children: ReactNode }) {
       {children}
       <Sheet open={menu} onClose={() => setMenu(false)} title="Start something">
         <SheetTile art={<Image source={ART.megaphone} style={{ width: 50, height: 50 }} contentFit="contain" />} title="What's your call?" line="Post a call with your real position" accent={C.opp} onPress={go(() => ctx.openCall(null))} />
-        <SheetTile art={<Image source={ART.tileDuel} style={{ width: 52, height: 52 }} contentFit="contain" />} title="Clash someone" line="5 USDC · a stock in 1 hour or crypto in 60 s" onPress={go(() => router.push('/clash' as Href))} />
+        <SheetTile art={<Image source={ART.tileDuel} style={{ width: 52, height: 52 }} contentFit="contain" />} title="Clash someone" line="From $5 · a stock in 1 hour or crypto in 60 s" onPress={go(() => router.push('/clash' as Href))} />
         <SheetTile art={<Image source={ART.stash} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Save to your Stash" line="Put money aside, then into real stocks" accent={C.up} onPress={go(() => setSave(true))} />
         <SheetTile art={<Image source={ART.clubhouse} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Start or join a squad" line="Chat, chest, wars and the Weekly Cup" accent="#FFC94A" onPress={go(() => router.push('/squads/discover' as Href))} />
       </Sheet>
