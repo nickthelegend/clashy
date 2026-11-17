@@ -1,4 +1,5 @@
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import { Archivo_800ExtraBold_Italic, Archivo_900Black_Italic } from '@expo-google-fonts/archivo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -22,7 +23,7 @@ const theme = { ...DarkTheme, colors: { ...DarkTheme.colors, background: C.bg, c
 const ONBOARDED_KEY = 'clashy:onboarded';
 
 export default function Root() {
-  const [loaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  const [loaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Archivo_800ExtraBold_Italic, Archivo_900Black_Italic });
   const [checked, setChecked] = useState(false);
   const [firstOpen, setFirstOpen] = useState(false);
   useEffect(() => {
@@ -40,12 +41,15 @@ export default function Root() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
           <Stack.Screen name="leaderboard" />
+          <Stack.Screen name="u/[id]" />
           <Stack.Screen name="stash" />
           <Stack.Screen name="cup" />
           <Stack.Screen name="inbox" />
           <Stack.Screen name="clan-chat" />
+          <Stack.Screen name="squads/discover" />
           <Stack.Screen name="ranked" />
           <Stack.Screen name="onchain" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="clash" options={{ gestureEnabled: false }} />
           <Stack.Screen name="onchain-clan" />
           <Stack.Screen name="onchain-royale" options={{ gestureEnabled: false }} />
           <Stack.Screen name="game/line" options={{ gestureEnabled: false }} />
