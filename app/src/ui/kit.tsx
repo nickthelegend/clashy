@@ -201,6 +201,16 @@ export const CoinRow = ({ symbol, name, image, price, change, sub, hot, onPress,
 
 /** Honest state for anything that needs the Clashy program or a wallet. */
 export const ART = {
+  cupBig: require('../../assets/art/cup-big.webp'),
+  bellArt: require('../../assets/art/inbox-bell.webp'),
+  podium: require('../../assets/art/podium.webp'),
+  megaphone: require('../../assets/art/megaphone.webp'),
+  clubhouse: require('../../assets/art/clubhouse.webp'),
+  gift: require('../../assets/art/gift.webp'),
+  levelStar: require('../../assets/art/level-star.webp'),
+  week: require('../../assets/art/calendar-week.webp'),
+  breakMoon: require('../../assets/art/break-moon.webp'),
+  invite: require('../../assets/art/invite-hands.webp'),
   stash: require('../../assets/art/stash-jar.webp'),
   roundup: require('../../assets/art/roundup-coin.webp'),
   streak: require('../../assets/art/streak-flame.webp'),
