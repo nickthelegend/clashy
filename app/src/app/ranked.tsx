@@ -13,7 +13,6 @@ import { useDeskColumn } from '@/ui/layout';
 import { C, F, S } from '@/ui/tokens';
 
 const GAMES = [
-  { key: 'ko', title: 'Knockout duel', art: ART.tileDuel, go: () => router.replace('/duel/match') },
   { key: 'line', title: 'Draw the line', art: ART.tileLine, go: () => router.replace('/game/line') },
   { key: 'royale', title: 'Royale', art: ART.tileRoyale, go: () => router.replace('/game/royale') },
 ];
