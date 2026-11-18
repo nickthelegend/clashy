@@ -12,14 +12,16 @@ import { isTestAccount, usePrices, useProfiles, type Profile } from '@/chain/soc
 import { STOCKS, type Stock } from '@/chain/stocks';
 import { ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { Search as SearchIcon } from '@/ui/icons';
-import { ART, BackBtn, CRESTS, ErrorLine, Pending, Row, SkeletonRows, Txt, rankFor } from '@/ui/kit';
+import { ART, BackBtn, CRESTS, ErrorLine, Row, SkeletonRows, Txt, rankFor } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, FONT, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 type Tab = 'all' | 'players' | 'squads' | 'stocks';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'All' }, { key: 'players', label: 'Players' }, { key: 'squads', label: 'Squads' }, { key: 'stocks', label: 'Stocks' },
 ];
+const CARD = '#111116';
+const HAIR = '#1F1F27';
 const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 const go = (to: string) => () => router.push(to as Href);
 const crestSrc = (n: number) => CRESTS[((n % CRESTS.length) + CRESTS.length) % CRESTS.length];
@@ -35,58 +37,58 @@ const score = (hay: string, q: string) => {
 
 function Head({ title, right, onRight }: { title: string; right?: string; onRight?: () => void }) {
   return (
-    <Row style={{ justifyContent: 'space-between', marginTop: 24, marginBottom: 4 }}>
+    <Row style={{ justifyContent: 'space-between', marginTop: 24, marginBottom: 10 }}>
       <Txt v="h2" lines={1} style={{ flexShrink: 1 }}>{title}</Txt>
       {right ? (
         <Pressable onPress={onRight} hitSlop={12} style={{ minHeight: 32, justifyContent: 'center' }}>
-          <Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>{right}</Txt>
+          <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>{right} ›</Txt>
         </Pressable>
       ) : null}
     </Row>
   );
 }
 
-/** A list group: plain rows on black, like the Markets list. */
+/** A list group: rows inside one card with hairlines between them. */
 function Group({ children }: { children: ReactNode }) {
-  return <View>{children}</View>;
+  return <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>{children}</View>;
 }
 
-function ResultRow({ onPress, left, title, sub, right, rightSub, rightColor }: {
+function ResultRow({ first, onPress, left, title, sub, right, rightSub, rightColor }: {
   first: boolean; onPress: () => void; left: ReactNode; title: string; sub: string; right?: string; rightSub?: string; rightColor?: string;
 }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, minHeight: 64, paddingVertical: 10, borderTopWidth: first ? 0 : 1, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
       {left}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{title}</Txt>
-        <Txt v="small" lines={1} style={{ marginTop: 1 }}>{sub}</Txt>
+        <Txt v="small" lines={1} style={{ marginTop: 2 }}>{sub}</Txt>
       </View>
       {right ? (
         <View style={{ alignItems: 'flex-end', maxWidth: '38%' }}>
-          <Txt v="num" lines={1}>{right}</Txt>
-          {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ marginTop: 1 }}>{rightSub}</Txt> : null}
+          <Txt v="label" lines={1} style={{ fontVariant: ['tabular-nums'] }}>{right}</Txt>
+          {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ ...FONT.semi }}>{rightSub}</Txt> : null}
         </View>
-      ) : <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>}
+      ) : <Txt v="label" color={C.dim}>›</Txt>}
     </Pressable>
   );
 }
 
 const PlayerResult = ({ p, row, first }: { p: Profile; row?: PlayerRow; first: boolean }) => (
-  <ResultRow first={first} onPress={go(`/u/${p.owner.toBase58()}`)} left={<ProfileAvatar p={p} size={40} />} title={p.name}
+  <ResultRow first={first} onPress={go(`/u/${p.owner.toBase58()}`)} left={<ProfileAvatar p={p} size={42} />} title={p.name}
     sub={row ? `${rankFor(row.rp).label} · ${row.wins}W ${row.losses}L` : p.dayStreak >= 2 ? `🔥 ${p.dayStreak}-day streak` : 'No clashes yet'}
     right={row ? `${row.rp} pts` : undefined} />
 );
 const SquadResult = ({ c, first }: { c: ClanRow; first: boolean }) => (
   <ResultRow first={first} onPress={go(`/squad/${c.key.toBase58()}`)}
-    left={<View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}><Image source={crestSrc(c.crest)} style={{ width: 32, height: 32 }} contentFit="contain" /></View>}
+    left={<View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#1A1A22', alignItems: 'center', justifyContent: 'center' }}><Image source={crestSrc(c.crest)} style={{ width: 36, height: 36 }} contentFit="contain" /></View>}
     title={c.name} sub={`${c.members} member${c.members === 1 ? '' : 's'} · ${c.wins}W ${c.losses}L${c.atWar ? ' · at war' : ''}`}
     right={fmtUsd(c.chest, { compact: true })} rightSub="in the chest" rightColor={C.muted} />
 );
 const StockResult = ({ st, price, first }: { st: Stock; price?: number; first: boolean }) => (
   <ResultRow first={first} onPress={go(`/stock/${st.symbol}`)}
-    left={<Image source={STOCK_ART[st.symbol]} style={{ width: 40, height: 40, borderRadius: 20 }} contentFit="cover" />}
-    title={st.name} sub={`${st.symbol} · tokenized stock`} right={price ? fmtUsd(price) : '…'} rightSub="live" rightColor={C.muted} />
+    left={<View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#1A1A22', alignItems: 'center', justifyContent: 'center' }}><Image source={STOCK_ART[st.symbol]} style={{ width: 36, height: 36 }} contentFit="contain" /></View>}
+    title={st.name} sub={`${st.symbol} · tokenized stock`} right={price ? fmtUsd(price) : '…'} rightSub="live" rightColor={C.up} />
 );
 
 export default function SearchScreen() {
@@ -169,24 +171,24 @@ export default function SearchScreen() {
       <View style={{ backgroundColor: C.bg, paddingTop: 2, paddingBottom: 6 }}>
         <Row style={{ gap: 10 }}>
           <BackBtn onPress={back} />
-          <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: 22, backgroundColor: C.card, paddingLeft: 14, paddingRight: 5 }}>
+          <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: query ? '#33334A' : 'transparent', paddingLeft: 14, paddingRight: 6 }}>
             <SearchIcon size={17} color={C.muted} />
             <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Players, squads, stocks" placeholderTextColor={C.dim}
               autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search"
-              style={{ flex: 1, minWidth: 0, height: 42, color: C.ink, ...FONT.medium, fontSize: 15 }} />
+              style={{ flex: 1, minWidth: 0, height: 46, color: C.ink, ...FONT.medium, fontSize: 16 }} />
             {q ? (
-              <Pressable onPress={() => setQ('')} accessibilityLabel="Clear search" hitSlop={8} style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, backgroundColor: pressed ? C.s1 : C.s2, alignItems: 'center', justifyContent: 'center' })}>
-                <Text style={{ color: C.ink, ...FONT.semi, fontSize: 12 }}>✕</Text>
+              <Pressable onPress={() => setQ('')} accessibilityLabel="Clear search" hitSlop={8} style={({ pressed }) => ({ width: 36, height: 36, borderRadius: 18, backgroundColor: pressed ? '#2A2A33' : C.s2, alignItems: 'center', justifyContent: 'center' })}>
+                <Text style={{ color: C.ink, ...FONT.bold, fontSize: 13 }}>✕</Text>
               </Pressable>
             ) : null}
           </View>
         </Row>
-        <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: C.card, borderRadius: 18, padding: 4, gap: 4 }}>
+        <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: CARD, borderRadius: 22, padding: 3 }}>
           {TABS.map((t) => {
             const on = t.key === tab;
             return (
               <Pressable key={t.key} onPress={() => setTab(t.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-                style={({ pressed }) => ({ flex: 1, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+                style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
                 <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 13.5, color: on ? '#000' : C.muted }}>{t.label}</Text>
               </Pressable>
             );
@@ -196,29 +198,32 @@ export default function SearchScreen() {
 
       <Animated.View key={`${tab}:${query ? 1 : 0}`} entering={FadeIn.duration(180)}>
         {nothing ? (
-          <View style={{ marginTop: 24 }}>
-            <Pending art={ART.emptySearch} title="Nothing found"
-              body={`No ${tab === 'all' ? 'players, squads or stocks' : tab} match "${q.trim()}". Check the spelling, or try a name, a squad or a ticker like NVDA.`}
-              action={tab !== 'all' ? 'Search everything' : undefined} onAction={() => setTab('all')} />
+          <View style={{ alignItems: 'center', marginTop: 40, paddingHorizontal: 20 }}>
+            <Image source={ART.emptySearch} style={{ width: 150, height: 150 }} contentFit="contain" />
+            <Txt v="title" style={{ marginTop: 8, textAlign: 'center' }}>Nothing found</Txt>
+            <Txt v="small" style={{ textAlign: 'center', marginTop: 6, lineHeight: 19 }}>
+              No {tab === 'all' ? 'players, squads or stocks' : tab} match "{q.trim()}". Check the spelling, or try a name, a squad or a ticker like NVDA.
+            </Txt>
+            {tab !== 'all' ? (
+              <Pressable onPress={() => setTab('all')} style={({ pressed }) => ({ marginTop: 16, height: 44, paddingHorizontal: 20, borderRadius: 22, backgroundColor: C.s2, justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+                <Txt v="label">Search everything</Txt>
+              </Pressable>
+            ) : null}
           </View>
         ) : tab === 'all' && !query ? (
           <>
             <Head title="Top players" right="Leaderboard" onRight={go('/leaderboard')} />
             {board.status === 'loading' || playersLoading ? <SkeletonRows n={3} /> : board.status === 'error' ? <ErrorLine msg={board.error} /> : topPlayers.length ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginTop: 6 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
                 {topPlayers.map((r, i) => {
                   const p = names.get(r.owner.toBase58());
                   return (
-                    <Pressable key={r.owner.toBase58()} onPress={go(`/u/${r.owner.toBase58()}`)} accessibilityRole="button" accessibilityLabel={`${i + 1}, ${p?.name ?? 'player'}`}
-                      style={({ pressed }) => ({ width: 96, alignItems: 'center', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 6, backgroundColor: pressed ? C.s1 : C.card, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-                      <View>
-                        <ProfileAvatar p={p} size={44} />
-                        <View style={{ position: 'absolute', right: -4, bottom: -2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-                          <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 10.5 }}>{i + 1}</Txt>
-                        </View>
-                      </View>
-                      <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '100%', fontSize: 14 }}>{p?.name}</Txt>
-                      <Txt v="small" lines={1} style={{ fontSize: 12, fontVariant: ['tabular-nums'] }}>{r.rp} pts</Txt>
+                    <Pressable key={r.owner.toBase58()} onPress={go(`/u/${r.owner.toBase58()}`)}
+                      style={({ pressed }) => ({ width: 104, alignItems: 'center', borderRadius: 22, paddingVertical: 14, paddingHorizontal: 6, backgroundColor: i === 0 ? '#1B1708' : CARD, borderWidth: 1, borderColor: i === 0 ? '#4A3B10' : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+                      <Txt v="label" color={i === 0 ? '#FFD66B' : C.muted} style={{ fontSize: 13 }}>#{i + 1}</Txt>
+                      <View style={{ marginTop: 6 }}><ProfileAvatar p={p} size={50} /></View>
+                      <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '100%' }}>{p?.name}</Txt>
+                      <Txt v="small" lines={1}>{r.rp} pts</Txt>
                     </Pressable>
                   );
                 })}

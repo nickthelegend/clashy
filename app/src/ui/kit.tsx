@@ -11,13 +11,13 @@ import { Back, Search as SearchIcon, Swords } from './icons';
 /* ---------- type ---------- */
 type TxtVariant = 'hero' | 'title' | 'h2' | 'body' | 'label' | 'small' | 'num';
 const T: Record<TxtVariant, TextStyle> = {
-  hero: { ...FONT.bold, fontSize: 40, letterSpacing: -1.3 },
-  title: { ...FONT.bold, fontSize: 24, letterSpacing: -0.6, lineHeight: 29 },
-  h2: { ...FONT.semi, fontSize: 17, letterSpacing: -0.3 },
-  body: { ...FONT.regular, fontSize: 15, letterSpacing: -0.15, lineHeight: 20 },
+  hero: { ...FONT.bold, fontSize: 56, letterSpacing: -2.2 },
+  title: { ...FONT.bold, fontSize: 30, letterSpacing: -0.9, lineHeight: 35 },
+  h2: { ...FONT.semi, fontSize: 18, letterSpacing: -0.35 },
+  body: { ...FONT.regular, fontSize: 15.5, letterSpacing: -0.15, lineHeight: 21 },
   label: { ...FONT.semi, fontSize: 15, letterSpacing: -0.2 },
-  small: { ...FONT.regular, fontSize: 13, color: C.muted, letterSpacing: -0.05 },
-  num: { ...FONT.semi, fontSize: 15, fontVariant: ['tabular-nums'] },
+  small: { ...FONT.regular, fontSize: 13.5, color: C.muted, letterSpacing: -0.05 },
+  num: { ...FONT.semi, fontSize: 15.5, fontVariant: ['tabular-nums'] },
 };
 export const Txt = ({ v = 'body', color, style, children, lines }: { v?: TxtVariant; color?: string; style?: StyleProp<TextStyle>; children: ReactNode; lines?: number }) => (
   <Text numberOfLines={lines} style={[{ color: C.ink }, T[v], color ? { color } : null, style]}>{children}</Text>
@@ -62,9 +62,9 @@ const BK: Record<BtnKind, { bg: string; fg: string }> = {
   short: { bg: C.down, fg: '#fff' }, ghost: { bg: C.s2, fg: C.ink },
 };
 export const Btn = ({ title, kind = 'brand', onPress, h = 48, style, disabled, icon }: { title: string; kind?: BtnKind; onPress?: () => void; h?: number; style?: StyleProp<ViewStyle>; disabled?: boolean; icon?: ReactNode }) => (
-  <Press onPress={onPress} disabled={disabled} style={[{ height: h, borderRadius: h / 2, backgroundColor: BK[kind].bg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: h <= 38 ? 14 : 18 }, style]}>
+  <Press onPress={onPress} disabled={disabled} style={[{ height: h, borderRadius: h <= 38 ? 11 : 14, backgroundColor: BK[kind].bg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: h <= 38 ? 14 : 18 }, style]}>
     {icon}
-    <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: h <= 38 ? 13.5 : 15.5, letterSpacing: -0.1, color: BK[kind].fg }}>{title}</Text>
+    <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: h <= 38 ? 13.5 : 15, letterSpacing: -0.1, color: BK[kind].fg }}>{title}</Text>
   </Press>
 );
 export const IconBtn = ({ children, onPress, size = 38, dot }: { children: ReactNode; onPress?: () => void; size?: number; dot?: boolean }) => (
@@ -160,7 +160,7 @@ const toPath = (vals: number[], w: number, h: number, pad = 4, lo?: number, hi?:
 export const Sparkline = ({ data, w = 120, h = 36, color }: { data: number[]; w?: number; h?: number; color?: string }) => {
   if (data.length < 2) return <View style={{ width: w, height: h }} />;
   const c = color ?? (data[data.length - 1] >= data[0] ? C.up : C.down);
-  return <Svg width={w} height={h}><Path d={toPath(data, w, h, 2)} stroke={c} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" /></Svg>;
+  return <Svg width={w} height={h}><Path d={toPath(data, w, h, 2)} stroke={c} strokeWidth={1.8} fill="none" /></Svg>;
 };
 /** Area chart; optional knockout lines (yours in brand, opponent's in pink). */
 export const PriceChart = ({ data, w, h = 220, koYou, koOpp }: { data: number[]; w: number; h?: number; koYou?: number; koOpp?: number }) => {
@@ -353,12 +353,12 @@ export const Wordmark = ({ height = 26 }: { height?: number }) => (
 );
 
 export const Pending = ({ title, body, action, onAction, art }: { title: string; body: string; action?: string; onAction?: () => void; art?: number }) => (
-  <View style={{ alignItems: 'center', paddingVertical: 26, paddingHorizontal: 12, gap: 6 }}>
-    {art ? <Art src={art} size={64} /> : <Swords size={24} color={C.dim} />}
-    <Txt v="label" style={{ textAlign: 'center', marginTop: 4 }}>{title}</Txt>
-    <Txt v="small" style={{ textAlign: 'center', lineHeight: 18, maxWidth: 300 }}>{body}</Txt>
-    {action ? <Btn title={action} kind="ghost" h={38} onPress={onAction} style={{ marginTop: 8 }} /> : null}
-  </View>
+  <Card style={{ alignItems: 'center', paddingVertical: 22, gap: 6 }}>
+    {art ? <Art src={art} size={92} /> : <Swords size={26} color={C.dim} />}
+    <Txt v="h2" style={{ textAlign: 'center' }}>{title}</Txt>
+    <Txt v="small" style={{ textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
+    {action ? <Btn title={action} kind="ghost" h={38} onPress={onAction} style={{ marginTop: 6 }} /> : null}
+  </Card>
 );
 export const ErrorLine = ({ msg, onRetry }: { msg: string; onRetry?: () => void }) => (
   <Row style={{ gap: 8, paddingVertical: 8 }}>
@@ -443,18 +443,20 @@ export const LiveChart = ({ data, w, h = 240, refLine, refLabel, minSpan = 0.000
   return (
     <View style={{ width: w, height: h }}>
       <Svg width={w} height={h}>
-        <Defs><LinearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={lc} stopOpacity={0.12} /><Stop offset="1" stopColor={lc} stopOpacity={0} /></LinearGradient></Defs>
+        <Defs><LinearGradient id="lcg" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={lc} stopOpacity={0.28} /><Stop offset="1" stopColor={lc} stopOpacity={0} /></LinearGradient></Defs>
+        {[0.25, 0.5, 0.75].map((f) => <Line key={f} x1={0} x2={w - R_ + 4} y1={h * f} y2={h * f} stroke="#18181C" />)}
         <Path d={`${d} L${ex},${h} L${pts[0][0]},${h}Z`} fill="url(#lcg)" />
-        {refLine !== undefined ? <Line x1={0} x2={w} y1={Y(refLine)} y2={Y(refLine)} stroke={C.muted} strokeWidth={1} strokeDasharray="3 4" /> : null}
-        <Path d={d} stroke={lc} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        <Line x1={ex} x2={w} y1={ey} y2={ey} stroke={lc} strokeOpacity={0.35} strokeDasharray="2 3" />
+        {refLine !== undefined ? <Line x1={0} x2={w} y1={Y(refLine)} y2={Y(refLine)} stroke={C.brandSoft} strokeWidth={1.2} strokeDasharray="5 5" /> : null}
+        <Path d={d} stroke={lc} strokeOpacity={0.25} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d={d} stroke={lc} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <Line x1={ex} x2={w} y1={ey} y2={ey} stroke={lc} strokeOpacity={0.5} strokeDasharray="2 3" />
       </Svg>
-      <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: ex - 5, top: ey - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: lc }, ring]} />
-      <View pointerEvents="none" style={{ position: 'absolute', left: ex - 4, top: ey - 4, width: 8, height: 8, borderRadius: 4, backgroundColor: lc }} />
-      <View pointerEvents="none" style={{ position: 'absolute', right: 4, top: Math.max(2, Math.min(h - 22, ey - 10)), backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 }}>
-        <Text style={{ ...FONT.semi, fontSize: 11, color: lc, fontVariant: ['tabular-nums'] }}>{last >= 1000 ? last.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.toPrecision(5)}</Text>
+      <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: ex - 6, top: ey - 6, width: 12, height: 12, borderRadius: 6, backgroundColor: lc }, ring]} />
+      <View pointerEvents="none" style={{ position: 'absolute', left: ex - 5, top: ey - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: lc, borderWidth: 2, borderColor: '#000' }} />
+      <View pointerEvents="none" style={{ position: 'absolute', right: 4, top: Math.max(2, Math.min(h - 24, ey - 11)), backgroundColor: lc, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 3 }}>
+        <Text style={{ ...FONT.bold, fontSize: 11, color: '#000' }}>{last >= 1000 ? last.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.toPrecision(5)}</Text>
       </View>
-      {refLine !== undefined && refLabel ? <Text style={{ position: 'absolute', left: 8, top: Math.max(2, Y(refLine) - 18), ...FONT.medium, fontSize: 10.5, color: C.muted }}>{refLabel}</Text> : null}
+      {refLine !== undefined && refLabel ? <Text style={{ position: 'absolute', left: 8, top: Math.max(2, Y(refLine) - 18), ...FONT.semi, fontSize: 10.5, color: C.brandSoft }}>{refLabel}</Text> : null}
     </View>
   );
 };

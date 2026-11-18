@@ -2,71 +2,44 @@
 // make; a share of every win; real tokenized stocks (xStocks) bought and sold through Orca from the Stash, with the
 // cost kept on chain; and the limits you set on yourself, which the program enforces on every stake.
 import { router } from 'expo-router';
-import { useState, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ComputeBudgetProgram, PublicKey, Transaction } from '@solana/web3.js';
 import { Image } from 'expo-image';
-import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { BN, P, USDC, sendSponsored, usdcAta, usdcPayIxs } from '@/chain/client';
 import { errText, short, useChain } from '@/chain/useChain';
 import { readPortfolio, readProfile, readStash, usePoll, usePrices } from '@/chain/social';
 import { SHARE, STOCKS, createStockAtaIx, minSharesFor, minUsdcFor, swapAccounts, type Stock } from '@/chain/stocks';
+import { ClayLoop } from '@/ui/clay';
 import { Lottie } from '@/ui/lottie';
 import { STOCK_ART } from '@/ui/feed';
-import { ArrowUp, Crown, Jar, Plus, Shield } from '@/ui/icons';
-import { BackBtn, Btn, ErrorLine, Money, Row, Txt } from '@/ui/kit';
+import { ART, BackBtn, Btn, Card, ErrorLine, Money, Row, Txt } from '@/ui/kit';
 import { AmountSheet } from '@/ui/amount';
 import { Sheet, SheetTile } from '@/ui/sheet';
-import { ActionRow, RoundAction } from '@/ui/watchlist';
 import { useDeskColumn } from '@/ui/layout';
-import { C, FONT, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const field = { color: C.ink, ...FONT.medium, fontSize: 16, backgroundColor: C.s2, borderRadius: 16, paddingHorizontal: 14, height: 52 } as const;
 
-/** Line icons in the ui/icons style for the three things that set has no glyph for. */
-const svg = (size: number) => ({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none' as const });
-const TrendUp = ({ size = 20, color = C.ink }: { size?: number; color?: string }) => (
-  <Svg {...svg(size)} stroke={color} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round"><Polyline points="3 17 9.5 10.5 13.5 14.5 21 7" /><Polyline points="15 7 21 7 21 13" /></Svg>
-);
-const Target = ({ size = 20, color = C.ink }: { size?: number; color?: string }) => (
-  <Svg {...svg(size)} stroke={color} strokeWidth={2.1}><Circle cx="12" cy="12" r="8.5" /><Circle cx="12" cy="12" r="4.5" /><Circle cx="12" cy="12" r="0.8" fill={color} /></Svg>
-);
-const Moon = ({ size = 20, color = C.ink }: { size?: number; color?: string }) => (
-  <Svg {...svg(size)} stroke={color} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round"><Path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></Svg>
-);
-const Disc = ({ children, size = 40 }: { children: ReactNode; size?: number }) => (
-  <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>{children}</View>
-);
-
-/** A round action that can be switched off (dimmed, not pressable) while it has nothing to act on. */
-function Action({ disabled, ...p }: ComponentProps<typeof RoundAction> & { disabled?: boolean }) {
-  return (
-    <View style={{ flex: 1, opacity: disabled ? 0.4 : 1 }} pointerEvents={disabled ? 'none' : 'auto'} accessibilityState={{ disabled: !!disabled }}>
-      <RoundAction {...p} />
-    </View>
-  );
-}
-
-/** One row of a settings group: an icon, the title, the current value, a chevron; opens that setting's drawer. */
-const SetRow = ({ icon, title, value, onPress }: { icon: ReactNode; title: string; value: string; onPress: () => void }) => (
-  <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}: ${value}`} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: pressed ? C.s1 : 'transparent' })}>
-    <Disc>{icon}</Disc>
-    <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{title}</Txt>
-    <Txt v="small" lines={1} style={{ flex: 1, textAlign: 'right' }}>{value}</Txt>
+/** One row of a settings group: art, title, the current value, a chevron; opens that setting's drawer. */
+const SetRow = ({ art, title, value, onPress }: { art: number; title: string; value: string; onPress: () => void }) => (
+  <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1A1A1F', backgroundColor: pressed ? C.s2 : 'transparent' })}>
+    <Image source={art} style={{ width: 40, height: 40 }} contentFit="contain" />
+    <Txt v="label" style={{ flex: 1 }}>{title}</Txt>
+    <Txt v="small" color={C.muted}>{value}</Txt>
     <Txt v="label" color={C.dim}>›</Txt>
   </Pressable>
 );
-/** A selectable option row inside a drawer, with a radio on the current choice. */
+/** A selectable option row inside a drawer, with a check on the current choice. */
 const Choice = ({ title, line, on, busy, onPress }: { title: string; line: string; on: boolean; busy?: boolean; onPress: () => void }) => (
-  <Pressable onPress={onPress} disabled={busy} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={title}
-    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, marginBottom: 8, backgroundColor: on ? C.s2 : pressed ? C.s1 : C.card, opacity: busy ? 0.6 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-    <View style={{ flex: 1, minWidth: 0 }}><Txt v="label">{title}</Txt><Txt v="small" style={{ marginTop: 1 }}>{line}</Txt></View>
-    <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: on ? C.brand : C.s2, alignItems: 'center', justifyContent: 'center' }}>{on ? <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.onBrand }} /> : null}</View>
+  <Pressable onPress={onPress} disabled={busy} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, marginBottom: 8, backgroundColor: on ? 'rgba(48,209,88,0.12)' : pressed ? '#22222A' : '#1B1B21', borderWidth: 1.5, borderColor: on ? C.up : 'transparent', opacity: busy ? 0.6 : 1 })}>
+    <View style={{ flex: 1 }}><Txt v="label">{title}</Txt><Txt v="small">{line}</Txt></View>
+    <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: on ? C.up : '#3A3A44', backgroundColor: on ? C.up : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Text style={{ color: '#04120A', ...FONT.bold, fontSize: 13 }}>✓</Text> : null}</View>
   </Pressable>
 );
 const Opt = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => (
-  <Pressable onPress={onPress} style={{ flex: 1, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : C.s2 }}><Txt v="small" color={on ? '#000' : C.ink} style={{ ...FONT.semi }}>{label}</Txt></Pressable>
+  <Pressable onPress={onPress} style={{ flex: 1, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : C.s2 }}><Txt v="small" color={on ? '#000' : C.ink} style={{ ...FONT.semi }}>{label}</Txt></Pressable>
 );
 
 export default function StashScreen() {
@@ -171,65 +144,67 @@ export default function StashScreen() {
       </Row>
 
       {!me || hasProfile === false ? (
-        <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 16 }}>
+        <Card style={{ padding: 16 }}>
           <Txt v="label">{wallet.status === 'out' ? 'Sign in to open your Stash' : 'Pick your name on Home first'}</Txt>
-          <Txt v="small" style={{ marginTop: 4 }}>A savings jar on Solana that only you can open.</Txt>
-          <Btn title={wallet.status === 'out' ? 'Sign in' : 'Go to Home'} style={{ marginTop: 12 }} onPress={() => (wallet.status === 'out' ? wallet.login?.() : router.replace('/'))} />
-        </View>
+          <Txt v="small" style={{ marginTop: 4 }}>Your Stash is a savings jar on Solana that only you can open: round-ups, a slice of your wins, and real stocks.</Txt>
+          <Btn title={wallet.status === 'out' ? 'Sign in' : 'Go to Home'} kind="white" style={{ marginTop: 12 }} onPress={() => (wallet.status === 'out' ? wallet.login?.() : router.replace('/'))} />
+        </Card>
       ) : (
         <>
           {/* the total, the way the best money apps lead: one big number, cents dimmed */}
-          <View>
-            <Txt v="small">Stash + stocks</Txt>
-            <View style={{ marginTop: 2 }}><Money value={(s?.balance ?? 0) + invested} size={40} /></View>
-            <Txt v="small" color={stockProfit >= 0 ? C.up : C.down} style={{ ...FONT.medium, marginTop: 2, fontVariant: ['tabular-nums'] }}>
-              {stockProfit >= 0 ? '+' : '−'}${Math.abs(stockProfit).toFixed(2)} <Txt v="small">on stocks · ${(s?.balance ?? 0).toFixed(2)} cash</Txt>
-            </Txt>
-            {/* the coin drop after a save, a buy or a payment */}
-            {dropping ? <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: -6, width: 72, height: 72 }}><Lottie key={coin} name="coin" size={72} onDone={() => setDropping(false)} /></View> : null}
-          </View>
+          <Row style={{ alignItems: 'center', gap: 14 }}>
+            <View style={{ flex: 1 }}>
+              <Txt v="small">Stash + stocks</Txt>
+              <Money value={(s?.balance ?? 0) + invested} size={46} />
+              <Row style={{ gap: 8, marginTop: 2 }}>
+                <View style={{ backgroundColor: stockProfit >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Txt v="small" color={stockProfit >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{stockProfit >= 0 ? '+' : '−'}${Math.abs(stockProfit).toFixed(2)}</Txt>
+                </View>
+                <Txt v="small">on stocks · ${(s?.balance ?? 0).toFixed(2)} cash</Txt>
+              </Row>
+            </View>
+            {dropping ? <View style={{ width: 96, height: 96, borderRadius: 20, backgroundColor: '#000' }}><Lottie key={coin} name="coin" size={96} onDone={() => setDropping(false)} /></View>
+              : <ClayLoop name="stash" size={96} style={{ borderRadius: 20 }} />}
+          </Row>
           {goal > 0 ? (
             <View style={{ marginTop: 12 }}>
-              <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s2, overflow: 'hidden' }}><View style={{ width: `${pct * 100}%`, height: 6, backgroundColor: C.brand }} /></View>
-              <Txt v="small" lines={1} style={{ marginTop: 4 }}>{Math.round(pct * 100)}% of {fmtUsd(goal)}{s?.goalName ? ` · ${s.goalName}` : ''}</Txt>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: C.s2, overflow: 'hidden' }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: C.up }} /></View>
+              <Txt v="small" style={{ marginTop: 4 }}>{Math.round(pct * 100)}% of {fmtUsd(goal)}{s?.goalName ? ` · ${s.goalName}` : ''}</Txt>
             </View>
           ) : null}
-          <ActionRow>
-            <Action primary label="Add" icon={<Plus size={22} color={C.onBrand} />} onPress={() => setAmt({ kind: 'add' })} />
-            <Action label="Take out" icon={<ArrowUp size={21} color={C.ink} />} disabled={!s || s.balance <= 0} onPress={() => setAmt({ kind: 'out' })} />
-            <Action label="Invest" icon={<TrendUp size={21} />} onPress={() => setPickStock(true)} />
-          </ActionRow>
+          <Row style={{ gap: 8, marginTop: 16 }}>
+            <Pressable onPress={() => setAmt({ kind: 'add' })} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label" color="#04120A">Add</Txt></Pressable>
+            <Pressable onPress={() => setAmt({ kind: 'out' })} disabled={!s || s.balance <= 0} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', opacity: !s || s.balance <= 0 ? 0.5 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label">Take out</Txt></Pressable>
+            <Pressable onPress={() => setPickStock(true)} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label" color="#000">Invest</Txt></Pressable>
+          </Row>
           {s ? (
-            <Row style={{ gap: 8, marginTop: 20 }}>
+            <Row style={{ gap: 8, marginTop: 10 }}>
               {[['Put in', s.savedManual], ['Round-ups', s.savedRoundup], ['From wins', s.savedWins]].map(([k, v]) => (
-                <View key={k as string} style={{ flex: 1, minWidth: 0, backgroundColor: C.card, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12 }}>
-                  <Txt v="small" lines={1}>{k}</Txt>
-                  <Txt v="num" lines={1} style={{ marginTop: 2 }}>{fmtUsd(v as number)}</Txt>
-                </View>
+                <Card key={k as string} style={{ flex: 1, padding: 10 }}><Txt v="small" style={{ fontSize: 11 }}>{k}</Txt><Txt v="label">{fmtUsd(v as number)}</Txt></Card>
               ))}
             </Row>
           ) : null}
           {err ? <ErrorLine msg={err} /> : null}
 
           {/* the goal */}
-          <Pressable onPress={() => setPanel('goal')} accessibilityRole="button" accessibilityLabel={goal > 0 ? 'Change your goal' : 'Set a goal'}
-            style={({ pressed }) => ({ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: pressed ? C.s1 : C.card, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-            <Disc size={44}><Target size={20} /></Disc>
+          <Pressable onPress={() => setPanel('goal')} style={({ pressed }) => ({ marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 24, padding: 14, backgroundColor: '#0F1A12', borderWidth: 1, borderColor: '#1F3A26', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+            <Image source={ART.goal} style={{ width: 64, height: 64 }} contentFit="contain" />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="label" lines={1}>{goal > 0 ? (s?.goalName || 'My goal') : 'Set a goal'}</Txt>
+              <Txt v="small" color="#8FD8A4" style={{ ...FONT.bold, letterSpacing: 0.6, fontSize: 11 }}>{goal > 0 ? 'Your goal' : 'Save for something'}</Txt>
+              <Text style={{ ...FONT.semi, fontSize: 20, color: C.ink, marginTop: 2 }} numberOfLines={1}>{goal > 0 ? (s?.goalName || 'My goal') : 'Set a goal'}</Text>
               {goal > 0 ? (
                 <>
-                  <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s2, overflow: 'hidden', marginTop: 7 }}><View style={{ width: `${pct * 100}%`, height: 6, backgroundColor: C.brand, borderRadius: 3 }} /></View>
-                  <Txt v="small" lines={1} style={{ marginTop: 4 }}>{fmtUsd(s?.balance ?? 0)} of {fmtUsd(goal)} · {Math.round(pct * 100)}%</Txt>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: '#1D2B21', overflow: 'hidden', marginTop: 8 }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: C.up, borderRadius: 4 }} /></View>
+                  <Txt v="small" style={{ marginTop: 4 }}>{fmtUsd(s?.balance ?? 0)} of {fmtUsd(goal)} · {Math.round(pct * 100)}%</Txt>
                 </>
-              ) : <Txt v="small" lines={1} style={{ marginTop: 1 }}>A phone, a trip, a rainy day.</Txt>}
+              ) : <Txt v="small">A phone, a trip, a rainy day. Watch it fill up.</Txt>}
             </View>
-            <Txt v="label" color={C.dim}>›</Txt>
+            <Txt v="label" color={C.muted}>›</Txt>
           </Pressable>
 
           {/* stocks */}
           <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 4 }}>
-            <Txt v="h2">Stocks</Txt>
+            <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>Stocks</Text>
             <Txt v="small">Real shares · via Orca</Txt>
           </Row>
           {STOCKS.map((st) => {
@@ -240,39 +215,38 @@ export default function StashScreen() {
             const profit = held && pos!.cost > 0 ? value - pos!.cost : 0;
             return (
               <Row key={st.symbol} style={{ gap: 12, paddingVertical: 10 }}>
-                <Pressable onPress={() => router.push(`/stock/${st.symbol}` as never)} accessibilityRole="button" accessibilityLabel={st.name} style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Image source={STOCK_ART[st.symbol]} style={{ width: 38, height: 38, borderRadius: 19 }} contentFit="cover" />
+                <Pressable onPress={() => router.push(`/stock/${st.symbol}` as never)} style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Image source={STOCK_ART[st.symbol]} style={{ width: 44, height: 44 }} contentFit="contain" />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Txt v="label" lines={1}>{st.name}</Txt>
-                  <Txt v="small" lines={1} style={{ marginTop: 1 }}>{held ? `${pos!.shares.toFixed(4)} ${st.symbol}` : st.symbol} · {price ? fmtUsd(price) : '…'}</Txt>
+                  <Txt v="small" lines={1}>{held ? `${pos!.shares.toFixed(4)} ${st.symbol}` : st.symbol} · {price ? fmtUsd(price) : '…'}</Txt>
                 </View>
                 </Pressable>
                 {held ? (
-                  <Pressable onPress={() => setSell(st)} accessibilityRole="button" accessibilityLabel={`Sell ${st.name}`} style={{ alignItems: 'flex-end', marginRight: 2 }}>
-                    <Txt v="num">{fmtUsd(value)}</Txt>
-                    <Txt v="small" color={profit >= 0 ? C.up : C.down} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{profit >= 0 ? '+' : '−'}{fmtUsd(Math.abs(profit))}</Txt>
+                  <Pressable onPress={() => setSell(st)} style={{ alignItems: 'flex-end', marginRight: 4 }}>
+                    <Txt v="label">{fmtUsd(value)}</Txt>
+                    <Txt v="small" color={profit >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{profit >= 0 ? '+' : '−'}{fmtUsd(Math.abs(profit))}</Txt>
                   </Pressable>
                 ) : null}
-                <Pressable onPress={() => setAmt({ kind: 'buy', st })} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Buy ${st.name}`} hitSlop={6}
-                  style={({ pressed }) => ({ paddingHorizontal: 14, height: 34, borderRadius: 17, justifyContent: 'center', backgroundColor: C.s2, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-                  <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>Buy</Txt>
+                <Pressable onPress={() => setAmt({ kind: 'buy', st })} disabled={!!busy} style={({ pressed }) => ({ paddingHorizontal: 16, height: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: held ? C.s2 : C.ink, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                  <Txt v="small" color={held ? C.ink : '#000'} style={{ ...FONT.bold }}>Buy</Txt>
                 </Pressable>
               </Row>
             );
           })}
 
           {/* automatic saving and your limits */}
-          <Txt v="h2" style={{ marginTop: 28, marginBottom: 10 }}>On autopilot</Txt>
-          <View style={{ backgroundColor: C.card, borderRadius: 18, overflow: 'hidden', paddingVertical: 4 }}>
-            <SetRow icon={<Jar size={19} color={C.ink} />} title="Round-ups" value={(prof?.roundupStep ?? 0) > 0 ? `To next $${prof!.roundupStep}` : 'Off'} onPress={() => setPanel('roundup')} />
-            <SetRow icon={<ArrowUp size={19} color={C.ink} />} title="Pay someone" value="Rounds up" onPress={() => setPanel('pay')} />
-            <SetRow icon={<Crown size={19} color={C.ink} />} title="Save from wins" value={(prof?.saveBps ?? 0) > 0 ? `${prof!.saveBps / 100}% of each win` : 'Off'} onPress={() => setPanel('wins')} />
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 10 }}>On autopilot</Text>
+          <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
+            <SetRow art={ART.roundup} title="Round-ups" value={(prof?.roundupStep ?? 0) > 0 ? `To next $${prof!.roundupStep}` : 'Off'} onPress={() => setPanel('roundup')} />
+            <SetRow art={ART.spend} title="Pay someone" value="Rounds up" onPress={() => setPanel('pay')} />
+            <SetRow art={ART.gift} title="Save from wins" value={(prof?.saveBps ?? 0) > 0 ? `${prof!.saveBps / 100}% of each win` : 'Off'} onPress={() => setPanel('wins')} />
           </View>
-          <Txt v="h2" style={{ marginTop: 28 }}>Your limits</Txt>
-          <Txt v="small" style={{ marginTop: 2, marginBottom: 10 }}>Enforced by the Clashy program on every stake.</Txt>
-          <View style={{ backgroundColor: C.card, borderRadius: 18, overflow: 'hidden', paddingVertical: 4 }}>
-            <SetRow icon={<Shield size={19} color={C.ink} />} title="Daily stake limit" value={prof ? `${fmtUsd(prof.dailyLimit)} · ${fmtUsd(stakedToday)} used` : '…'} onPress={() => setPanel('limit')} />
-            <SetRow icon={<Moon size={19} />} title="Take a break" value={prof && prof.breakUntil > now ? `Until ${new Date(prof.breakUntil * 1000).toLocaleDateString()}` : 'Off'} onPress={() => setPanel('break')} />
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>Your limits</Text>
+          <Txt v="small" style={{ marginBottom: 10 }}>Set by you, enforced by the Clashy program on every stake. No app can go past them, ours included.</Txt>
+          <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
+            <SetRow art={ART.limits} title="Daily stake limit" value={prof ? `${fmtUsd(prof.dailyLimit)} · ${fmtUsd(stakedToday)} used` : '…'} onPress={() => setPanel('limit')} />
+            <SetRow art={ART.breakMoon} title="Take a break" value={prof && prof.breakUntil > now ? `Until ${new Date(prof.breakUntil * 1000).toLocaleDateString()}` : 'Off'} onPress={() => setPanel('break')} />
           </View>
         </>
       )}
@@ -283,10 +257,11 @@ export default function StashScreen() {
         confirm={(n) => `Take out $${n.toFixed(2)}`} success="Back in your wallet" successSub="Your Stash is yours: no lockups, no fees."
         onConfirm={async (n) => { await onBase(`Take ${n} USDC out`, () => progs!.base.methods.stashWithdraw(new BN(Math.round(n * USDC))).accountsPartial({ owner: me!, ownerUsdc: usdcAta(me!) }).rpc()); after(); }} />
       <AmountSheet open={amt?.kind === 'buy'} onClose={() => setAmt(null)} title={amt?.st ? `Buy ${amt.st.name}` : 'Buy'} sub={amt?.st ? `${amt.st.symbol} at ${px[amt.st.symbol] ? fmtUsd(px[amt.st.symbol]) : '…'} · from your Stash, topped up from your wallet` : undefined}
-        art={amt?.st ? <Image source={STOCK_ART[amt.st.symbol]} style={{ width: 48, height: 48, borderRadius: 24 }} contentFit="cover" /> : undefined} min={1} max={(s?.balance ?? 0) + (bal ?? 0)} presets={[5, 10, 25]}
+        art={amt?.st ? <Image source={STOCK_ART[amt.st.symbol]} style={{ width: 80, height: 80 }} contentFit="contain" /> : undefined} min={1} max={(s?.balance ?? 0) + (bal ?? 0)} presets={[5, 10, 25]}
         confirm={(n) => `Buy $${n.toFixed(2)} of ${amt?.st?.symbol ?? ''}`} success={`You own more ${amt?.st?.name ?? ''}`} successSub="Real tokenized shares, bought through Orca, now in your own wallet."
         onConfirm={async (n) => { if (amt?.st) { await buyNow(amt.st, n); after(); } }} />
       <Sheet open={panel === 'goal'} onClose={() => setPanel(null)} title={goal > 0 ? 'Change your goal' : 'Set a goal'}>
+        <View style={{ alignItems: 'center', marginBottom: 12 }}><Image source={ART.goal} style={{ width: 86, height: 86 }} contentFit="contain" /></View>
         <TextInput value={goalName} onChangeText={setGoalName} placeholder={s?.goalName || 'What for? A new phone'} placeholderTextColor={C.muted} maxLength={24} style={field} />
         <TextInput value={goalAmt} onChangeText={setGoalAmt} placeholder={goal > 0 ? `${goal} USDC` : 'How much? 200'} placeholderTextColor={C.muted} keyboardType="decimal-pad" style={[field, { marginTop: 8 }]} />
         <Row style={{ gap: 8, marginTop: 8 }}>{[50, 200, 500, 1000].map((n) => <Opt key={n} label={`$${n}`} on={goalAmt === String(n)} onPress={() => setGoalAmt(String(n))} />)}</Row>
@@ -294,11 +269,11 @@ export default function StashScreen() {
         <Btn title={busy === 'goal' ? 'Saving…' : 'Save goal'} style={{ marginTop: 14 }} disabled={!!busy || !goalAmt} onPress={async () => { await setGoal(); }} />
       </Sheet>
       <Sheet open={panel === 'roundup'} onClose={() => setPanel(null)} title="Round-ups">
-        <Txt v="small" style={{ marginBottom: 12 }}>The change from each payment lands in your Stash, in the same transaction.</Txt>
+        <Txt v="small" style={{ marginBottom: 12 }}>Pay anyone from Clashy and the change up to the next step lands in your Stash, in the same transaction.</Txt>
         {[0, 1, 5].map((n) => <Choice key={n} title={n === 0 ? 'Off' : `Round up to the next $${n}`} line={n === 0 ? 'Pay the exact amount' : `Pay $3.40 and $${(n - 3.4 % n).toFixed(2)} is saved`} on={(prof?.roundupStep ?? 0) === n} busy={busy === 'limits'} onPress={setControls({ roundup: n })} />)}
       </Sheet>
       <Sheet open={panel === 'wins'} onClose={() => setPanel(null)} title="Save from wins">
-        <Txt v="small" style={{ marginBottom: 12 }}>This share of each clash win goes straight to your Stash.</Txt>
+        <Txt v="small" style={{ marginBottom: 12 }}>When you win a clash, this share of the payout goes straight to your Stash.</Txt>
         {[0, 1000, 2500, 5000].map((b) => <Choice key={b} title={b === 0 ? 'Off' : `${b / 100}% of every win`} line={b === 0 ? 'Winnings stay in your wallet' : `Win $9.70 and $${(9.7 * b / 10_000).toFixed(2)} is saved`} on={(prof?.saveBps ?? 0) === b} busy={busy === 'limits'} onPress={setControls({ saveBps: b })} />)}
       </Sheet>
       <Sheet open={panel === 'limit'} onClose={() => setPanel(null)} title="Daily stake limit">
@@ -306,7 +281,7 @@ export default function StashScreen() {
         {[10, 25, 50, 100].map((n) => <Choice key={n} title={`$${n} a day`} line={prof && n < prof.dailyLimit ? 'Applies now' : prof && n > prof.dailyLimit ? 'Applies in 24 hours' : 'Your limit'} on={prof?.dailyLimit === n} busy={busy === 'limits'} onPress={setControls({ limit: n })} />)}
       </Sheet>
       <Sheet open={panel === 'break'} onClose={() => setPanel(null)} title="Take a break">
-        <Txt v="small" style={{ marginBottom: 12 }}>Stops every stake until it ends; it can't be shortened. Saving and stocks stay open.</Txt>
+        <Txt v="small" style={{ marginBottom: 12 }}>A break stops every stake until it ends, and it cannot be shortened. Saving and stocks stay open.</Txt>
         {prof && prof.breakUntil > now ? <Txt v="label" color={C.up} style={{ marginBottom: 10 }}>On a break until {new Date(prof.breakUntil * 1000).toLocaleString()}</Txt> : null}
         {[1, 7, 30].map((d) => <Choice key={d} title={`${d} day${d > 1 ? 's' : ''}`} line={`No clashes or Royales until ${new Date((now + d * 86_400) * 1000).toLocaleDateString()}`} on={false} busy={busy === 'break'} onPress={takeBreak(d)} />)}
       </Sheet>
@@ -324,20 +299,20 @@ export default function StashScreen() {
           return (
             <>
               <View style={{ alignItems: 'center' }}>
-                <Image source={STOCK_ART[sell.symbol]} style={{ width: 48, height: 48, borderRadius: 24 }} contentFit="cover" />
-                <View style={{ marginTop: 8 }}><Money value={value} size={34} /></View>
+                <Image source={STOCK_ART[sell.symbol]} style={{ width: 80, height: 80 }} contentFit="contain" />
+                <Money value={value} size={40} />
                 <Txt v="small">{pos?.shares.toFixed(4)} {sell.symbol} · paid {fmtUsd(pos?.cost ?? 0)}</Txt>
               </View>
               {err ? <ErrorLine msg={err} /> : null}
-              <Btn title={busy === `sell${sell.symbol}` ? 'Selling…' : 'Sell all into the Stash'} kind="ghost" h={52} style={{ marginTop: 16 }} disabled={!!busy || !pos} onPress={async () => { if (pos) { await sellAll(sell, pos.shares)(); setSell(null); } }} />
-              <Txt v="small" style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: C.dim }}>Sold through Orca at the pool price, into your Stash.</Txt>
+              <Btn title={busy === `sell${sell.symbol}` ? 'Selling…' : 'Sell all into the Stash'} kind="white" style={{ marginTop: 16 }} disabled={!!busy || !pos} onPress={async () => { if (pos) { await sellAll(sell, pos.shares)(); setSell(null); } }} />
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Sold through Orca at the pool price. The USDC lands in your Stash.</Txt>
             </>
           );
         })() : null}
       </Sheet>
       <Sheet open={pickStock} onClose={() => setPickStock(false)} title="Invest in">
         {STOCKS.map((st) => (
-          <SheetTile key={st.symbol} art={<Image source={STOCK_ART[st.symbol]} style={{ width: 40, height: 40, borderRadius: 20 }} contentFit="cover" />} title={st.name} line={`${st.symbol} · ${px[st.symbol] ? fmtUsd(px[st.symbol]) : '…'}`}
+          <SheetTile key={st.symbol} art={<Image source={STOCK_ART[st.symbol]} style={{ width: 50, height: 50 }} contentFit="contain" />} title={st.name} line={`${st.symbol} · ${px[st.symbol] ? fmtUsd(px[st.symbol]) : '…'}`}
             onPress={() => { setPickStock(false); setTimeout(() => setAmt({ kind: 'buy', st }), 260); }} />
         ))}
       </Sheet>

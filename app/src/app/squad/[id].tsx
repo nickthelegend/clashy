@@ -1,14 +1,13 @@
-// A squad's public page (/squad/<squad address>), for anyone, member or not: the crest, name, captain, level, squad
-// P&L (the chest's trading score plus members' stock positions at live prices) as the one big number, chest and
-// members, the war record with recent wars, the members, and a read-only peek at #general when that channel exists.
-// One big button: Join squad (joined exactly like Discover does: sponsored player account if needed, then join_clan)
-// or Open squad.
+// A squad's public page (/squad/<squad address>), for anyone, member or not: the banner and crest, name, level, members,
+// chest, squad P&L (the chest's trading score plus members' stock positions at live prices), the war record with
+// recent wars, the captain and members, and a read-only peek at #general when that channel exists. One big button:
+// Join squad (joined exactly like Discover does: sponsored player account if needed, then join_clan) or Open squad.
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Share as RNShare, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share as RNShare, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
@@ -16,12 +15,13 @@ import { P, base, clanName } from '@/chain/client';
 import { ago, clanLevel, readChannel, reader, usePoll, usePrices, useProfiles, type Profile } from '@/chain/social';
 import { fmtPnl, pnlColor, readStockPnl, saveSelected } from '@/chain/squads';
 import { errText, short, useChain } from '@/chain/useChain';
+import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
-import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, LiveDot, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
-import { Crown, Share, Swords } from '@/ui/icons';
+import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { Share, Swords } from '@/ui/icons';
 import { useDeskColumn } from '@/ui/layout';
-import { Badge, LevelBar, MemberStack, crestSrc } from '@/ui/squads/parts';
-import { C, FONT, S } from '@/ui/tokens';
+import { Badge, CARD, GOLD, HAIR, LevelBar, MemberStack, SquadBanner } from '@/ui/squads/parts';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Chain = ReturnType<typeof useChain>;
 type MemberRow = { wallet: PublicKey; joinedAt: number; deposit: number };
@@ -75,18 +75,17 @@ async function ensurePlayer(chain: Chain) {
   return { me, progs, sponsor };
 }
 
-/** A stat tile: a small label over the value, one more grey line under it. */
 const Stat = ({ k, v, color = C.ink, sub }: { k: string; v: string; color?: string; sub?: string }) => (
-  <View style={{ flex: 1, minWidth: 0, backgroundColor: C.card, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 12 }}>
+  <View style={{ flexBasis: '47%', flexGrow: 1, backgroundColor: '#17171D', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14 }}>
     <Txt v="small" lines={1} style={{ fontSize: 12 }}>{k}</Txt>
-    <Txt v="num" lines={1} color={color} style={{ marginTop: 2 }}>{v}</Txt>
-    {sub ? <Txt v="small" lines={1} style={{ fontSize: 11.5, marginTop: 1 }}>{sub}</Txt> : null}
+    <Txt v="title" lines={1} color={color} style={{ fontSize: 22, marginTop: 2, fontVariant: ['tabular-nums'] }}>{v}</Txt>
+    {sub ? <Txt v="small" lines={1} style={{ fontSize: 11, marginTop: 1 }}>{sub}</Txt> : null}
   </View>
 );
 
 const Head = ({ title, right }: { title: string; right?: string }) => (
-  <Row style={{ marginTop: 28, marginBottom: 4, justifyContent: 'space-between' }}>
-    <Txt v="h2">{title}</Txt>
+  <Row style={{ marginTop: 26, marginBottom: 10, justifyContent: 'space-between' }}>
+    <Txt v="h2" style={{ fontSize: 18 }}>{title}</Txt>
     {right ? <Txt v="small">{right}</Txt> : null}
   </Row>
 );
@@ -171,131 +170,128 @@ export default function SquadPublic() {
 
         {!s ? (
           <View style={{ marginTop: 14 }}>
-            <Row style={{ gap: 12 }}><Bone w={48} h={48} r={16} /><View style={{ flex: 1, gap: 8 }}><Bone w="55%" h={18} /><Bone w="70%" h={11} /></View></Row>
-            <Bone w="45%" h={34} r={10} style={{ marginTop: 24 }} />
-            <Row style={{ gap: 8, marginTop: 16 }}><Bone w="31%" h={70} r={16} /><Bone w="31%" h={70} r={16} /><Bone w="31%" h={70} r={16} /></Row>
+            <Bone w="100%" h={270} r={24} />
+            <Row style={{ gap: 8, marginTop: 12 }}><Bone w="48%" h={76} r={18} /><Bone w="48%" h={76} r={18} /></Row>
             <View style={{ marginTop: 18 }}><SkeletonRows n={4} /></View>
           </View>
         ) : (
           <>
-            {/* crest, name, captain and members */}
-            <Animated.View entering={FadeInDown.duration(300)} style={{ marginTop: 10 }}>
-              <Row style={{ gap: 12 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-                  <Image source={crestSrc(s.crest)} style={{ width: 40, height: 40 }} contentFit="contain" />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Row style={{ gap: 8 }}>
-                    <Txt v="title" lines={1} style={{ flexShrink: 1 }}>{s.name}</Txt>
-                    {isMember ? <Badge text="You're in" /> : null}
-                    {s.atWar ? <Badge text="At war" color={C.s2} fg={C.ink} /> : null}
-                  </Row>
-                  <Row style={{ gap: 5, marginTop: 2 }}>
-                    <Crown size={13} color={C.brandSoft} />
-                    <Txt v="small" lines={1} style={{ flex: 1 }}>
-                      <Txt v="small" color={C.ink} style={{ ...FONT.medium }}>{capt?.name ? `@${capt.name}` : short(s.captain.toBase58())}</Txt> · {s.memberCount} member{s.memberCount === 1 ? '' : 's'} · LV {s.level}
-                    </Txt>
-                  </Row>
-                </View>
-              </Row>
-              <View style={{ marginTop: 14 }}><LevelBar level={s.level} xp={s.xp} floor={s.levelFloor} next={s.levelNext} /></View>
-
-              {/* the one big number: squad P&L */}
-              <Txt v="small" style={{ marginTop: 20 }}>Squad P&L</Txt>
-              <Text style={{ ...FONT.semi, fontSize: 34, letterSpacing: -1.2, marginTop: 2, color: pnl === null ? C.muted : pnlColor(pnl, C.up, C.down, C.ink), fontVariant: ['tabular-nums'] }}>{pnl === null ? '…' : fmtPnl(pnl)}</Text>
-              <Txt v="small" style={{ marginTop: 2 }}>{priced ? 'Chest trades + members’ stocks' : 'Some prices still loading'}</Txt>
-
-              <Row style={{ gap: 8, marginTop: 16 }}>
-                <Stat k="Chest" v={`$${s.chest.toFixed(2)}`} sub="Shared USDC" />
-                <Stat k="Members" v={String(s.memberCount)} sub={`Level ${s.level}`} />
-                <Stat k="War record" v={`${s.wins}W ${s.losses}L`} sub={s.wins + s.losses ? `${Math.round((s.wins / (s.wins + s.losses)) * 100)}% won` : 'No wars yet'} />
-              </Row>
-              {s.members.length ? (
-                <Row style={{ gap: 10, marginTop: 14 }}>
-                  <MemberStack profiles={s.members.map((m) => prof.get(m.wallet.toBase58()))} total={s.members.length} size={28} />
-                  <Txt v="small" lines={1} style={{ flex: 1 }}>
-                    {s.members.slice(0, 2).map((m) => nameOf(m.wallet)).join(', ')}{s.members.length > 2 ? ` and ${s.members.length - 2} more` : ''}
+            {/* banner, crest, name */}
+            <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 14, borderRadius: 24, backgroundColor: CARD }}>
+              <SquadBanner crest={s.crest} height={150}><ClayLoop name="clanCity" width="100%" height={150} cover /></SquadBanner>
+              {s.atWar ? <View style={{ position: 'absolute', top: 12, right: 12 }}><Badge text="At war" color={C.opp} /></View> : null}
+              <View style={{ paddingHorizontal: 16, paddingTop: 36, paddingBottom: 16 }}>
+                <Row style={{ gap: 8 }}>
+                  <Txt v="title" lines={1} style={{ flexShrink: 1, fontSize: 26 }}>{s.name}</Txt>
+                  {isMember ? <Badge text="You're in" color="rgba(171,159,242,0.25)" fg={C.brandSoft} /> : null}
+                </Row>
+                <Row style={{ gap: 6, marginTop: 6 }}>
+                  <Image source={ART.crown} style={{ width: 16, height: 16 }} contentFit="contain" />
+                  <Txt v="small" lines={1} color="#B9B9C3" style={{ flex: 1 }}>
+                    Captain <Txt v="small" color={GOLD} style={{ ...FONT.semi }}>{capt?.name ? `@${capt.name}` : short(s.captain.toBase58())}</Txt> · {s.memberCount} member{s.memberCount === 1 ? '' : 's'}
                   </Txt>
                 </Row>
-              ) : null}
+                <View style={{ marginTop: 14 }}><LevelBar level={s.level} xp={s.xp} floor={s.levelFloor} next={s.levelNext} /></View>
+                {s.members.length ? (
+                  <Row style={{ gap: 10, marginTop: 14 }}>
+                    <MemberStack profiles={s.members.map((m) => prof.get(m.wallet.toBase58()))} total={s.members.length} size={30} />
+                    <Txt v="small" lines={1} style={{ flex: 1, fontSize: 12.5 }} color="#C9C9D1">
+                      {s.members.slice(0, 2).map((m) => nameOf(m.wallet)).join(', ')}{s.members.length > 2 ? ` and ${s.members.length - 2} more` : ''}
+                    </Txt>
+                  </Row>
+                ) : null}
+              </View>
             </Animated.View>
+
+            {/* numbers */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              <Stat k="Squad P&L" v={pnl === null ? '…' : fmtPnl(pnl)} color={pnl === null ? C.muted : pnlColor(pnl, C.up, C.down, C.ink)} sub={priced ? 'Chest trades + members’ stocks' : 'Some prices still loading'} />
+              <Stat k="Chest" v={`$${s.chest.toFixed(2)}`} sub="Shared USDC" />
+              <Stat k="Members" v={String(s.memberCount)} sub={`Level ${s.level}`} />
+              <Stat k="War record" v={`${s.wins}W ${s.losses}L`} sub={s.wins + s.losses ? `${Math.round((s.wins / (s.wins + s.losses)) * 100)}% won` : 'No wars yet'} />
+            </View>
             {stocks.status === 'error' ? <ErrorLine msg={stocks.error} onRetry={stocks.reload} /> : null}
 
             {/* wars */}
             <Head title="Squad wars" right={s.wins + s.losses ? `${s.wins + s.losses} fought` : undefined} />
             {liveWar ? (
-              <Row style={{ gap: 12, paddingVertical: 10 }}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-                  <Swords size={19} color={C.ink} />
-                </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: 'rgba(240,70,140,0.10)', borderWidth: 1, borderColor: 'rgba(240,70,140,0.4)', marginBottom: 8 }}>
+                <ClayLoop name="war" size={52} style={{ borderRadius: 14 }} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Txt v="label" lines={1}>At war with {liveWar.oppName}</Txt>
-                  <Txt v="small" lines={1} style={{ marginTop: 1 }}>${liveWar.pot.toFixed(2)} pot · {liveWar.endTs > Date.now() / 1000 ? `ends in ${left(liveWar.endTs)}` : 'settling'}</Txt>
+                  <Txt v="small" lines={1}>${liveWar.pot.toFixed(2)} pot · {liveWar.endTs > Date.now() / 1000 ? `ends in ${left(liveWar.endTs)}` : 'settling'}</Txt>
                 </View>
-                <Row style={{ gap: 5 }}><LiveDot color={C.up} /><Txt v="small" color={C.up} style={{ ...FONT.medium }}>Live</Txt></Row>
-              </Row>
+                <Badge text="Live" color={C.opp} />
+              </View>
             ) : null}
             {pastWars.length ? pastWars.map((w) => (
-              <Row key={w.key.toBase58()} style={{ gap: 12, paddingVertical: 10 }}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-                  <Swords size={19} color={C.muted} />
+              <View key={w.key.toBase58()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, paddingHorizontal: 14, minHeight: 60, paddingVertical: 10, backgroundColor: CARD, marginBottom: 8 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: w.result === 'won' ? C.upBg : w.result === 'lost' ? C.downBg : C.s2, alignItems: 'center', justifyContent: 'center' }}>
+                  <Swords size={16} color={w.result === 'won' ? C.up : w.result === 'lost' ? C.down : C.muted} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Txt v="label" lines={1}>vs {w.oppName}</Txt>
-                  <Txt v="small" lines={1} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{w.mine >= 0 ? '+' : ''}{w.mine.toFixed(1)}% vs {w.theirs >= 0 ? '+' : ''}{w.theirs.toFixed(1)}% · {w.endTs ? `${ago(w.endTs)} ago` : ''}</Txt>
+                  <Txt v="small" lines={1}>{w.mine >= 0 ? '+' : ''}{w.mine.toFixed(1)}% vs {w.theirs >= 0 ? '+' : ''}{w.theirs.toFixed(1)}% · {w.endTs ? `${ago(w.endTs)} ago` : ''}</Txt>
                 </View>
                 <Txt v="label" color={w.result === 'won' ? C.up : w.result === 'lost' ? C.down : C.muted}>{w.result === 'won' ? 'Won' : w.result === 'lost' ? 'Lost' : 'Tie'}</Txt>
-              </Row>
+              </View>
             )) : !liveWar ? (
-              <Txt v="small" style={{ paddingVertical: 8, lineHeight: 18 }}>No wars fought yet. The captain can challenge another squad, chest against chest.</Txt>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 14, backgroundColor: '#0E0E12' }}>
+                <Image source={ART.tileWar} style={{ width: 44, height: 44 }} contentFit="contain" />
+                <Txt v="small" style={{ flex: 1, lineHeight: 18 }}>No wars fought yet. The captain can challenge another squad, chest against chest.</Txt>
+              </View>
             ) : null}
 
             {/* members */}
             <Head title="Members" right={`${s.members.length}`} />
-            {shown.map((m) => {
-              const p = prof.get(m.wallet.toBase58());
-              const isCapt = m.wallet.equals(s.captain);
-              const isMe = !!me && m.wallet.equals(me);
-              return (
-                <Pressable key={m.wallet.toBase58()} onPress={() => router.push(`/u/${m.wallet.toBase58()}` as Href)} accessibilityRole="button" accessibilityLabel={p?.name ?? short(m.wallet.toBase58())}
-                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
-                  <ProfileAvatar p={p} size={40} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Row style={{ gap: 6 }}>
-                      <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{p?.name ?? short(m.wallet.toBase58())}</Txt>
-                      {isCapt ? <Crown size={14} color={C.brandSoft} /> : null}
-                      {isMe ? <Txt v="small" color={C.dim} style={{ fontSize: 12 }}>you</Txt> : null}
-                    </Row>
-                    <Txt v="small" lines={1} style={{ marginTop: 1 }}>{isCapt ? 'Captain' : 'Member'}{m.joinedAt ? ` · joined ${ago(m.joinedAt)} ago` : ''}</Txt>
-                  </View>
-                  {m.deposit > 0 ? <Txt v="num" style={{ fontSize: 14 }}>${m.deposit.toFixed(2)} <Txt v="small">in</Txt></Txt> : null}
-                  <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>
+            <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
+              {shown.map((m, i) => {
+                const p = prof.get(m.wallet.toBase58());
+                const isCapt = m.wallet.equals(s.captain);
+                const isMe = !!me && m.wallet.equals(me);
+                return (
+                  <Pressable key={m.wallet.toBase58()} onPress={() => router.push(`/u/${m.wallet.toBase58()}` as Href)}
+                    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderTopColor: HAIR, backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
+                    <ProfileAvatar p={p} size={40} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Row style={{ gap: 6 }}>
+                        <Txt v="label" lines={1} color={isCapt ? GOLD : C.ink} style={{ flexShrink: 1 }}>{p?.name ?? short(m.wallet.toBase58())}</Txt>
+                        {isCapt ? <Image source={ART.crown} style={{ width: 15, height: 15 }} contentFit="contain" /> : null}
+                        {isMe ? <Txt v="small" color={C.dim} style={{ fontSize: 11 }}>you</Txt> : null}
+                      </Row>
+                      <Txt v="small" lines={1} style={{ fontSize: 12 }}>{isCapt ? 'Captain' : 'Member'}{m.joinedAt ? ` · joined ${ago(m.joinedAt)} ago` : ''}</Txt>
+                    </View>
+                    {m.deposit > 0 ? <Txt v="small" color="#C9C9D1" style={{ fontVariant: ['tabular-nums'] }}>${m.deposit.toFixed(2)} in</Txt> : null}
+                    <Txt v="label" color={C.dim}>›</Txt>
+                  </Pressable>
+                );
+              })}
+              {s.members.length > 6 ? (
+                <Pressable onPress={() => setShowAll((v) => !v)} style={({ pressed }) => ({ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: HAIR, backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
+                  <Txt v="label" color={C.brandSoft} style={{ fontSize: 13.5 }}>{showAll ? 'Show fewer' : `Show all ${s.members.length}`}</Txt>
                 </Pressable>
-              );
-            })}
-            {s.members.length > 6 ? (
-              <Pressable onPress={() => setShowAll((v) => !v)} accessibilityRole="button" style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-                <Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>{showAll ? 'Show fewer' : `Show all ${s.members.length}`}</Txt>
-              </Pressable>
-            ) : null}
+              ) : null}
+            </View>
 
             {/* #general preview, read only */}
             {chat.status === 'ready' && chat.data ? (
               <>
                 <Head title="#general" right={chat.data.count ? `${chat.data.count} message${chat.data.count === 1 ? '' : 's'}` : undefined} />
-                <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 14, gap: 12, marginTop: 6 }}>
+                <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 14, gap: 12 }}>
                   {msgs.length === 0 ? (
-                    <Txt v="small">Quiet so far. Nobody has said gm yet.</Txt>
+                    <Row style={{ gap: 12 }}>
+                      <Image source={ART.emptyChats} style={{ width: 44, height: 44 }} contentFit="contain" />
+                      <Txt v="small" style={{ flex: 1 }}>Quiet so far. Nobody has said gm yet.</Txt>
+                    </Row>
                   ) : msgs.map((m) => (
                     <Row key={m.i} style={{ gap: 10, alignItems: 'flex-start' }}>
                       <ProfileAvatar p={prof.get(m.author.toBase58())} size={30} />
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Row style={{ gap: 6 }}>
-                          <Txt v="label" lines={1} style={{ fontSize: 14, flexShrink: 1 }}>{nameOf(m.author)}</Txt>
-                          {m.author.equals(s.captain) ? <Crown size={12} color={C.brandSoft} /> : null}
-                          <Txt v="small" color={C.dim} style={{ fontSize: 12 }}>{ago(m.ts)}</Txt>
+                          <Txt v="label" lines={1} color={m.author.equals(s.captain) ? GOLD : C.ink} style={{ fontSize: 13.5, flexShrink: 1 }}>{nameOf(m.author)}</Txt>
+                          <Txt v="small" color={C.dim} style={{ fontSize: 11 }}>{ago(m.ts)}</Txt>
                         </Row>
-                        <Txt v="body" lines={2} style={{ fontSize: 14, lineHeight: 19, marginTop: 1 }}>{m.kind === 1 ? 'Posted a clash challenge' : m.text}</Txt>
+                        <Txt v="body" lines={2} color="#C9C9D1" style={{ fontSize: 14, lineHeight: 19, marginTop: 1 }}>{m.kind === 1 ? 'Posted a clash challenge' : m.text}</Txt>
                       </View>
                     </Row>
                   ))}
@@ -317,9 +313,9 @@ export default function SquadPublic() {
           <View style={[col, { paddingHorizontal: S.gutter, paddingTop: 8, paddingBottom: insets.bottom + 12 }]}>
             {err ? <ErrorLine msg={err} /> : null}
             {isMember
-              ? <Btn title="Open squad" h={52} onPress={() => openSquad(s.key)} />
-              : <Btn title={busy ? 'Joining…' : me ? 'Join squad' : 'Sign in to join'} h={52} disabled={busy} onPress={join} />}
-            {!isMember ? <Txt v="small" style={{ textAlign: 'center', marginTop: 6, fontSize: 12 }}>Free to join · be in as many squads as you like</Txt> : null}
+              ? <Btn title="Open squad" h={56} onPress={() => openSquad(s.key)} />
+              : <Btn title={busy ? 'Joining…' : me ? 'Join squad' : 'Sign in to join'} kind="white" h={56} disabled={busy} onPress={join} />}
+            {!isMember ? <Txt v="small" style={{ textAlign: 'center', marginTop: 6, fontSize: 11.5 }}>Free to join · be in as many squads as you like</Txt> : null}
           </View>
         </View>
       ) : null}

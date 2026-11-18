@@ -14,11 +14,10 @@ import { bookFresh, fillQty, useBookFeed, type BookFeed } from '@/chain/venues';
 import { STOCK_ART } from './feed';
 import { ART, ErrorLine, Row, Txt } from './kit';
 import { Sheet } from './sheet';
-import { C, FONT } from './tokens';
+import { C } from './tokens';
 
-/** The one card surface and the hairline between rows (v14 tokens). */
-export const CARD = C.card;
-export const HAIR = C.line;
+export const CARD = '#111116';
+export const HAIR = '#1F1F27';
 const MAJOR: Record<string, number> = { SOL: ART.logoSOL, BTC: ART.logoBTC, ETH: ART.logoETH };
 
 type LogoOf = Pick<Market, 'kind' | 'icon' | 'stockSym' | 'art'> & { symbol?: string };
@@ -32,42 +31,41 @@ export function MarketLogo({ m, size = 40 }: { m: LogoOf; size?: number }) {
   const tile = m.kind === 'stock' || !!m.stockSym;
   if (!local && (broken || !m.icon) && !tile) {
     return (
-      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-        <Txt v="label" color={C.ink} style={{ fontSize: size * 0.42 }}>{(m.symbol ?? '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?'}</Txt>
+      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#24242E', alignItems: 'center', justifyContent: 'center' }}>
+        <Txt v="label" color={C.brandSoft} style={{ fontSize: size * 0.42 }}>{(m.symbol ?? '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?'}</Txt>
       </View>
     );
   }
   if (tile) {
     return (
-      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {local ? <Image source={local} style={{ width: size * 0.86, height: size * 0.86 }} contentFit="contain" />
           : m.icon ? <Image source={{ uri: m.icon }} style={{ width: size, height: size }} contentFit="cover" transition={150} /> : null}
       </View>
     );
   }
   if (local) return <Image source={local} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" />;
-  if (m.icon) return <Image source={{ uri: m.icon }} onError={() => setBroken(true)} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.s2 }} contentFit="cover" transition={150} />;
+  if (m.icon) return <Image source={{ uri: m.icon }} onError={() => setBroken(true)} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: CARD }} contentFit="cover" transition={150} />;
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.s2 }} />;
 }
 
 const BOT_PIC = require('../../assets/images/icon.png');
 /** Clashy Bot's picture: the Clashy mark, so it never passes for a player. */
 export function BotPic({ size = 46 }: { size?: number }) {
-  return <Image source={BOT_PIC} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.bg }} contentFit="cover" accessibilityLabel="Clashy Bot" />;
+  return <Image source={BOT_PIC} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#000' }} contentFit="cover" accessibilityLabel="Clashy Bot" />;
 }
 export function BotTag() {
   return (
-    <View style={{ backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-      <Txt v="small" color={C.muted} style={{ ...FONT.semi, fontSize: 10, letterSpacing: 0.4 }}>BOT</Txt>
+    <View style={{ backgroundColor: 'rgba(171,159,242,0.18)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+      <Txt v="small" color={C.brandSoft} style={{ fontSize: 10.5, letterSpacing: 0.4 }}>BOT</Txt>
     </View>
   );
 }
 
-/** The honesty label on every Practice screen: a small grey pill. */
 export function PaperBadge() {
   return (
-    <View style={{ backgroundColor: C.s2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
-      <Txt v="small" color={C.muted} lines={1} style={{ ...FONT.medium, fontSize: 11.5 }}>Paper money</Txt>
+    <View style={{ backgroundColor: 'rgba(171,159,242,0.16)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+      <Txt v="small" color={C.brandSoft} style={{ fontSize: 11.5 }}>Paper money</Txt>
     </View>
   );
 }
@@ -76,19 +74,18 @@ export function SideTag({ p }: { p: Pick<Position, 'kind' | 'side' | 'lev'> }) {
   const long = p.side === 'long';
   const text = p.kind === 'perp' ? `${long ? 'Long' : 'Short'} ${p.lev}x` : 'Spot';
   return (
-    <View style={{ backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-      <Txt v="small" color={p.kind === 'perp' ? (long ? C.up : C.down) : C.muted} style={{ ...FONT.medium, fontSize: 11 }}>{text}</Txt>
+    <View style={{ backgroundColor: p.kind === 'perp' ? (long ? C.upBg : C.downBg) : C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+      <Txt v="small" color={p.kind === 'perp' ? (long ? C.up : C.down) : C.muted} style={{ fontSize: 11 }}>{text}</Txt>
     </View>
   );
 }
 
-/** A stat tile: a small label over the value, on the one card surface. */
 export function Stat({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 0, backgroundColor: C.card, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 12 }}>
-      <Txt v="small" style={{ fontSize: 12 }} lines={1}>{label}</Txt>
-      <Txt v="num" color={color} lines={1} style={{ marginTop: 3, fontSize: 16 }}>{value}</Txt>
-      {sub ? <Txt v="small" color={C.dim} style={{ fontSize: 11.5, marginTop: 1 }} lines={1}>{sub}</Txt> : null}
+    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 12 }}>
+      <Txt v="small" style={{ fontSize: 11.5 }} lines={1}>{label}</Txt>
+      <Txt v="h2" color={color} lines={1} style={{ marginTop: 3, fontVariant: ['tabular-nums'] }}>{value}</Txt>
+      {sub ? <Txt v="small" style={{ fontSize: 11, marginTop: 1 }} lines={1}>{sub}</Txt> : null}
     </View>
   );
 }
@@ -96,38 +93,37 @@ export function Stat({ label, value, color, sub }: { label: string; value: strin
 export function Cell({ label, value, color, align = 'left' }: { label: string; value: string; color?: string; align?: 'left' | 'center' | 'right' }) {
   return (
     <View style={{ flex: 1, minWidth: 0, alignItems: align === 'right' ? 'flex-end' : align === 'center' ? 'center' : 'flex-start' }}>
-      <Txt v="small" style={{ fontSize: 12 }} lines={1}>{label}</Txt>
-      <Txt v="num" color={color} lines={1} style={{ marginTop: 2 }}>{value}</Txt>
+      <Txt v="small" style={{ fontSize: 11.5 }}>{label}</Txt>
+      <Txt v="label" color={color} lines={1} style={{ marginTop: 2, fontVariant: ['tabular-nums'] }}>{value}</Txt>
     </View>
   );
 }
 
 export function Head({ title, right }: { title: string; right?: string }) {
   return (
-    <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 6, gap: 10 }}>
+    <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 10, gap: 10 }}>
       <Txt v="h2" lines={1} style={{ flexShrink: 1 }}>{title}</Txt>
-      {right ? <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{right}</Txt> : null}
+      {right ? <Txt v="small" lines={1}>{right}</Txt> : null}
     </Row>
   );
 }
 
 /** A pill in a bottom bar or drawer. */
-export function BarBtn({ title, bg, fg, onPress, disabled, h = 50 }: { title: string; bg: string; fg: string; onPress: () => void; disabled?: boolean; h?: number }) {
+export function BarBtn({ title, bg, fg, onPress, disabled, h = 54 }: { title: string; bg: string; fg: string; onPress: () => void; disabled?: boolean; h?: number }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={title}
       style={({ pressed }) => ({ flex: 1, height: h, borderRadius: h / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      <Txt v="label" color={fg} lines={1} style={{ fontSize: 15.5 }}>{title}</Txt>
+      <Txt v="label" color={fg} lines={1} style={{ fontSize: 16 }}>{title}</Txt>
     </Pressable>
   );
 }
 
-/** An empty state: the art at 64 px, a title and one line, on the page (no card). */
 export function EmptyCard({ art, title, body, action }: { art: number; title: string; body: string; action?: ReactNode }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 22, paddingHorizontal: 12, gap: 6 }}>
-      <Image source={art} style={{ width: 64, height: 64 }} contentFit="contain" />
-      <Txt v="label" style={{ marginTop: 4, textAlign: 'center' }}>{title}</Txt>
-      <Txt v="small" style={{ textAlign: 'center', lineHeight: 18, maxWidth: 300 }}>{body}</Txt>
+    <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12' }}>
+      <Image source={art} style={{ width: 72, height: 72 }} contentFit="contain" />
+      <Txt v="label" style={{ marginTop: 6, textAlign: 'center' }}>{title}</Txt>
+      <Txt v="small" style={{ marginTop: 3, textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
       {action}
     </View>
   );
@@ -143,40 +139,40 @@ export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; o
   const liq = liqPrice(p);
   const color = pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down;
   // a card that isn't a link is a plain view: a disabled wrapper would mark its Close button disabled for assistive tech
-  const card = { backgroundColor: C.card, borderRadius: 18, padding: 14 } as const;
+  const card = { backgroundColor: CARD, borderRadius: 22, padding: 14 } as const;
   return (
     <Card onPress={onPress} style={card}>
       <Row style={{ gap: 12 }}>
-        <MarketLogo m={p} size={38} />
+        <MarketLogo m={p} size={40} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Row style={{ gap: 6 }}>
             <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{p.symbol}</Txt>
             <SideTag p={p} />
           </Row>
-          <Txt v="small" lines={1} style={{ marginTop: 1 }}>
+          <Txt v="small" lines={1} style={{ marginTop: 2 }}>
             ${p.margin.toLocaleString('en-US', { maximumFractionDigits: 2 })}{p.kind === 'perp' ? ` margin · $${notional(p).toLocaleString('en-US', { maximumFractionDigits: 0 })} size` : ' in'}
           </Txt>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Txt v="num" color={color}>{pnl === undefined ? '…' : signedUsd(pnl)}</Txt>
-          <Txt v="small" color={color} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{pct === undefined ? 'waiting for price' : signedPct(pct)}</Txt>
+          <Txt v="label" color={color} style={{ fontVariant: ['tabular-nums'] }}>{pnl === undefined ? '…' : signedUsd(pnl)}</Txt>
+          <Txt v="small" color={color} style={{ fontSize: 11.5, fontVariant: ['tabular-nums'] }}>{pct === undefined ? 'waiting for price' : signedPct(pct)}</Txt>
         </View>
       </Row>
-      <View style={{ height: 1, backgroundColor: C.line, marginVertical: 12 }} />
+      <View style={{ height: 1, backgroundColor: HAIR, marginVertical: 12 }} />
       <Row style={{ gap: 8 }}>
         <Cell label="Entry" value={fmtPrice(p.entry)} />
         <Cell label="Live" value={fmtPrice(price)} align="center" />
         <Cell label="Liquidation" value={liq === null ? 'None' : fmtPrice(liq)} color={liq === null ? C.muted : C.down} align="right" />
       </Row>
       <Row style={{ gap: 10, marginTop: 12 }}>
-        <Txt v="small" color={C.dim} lines={2} style={{ flex: 1, fontSize: 12, lineHeight: 16 }}>
+        <Txt v="small" lines={2} style={{ flex: 1, fontSize: 11.5, lineHeight: 16 }}>
           {p.kind !== 'perp' ? 'Practice spot has no fee'
             : isBookVenue(p.venue) ? `${VENUES[p.venue].name} · fee ${fmtUsdSmall(p.openFee)} · funding ${fundingText(borrowCost(p))}`
               : `Fee ${fmtUsdSmall(p.openFee)} · borrow ${fmtUsdSmall(borrowCost(p))} so far`}
         </Txt>
-        <Pressable onPress={onClose} hitSlop={6} accessibilityRole="button" accessibilityLabel={`Close ${p.symbol}`}
-          style={({ pressed }) => ({ height: 38, minWidth: 84, paddingHorizontal: 16, borderRadius: 19, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-          <Txt v="label" style={{ fontSize: 14 }}>Close</Txt>
+        <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={`Close ${p.symbol}`}
+          style={({ pressed }) => ({ height: 44, minWidth: 96, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+          <Txt v="label">Close</Txt>
         </Pressable>
       </Row>
     </Card>
@@ -186,7 +182,7 @@ export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; o
  *  button inside it disabled for assistive tech). */
 function Card({ onPress, style, children }: { onPress?: () => void; style: object; children: ReactNode }) {
   if (!onPress) return <View style={style}>{children}</View>;
-  return <Pressable onPress={onPress} style={({ pressed }) => [style, pressed ? { backgroundColor: C.s1 } : null]}>{children}</Pressable>;
+  return <Pressable onPress={onPress} style={({ pressed }) => [style, pressed ? { backgroundColor: '#15151B' } : null]}>{children}</Pressable>;
 }
 const fmtUsdSmall = (n: number) => `$${n < 0.01 && n > 0 ? '<0.01' : n.toFixed(2)}`;
 /** Funding so far: what this position has paid (or been paid). */
@@ -225,32 +221,32 @@ export function CloseSheet({ p, px, pr, onClose, feed: given }: { p: Position | 
     <Sheet open={!!p} onClose={onClose}>
       {!q ? null : done ? (
         <View style={{ alignItems: 'center', paddingVertical: 14 }}>
-          <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: done.pnl >= 0 ? C.up : C.s2, alignItems: 'center', justifyContent: 'center' }}>
-            <Txt v="title" color={done.pnl >= 0 ? '#04120A' : C.ink} style={{ fontSize: 28 }}>✓</Txt>
+          <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: done.pnl >= 0 ? C.up : C.s2, alignItems: 'center', justifyContent: 'center' }}>
+            <Txt v="title" color={done.pnl >= 0 ? '#04120A' : C.ink} style={{ fontSize: 36 }}>✓</Txt>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(150)} style={{ alignItems: 'center' }}>
-            <Txt v="h2" style={{ marginTop: 14 }}>Trade closed</Txt>
-            <Txt v="num" color={done.pnl >= 0 ? C.up : C.down} style={{ fontSize: 34, letterSpacing: -1.2, marginTop: 4 }}>{signedUsd(done.pnl)}</Txt>
-            <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>{done.symbol} at {fmtPrice(done.exit)} · paper money, back in your balance</Txt>
+            <Txt v="h2" style={{ marginTop: 16 }}>Trade closed</Txt>
+            <Txt v="hero" color={done.pnl >= 0 ? C.up : C.down} style={{ fontSize: 48, marginTop: 2, fontVariant: ['tabular-nums'] }}>{signedUsd(done.pnl)}</Txt>
+            <Txt v="small" style={{ textAlign: 'center' }}>{done.symbol} at {fmtPrice(done.exit)} · paper money, back in your balance</Txt>
           </Animated.View>
           <View style={{ alignSelf: 'stretch', flexDirection: 'row', marginTop: 22 }}>
-            <BarBtn title="Done" bg={C.brand} fg={C.onBrand} onPress={onClose} h={52} />
+            <BarBtn title="Done" bg={C.ink} fg="#000" onPress={onClose} h={56} />
           </View>
         </View>
       ) : (
         <View>
           <Row style={{ gap: 12, marginTop: 4 }}>
-            <MarketLogo m={q} size={40} />
+            <MarketLogo m={q} size={44} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="h2" lines={1}>Close {q.symbol}</Txt>
-              <Row style={{ gap: 6, marginTop: 3 }}><SideTag p={q} /><Txt v="small" lines={1} style={{ flexShrink: 1 }}>opened at {fmtPrice(q.entry)}</Txt></Row>
+              <Txt v="title" lines={1} style={{ fontSize: 22 }}>Close {q.symbol}</Txt>
+              <Row style={{ gap: 6, marginTop: 2 }}><SideTag p={q} /><Txt v="small">opened at {fmtPrice(q.entry)}</Txt></Row>
             </View>
           </Row>
           <View style={{ alignItems: 'center', marginTop: 18 }}>
             <Txt v="small">Profit if you close now</Txt>
-            <Txt v="num" color={pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down} style={{ fontSize: 34, letterSpacing: -1.2, marginTop: 2 }}>{pnl === undefined ? '…' : signedUsd(pnl)}</Txt>
+            <Txt v="hero" color={pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down} style={{ fontSize: 48, fontVariant: ['tabular-nums'] }}>{pnl === undefined ? '…' : signedUsd(pnl)}</Txt>
           </View>
-          <View style={{ backgroundColor: C.card, borderRadius: 16, padding: 14, marginTop: 14, gap: 10 }}>
+          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, padding: 14, marginTop: 14, gap: 10 }}>
             <Line k={onBook ? `Average fill on ${VENUES[q.venue!].name}` : 'Live price'} v={fmtPrice(price)} />
             {onBook ? <Line k="Mark price" v={fmtPrice(px?.usdPrice)} /> : null}
             <Line k="Back to your balance" v={back === undefined ? '…' : `$${back.toFixed(2)}`} />
@@ -263,10 +259,10 @@ export function CloseSheet({ p, px, pr, onClose, feed: given }: { p: Position | 
           {onBook && fill && !fill.complete ? <ErrorLine msg="The book doesn't show enough size to close all of it at once right now." /> : null}
           {err ? <ErrorLine msg={err} /> : null}
           <View style={{ flexDirection: 'row', marginTop: 14 }}>
-            <BarBtn title={busy ? 'Closing…' : price !== undefined ? `Close at ${fmtPrice(price)}${onBook ? ' avg' : ''}` : 'Waiting for price'} bg={C.brand} fg={C.onBrand} h={52}
+            <BarBtn title={busy ? 'Closing…' : price !== undefined ? `Close at ${fmtPrice(price)}${onBook ? ' avg' : ''}` : 'Waiting for price'} bg={C.ink} fg="#000" h={56}
               onPress={go} disabled={busy || !ready} />
           </View>
-          <Txt v="small" color={C.dim} style={{ textAlign: 'center', marginTop: 8, fontSize: 12 }}>Practice · paper money. No real USDC moves.</Txt>
+          <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice · paper money. No real USDC moves.</Txt>
         </View>
       )}
     </Sheet>
@@ -277,7 +273,7 @@ export function Line({ k, v, color }: { k: string; v: string; color?: string }) 
   return (
     <Row style={{ justifyContent: 'space-between', gap: 12 }}>
       <Txt v="small" style={{ flexShrink: 1 }}>{k}</Txt>
-      <Txt v="num" color={color} style={{ fontSize: 14.5 }}>{v}</Txt>
+      <Txt v="label" color={color} style={{ fontVariant: ['tabular-nums'] }}>{v}</Txt>
     </Row>
   );
 }
@@ -285,8 +281,7 @@ export function Line({ k, v, color }: { k: string; v: string; color?: string }) 
 /** "Your SOL-PERP long was liquidated" after the watcher settles one. */
 export function LiquidatedNotice({ c, onDismiss }: { c: Closed; onDismiss: () => void }) {
   return (
-    <Animated.View entering={FadeIn.duration(220)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 12, marginTop: 14 }}>
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.down }} />
+    <Animated.View entering={FadeIn.duration(220)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.downBg, borderRadius: 18, padding: 12, marginTop: 14 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" color={C.down}>{c.symbol} {c.side} {c.lev}x was liquidated</Txt>
         <Txt v="small" style={{ marginTop: 2, lineHeight: 17 }}>The live price reached {fmtPrice(c.exit)} and the loss used up the ${c.margin.toFixed(2)} margin.</Txt>

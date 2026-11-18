@@ -42,13 +42,13 @@ export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, sou
   let caption = '';
   if (mode === 'live') {
     line = samples.map((x) => x.p);
-    caption = samples.length > 1 ? `${source} · since you opened · ${span(samples[samples.length - 1].t - samples[0].t)}` : `${source} · watching the live price`;
+    caption = samples.length > 1 ? `${source} · live since you opened · ${span(samples[samples.length - 1].t - samples[0].t)}` : `${source} · watching the live price`;
   } else if (hs && hist.data) {
     const pts = hist.data.points.filter((x) => typeof x.p[hs] === 'number');
     line = pts.map((x) => x.p[hs]);
     if (price !== undefined && line.length) line = [...line, price];
     const covers = !!pts[0] && pts[0].t <= Date.now() / 1000 - def.secs + 5 * 60;
-    caption = `On-chain ${hs} feed · every minute${pts[0] && !covers ? ` · since ${when(pts[0].t)}` : ''}`;
+    caption = `Clashy's on-chain ${hs} feed · a sample a minute${pts[0] && !covers ? ` · since ${when(pts[0].t)}` : ''}`;
   }
   const first = line[0];
   const last = line[line.length - 1];
@@ -91,7 +91,7 @@ export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, sou
           </Txt>
         ) : null}
       </Row>
-      {caption ? <Txt v="small" color={C.dim} lines={1} style={{ fontSize: 11.5, marginTop: 2 }}>{caption}</Txt> : null}
+      {caption ? <Txt v="small" lines={2} style={{ fontSize: 11.5, marginTop: 2 }}>{caption}</Txt> : null}
     </View>
   );
 }

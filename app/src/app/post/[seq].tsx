@@ -5,7 +5,7 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Share as RNShare, View } from 'react-native';
+import { Pressable, ScrollView, Share as RNShare, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
 import { BN, COIN_SYMBOLS, FEED_BOARD, P, USDC, readDuel } from '@/chain/client';
@@ -18,13 +18,15 @@ import { PositionCard, PostItem, ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { MarketCallCard } from '@/ui/market-call';
 import { callTarget } from '@/chain/calls';
 import { Heart, Reply, Share } from '@/ui/icons';
-import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { Lottie } from '@/ui/lottie';
-import { C, FONT, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 /** The board keeps this many of the newest posts; older ones fall off the ring. */
 const RING = 24;
+const CARD = '#111116';
+const EDGE = '#1F1F27';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 const go = (to: string) => router.push(to as Href);
@@ -40,7 +42,7 @@ function Bar({ title, onShare }: { title: string; onShare?: () => void }) {
   return (
     <Row style={{ gap: 12, height: 48 }}>
       <BackBtn onPress={back} />
-      <Txt v="h2" lines={1} style={{ flex: 1 }}>{title}</Txt>
+      <Txt v="h2" lines={1} style={{ flex: 1, fontSize: 18 }}>{title}</Txt>
       {onShare ? <IconBtn onPress={onShare} size={40}><Share size={18} color={C.ink} /></IconBtn> : null}
     </Row>
   );
@@ -49,7 +51,7 @@ function Bar({ title, onShare }: { title: string; onShare?: () => void }) {
 /** A shared clash result on a call: coin, the move and how the author did. Tap for the full replay. */
 function ClashLink({ duel, author }: { duel: PublicKey; author: PublicKey }) {
   const d = usePoll(() => readDuel(reader, duel), 30_000, [duel.toBase58()]);
-  if (d.status === 'loading') return <Bone w="100%" h={62} r={14} style={{ marginTop: 12 }} />;
+  if (d.status === 'loading') return <Bone w="100%" h={74} r={18} style={{ marginTop: 12 }} />;
   if (d.status === 'error') return <ErrorLine msg={d.error} onRetry={d.reload} />;
   const v = d.data;
   if (!v) return <Txt v="small" style={{ marginTop: 10 }}>The clash this call shared is no longer on chain.</Txt>;
@@ -61,17 +63,16 @@ function ClashLink({ duel, author }: { duel: PublicKey; author: PublicKey }) {
   const pot = v.stake * 2;
   const payout = (pot - Math.floor((pot * 300) / 10_000)) / USDC;
   return (
-    <Pressable onPress={() => go(`/match/${duel.toBase58()}`)} accessibilityRole="button" accessibilityLabel={`Clash on ${coinName(sym)}, see the replay`}
-      style={({ pressed }) => ({ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? C.s1 : C.card, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-      <CoinToken sym={sym} size={38} />
+    <Pressable onPress={() => go(`/match/${duel.toBase58()}`)} style={({ pressed }) => ({ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 18, padding: 12, minHeight: 74, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <CoinToken sym={sym} size={46} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>Clash on {coinName(sym)}</Txt>
         <Txt v="small" lines={1}>{settled ? `${v.entryPrice.toFixed(2)} → ${v.exitPrice.toFixed(2)} · see the replay ›` : v.status === 6 ? 'Cancelled · refunded' : 'Still running ›'}</Txt>
       </View>
       {settled ? (
         <View style={{ alignItems: 'flex-end' }}>
-          <Txt v="num" color={won ? C.up : tie ? C.ink : C.down}>{won ? `+${fmtUsd(payout - v.stake / USDC)}` : tie ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Txt>
-          <Txt v="small" style={{ fontSize: 12 }}>{won ? 'Won' : tie ? 'Tie' : 'Lost'}</Txt>
+          <Txt v="small" style={{ fontSize: 11 }}>{won ? 'Won' : tie ? 'Tie' : 'Lost'}</Txt>
+          <Text style={{ ...FONT.bold, fontSize: 16, color: won ? C.up : tie ? C.ink : C.down, fontVariant: ['tabular-nums'] }}>{won ? `+${fmtUsd(payout - v.stake / USDC)}` : tie ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -82,7 +83,7 @@ function ClashLink({ duel, author }: { duel: PublicKey; author: PublicKey }) {
 function Action({ onPress, disabled, label, children }: { onPress: () => void; disabled?: boolean; label: string; children: ReactNode }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityLabel={label} hitSlop={6}
-      style={({ pressed }) => ({ minWidth: 64, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, paddingHorizontal: 14, backgroundColor: pressed ? C.s1 : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+      style={({ pressed }) => ({ minWidth: 64, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, paddingHorizontal: 14, backgroundColor: pressed ? '#17171D' : 'transparent', transform: [{ scale: pressed ? 0.94 : 1 }] })}>
       {children}
     </Pressable>
   );
@@ -98,15 +99,15 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
   return (
     <View style={{ paddingTop: 12 }}>
       <Pressable onPress={() => go(`/u/${post.author.toBase58()}`)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, opacity: pressed ? 0.7 : 1 })}>
-        <ProfileAvatar p={author} size={44} />
+        <ProfileAvatar p={author} size={52} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt v="label" lines={1}>{nameOf(author, post.author)}</Txt>
+          <Txt v="label" lines={1} style={{ fontSize: 16 }}>{nameOf(author, post.author)}</Txt>
           <Txt v="small" lines={1}>{author ? `Player #${author.number + 1}` : 'No profile yet'}{author && author.dayStreak >= 2 ? ` · 🔥 ${author.dayStreak}-day streak` : ''}</Txt>
         </View>
-        <Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>Profile ›</Txt>
+        <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>Profile ›</Txt>
       </Pressable>
 
-      <Txt v="body" style={{ marginTop: 12, fontSize: 18, lineHeight: 25, letterSpacing: -0.25 }}>{post.text}</Txt>
+      <Txt v="body" style={{ marginTop: 14, fontSize: 21, lineHeight: 29, letterSpacing: -0.3 }}>{post.text}</Txt>
 
       {stock ? (
         <Pressable onPress={() => go(`/stock/${stock.symbol}`)} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
@@ -118,30 +119,29 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
 
       {stock ? (
         <Row style={{ marginTop: 12, gap: 8 }}>
-          <Pressable onPress={() => go(`/stock/${stock.symbol}`)} accessibilityRole="button" accessibilityLabel={`${stock.symbol}, open the stock`} hitSlop={4}
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingLeft: 6, paddingRight: 12, borderRadius: 18, backgroundColor: pressed ? C.s1 : C.s2 })}>
-            <Image source={STOCK_ART[stock.symbol]} style={{ width: 24, height: 24, borderRadius: 12 }} contentFit="cover" />
-            <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{stock.symbol}</Txt>
-            <Txt v="small" color={C.ink} style={{ fontVariant: ['tabular-nums'] }}>{price ? fmtUsd(price) : '…'}</Txt>
+          <Pressable onPress={() => go(`/stock/${stock.symbol}`)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingLeft: 8, paddingRight: 14, borderRadius: 22, backgroundColor: pressed ? '#1B1B21' : CARD })}>
+            <Image source={STOCK_ART[stock.symbol]} style={{ width: 26, height: 26 }} contentFit="contain" />
+            <Txt v="label" style={{ fontSize: 13.5 }}>{stock.symbol}</Txt>
+            <Txt v="small" color={C.ink}>{price ? fmtUsd(price) : '…'}</Txt>
             <Txt v="small" color={C.muted}>›</Txt>
           </Pressable>
         </Row>
       ) : null}
 
-      <Txt v="small" style={{ marginTop: 12 }}>{fullTime(post.ts)} · #{post.seq} on the public board</Txt>
+      <Txt v="small" style={{ marginTop: 14, fontSize: 13.5 }}>{fullTime(post.ts)} · #{post.seq} on the public board</Txt>
 
-      <Row style={{ marginTop: 12, paddingVertical: 10, gap: 20, borderTopWidth: 1, borderBottomWidth: 1, borderColor: C.line }}>
-        <Txt v="small"><Txt v="label">{post.replies}</Txt> {post.replies === 1 ? 'Reply' : 'Replies'}</Txt>
-        <Txt v="small"><Txt v="label" color={liked ? C.brand : C.ink}>{post.likes}</Txt> {post.likes === 1 ? 'Like' : 'Likes'}</Txt>
+      <Row style={{ marginTop: 14, paddingVertical: 12, gap: 22, borderTopWidth: 1, borderBottomWidth: 1, borderColor: C.line }}>
+        <Txt v="small" style={{ fontSize: 14 }}><Txt v="label" style={{ fontSize: 15 }}>{post.replies}</Txt> {post.replies === 1 ? 'Reply' : 'Replies'}</Txt>
+        <Txt v="small" style={{ fontSize: 14 }}><Txt v="label" style={{ fontSize: 15 }} color={liked ? C.opp : C.ink}>{post.likes}</Txt> {post.likes === 1 ? 'Like' : 'Likes'}</Txt>
       </Row>
 
       <Row style={{ justifyContent: 'space-around', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: C.line }}>
-        <Action onPress={onReply} label="Reply"><Reply size={19} color={C.muted} /></Action>
+        <Action onPress={onReply} label="Reply"><Reply size={22} color={C.muted} /></Action>
         <Action onPress={() => { if (!liked) setPop(true); onLike(); }} disabled={liked || liking} label={liked ? 'Liked' : 'Like'}>
-          {pop ? <Lottie name="heart" size={64} style={{ position: 'absolute', left: 0, top: -10 }} onDone={() => setPop(false)} /> : null}
-          <Heart size={19} color={liked ? C.brand : C.muted} filled={liked} />
+          {pop ? <Lottie name="heart" size={70} style={{ position: 'absolute', left: -3, top: -11 }} onDone={() => setPop(false)} /> : null}
+          <Heart size={22} color={liked ? C.opp : C.muted} filled={liked} />
         </Action>
-        <Action onPress={onShare} label="Share"><Share size={19} color={C.muted} /></Action>
+        <Action onPress={onShare} label="Share"><Share size={22} color={C.muted} /></Action>
       </Row>
     </View>
   );
@@ -153,9 +153,11 @@ function Gone({ title, body, top }: { title: string; body: string; top: number }
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: top + 6, paddingHorizontal: S.gutter, paddingBottom: 40 }}>
       <Bar title="Call" />
-      <View style={{ marginTop: 24 }}>
-        <Pending art={ART.emptySearch} title={title} body={body} />
-        <Btn title="Back to Home" h={50} style={{ marginTop: 4 }} onPress={() => router.replace('/')} />
+      <View style={{ alignItems: 'center', marginTop: 36, backgroundColor: CARD, borderRadius: 26, paddingHorizontal: 20, paddingVertical: 26 }}>
+        <Image source={ART.emptySearch} style={{ width: 150, height: 150 }} contentFit="contain" />
+        <Txt v="title" style={{ textAlign: 'center', marginTop: 8, fontSize: 24, lineHeight: 30 }}>{title}</Txt>
+        <Txt v="small" style={{ textAlign: 'center', marginTop: 8, lineHeight: 19, fontSize: 13.5 }}>{body}</Txt>
+        <Btn title="Back to Home" kind="white" h={52} style={{ marginTop: 18, alignSelf: 'stretch', borderRadius: 18 }} onPress={() => router.replace('/')} />
       </View>
     </ScrollView>
   );
@@ -243,7 +245,7 @@ export default function CallThread() {
                 <PostItem post={parent} profiles={profMap} holdings={holdMap} prices={px} me={myProfile} onReply={reply} onLike={like} liking={liking} threadBelow />
               </Pressable>
             ) : post.replyTo !== null ? (
-              <Row style={{ gap: 10, marginTop: 8, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: C.card, borderRadius: 14 }}>
+              <Row style={{ gap: 10, marginTop: 8, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: CARD, borderRadius: 14 }}>
                 <Reply size={15} color={C.dim} />
                 <Txt v="small" style={{ flex: 1 }}>Replying to call #{post.replyTo}, which has scrolled off the board.</Txt>
               </Row>
@@ -270,11 +272,16 @@ export default function CallThread() {
                 ) : null}
               </>
             ) : (
-              <Pending art={ART.chat} title={post.replies > 0 ? 'Replies scrolled off' : 'No replies yet'}
-                body={post.replies > 0
-                  ? `${post.replies} ${post.replies === 1 ? 'reply was' : 'replies were'} posted, but the board only keeps the ${RING} newest posts.`
-                  : `Agree, fade it or ask ${nameOf(author, post.author)} why. Replies show up for everyone right away.`}
-                action={myProfile ? 'Reply' : 'Sign in to reply'} onAction={() => reply(post)} />
+              <View style={{ alignItems: 'center', marginTop: 18, backgroundColor: CARD, borderRadius: 24, padding: 18 }}>
+                <Image source={ART.chat} style={{ width: 84, height: 84 }} contentFit="contain" />
+                <Txt v="h2" style={{ marginTop: 6 }}>{post.replies > 0 ? 'Replies scrolled off' : 'No replies yet'}</Txt>
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 18 }}>
+                  {post.replies > 0
+                    ? `${post.replies} ${post.replies === 1 ? 'reply was' : 'replies were'} posted, but the board only keeps the ${RING} newest posts.`
+                    : `Agree, fade it or ask ${nameOf(author, post.author)} why. Replies show up for everyone right away.`}
+                </Txt>
+                <Btn title={myProfile ? 'Reply' : 'Sign in to reply'} h={44} style={{ marginTop: 12, alignSelf: 'stretch' }} onPress={() => reply(post)} />
+              </View>
             )}
           </>
         ) : null}
@@ -285,9 +292,9 @@ export default function CallThread() {
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10, paddingBottom: insets.bottom + 10 }}>
           <View style={{ ...col, paddingHorizontal: S.gutter }}>
             <Pressable onPress={() => reply(post)} accessibilityLabel="Post your reply"
-              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderRadius: 23, paddingLeft: 6, paddingRight: 6, backgroundColor: pressed ? C.s1 : C.card, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderRadius: 23, paddingLeft: 6, paddingRight: 6, backgroundColor: pressed ? '#18181E' : CARD, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
               {myProfile ? <ProfileAvatar p={myProfile} size={34} /> : <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.s2 }} />}
-              <Txt v="body" color={C.muted} style={{ flex: 1 }} lines={1}>{myProfile ? 'Post your reply' : wallet.status === 'out' ? 'Sign in to reply' : 'Post your reply'}</Txt>
+              <Txt v="body" color={C.muted} style={{ flex: 1, fontSize: 15 }} lines={1}>{myProfile ? 'Post your reply' : wallet.status === 'out' ? 'Sign in to reply' : 'Post your reply'}</Txt>
               <View style={{ height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: C.brand, justifyContent: 'center' }}>
                 <Txt v="label" color={C.onBrand} style={{ fontSize: 13 }}>Reply</Txt>
               </View>

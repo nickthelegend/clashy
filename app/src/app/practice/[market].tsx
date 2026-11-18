@@ -19,10 +19,10 @@ import { ART, BackBtn, Bone, ErrorLine, LiveDot, Money, Pending, Row, SkeletonRo
 import { useDeskColumn } from '@/ui/layout';
 import { PriceChart } from '@/ui/price-chart';
 import {
-  BarBtn, CloseSheet, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
+  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
-import { C, FONT, S, fmtUsd } from '@/ui/tokens';
+import { C, S, fmtUsd } from '@/ui/tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/practice' as Href));
 /** At 4 s a sample, a little under an hour of live prices. */
@@ -60,8 +60,8 @@ export default function PracticeMarketRoute() {
     resolveMarket(id).then((x) => alive && setM(x)).catch((e) => alive && setErr((e as Error).message));
     return () => { alive = false; };
   }, [id, n]);
-  if (err && !m) return <Shell><ErrorLine msg={`${err} This market couldn't load.`} onRetry={() => setN((x) => x + 1)} /></Shell>;
-  if (m === undefined) return <Shell><Row style={{ gap: 12 }}><Bone w={38} h={38} r={19} /><View style={{ gap: 8 }}><Bone w={140} h={14} /><Bone w={90} h={11} /></View></Row><Bone w={180} h={36} r={10} style={{ marginTop: 22 }} /><Bone w={'100%'} h={220} r={18} style={{ marginTop: 14 }} /></Shell>;
+  if (err && !m) return <Shell><View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}><ErrorLine msg={`${err} This market couldn't load.`} onRetry={() => setN((x) => x + 1)} /></View></Shell>;
+  if (m === undefined) return <Shell><Row style={{ gap: 12 }}><Bone w={44} h={44} r={22} /><View style={{ gap: 8 }}><Bone w={140} h={14} /><Bone w={90} h={11} /></View></Row><Bone w={200} h={50} r={12} style={{ marginTop: 22 }} /><Bone w={'100%'} h={220} r={22} style={{ marginTop: 14 }} /></Shell>;
   if (m === null) {
     return (
       <Shell>
@@ -100,33 +100,38 @@ function MarketPage({ m }: { m: Market }) {
   const past = pr.book?.closed.filter((c) => c.marketId === m.id).slice(0, 5) ?? [];
   const [trade, setTrade] = useState<Side | null>(null);
   const [closing, setClosing] = useState<Position | null>(null);
-  const barH = 50 + 10 + insets.bottom + 10;
+  const barH = 54 + 12 + insets.bottom + 10;
   const mcap = m.circSupply && price ? m.circSupply * price : m.mcap;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
         {/* header */}
-        <Row style={{ gap: 10 }}>
+        <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
-          <MarketLogo m={m} size={38} />
+          <MarketLogo m={m} size={44} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Txt v="label" lines={1}>{m.name}</Txt>
-            <Txt v="small" lines={1} style={{ marginTop: 1 }}>{m.kind === 'stock' ? (m.ticker ?? m.symbol) : m.symbol} · {KIND_SUB[m.kind]}</Txt>
+            <Txt v="h2" lines={1}>{m.name}</Txt>
+            <Txt v="small" lines={1}>{m.kind === 'stock' ? (m.ticker ?? m.symbol) : m.symbol} · {KIND_SUB[m.kind]}</Txt>
           </View>
           <PaperBadge />
         </Row>
 
-        {/* price: the one big number */}
-        <Animated.View entering={FadeInDown.duration(300)} style={{ marginTop: 20 }}>
-          {price === undefined ? (pxErr ? <Txt v="h2" color={C.muted}>No price yet</Txt> : <Bone w={180} h={36} r={10} />)
-            : price >= 1 ? <Money value={price} size={34} />
-              : <Txt v="num" style={{ fontSize: 34, letterSpacing: -1.2 }} lines={1}>{fmtPrice(price)}</Txt>}
-          <Row style={{ gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-            {ch !== undefined ? <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ ...FONT.medium, fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt> : null}
-            {ch !== undefined ? <Txt v="small" color={C.dim}>·</Txt> : null}
-            <LiveDot color={px && isFresh(px) ? C.up : C.dim} />
-            <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{px ? (isFresh(px) ? 'Live Jupiter price' : `Last price ${span(now - px.t)} ago`) : 'Reading the live price'}</Txt>
+        {/* price */}
+        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 22 }}>
+          {price === undefined ? (pxErr ? <Txt v="title" color={C.muted}>No price yet</Txt> : <Bone w={190} h={50} r={12} />)
+            : price >= 1 ? <Money value={price} size={52} />
+              : <Txt v="hero" style={{ fontSize: 44, fontVariant: ['tabular-nums'] }} lines={1}>{fmtPrice(price)}</Txt>}
+          <Row style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+            {ch !== undefined ? (
+              <View style={{ backgroundColor: ch >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt>
+              </View>
+            ) : null}
+            <Row style={{ gap: 6 }}>
+              <LiveDot color={px && isFresh(px) ? C.up : C.dim} />
+              <Txt v="small">{px ? (isFresh(px) ? 'Live Jupiter price' : `Last price ${span(now - px.t)} ago`) : 'Reading the live price'}</Txt>
+            </Row>
           </Row>
           {pxErr ? <ErrorLine msg={pxErr} /> : null}
         </Animated.View>
@@ -147,23 +152,23 @@ function MarketPage({ m }: { m: Market }) {
               {m.kind === 'meme' ? <Stat label="Created" value={ago(m.createdAt)} sub={m.organic ? `Organic score: ${m.organic}` : undefined} />
                 : <Stat label="Trading" value="Spot · 1x" sub="No leverage, long only" />}
             </Row>
-            {m.kind === 'meme' ? <Txt v="small" color={C.dim} style={{ fontSize: 12, lineHeight: 16, marginTop: 2 }}>pump.fun launch · spot only, no leverage · memecoins can lose most of their value in minutes</Txt> : null}
+            {m.kind === 'meme' ? <Txt v="small" style={{ lineHeight: 17, marginTop: 2 }}>A pump.fun launch. Spot only, no leverage. Memecoins can lose most of their value in minutes.</Txt> : null}
           </View>
         )}
 
         {/* your trades */}
         <Head title="Your paper trades" right={mine.length ? `${mine.length} open` : undefined} />
         {!pr.book ? <SkeletonRows n={1} square /> : mine.length === 0 ? (
-          <Pressable onPress={() => setTrade('long')} accessibilityRole="button" accessibilityLabel={`Open a paper trade on ${m.symbol}`}
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
-            <MarketLogo m={m} size={38} />
+          <Pressable onPress={() => setTrade('long')} accessibilityRole="button"
+            style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+            <MarketLogo m={m} size={52} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="label" lines={1}>No paper trade on {m.symbol} yet</Txt>
-              <Txt v="small" lines={1} style={{ marginTop: 1 }}>
-                {perp ? `Long or short up to ${m.maxLev}x at the live price` : 'Buy at the live price with paper money'}
+              <Txt v="label">No paper trade on {m.symbol} yet</Txt>
+              <Txt v="small" style={{ marginTop: 3, lineHeight: 18 }}>
+                {perp ? `Go long or short up to ${m.maxLev}x with paper money, at the live price.` : 'Buy with paper money at the live price and watch your P&L move.'}
               </Txt>
             </View>
-            <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>
+            <Txt v="label" color={C.dim}>›</Txt>
           </Pressable>
         ) : (
           <View style={{ gap: 10 }}>
@@ -174,23 +179,25 @@ function MarketPage({ m }: { m: Market }) {
         {past.length ? (
           <>
             <Head title="Closed here" />
-            {past.map((c) => (
-              <Row key={c.id} style={{ gap: 10, paddingVertical: 10 }}>
-                <SideTag p={c} />
-                <Txt v="small" lines={1} style={{ flex: 1, fontVariant: ['tabular-nums'] }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {c.reason === 'liquidated' ? 'liquidated' : ago(c.closedAt)}</Txt>
-                <Txt v="num" color={c.pnl >= 0 ? C.up : C.down}>{signedUsd(c.pnl)}</Txt>
-              </Row>
-            ))}
+            <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
+              {past.map((c, i) => (
+                <Row key={c.id} style={{ gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
+                  <SideTag p={c} />
+                  <Txt v="small" lines={1} style={{ flex: 1 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {c.reason === 'liquidated' ? 'liquidated' : ago(c.closedAt)}</Txt>
+                  <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
+                </Row>
+              ))}
+            </View>
           </>
         ) : null}
 
-        <Txt v="small" color={C.dim} style={{ marginTop: 22, fontSize: 12, lineHeight: 16, textAlign: 'center' }}>
-          Paper money · live Jupiter price{perp ? ', fees and borrow' : ''} · no real USDC moves
+        <Txt v="small" style={{ marginTop: 22, lineHeight: 18, textAlign: 'center' }}>
+          Practice · paper money. The price is live from Jupiter{perp ? ', and the fee and borrow rate are Jupiter Perps\' own' : ''}. Liquidations are checked only while Practice is open. No real USDC moves.
         </Txt>
       </ScrollView>
 
       {/* the bar that stays at the bottom */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', paddingTop: 10, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 12, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
         <View style={[{ flexDirection: 'row', gap: 8 }, col]}>
           {perp ? (
             <>
@@ -208,7 +215,7 @@ function MarketPage({ m }: { m: Market }) {
 }
 
 function PerpFacts({ info, error, onRetry }: { info?: PoolInfo; error?: string; onRetry: () => void }) {
-  if (!info) return error ? <ErrorLine msg={error} onRetry={onRetry} /> : <SkeletonRows n={2} square />;
+  if (!info) return error ? <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}><ErrorLine msg={error} onRetry={onRetry} /></View> : <SkeletonRows n={2} square />;
   return (
     <View style={{ gap: 8 }}>
       <Row style={{ gap: 8 }}>
@@ -276,50 +283,50 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
     <Sheet open={open} onClose={onClose}>
       {done ? (
         <View style={{ alignItems: 'center', paddingVertical: 14 }}>
-          <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center' }}>
-            <Txt v="title" color="#04120A" style={{ fontSize: 28 }}>✓</Txt>
+          <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 92, height: 92, borderRadius: 46, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center' }}>
+            <Txt v="title" color="#04120A" style={{ fontSize: 38 }}>✓</Txt>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(150)} style={{ alignItems: 'center' }}>
-            <Txt v="h2" style={{ marginTop: 14 }}>Paper trade opened</Txt>
-            <Txt v="num" style={{ fontSize: 34, letterSpacing: -1.2, marginTop: 4 }}>{usd2(done.margin)}</Txt>
-            <Row style={{ gap: 6, marginTop: 4 }}><SideTag p={done} /><Txt v="small">{done.symbol} at {fmtPrice(done.entry)}</Txt></Row>
+            <Txt v="h2" style={{ marginTop: 16 }}>Paper trade opened</Txt>
+            <Txt v="hero" style={{ fontSize: 50, marginTop: 2, fontVariant: ['tabular-nums'] }}>{usd2(done.margin)}</Txt>
+            <Row style={{ gap: 6, marginTop: 2 }}><SideTag p={done} /><Txt v="small">{done.symbol} at {fmtPrice(done.entry)}</Txt></Row>
             {liqPrice(done) !== null ? <Txt v="small" style={{ marginTop: 6 }}>Liquidation at <Txt v="small" color={C.down}>{fmtPrice(liqPrice(done)!)}</Txt></Txt> : null}
-            <Txt v="small" color={C.dim} style={{ marginTop: 6, textAlign: 'center', fontSize: 12 }}>Practice · paper money. No real USDC moved.</Txt>
+            <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>Practice · paper money. No real USDC moved.</Txt>
           </Animated.View>
           <View style={{ alignSelf: 'stretch', flexDirection: 'row', marginTop: 22 }}>
-            <BarBtn title="Done" bg={C.brand} fg={C.onBrand} onPress={onClose} h={52} />
+            <BarBtn title="Done" bg={C.up} fg="#04120A" onPress={onClose} h={56} />
           </View>
         </View>
       ) : (
         <View>
           <Row style={{ gap: 12, marginTop: 2 }}>
-            <MarketLogo m={m} size={38} />
+            <MarketLogo m={m} size={40} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="h2" lines={1}>{perp ? `${side === 'long' ? 'Long' : 'Short'} ${m.symbol}` : `Buy ${m.name}`}</Txt>
-              <Txt v="small" lines={1} style={{ marginTop: 1 }}>{price !== undefined ? `${fmtPrice(price)} live` : 'Reading the live price'} · paper cash {usd2(cash)}</Txt>
+              <Txt v="title" lines={1} style={{ fontSize: 22 }}>{perp ? `${side === 'long' ? 'Long' : 'Short'} ${m.symbol}` : `Buy ${m.name}`}</Txt>
+              <Txt v="small" lines={1}>{price !== undefined ? `${fmtPrice(price)} live` : 'Reading the live price'} · paper cash {usd2(cash)}</Txt>
             </View>
           </Row>
 
           {perp ? (
             <>
-              <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 16, padding: 3, gap: 3, marginTop: 14 }}>
+              <View style={{ flexDirection: 'row', backgroundColor: '#1B1B21', borderRadius: 16, padding: 3, gap: 3, marginTop: 14 }}>
                 {(['long', 'short'] as Side[]).map((sd) => {
                   const on = side === sd;
                   return (
                     <Pressable key={sd} onPress={() => { Haptics.selectionAsync(); setSide(sd); setErr(undefined); }} accessibilityRole="button" accessibilityState={{ selected: on }}
-                      style={{ flex: 1, height: 40, borderRadius: 13, backgroundColor: on ? (sd === 'long' ? C.up : C.down) : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                      <Txt v="label" color={on ? (sd === 'long' ? '#04120A' : '#fff') : C.muted} style={{ fontSize: 14.5 }}>{sd === 'long' ? 'Long' : 'Short'}</Txt>
+                      style={{ flex: 1, height: 44, borderRadius: 13, backgroundColor: on ? (sd === 'long' ? C.up : C.down) : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                      <Txt v="label" color={on ? (sd === 'long' ? '#04120A' : '#fff') : C.muted}>{sd === 'long' ? 'Long' : 'Short'}</Txt>
                     </Pressable>
                   );
                 })}
               </View>
-              <Txt v="small" style={{ ...FONT.medium, color: C.dim, marginTop: 14 }}>Leverage</Txt>
-              <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 16, padding: 3, gap: 3, marginTop: 6 }}>
+              <Txt v="small" style={{ marginTop: 12 }}>Leverage</Txt>
+              <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
                 {LEVERAGE.map((x) => {
                   const on = lev === x;
                   return (
-                    <Pressable key={x} onPress={() => { Haptics.selectionAsync(); setLev(x); setErr(undefined); }} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${x}x leverage`}
-                      style={({ pressed }) => ({ flex: 1, height: 38, borderRadius: 13, backgroundColor: on ? C.ink : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                    <Pressable key={x} onPress={() => { Haptics.selectionAsync(); setLev(x); setErr(undefined); }} accessibilityRole="button" accessibilityLabel={`${x}x leverage`}
+                      style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 12, backgroundColor: on ? C.ink : '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
                       <Txt v="label" color={on ? '#000' : C.ink} style={{ fontSize: 13.5 }}>{x}x</Txt>
                     </Pressable>
                   );
@@ -329,20 +336,20 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
           ) : null}
 
           <Txt v="small" style={{ textAlign: 'center', marginTop: 14 }}>{perp ? 'Margin, from your paper cash' : 'Amount, from your paper cash'}</Txt>
-          <Txt v="hero" color={v ? C.ink : C.dim} style={{ textAlign: 'center', fontVariant: ['tabular-nums'] }} lines={1}>
-            ${whole}<Txt v="hero" color={C.dim}>{v.includes('.') ? `.${cents ?? ''}` : ''}</Txt>
+          <Txt v="hero" color={v ? C.ink : C.dim} style={{ textAlign: 'center', fontSize: 56, letterSpacing: -2.5 }} lines={1}>
+            ${whole}<Txt v="hero" color={C.dim} style={{ fontSize: 56, letterSpacing: -2.5 }}>{v.includes('.') ? `.${cents ?? ''}` : ''}</Txt>
           </Txt>
 
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             {PRESETS.map((p) => (
-              <Pressable key={p} onPress={() => { Haptics.selectionAsync(); setV(String(p)); setErr(undefined); }} hitSlop={4}
-                style={({ pressed }) => ({ flex: 1, height: 38, borderRadius: 19, backgroundColor: Number(v) === p ? C.ink : C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                <Txt v="label" color={Number(v) === p ? '#000' : C.ink} style={{ fontSize: 14 }}>${p.toLocaleString('en-US')}</Txt>
+              <Pressable key={p} onPress={() => { Haptics.selectionAsync(); setV(String(p)); setErr(undefined); }}
+                style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: Number(v) === p ? C.ink : '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                <Txt v="label" color={Number(v) === p ? '#000' : C.ink}>${p.toLocaleString('en-US')}</Txt>
               </Pressable>
             ))}
-            <Pressable onPress={() => { Haptics.selectionAsync(); setV(String(Math.max(0, max))); setErr(undefined); }} disabled={waitingPool} hitSlop={4}
-              style={({ pressed }) => ({ flex: 1, height: 38, borderRadius: 19, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', opacity: waitingPool ? 0.4 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-              <Txt v="label" style={{ fontSize: 14 }}>Max</Txt>
+            <Pressable onPress={() => { Haptics.selectionAsync(); setV(String(Math.max(0, max))); setErr(undefined); }} disabled={waitingPool}
+              style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', opacity: waitingPool ? 0.4 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+              <Txt v="label">Max</Txt>
             </Pressable>
           </View>
 
@@ -350,7 +357,7 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
             <Keypad compact={perp} onKey={tap} onClear={() => setV('')} onEnter={() => { if (v && !busy) go(); }} active={open && !done} />
           </View>
 
-          <View style={{ backgroundColor: C.card, borderRadius: 16, padding: 14, marginTop: 12, gap: 9 }}>
+          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, padding: 14, marginTop: 12, gap: 9 }}>
             {perp ? (
               <>
                 <Line k="Position size" v={usd2(size)} />
@@ -370,9 +377,9 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
           {err ? <ErrorLine msg={err} /> : null}
 
           <View style={{ flexDirection: 'row', marginTop: 12 }}>
-            <BarBtn title={label} bg={v ? (perp ? actColor : C.up) : C.s2} fg={v ? (perp && side === 'short' ? '#fff' : '#04120A') : C.muted} onPress={go} disabled={busy || !v} h={52} />
+            <BarBtn title={label} bg={v ? (perp ? actColor : C.up) : '#2A2A31'} fg={v ? (perp && side === 'short' ? '#fff' : '#04120A') : C.muted} onPress={go} disabled={busy || !v} h={56} />
           </View>
-          <Txt v="small" color={C.dim} style={{ textAlign: 'center', marginTop: 8, fontSize: 12 }}>Practice · paper money. Opens at the live price; no real USDC moves.</Txt>
+          <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice · paper money. Opens at the live price; no real USDC moves.</Txt>
         </View>
       )}
     </Sheet>

@@ -28,29 +28,19 @@ const usd2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigit
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}${usd2(Math.abs(n))}`;
 
 
-/** A segmented control, as in the Clash lobby: the track is the card surface, the selected item white with black text. */
 function Chips<T extends string | number>({ items, value, onChange, label }: { items: readonly T[]; value: T; onChange: (v: T) => void; label: (v: T) => string }) {
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 18, padding: 4, gap: 4 }}>
+    <View style={{ flexDirection: 'row', gap: 8 }}>
       {items.map((x) => {
         const on = x === value;
         return (
           <Pressable key={String(x)} onPress={() => { Haptics.selectionAsync(); onChange(x); }} accessibilityRole="button" accessibilityState={{ selected: on }}
-            style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 14, backgroundColor: on ? C.ink : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-            <Txt v="label" color={on ? '#000' : C.ink} lines={1} style={{ fontSize: 14.5 }}>{label(x)}</Txt>
+            style={({ pressed }) => ({ flex: 1, height: 42, borderRadius: 21, backgroundColor: on ? C.ink : '#1A1A20', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+            <Txt v="label" color={on ? '#000' : C.ink} style={{ fontSize: 14 }}>{label(x)}</Txt>
           </Pressable>
         );
       })}
     </View>
-  );
-}
-/** A dim section label over a control, with an optional note on the right (the Clash lobby's "Stake · 94.70 USDC"). */
-function Label({ text, right }: { text: string; right?: string }) {
-  return (
-    <Row style={{ justifyContent: 'space-between', marginTop: 20, marginBottom: 8, gap: 10 }}>
-      <Txt v="small" style={{ ...FONT.semi, color: C.dim }}>{text}</Txt>
-      {right ? <Txt v="small" lines={1} style={{ flexShrink: 1, fontVariant: ['tabular-nums'] }}>{right}</Txt> : null}
-    </Row>
   );
 }
 
@@ -130,9 +120,9 @@ export default function PracticeClash() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
-        <Row style={{ gap: 10, marginBottom: 6 }}>
+        <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
-          {live || result ? <Txt v="h2" lines={1} style={{ flex: 1 }}>Practice clash</Txt> : <View style={{ flex: 1 }} />}
+          <Txt v="h2" style={{ flex: 1 }}>Practice clash</Txt>
           <PaperBadge />
         </Row>
 
@@ -154,7 +144,7 @@ export default function PracticeClash() {
                 <Txt v="small">Bot's <Txt v="small" color={C.down}>{fmtUsd(koPrice(live.entry, live.botCall, live.lev))}</Txt></Txt>
               </Row>
             ) : null}
-            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: C.card, borderRadius: 18, padding: 12, marginTop: 14 }}>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#111116', borderRadius: 18, padding: 12, marginTop: 14 }}>
               <BotPic size={36} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Row style={{ gap: 6 }}><Txt v="label">{BOT_NAME} called {live.botCall === 'up' ? 'higher ▲' : 'lower ▼'}</Txt><BotTag /></Row>
@@ -181,93 +171,89 @@ export default function PracticeClash() {
             </Txt>
             <Txt v="small" style={{ marginTop: 6 }}>Practice money · nothing real moved</Txt>
             <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 24 }}>
-              <View style={{ flexDirection: 'row' }}><BarBtn title="Clash the bot again" bg={C.s2} fg={C.ink} onPress={() => setResult(null)} h={52} /></View>
-              <View style={{ flexDirection: 'row' }}><BarBtn title={rec.won >= 3 ? "You're ready: clash a real player" : 'Clash a real player'} bg={C.brand} fg={C.onBrand} onPress={() => router.push(`/clash?mode=${result.lev > 1 ? 'perps' : 'crypto'}` as Href)} h={52} /></View>
+              <View style={{ flexDirection: 'row' }}><BarBtn title="Clash the bot again" bg={C.ink} fg="#000" onPress={() => setResult(null)} h={56} /></View>
+              <View style={{ flexDirection: 'row' }}><BarBtn title={rec.won >= 3 ? "You're ready: clash a real player" : 'Clash a real player'} bg={C.brand} fg={C.onBrand} onPress={() => router.push(`/clash?mode=${result.lev > 1 ? 'perps' : 'crypto'}` as Href)} h={56} /></View>
             </View>
           </Animated.View>
         ) : (
           /* ---------- the lobby ---------- */
-          <Animated.View entering={FadeInDown.duration(300)}>
-            <Txt v="title" style={{ marginTop: 2 }}>Practice clash</Txt>
-            <Txt v="small" style={{ marginTop: 2, lineHeight: 18 }}>The real clash, with practice money. Beat the bot, then clash real players.</Txt>
-
-            {/* you vs the bot: one flat row with the record */}
-            <Row style={{ gap: 12, paddingVertical: 10, marginTop: 12 }}>
-              <View style={{ width: 66, height: 42 }}>
-                <View style={{ position: 'absolute', left: 0, top: 0, borderRadius: 21, borderWidth: 2, borderColor: C.bg }}><ProfileAvatar p={me} size={38} /></View>
-                <View style={{ position: 'absolute', left: 26, top: 0, borderRadius: 21, borderWidth: 2, borderColor: C.bg }}><BotPic size={38} /></View>
+          <Animated.View entering={FadeIn.duration(220)}>
+            <Row style={{ marginTop: 22, justifyContent: 'center', gap: 18 }}>
+              <View style={{ alignItems: 'center', width: 110 }}>
+                <ProfileAvatar p={me} size={64} />
+                <Txt v="label" lines={1} style={{ marginTop: 8 }}>{me?.name ? `@${me.name}` : 'You'}</Txt>
+                <Txt v="small">{rec.won} won</Txt>
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Row style={{ gap: 6 }}>
-                  <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{me?.name ? `@${me.name}` : 'You'} <Txt v="small" color={C.dim}>vs</Txt> {BOT_NAME}</Txt>
-                  <BotTag />
-                </Row>
-                <Txt v="small" lines={1} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>
-                  {rec.won + rec.lost > 0 ? `${rec.won}–${rec.lost}${rec.streak >= 2 ? ` · ${rec.streak} wins in a row` : ''}` : 'No rounds yet · 60 seconds each'}
-                </Txt>
+              <Text style={{ ...FONT.display, fontSize: 26, color: C.dim, marginTop: 18 }}>vs</Text>
+              <View style={{ alignItems: 'center', width: 110 }}>
+                <BotPic size={64} />
+                <Row style={{ gap: 5, marginTop: 8 }}><Txt v="label">{BOT_NAME}</Txt></Row>
+                <Row style={{ gap: 5 }}><BotTag /><Txt v="small">{rec.lost} won</Txt></Row>
               </View>
-              {rec.won + rec.lost > 0 ? <Txt v="num" color={rec.net > 0 ? C.up : rec.net < 0 ? C.down : C.muted}>{signed(rec.net)}</Txt> : null}
             </Row>
+            {rec.won + rec.lost > 0 ? (
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 10 }}>
+                {rec.streak >= 2 ? `${rec.streak} wins in a row · ` : ''}{signed(rec.net)} net against the bot
+              </Txt>
+            ) : <Txt v="small" style={{ textAlign: 'center', marginTop: 10, lineHeight: 18 }}>The real clash, with practice money. Beat the bot, then clash real players.</Txt>}
 
-            <Label text="Pick a coin" />
-            <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 18, padding: 4, gap: 4 }}>
+            <Row style={{ justifyContent: 'center', gap: 10, marginTop: 22 }}>
               {PRACTICE_COINS.map((c) => {
                 const on = c === coin;
                 return (
                   <Pressable key={c} onPress={() => { Haptics.selectionAsync(); setCoin(c); }} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={coinName(c)}
-                    style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 14, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.s2 : 'transparent', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                    <CoinToken sym={c} size={24} />
-                    <Txt v="label" color={on ? C.ink : C.muted} style={{ fontSize: 14.5 }}>{c}</Txt>
+                    style={({ pressed }) => ({ alignItems: 'center', width: 96, paddingVertical: 12, borderRadius: 20, backgroundColor: on ? '#1C1C24' : 'transparent', opacity: on ? 1 : 0.6, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                    <CoinToken sym={c} size={44} />
+                    <Txt v="label" style={{ marginTop: 6 }}>{c}</Txt>
                   </Pressable>
                 );
               })}
-            </View>
-            <Row style={{ gap: 6, marginTop: 12 }}>
-              <LiveDot color={feed.fresh ? C.up : C.dim} />
-              <Txt v="small" lines={1} style={{ flexShrink: 1, fontVariant: ['tabular-nums'] }}>{price !== null ? `${coinName(coin)} ${fmtUsd(price)} · ${feed.fresh ? 'live from the rollup feed' : 'feed is quiet'}` : 'Reading the live price'}</Txt>
             </Row>
-            <View style={{ marginTop: 8, marginHorizontal: -4 }}>
+            <Row style={{ justifyContent: 'center', gap: 6, marginTop: 10 }}>
+              <LiveDot color={feed.fresh ? C.up : C.dim} />
+              <Txt v="small" style={{ fontVariant: ['tabular-nums'] }}>{price !== null ? `${coinName(coin)} ${fmtUsd(price)} · ${feed.fresh ? 'live from the rollup feed' : 'feed is quiet'}` : 'Reading the live price'}</Txt>
+            </Row>
+            <View style={{ marginTop: 10, marginHorizontal: -4 }}>
               {feed.seen.length > 1 ? <LiveChart data={feed.seen.map((x) => x.p)} w={chartW + 8} h={150} color={C.brand} minSpan={0.0006} /> : <View style={{ height: 150 }} />}
             </View>
 
-            <Label text="Mode" />
+            <Txt v="small" style={{ marginTop: 18, marginBottom: 8 }}>Mode</Txt>
             <Chips items={PRACTICE_LEVERAGE} value={lev as (typeof PRACTICE_LEVERAGE)[number]} onChange={setLev} label={(x) => (x === 1 ? 'Classic' : `${x}x`)} />
             <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>
               {lev === 1 ? 'Classic: the right call after 60 seconds takes the stake.' : `Perps ${lev}x: each side makes ${lev}× the move, up to the stake. A ${(100 / lev).toFixed(lev > 25 ? 1 : 0)}% move against you knocks you out.`}
             </Txt>
-            <Label text="Stake" right={`${usd2(cash)} practice money`} />
+            <Txt v="small" style={{ marginTop: 16, marginBottom: 8 }}>Stake · {usd2(cash)} practice money</Txt>
             <Chips items={PRACTICE_STAKES} value={stake as (typeof PRACTICE_STAKES)[number]} onChange={setStake} label={(x) => `$${x}`} />
 
             <Txt v="small" style={{ marginTop: 22, textAlign: 'center' }}>Where will {coinName(coin)} be in 60 seconds?</Txt>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-              <BarBtn title="Higher ▲" bg={C.up} fg="#04120A" onPress={() => start('up')} disabled={busy || !pr.ready || !feed.fresh} h={52} />
-              <BarBtn title="Lower ▼" bg={C.down} fg="#fff" onPress={() => start('down')} disabled={busy || !pr.ready || !feed.fresh} h={52} />
+              <BarBtn title="Higher ▲" bg={C.up} fg="#04120A" onPress={() => start('up')} disabled={busy || !pr.ready || !feed.fresh} h={60} />
+              <BarBtn title="Lower ▼" bg={C.down} fg="#fff" onPress={() => start('down')} disabled={busy || !pr.ready || !feed.fresh} h={60} />
             </View>
             {feed.error ? <ErrorLine msg={feed.error} /> : !feed.fresh && feed.last ? <ErrorLine msg={`The ${coin} feed hasn't moved in over 10 s, so a clash can't start. The crank pushes prices every second; it may be stopped.`} /> : null}
             {err ? <ErrorLine msg={err} /> : null}
+            <Txt v="small" style={{ marginTop: 12, textAlign: 'center', lineHeight: 18 }}>
+              {BOT_NAME} is a bot. It always takes the other side of your call, so the price decides: if it ends exactly where it started, it's a dead heat, as in a real clash. Real players choose their own call.
+            </Txt>
           </Animated.View>
         )}
 
         {!live && history.length ? (
           <>
-            <Txt v="h2" style={{ marginTop: 28, marginBottom: 4 }}>Your practice clashes</Txt>
-            {history.slice(0, 8).map((c) => (
-              <Row key={c.id} style={{ gap: 12, paddingVertical: 10 }}>
-                <CoinToken sym={c.coin} size={36} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Txt v="label" lines={1}>{c.result === 'won' ? 'Won' : c.result === 'lost' ? 'Lost' : c.result === 'abandoned' ? 'Abandoned' : 'Dead heat'}{c.ko ? ' · knockout' : ''}</Txt>
-                  <Txt v="small" lines={1} style={{ marginTop: 1 }}>{c.coin} · {c.lev > 1 ? `${c.lev}x` : 'classic'} · you {c.call === 'up' ? '▲' : '▼'} bot {c.botCall === 'up' ? '▲' : '▼'}</Txt>
-                </View>
-                <Txt v="num" color={(c.pnl ?? 0) > 0 ? C.up : (c.pnl ?? 0) < 0 ? C.down : C.muted}>{signed(c.pnl ?? 0)}</Txt>
-              </Row>
-            ))}
+            <Txt v="h2" style={{ marginTop: 30, marginBottom: 10 }}>Your practice clashes</Txt>
+            <View style={{ backgroundColor: '#111116', borderRadius: 22, overflow: 'hidden' }}>
+              {history.slice(0, 8).map((c, i) => (
+                <Row key={c.id} style={{ gap: 12, minHeight: 58, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
+                  <CoinToken sym={c.coin} size={32} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Txt v="label" lines={1}>{c.result === 'won' ? 'Won' : c.result === 'lost' ? 'Lost' : c.result === 'abandoned' ? 'Abandoned' : 'Dead heat'}{c.ko ? ' · knockout' : ''}</Txt>
+                    <Txt v="small" lines={1}>{c.coin} · {c.lev > 1 ? `${c.lev}x` : 'classic'} · you {c.call === 'up' ? '▲' : '▼'} bot {c.botCall === 'up' ? '▲' : '▼'}</Txt>
+                  </View>
+                  <Txt v="label" color={(c.pnl ?? 0) > 0 ? C.up : (c.pnl ?? 0) < 0 ? C.down : C.muted} style={{ fontVariant: ['tabular-nums'] }}>{signed(c.pnl ?? 0)}</Txt>
+                </Row>
+              ))}
+            </View>
           </>
-        ) : null}
-
-        {!live && !result ? (
-          <Txt v="small" color={C.dim} style={{ marginTop: 22, fontSize: 12, lineHeight: 16, textAlign: 'center' }}>
-            {BOT_NAME} always takes the other side. A finish at the start price is a dead heat.
-          </Txt>
         ) : null}
       </ScrollView>
     </View>
