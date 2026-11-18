@@ -19,7 +19,7 @@ import { ART, BackBtn, Bone, ErrorLine, LiveDot, Money, Pending, Row, SkeletonRo
 import { useDeskColumn } from '@/ui/layout';
 import { PriceChart } from '@/ui/price-chart';
 import {
-  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat,
+  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat, copyArgs, myTradeHref, CopyNote, type CopyArgs,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -49,8 +49,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function PracticeMarketRoute() {
-  const { market } = useLocalSearchParams<{ market: string }>();
-  const id = String(market ?? '');
+  const q = useLocalSearchParams<{ market: string; copy?: string; lev?: string; amt?: string; who?: string }>();
+  const id = String(q.market ?? '');
+  const copy = useMemo(() => copyArgs(q), [q.copy, q.lev, q.amt, q.who]); // eslint-disable-line react-hooks/exhaustive-deps
   const [m, setM] = useState<Market | null | undefined>(undefined);
   const [err, setErr] = useState<string>();
   const [n, setN] = useState(0);
@@ -70,10 +71,10 @@ export default function PracticeMarketRoute() {
       </Shell>
     );
   }
-  return isBookVenue(m.venue) ? <BookMarketPage key={m.id} m={m} /> : <MarketPage key={m.id} m={m} />;
+  return isBookVenue(m.venue) ? <BookMarketPage key={m.id} m={m} copy={copy} /> : <MarketPage key={m.id} m={m} copy={copy} />;
 }
 
-function MarketPage({ m }: { m: Market }) {
+function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(720);
   const pr = usePractice();
@@ -98,7 +99,9 @@ function MarketPage({ m }: { m: Market }) {
 
   const mine = pr.book?.open.filter((p) => p.marketId === m.id) ?? [];
   const past = pr.book?.closed.filter((c) => c.marketId === m.id).slice(0, 5) ?? [];
-  const [trade, setTrade] = useState<Side | null>(null);
+  // a copied trade opens the drawer straight away, with its side, leverage and amount
+  const [trade, setTrade] = useState<Side | null>(copy ? (m.kind === 'perp' ? copy.side : 'long') : null);
+  const [preset, setPreset] = useState<CopyArgs | undefined>(copy);
   const [closing, setClosing] = useState<Position | null>(null);
   const barH = 54 + 12 + insets.bottom + 10;
   const mcap = m.circSupply && price ? m.circSupply * price : m.mcap;
@@ -172,7 +175,7 @@ function MarketPage({ m }: { m: Market }) {
           </Pressable>
         ) : (
           <View style={{ gap: 10 }}>
-            {mine.map((p) => <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} />)}
+            {mine.map((p) => <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} onPress={() => router.push(myTradeHref(p))} />)}
           </View>
         )}
 
@@ -181,12 +184,13 @@ function MarketPage({ m }: { m: Market }) {
             <Head title="Closed here" />
             <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
               {past.map((c, i) => (
-                <Row key={c.id} style={{ gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
+                <Pressable key={c.id} onPress={() => router.push(myTradeHref(c))} accessibilityRole="button" accessibilityLabel={`${c.symbol} trade, ${signedUsd(c.pnl)}`}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
                   <SideTag p={c} />
                   <Txt v="small" lines={1} style={{ flex: 1 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {c.reason === 'liquidated' ? 'liquidated' : ago(c.closedAt)}</Txt>
                   <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
                   <ShareTrade p={c} />
-                </Row>
+                </Pressable>
               ))}
             </View>
           </>
@@ -209,7 +213,7 @@ function MarketPage({ m }: { m: Market }) {
         </View>
       </View>
 
-      <TradeSheet open={trade !== null} side={trade ?? 'long'} onClose={() => setTrade(null)} m={m} px={px} pool={pool.info} poolErr={pool.error} pr={pr} />
+      <TradeSheet open={trade !== null} side={trade ?? 'long'} preset={preset} onClose={() => { setTrade(null); setPreset(undefined); }} m={m} px={px} pool={pool.info} poolErr={pool.error} pr={pr} />
       <CloseSheet p={closing} px={closing ? prices[closing.mint] : undefined} pr={pr} onClose={() => setClosing(null)} />
     </View>
   );
@@ -239,17 +243,24 @@ function PerpFacts({ info, error, onRetry }: { info?: PoolInfo; error?: string; 
 /* ---------- the trade drawer ---------- */
 const PRESETS = [100, 500, 1000];
 
-function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
-  open: boolean; onClose: () => void; side: Side; m: Market; px?: Px; pool?: PoolInfo; poolErr?: string; pr: Practice;
+function TradeSheet({ open, onClose, side: side0, preset, m, px, pool, poolErr, pr }: {
+  open: boolean; onClose: () => void; side: Side; preset?: CopyArgs; m: Market; px?: Px; pool?: PoolInfo; poolErr?: string; pr: Practice;
 }) {
   const perp = m.kind === 'perp';
+  const copyLev = preset ? Math.max(1, Math.min(preset.lev, m.maxLev)) : undefined;
+  const levs = useMemo(() => [...new Set<number>([...LEVERAGE, ...(perp && copyLev ? [copyLev] : [])])].sort((a, b) => a - b), [perp, copyLev]);
   const [side, setSide] = useState<Side>(side0);
   const [lev, setLev] = useState(10);
   const [v, setV] = useState('');
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Position | null>(null);
-  useEffect(() => { if (open) { setSide(side0); setV(''); setErr(undefined); setDone(null); } }, [open, side0]);
+  useEffect(() => {
+    if (!open) return;
+    setSide(side0); setErr(undefined); setDone(null);
+    setV(preset ? String(preset.margin) : '');
+    if (preset && perp && copyLev) setLev(copyLev);
+  }, [open, side0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cash = pr.book?.balance ?? 0;
   const price = px?.usdPrice;
@@ -307,6 +318,7 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
               <Txt v="small" lines={1}>{price !== undefined ? `${fmtPrice(price)} live` : 'Reading the live price'} · paper cash {usd2(cash)}</Txt>
             </View>
           </Row>
+          {preset ? <CopyNote c={preset} maxLev={perp ? m.maxLev : undefined} spot={!perp} /> : null}
 
           {perp ? (
             <>
@@ -323,7 +335,7 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
               </View>
               <Txt v="small" style={{ marginTop: 12 }}>Leverage</Txt>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                {LEVERAGE.map((x) => {
+                {levs.map((x) => {
                   const on = lev === x;
                   return (
                     <Pressable key={x} onPress={() => { Haptics.selectionAsync(); setLev(x); setErr(undefined); }} accessibilityRole="button" accessibilityLabel={`${x}x leverage`}

@@ -15,7 +15,7 @@ import { VenueChip } from '@/ui/orderbook';
 import { ART, BackBtn, Bone, ChangePill, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
-  BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat,
+  BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat, myTradeHref,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -91,7 +91,7 @@ const ChangePillInline = ({ pct }: { pct: number }) => <View style={{ marginTop:
 function HistoryRow({ c, first }: { c: import('@/chain/practice').Closed; first: boolean }) {
   const liq = c.reason === 'liquidated';
   return (
-    <Pressable onPress={() => router.push(`/practice/${c.marketId}` as Href)}
+    <Pressable onPress={() => router.push(myTradeHref(c))} accessibilityRole="button" accessibilityLabel={`${c.symbol} trade, ${signedUsd(c.pnl)}`}
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14, borderTopWidth: first ? 0 : 1, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
       <MarketLogo m={c} size={34} />
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -216,7 +216,7 @@ export default function PracticeHome() {
         ) : (
           <View style={{ gap: 10 }}>
             {pr.book.open.map((p) => (
-              <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} onPress={() => router.push(`/practice/${p.marketId}` as Href)} />
+              <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} onPress={() => router.push(myTradeHref(p))} />
             ))}
           </View>
         )}

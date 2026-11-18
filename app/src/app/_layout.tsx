@@ -77,6 +77,7 @@ export default function Root() {
           <Stack.Screen name="practice/index" />
           <Stack.Screen name="practice/clash" />
           <Stack.Screen name="practice/[market]" />
+          <Stack.Screen name="trade/[id]" />
         </Stack>
         </CreateProvider>
       </ThemeProvider>

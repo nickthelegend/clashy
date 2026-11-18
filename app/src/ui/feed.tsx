@@ -112,7 +112,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
         </Row>
         <Pressable onPress={() => router.push(`/post/${post.seq}` as Href)}><Txt v="body" style={{ marginTop: 3, fontSize: 15, lineHeight: 21 }}>{post.text}</Txt></Pressable>
         {stock ? <PositionCard stock={stock} holding={holdings.get(holdingKey(post.author, post.refkey))} price={prices[stock.symbol]} /> : null}
-        {target?.kind === 'market' ? <MarketCallCard id={target.id} trade={post.trade} /> : null}
+        {target?.kind === 'market' ? <MarketCallCard id={target.id} trade={post.trade} seq={post.seq} /> : null}
         {post.kind === 2 ? <DuelCard duel={post.refkey} author={post.author} /> : null}
         <Row style={{ marginTop: 10, gap: 22 }}>
           <Pressable onPress={share} hitSlop={8}><Share size={17} color={C.muted} /></Pressable>

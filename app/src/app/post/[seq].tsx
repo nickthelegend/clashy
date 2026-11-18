@@ -114,7 +114,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
           <PositionCard stock={stock} holding={holding} price={price} />
         </Pressable>
       ) : null}
-      {(() => { const t = callTarget(post); return t?.kind === 'market' ? <MarketCallCard id={t.id} trade={post.trade} /> : null; })()}
+      {(() => { const t = callTarget(post); return t?.kind === 'market' ? <MarketCallCard id={t.id} trade={post.trade} seq={post.seq} /> : null; })()}
       {post.kind === 2 ? <ClashLink duel={post.refkey} author={post.author} /> : null}
 
       {stock ? (

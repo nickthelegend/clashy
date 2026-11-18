@@ -40,29 +40,64 @@ export function callTarget(post: { kind: number; refkey: PublicKey }): CallTarge
 
 /* ---------- trade posts: a Practice trade attached to a call ----------
  * A call on a market (kind 3 or 4) can carry the author's Practice trade: side, leverage, entry, the exit once it is
- * closed, and the margin. It rides at the end of the post text after an invisible separator (U+2063), so it needs no
- * program change and costs about 25 of the 140 bytes. Practice is paper money kept on the author's device, so the app
- * always labels these "Practice trade · paper money": they are what the author traded, not verified on chain. Real
- * positions stay the Stash-stock calls (kind 1), read from the author's Holding account. */
-export type TradeTag = { side: 'long' | 'short'; lev: number; entry: number; exit?: number; margin: number };
+ * closed, the margin, when it opened and closed, its profit net of fees once closed, and whether it was liquidated.
+ * It rides at the end of the post text after an invisible separator (U+2063), so it needs no program change and costs
+ * about 45 of the 140 bytes. Practice is paper money kept on the author's device, so the app always labels these
+ * "Practice trade · paper money": they are what the author traded, not verified on chain. Real positions stay the
+ * Stash-stock calls (kind 1), read from the author's Holding account.
+ *
+ *   L10x@73.25>74.88$500~t4n1ka-t4n3c0=+81.2!
+ *   side and leverage, @entry, >exit, $margin, ~opened-closed (unix seconds in base 36), =net profit, ! liquidated
+ * Everything after the margin is optional, so trades posted before the times were added still read. */
+export type TradeTag = {
+  side: 'long' | 'short'; lev: number; entry: number; exit?: number; margin: number;
+  /** ms since 1970, to the second. */
+  openedAt?: number; closedAt?: number;
+  /** Closed trades: the profit net of every fee, borrow and funding, in paper USD. */
+  pnl?: number;
+  liquidated?: boolean;
+};
 const SEP = '⁣';
 const n6 = (n: number) => String(Number(n.toPrecision(6)));
-const TAG = /⁣([LS])(\d{1,3})x@([0-9.e+-]+)(?:>([0-9.e+-]+))?\$([0-9.e+-]+)$/;
+const NUM = '([0-9.e+-]+)';
+const TAG = new RegExp(`\\u2063([LS])(\\d{1,3})x@${NUM}(?:>${NUM})?\\$${NUM}(?:~([0-9a-z]{1,8})(?:-([0-9a-z]{1,8}))?)?(?:=${NUM})?(!)?$`);
+const b36 = (ms: number) => Math.floor(ms / 1000).toString(36);
+/** Unix seconds in base 36 back to ms; anything outside 2017–2096 is not a time we wrote. */
+const unb36 = (s?: string) => {
+  if (!s) return undefined;
+  const n = parseInt(s, 36);
+  return Number.isFinite(n) && n > 1_500_000_000 && n < 4_000_000_000 ? n * 1000 : undefined;
+};
 
 export function tradeTag(t: TradeTag): string {
-  return `${SEP}${t.side === 'long' ? 'L' : 'S'}${Math.round(t.lev)}x@${n6(t.entry)}${t.exit ? `>${n6(t.exit)}` : ''}$${n6(t.margin)}`;
+  const times = t.openedAt ? `~${b36(t.openedAt)}${t.exit && t.closedAt ? `-${b36(t.closedAt)}` : ''}` : '';
+  const pnl = t.exit && t.pnl !== undefined && Number.isFinite(t.pnl) ? `=${t.pnl >= 0 ? '+' : ''}${n6(Math.round(t.pnl * 100) / 100)}` : '';
+  return `${SEP}${t.side === 'long' ? 'L' : 'S'}${Math.round(t.lev)}x@${n6(t.entry)}${t.exit ? `>${n6(t.exit)}` : ''}$${n6(t.margin)}${times}${pnl}${t.exit && t.liquidated ? '!' : ''}`;
 }
 /** The words of a post and the trade it carries, if any (a malformed tag stays part of the text). */
 export function splitTrade(text: string): { body: string; trade: TradeTag | null } {
   const m = TAG.exec(text);
   if (!m) return { body: text, trade: null };
   const lev = Number(m[2]), entry = Number(m[3]), exit = m[4] ? Number(m[4]) : undefined, margin = Number(m[5]);
+  const openedAt = unb36(m[6]), closedAt = unb36(m[7]), pnl = m[8] !== undefined ? Number(m[8]) : undefined;
   const ok = lev >= 1 && lev <= 100 && entry > 0 && Number.isFinite(entry) && margin > 0 && Number.isFinite(margin)
-    && (exit === undefined || (exit > 0 && Number.isFinite(exit)));
-  return ok ? { body: text.slice(0, m.index).trimEnd(), trade: { side: m[1] === 'L' ? 'long' : 'short', lev, entry, exit, margin } } : { body: text, trade: null };
+    && (exit === undefined || (exit > 0 && Number.isFinite(exit))) && (pnl === undefined || Number.isFinite(pnl))
+    && (!m[6] || !!openedAt) && (!m[7] || !!closedAt) && (!openedAt || !closedAt || closedAt >= openedAt);
+  if (!ok) return { body: text, trade: null };
+  const trade: TradeTag = { side: m[1] === 'L' ? 'long' : 'short', lev, entry, exit, margin };
+  if (openedAt) trade.openedAt = openedAt;
+  if (exit !== undefined) {
+    if (closedAt) trade.closedAt = closedAt;
+    if (pnl !== undefined) trade.pnl = pnl;
+    if (m[9]) trade.liquidated = true;
+  }
+  return { body: text.slice(0, m.index).trimEnd(), trade };
 }
 /** The trade's move on its margin, before fees: at its exit once closed, else at `now`. */
 export const tradeMovePct = (t: TradeTag, now?: number) => {
   const px = t.exit ?? now;
   return px === undefined ? undefined : (px / t.entry - 1) * (t.side === 'long' ? 1 : -1) * t.lev * 100;
 };
+/** What a trade card shows: the ROI after fees once a closed trade carries its profit, else the move before fees. */
+export const tradeShownPct = (t: TradeTag, now?: number): { pct?: number; net: boolean } =>
+  t.exit !== undefined && t.pnl !== undefined ? { pct: (t.pnl / t.margin) * 100, net: true } : { pct: tradeMovePct(t, now), net: false };

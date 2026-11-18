@@ -12,7 +12,7 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimens
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { readPriceHistory, type PriceHistory } from '@/chain/history-prices';
 import { MINT, findIn, fmtPrice, signedPct, useCatalog, usePrices, type Market } from '@/chain/practice';
-import { callTarget, tradeMovePct } from '@/chain/calls';
+import { callTarget, tradeShownPct } from '@/chain/calls';
 import { useClansOnchain, useLeaderboardOnchain, type ClanRow } from '@/chain/reads';
 import { isTestAccount, useBoard, usePoll, useProfiles, type Post, type Profile } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
@@ -126,7 +126,7 @@ function TradeCard({ post, names, onOpen }: { post: Post; names: Map<string, Pro
   const target = callTarget(post);
   const m = useMarket(target?.kind === 'market' ? target.id : null);
   const { prices } = usePrices(m && !tr.exit ? [m.mint] : [], 20_000);
-  const pct = tradeMovePct(tr, m ? prices[m.mint]?.usdPrice : undefined);
+  const { pct } = tradeShownPct(tr, m ? prices[m.mint]?.usdPrice : undefined);
   const author = names.get(post.author.toBase58());
   const spot = m && m.kind !== 'perp' && tr.lev === 1;
   const what = spot ? (tr.exit ? 'Sold' : 'Holding') : `${tr.side === 'long' ? 'Long' : 'Short'} ${tr.lev}x`;
@@ -224,8 +224,8 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
         if (s < 0) continue;
         const spot = m.kind !== 'perp' && tr.lev === 1;
         const what = spot ? (tr.exit ? 'sold' : 'holding') : `${tr.side} ${tr.lev}x`;
-        const pct = tradeMovePct(tr);
-        out.push({ key: `t:${p.seq}`, href: `/post/${p.seq}`, title: `${who || 'A player'}: ${what} ${m.kind === 'perp' ? m.symbol : m.name}`, sub: `Trade · ${tr.exit ? 'closed' : `entry ${fmtPrice(tr.entry)}`} · Practice, paper money`,
+        const { pct } = tradeShownPct(tr);
+        out.push({ key: `t:${p.seq}`, href: `/trade/${p.seq}`, title: `${who || 'A player'}: ${what} ${m.kind === 'perp' ? m.symbol : m.name}`, sub: `Trade · ${tr.exit ? 'closed' : `entry ${fmtPrice(tr.entry)}`} · Practice, paper money`,
           right: pct !== undefined ? signedPct(pct) : undefined, rightColor: pct !== undefined ? (pct >= 0 ? C.up : C.down) : undefined,
           pic: { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } }, s: s - 0.05 });
       }
@@ -316,7 +316,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
                     <Txt v="small">{board.status === 'loading' ? 'Reading the calls…' : 'No trades posted yet. Open one in Practice and tap Share to post it with your call.'}</Txt>
                   </View>
                 ) : trades.map((p) => (
-                  <TradeCard key={p.seq} post={p} names={names} onOpen={(m) => open({ key: `t:${p.seq}`, href: `/post/${p.seq}`, title: `${names.get(p.author.toBase58())?.name ?? 'A player'}'s trade`, sub: m ? m.symbol : 'Trade', pic: m ? { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } } : { kind: 'player', owner: p.author.toBase58() } })} />
+                  <TradeCard key={p.seq} post={p} names={names} onOpen={(m) => open({ key: `t:${p.seq}`, href: `/trade/${p.seq}`, title: `${names.get(p.author.toBase58())?.name ?? 'A player'}'s trade`, sub: m ? m.symbol : 'Trade', pic: m ? { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } } : { kind: 'player', owner: p.author.toBase58() } })} />
                 ))
             ) : !top.length ? (
               <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{ranks.status === 'loading' || profiles.status === 'loading' ? 'Reading the leaderboard…' : 'Win a clash to get on the board.'}</Txt></View>
