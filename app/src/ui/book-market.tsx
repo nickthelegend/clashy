@@ -19,7 +19,7 @@ import { useDeskColumn } from './layout';
 import { Keypad, editAmount, type Key } from './keypad';
 import { CandleChart, OrderBookView, TapeView, VenueChip, decimalsFor, fmtP, fmtUsdC } from './orderbook';
 import {
-  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag,
+  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, myTradeHref, CopyNote, type CopyArgs,
 } from './practice-kit';
 import { Sheet } from './sheet';
 import { C, F, FONT, S } from './tokens';
@@ -71,7 +71,7 @@ function StatCell({ k, v, color }: { k: string; v: string; color?: string }) {
   );
 }
 
-export function BookMarketPage({ m }: { m: Market }) {
+export function BookMarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(720);
   const venue = m.venue as BookVenue;
@@ -89,7 +89,9 @@ export function BookMarketPage({ m }: { m: Market }) {
   const { candles, error: cErr, reload: cReload } = useCandles(venue, sym, tf);
   const [panel, setPanel] = useState<'book' | 'trades'>('book');
   const [chartW, setChartW] = useState(0);
-  const [trade, setTrade] = useState<{ side: Side; limit?: number } | null>(null);
+  // a copied trade opens the drawer straight away, with its side, leverage and margin
+  const [trade, setTrade] = useState<{ side: Side; limit?: number } | null>(copy ? { side: copy.side } : null);
+  const [preset, setPreset] = useState<CopyArgs | undefined>(copy);
   const [closing, setClosing] = useState<Position | null>(null);
   const [cancelErr, setCancelErr] = useState<string>();
 
@@ -211,7 +213,7 @@ export function BookMarketPage({ m }: { m: Market }) {
             <Txt v="label" color={C.dim}>›</Txt>
           </Pressable>
         ) : (
-          <View style={{ gap: 10 }}>{mine.map((p) => <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} />)}</View>
+          <View style={{ gap: 10 }}>{mine.map((p) => <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} onPress={() => router.push(myTradeHref(p))} />)}</View>
         )}
 
         {orders.length ? (
@@ -241,12 +243,13 @@ export function BookMarketPage({ m }: { m: Market }) {
             <Head title="Closed here" />
             <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
               {past.map((c, i) => (
-                <Row key={c.id} style={{ gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
+                <Pressable key={c.id} onPress={() => router.push(myTradeHref(c))} accessibilityRole="button" accessibilityLabel={`${c.symbol} trade, ${signedUsd(c.pnl)}`}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
                   <SideTag p={c} />
                   <Txt v="small" lines={1} style={{ flex: 1 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)}{c.reason === 'liquidated' ? ' · liquidated' : ''}</Txt>
                   <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
                   <ShareTrade p={c} />
-                </Row>
+                </Pressable>
               ))}
             </View>
           </>
@@ -264,7 +267,7 @@ export function BookMarketPage({ m }: { m: Market }) {
         </View>
       </View>
 
-      <BookOrderSheet open={trade !== null} side={trade?.side ?? 'long'} limit0={trade?.limit} onClose={() => setTrade(null)} m={m} px={px} feed={feed} funding={funding} pr={pr} />
+      <BookOrderSheet open={trade !== null} side={trade?.side ?? 'long'} limit0={trade?.limit} preset={preset} onClose={() => { setTrade(null); setPreset(undefined); }} m={m} px={px} feed={feed} funding={funding} pr={pr} />
       <CloseSheet p={closing} px={closing ? prices[closing.mint] : undefined} pr={pr} onClose={() => setClosing(null)} feed={feed} />
     </View>
   );
@@ -282,11 +285,12 @@ const PRESETS = [100, 500, 1000];
 /** What was typed, with thousands separators: "64,636.0". */
 const typed = (s: string) => { const [w, f] = s.split('.'); return `${Number(w || '0').toLocaleString('en-US')}${s.includes('.') ? `.${f ?? ''}` : ''}`; };
 
-function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, funding, pr }: {
-  open: boolean; onClose: () => void; side: Side; limit0?: number; m: Market; px?: Px; feed: BookFeed; funding?: number; pr: Practice;
+function BookOrderSheet({ open, onClose, side: side0, limit0, preset, m, px, feed, funding, pr }: {
+  open: boolean; onClose: () => void; side: Side; limit0?: number; preset?: CopyArgs; m: Market; px?: Px; feed: BookFeed; funding?: number; pr: Practice;
 }) {
   const venue = m.venue as BookVenue;
-  const steps = useMemo(() => levSteps(m.maxLev), [m.maxLev]);
+  const copyLev = preset ? Math.max(1, Math.min(preset.lev, m.maxLev)) : undefined;
+  const steps = useMemo(() => [...new Set<number>([...levSteps(m.maxLev), ...(copyLev ? [copyLev] : [])])].sort((a, b) => a - b), [m.maxLev, copyLev]);
   const [side, setSide] = useState<Side>(side0);
   const [type, setType] = useState<'market' | 'limit'>('market');
   const [lev, setLev] = useState(() => Math.min(10, m.maxLev));
@@ -300,7 +304,8 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
   const d = decimalsFor(b ? mid(b) : px?.usdPrice);
   useEffect(() => {
     if (!open) return;
-    setSide(side0); setV(''); setErr(undefined); setDone(null);
+    setSide(side0); setV(preset ? String(preset.margin) : ''); setErr(undefined); setDone(null);
+    if (preset && copyLev) setLev(copyLev);
     if (limit0) { setType('limit'); setLim(fmtP(limit0, d).replace(/,/g, '')); setField('margin'); } else { setType('market'); setLim(''); setField('margin'); }
   }, [open, side0, limit0]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -393,6 +398,7 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
               </Txt>
             </View>
           </Row>
+          {preset ? <CopyNote c={preset} maxLev={m.maxLev} /> : null}
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
             <View style={{ flex: 1 }}>
               <Seg value={side} onChange={(k) => { setSide(k); setErr(undefined); }} options={[{ k: 'long', label: 'Long', color: C.up, fg: '#04120A' }, { k: 'short', label: 'Short', color: C.down, fg: '#fff' }]} />

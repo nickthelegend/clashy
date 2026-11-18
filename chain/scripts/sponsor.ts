@@ -205,20 +205,31 @@ const JUP_UPSTREAMS: Record<string, string> = {
   lite: 'https://lite-api.jup.ag', perps: 'https://perps-api.jup.ag',
   // the two on-chain order-book perps venues on Solana with a public market-data API
   phoenix: 'https://perp-api.phoenix.trade', pacifica: 'https://api.pacifica.fi',
+  // candles for any Solana token (a trade's chart on a memecoin, a coin or a Jupiter perp): its busiest DEX pool
+  gecko: 'https://api.geckoterminal.com/api/v2',
 };
 const SYM = '[A-Za-z0-9-]{1,24}';
+const B58 = '[1-9A-HJ-NP-Za-km-z]{32,44}';
 const JUP_ALLOWED = [
   /^\/lite\/price\/v3\?/, /^\/lite\/tokens\/v2\/(search|tag|toptrending|toporganicscore|toptraded|recent)\b/, /^\/perps\/v1\/pool-info\?/,
   /^\/phoenix\/exchange\/(markets|prices)$/,
   new RegExp(`^/phoenix/v1/(candles/${SYM}\\?|funding/${SYM}/rates\\?|view/orderbook/${SYM}$|market/${SYM}/stats\\?|trades/${SYM}/fills\\?)`),
   /^\/pacifica\/api\/v1\/info(\/prices|\/fees)?$/,
   /^\/pacifica\/api\/v1\/(kline|book|trades)\?/,
+  new RegExp(`^/gecko/networks/solana/tokens/${B58}/pools\\?page=1$`),
+  new RegExp(`^/gecko/networks/solana/pools/${B58}/ohlcv/(minute|hour|day)\\?[A-Za-z0-9_=&]{1,200}$`),
 ];
 /** at: last attempt (drives the TTL); okAt: last good answer (a live number older than a minute is never served). */
 const jupCache = new Map<string, { at: number; okAt: number; status: number; body: string; pending?: Promise<void> }>();
 /** Live numbers (prices, books, trades, candles): never persisted, and a copy older than a minute is never served. */
-const isLive = (path: string) => /^\/lite\/price|^\/phoenix\/(exchange\/prices|v1\/(candles|view\/orderbook|trades))|^\/pacifica\/api\/v1\/(info\/prices|kline|book|trades)/.test(path);
-const jupTtl = (path: string) => (path.startsWith('/lite/price') ? 10_000 : /orderbook|\/book\?|\/trades\?|\/fills\?|prices$/.test(path) ? 1_500
+const isLive = (path: string) => /^\/lite\/price|^\/phoenix\/(exchange\/prices|v1\/(candles|view\/orderbook|trades))|^\/pacifica\/api\/v1\/(info\/prices|kline|book|trades)|^\/gecko\/.*\/ohlcv\//.test(path);
+/** GeckoTerminal allows about 30 reads a minute: a window that ended over two minutes ago won't change, so it keeps. */
+const geckoTtl = (path: string) => {
+  if (!path.includes('/ohlcv/')) return 3_600_000;
+  const before = Number(new URLSearchParams(path.split('?')[1]).get('before_timestamp'));
+  return before && before < Date.now() / 1000 - 120 ? 600_000 : 30_000;
+};
+const jupTtl = (path: string) => (path.startsWith('/lite/price') ? 10_000 : path.startsWith('/gecko/') ? geckoTtl(path) : /orderbook|\/book\?|\/trades\?|\/fills\?|prices$/.test(path) ? 1_500
   : /candles|kline/.test(path) ? 15_000 : path.startsWith('/perps') ? 30_000 : 60_000);
 /**
  * Jupiter prices, shared per mint. Every screen asks for its own set of mints, and Jupiter's free price API allows only

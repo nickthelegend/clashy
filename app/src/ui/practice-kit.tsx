@@ -1,6 +1,7 @@
 // Pieces shared by the two Practice screens: real market logos, the "Paper money" badge, stat tiles, an open paper
 // trade with live P&L, and the drawer that closes one at the live price.
 import { Image } from 'expo-image';
+import type { Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
@@ -132,8 +133,38 @@ export function EmptyCard({ art, title, body, action }: { art: number; title: st
   );
 }
 
-/** A Practice trade as it rides on a call (chain/calls.ts): side, leverage, entry, exit once closed, margin. */
-export const tradeOf = (p: Position | Closed): TradeTag => ({ side: p.side, lev: p.lev, entry: p.entry, margin: p.margin, ...('exit' in p ? { exit: p.exit } : {}) });
+/** A Practice trade as it rides on a call (chain/calls.ts): side, leverage, entry, margin and when it opened; once
+ *  closed, the exit, when, the profit net of fees and whether it was liquidated. */
+export const tradeOf = (p: Position | Closed): TradeTag => ({
+  side: p.side, lev: p.lev, entry: p.entry, margin: p.margin, openedAt: p.openedAt,
+  ...('exit' in p ? { exit: p.exit, closedAt: p.closedAt, pnl: p.pnl, liquidated: p.reason === 'liquidated' } : {}),
+});
+/** Copying a trade into Practice: the same side and leverage, and its margin as the starting amount. Comes in on the
+ *  market's URL (/practice/<id>?copy=long&lev=10&amt=500&who=nova) from a trade's page. */
+export type CopyArgs = { side: 'long' | 'short'; lev: number; margin: number; who?: string };
+export function copyArgs(q: { copy?: string | string[]; lev?: string | string[]; amt?: string | string[]; who?: string | string[] }): CopyArgs | undefined {
+  const one = (x?: string | string[]) => (Array.isArray(x) ? x[0] : x);
+  const side = one(q.copy), lev = Number(one(q.lev)), margin = Number(one(q.amt));
+  if ((side !== 'long' && side !== 'short') || !(lev >= 1 && lev <= 1000) || !(margin > 0 && margin < 1e9)) return undefined;
+  const who = one(q.who)?.slice(0, 32);
+  return { side, lev: Math.round(lev), margin: Math.round(margin * 100) / 100, who: who || undefined };
+}
+/** "Copying @nova's trade": what the order drawer opened with. */
+export function CopyNote({ c, maxLev, spot }: { c: CopyArgs; maxLev?: number; spot?: boolean }) {
+  const capped = maxLev !== undefined && c.lev > maxLev;
+  const amt = `$${c.margin.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(171,159,242,0.14)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9, marginTop: 12 }}>
+      <ShareIcon size={15} color={C.brandSoft} />
+      <Txt v="small" color={C.ink} style={{ flex: 1, lineHeight: 17 }}>
+        {spot ? `Copying ${c.who ? `@${c.who}'s` : 'the'} buy: ${amt} at today's price.`
+          : `Copying ${c.who ? `@${c.who}'s` : 'the'} trade: ${c.side} ${capped ? `${maxLev}x (this market's max; they used ${c.lev}x)` : `${c.lev}x`}, ${amt}, at today's price.`}
+      </Txt>
+    </View>
+  );
+}
+/** Where one of your own Practice trades opens up: chart, profit, details, Close or Share. */
+export const myTradeHref = (p: Position | Closed) => `/trade/me-${p.id}` as Href;
 
 /** Post this trade as a call: the call drawer opens on its market with the trade on it (marked as paper money). */
 export function ShareTrade({ p, pill }: { p: Position | Closed; pill?: boolean }) {
