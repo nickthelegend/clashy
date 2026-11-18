@@ -27,7 +27,7 @@ import { ART, BackBtn, Btn, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonR
 import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
 import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 type ClanView = { key: PublicKey; name: string; captain: PublicKey; crest: number; members: number; chest: number; shares: number; openVotes: number; positionsOpen: number; score: number; proposals: number; war: PublicKey; wins: number; losses: number };
 type PropView = { key: PublicKey; id: number; proposer: PublicKey; coin: number; side: number; lev: number; sizeBps: number; yes: number; no: number; deadline: number; status: number; myVote: boolean };
@@ -230,20 +230,20 @@ export default function OnchainClan() {
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/clans' as Href))} />
           {mine ? (
             <Row style={{ flex: 1, minWidth: 0, gap: 10 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <View style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 <Image source={crestSrc(mine.crest)} style={{ width: 36, height: 36 }} contentFit="contain" />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 19, color: C.ink, letterSpacing: -0.3 }}>{mine.name}</Text>
+                <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 19, color: C.ink, letterSpacing: -0.3 }}>{mine.name}</Text>
                 <Row style={{ gap: 6 }}>
-                  <Txt v="small" color={GOLD} style={{ fontFamily: F.displayB, fontSize: 11.5 }}>LV {level?.level ?? 1}</Txt>
+                  <Txt v="small" color={GOLD} style={{ ...FONT.displayB, fontSize: 11.5 }}>LV {level?.level ?? 1}</Txt>
                   <Txt v="small" lines={1} style={{ fontSize: 11.5, flexShrink: 1 }}>{mine.members} member{mine.members === 1 ? '' : 's'}{captain ? ' · you lead' : ''}</Txt>
                 </Row>
               </View>
             </Row>
           ) : <View style={{ flex: 1 }} />}
-          <Pressable onPress={() => setProof(true)} hitSlop={6} accessibilityLabel="Wallet and transactions" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pressed ? '#22222A' : CARD, borderRadius: 17, borderWidth: 1, borderColor: HAIR, paddingHorizontal: 12, height: 36 })}>
-            <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{bal === null ? 'Wallet' : fmtUsd(bal)}</Txt>
+          <Pressable onPress={() => setProof(true)} hitSlop={6} accessibilityLabel="Wallet and transactions" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pressed ? '#22222A' : CARD, borderRadius: 17, paddingHorizontal: 12, height: 36 })}>
+            <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : fmtUsd(bal)}</Txt>
           </Pressable>
         </Row>
         {err && !spot ? <ErrorLine msg={err} /> : null}
@@ -270,14 +270,14 @@ export default function OnchainClan() {
         ) : (
           <>
             {/* chest hero */}
-            <Animated.View entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
-              <LinearGradient colors={['rgba(91,108,255,0.24)', 'rgba(21,21,27,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 200 }} />
+            <Animated.View entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: CARD, overflow: 'hidden' }}>
+              <LinearGradient colors={['rgba(171,159,242,0.24)', 'rgba(21,21,27,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 200 }} />
               <View style={{ padding: 16 }}>
                 <Row style={{ alignItems: 'flex-start', gap: 10 }}>
                   <View style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                    <Txt v="small" color="#B9B9C3" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1.1 }}>Squad chest</Txt>
+                    <Txt v="small" color="#B9B9C3" style={{ ...FONT.bold, fontSize: 11, letterSpacing: 1.1 }}>Squad chest</Txt>
                     <View style={{ marginTop: 10 }}><PnlPill label="Trades" usd={usd(mine.score)} /></View>
-                    {warLocked ? <View style={{ marginTop: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(240,70,140,0.18)', borderRadius: 10, paddingHorizontal: 9, height: 26, justifyContent: 'center' }}><Txt v="small" color={C.opp} style={{ fontFamily: F.bold, fontSize: 11 }}>At war</Txt></View> : null}
+                    {warLocked ? <View style={{ marginTop: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(240,70,140,0.18)', borderRadius: 10, paddingHorizontal: 9, height: 26, justifyContent: 'center' }}><Txt v="small" color={C.opp} style={{ ...FONT.bold, fontSize: 11 }}>At war</Txt></View> : null}
                   </View>
                   <ClayLoop name="stash" size={92} style={{ borderRadius: 22 }} />
                 </Row>
@@ -325,9 +325,9 @@ export default function OnchainClan() {
                     </Row>
                   ) : null}
                   {myShares === 0 && !p.myVote && left > 0 ? <Txt v="small" style={{ textAlign: 'center' }}>Add to the chest to get a vote.</Txt> : null}
-                  {p.myVote ? <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>✓ You voted</Txt> : null}
+                  {p.myVote ? <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>✓ You voted</Txt> : null}
                   {passed && captain && !failed ? <Btn title={busy === `exec-${p.id}` ? 'Placing…' : 'Passed · place the trade'} h={46} style={{ borderRadius: 23 }} disabled={!!busy} onPress={() => at('trades', () => execute(p))} /> : null}
-                  {passed && !captain && !failed ? <Txt v="small" color={C.up} style={{ fontFamily: F.semi }}>Passed · waiting for the captain to place it</Txt> : null}
+                  {passed && !captain && !failed ? <Txt v="small" color={C.up} style={{ ...FONT.semi }}>Passed · waiting for the captain to place it</Txt> : null}
                   {failed ? <Btn title={p.yes > p.no ? 'Close expired vote' : 'Close failed vote'} kind="ghost" h={44} style={{ borderRadius: 22 }} disabled={!!busy} onPress={() => at('trades', () => reject(p))} /> : null}
                 </TradeCard>
               );
@@ -351,7 +351,7 @@ export default function OnchainClan() {
                 <Txt v="small" style={{ fontSize: 11.5 }}>Past votes</Txt>
                 {pastProps.map((p) => (
                   <View key={p.key.toBase58()} style={{ borderRadius: 9, paddingHorizontal: 8, height: 24, justifyContent: 'center', backgroundColor: p.status === 1 ? C.upBg : C.s2 }}>
-                    <Txt v="small" color={p.status === 1 ? C.up : C.muted} style={{ fontSize: 11, fontFamily: F.semi }}>{p.side === 1 ? '▲' : '▼'} {COIN_SYMBOLS[p.coin] ?? '…'} {p.status === 1 ? 'placed' : 'failed'}</Txt>
+                    <Txt v="small" color={p.status === 1 ? C.up : C.muted} style={{ fontSize: 11, ...FONT.semi }}>{p.side === 1 ? '▲' : '▼'} {COIN_SYMBOLS[p.coin] ?? '…'} {p.status === 1 ? 'placed' : 'failed'}</Txt>
                   </View>
                 ))}
               </Row>
@@ -380,9 +380,9 @@ export default function OnchainClan() {
                   <View style={{ alignItems: 'center', marginBottom: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: live ? 'rgba(240,70,140,0.18)' : '#1A1A20', borderRadius: 14, paddingHorizontal: 12, height: 28 }}>
                       <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: live && left ? C.opp : GOLD }} />
-                      <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{!live ? (weA ? `Waiting for ${themName}` : 'Challenge received') : left ? 'War is live' : 'Final bell'}</Txt>
+                      <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{!live ? (weA ? `Waiting for ${themName}` : 'Challenge received') : left ? 'War is live' : 'Final bell'}</Txt>
                     </View>
-                    {live ? <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 6, fontVariant: ['tabular-nums'] }}>{left ? fmtLeft(left) : '0:00'}</Text> : null}
+                    {live ? <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 6, fontVariant: ['tabular-nums'] }}>{left ? fmtLeft(left) : '0:00'}</Text> : null}
                     <Txt v="small">Pot {fmtUsd(usd(w.stake * 2))} · {fmtUsd(usd(w.stake))} from each chest</Txt>
                   </View>
                   <SquadVersus us={us?.crest ?? null} them={them?.crest ?? null} usName={us?.name ?? 'Us'} themName={themName}

@@ -18,7 +18,7 @@ import { useCreate } from '@/ui/create';
 import { Bell, Jar, Search as SearchI } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Tab = 'calls' | 'duels';
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
@@ -161,7 +161,7 @@ export default function HomeScreen() {
           <Money value={worth} size={46} />
           <Row style={{ gap: 8, marginTop: 4 }}>
             <View style={{ backgroundColor: stockPnl >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{stockPnl >= 0 ? '+' : '−'}${Math.abs(stockPnl).toFixed(2)}</Txt>
+              <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{stockPnl >= 0 ? '+' : '−'}${Math.abs(stockPnl).toFixed(2)}</Txt>
             </View>
             <Txt v="small">on your stocks</Txt>
           </Row>
@@ -177,7 +177,7 @@ export default function HomeScreen() {
           </Row>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
             {topCalls.map((t) => (
-              <Pressable key={t.key} onPress={() => router.push(`/u/${t.owner}` as Href)} style={{ width: 150, backgroundColor: '#15151B', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#23232B' }}>
+              <Pressable key={t.key} onPress={() => router.push(`/u/${t.owner}` as Href)} style={{ width: 150, backgroundColor: '#15151B', borderRadius: 20, padding: 12 }}>
                 <Row style={{ gap: 8 }}>
                   <ProfileAvatar p={profMap.get(t.owner)} size={28} />
                   <Txt v="label" lines={1} style={{ flex: 1, fontSize: 13 }}>{profMap.get(t.owner)?.name ?? 'player'}</Txt>
@@ -216,7 +216,7 @@ export default function HomeScreen() {
         <Pressable onPress={() => openCall(null)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#1B1B21' : C.s1, borderRadius: 22, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: '#1F1F26' })}>
           <ProfileAvatar p={myProfile} size={40} />
           <View style={{ flex: 1 }}>
-            <Txt v="title" style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
+            <Txt v="title" style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
             <Txt v="small" style={{ marginTop: 1 }}>Post it with your real position</Txt>
           </View>
           <Row style={{ gap: -8 }}>

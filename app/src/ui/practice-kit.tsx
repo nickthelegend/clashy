@@ -56,7 +56,7 @@ export function BotPic({ size = 46 }: { size?: number }) {
 }
 export function BotTag() {
   return (
-    <View style={{ backgroundColor: 'rgba(91,108,255,0.18)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+    <View style={{ backgroundColor: 'rgba(171,159,242,0.18)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
       <Txt v="small" color={C.brandSoft} style={{ fontSize: 10.5, letterSpacing: 0.4 }}>BOT</Txt>
     </View>
   );
@@ -64,7 +64,7 @@ export function BotTag() {
 
 export function PaperBadge() {
   return (
-    <View style={{ backgroundColor: 'rgba(91,108,255,0.16)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+    <View style={{ backgroundColor: 'rgba(171,159,242,0.16)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
       <Txt v="small" color={C.brandSoft} style={{ fontSize: 11.5 }}>Paper money</Txt>
     </View>
   );

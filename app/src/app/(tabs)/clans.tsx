@@ -25,7 +25,7 @@ import { useDeskColumn } from '@/ui/layout';
 import { Sheet, SheetTile } from '@/ui/sheet';
 import { Badge, CARD, Channel, GOLD, Group, HAIR, LevelBar, RailButton, RailIcon, SquadBanner, Tile, crestSrc } from '@/ui/squads/parts';
 import { CreateSquadSheet } from '@/ui/squads/sheets';
-import { C, F } from '@/ui/tokens';
+import { C, F, FONT } from '@/ui/tokens';
 
 const RAIL = 72;
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
@@ -133,11 +133,11 @@ export default function Squads() {
           ) : current ? (
             <>
               {/* server banner */}
-              <View style={{ borderRadius: 20, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR }}>
+              <View style={{ borderRadius: 20, backgroundColor: CARD }}>
                 <SquadBanner crest={current.crest} height={120}><ClayLoop name="clanCity" width="100%" height={120} cover /></SquadBanner>
                 <View style={{ paddingHorizontal: 14, paddingTop: 32, paddingBottom: 14 }}>
                   <Row style={{ gap: 8 }}>
-                    <Txt v="title" lines={1} style={{ flex: 1, fontFamily: F.display, fontSize: 24, letterSpacing: -0.4 }}>{current.name}</Txt>
+                    <Txt v="title" lines={1} style={{ flex: 1, ...FONT.display, fontSize: 24, letterSpacing: -0.4 }}>{current.name}</Txt>
                     {current.atWar ? <Badge text="AT WAR" color={C.opp} /> : null}
                     <Pressable onPress={() => setMenu(true)} accessibilityLabel="Squad menu" hitSlop={8} style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#1F1F27', alignItems: 'center', justifyContent: 'center' }}>
                       <Txt v="label" color={C.ink} style={{ fontSize: 16, marginTop: -4 }}>⋯</Txt>
@@ -178,7 +178,7 @@ export default function Squads() {
               <Channel name="chest" glyph="$" badge={current.openVotes ? `${current.openVotes} vote${current.openVotes === 1 ? '' : 's'}` : undefined} badgeColor={GOLD} unread={current.openVotes > 0}
                 sub={`$${current.chest.toFixed(2)} USDC · trades ${fmtPnl(current.scorePnl)}`} onPress={openChest} />
 
-              <Group title={`Lobby — ${s ? s.members.length : current.members}`} right={busyIn.size ? <Txt v="small" color={C.up} style={{ fontSize: 11, fontFamily: F.semi }}>{busyIn.size} clashing</Txt> : null} />
+              <Group title={`Lobby — ${s ? s.members.length : current.members}`} right={busyIn.size ? <Txt v="small" color={C.up} style={{ fontSize: 11, ...FONT.semi }}>{busyIn.size} clashing</Txt> : null} />
               {!s ? <SkeletonRows n={2} /> : [...s.members].sort((a, b) => Number(busyIn.has(b.toBase58())) - Number(busyIn.has(a.toBase58())) || Number(s.captain.equals(b)) - Number(s.captain.equals(a))).map((mk) => {
                 const p = prof.get(mk.toBase58());
                 const duel = liveDuels.find((d) => d.creator.equals(mk) || d.joiner.equals(mk));
@@ -243,10 +243,10 @@ function EmptySquads({ signedOut, onLogin, onCreate }: { signedOut: boolean; onL
   const top = clans.status === 'ready' && prof ? clans.data.filter((c) => !isTestAccount(prof.get(c.captain.toBase58()))).slice(0, 3) : [];
   return (
     <View>
-      <View style={{ borderRadius: 24, overflow: 'hidden', backgroundColor: CARD, borderWidth: 1, borderColor: HAIR }}>
+      <View style={{ borderRadius: 24, overflow: 'hidden', backgroundColor: CARD }}>
         <ClayLoop name="clubhouse" width="100%" height={210} cover />
         <View style={{ padding: 16, paddingTop: 12 }}>
-          <Txt v="title" style={{ fontFamily: F.display, fontSize: 26, letterSpacing: -0.4, lineHeight: 30 }}>Join your first squad</Txt>
+          <Txt v="title" style={{ ...FONT.display, fontSize: 26, letterSpacing: -0.4, lineHeight: 30 }}>Join your first squad</Txt>
           <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }} color="#B9B9C3">A crew with a shared USDC chest you trade by vote, live chat, clashes and squad wars. Join as many as you like.</Txt>
           {signedOut ? <Btn title="Sign in" kind="white" h={52} style={{ marginTop: 14 }} onPress={onLogin} /> : (
             <>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Bob } from './fx';
 import { ART, Art, Btn, Card, RANKS, Txt, UnderTabs } from './kit';
-import { C, F } from './tokens';
+import { C, F, FONT } from './tokens';
 
 /** Horizontal ladder of the ten ranks, current tier highlighted. */
 export function RankStrip({ current }: { current?: number }) {
@@ -13,9 +13,9 @@ export function RankStrip({ current }: { current?: number }) {
       {RANKS.map((r) => {
         const on = r.n === current;
         return (
-          <View key={r.key} style={{ width: 88, alignItems: 'center', paddingVertical: 10, borderRadius: 16, backgroundColor: on ? 'rgba(91,108,255,0.16)' : C.s1, borderWidth: 1.5, borderColor: on ? C.brand : 'transparent' }}>
+          <View key={r.key} style={{ width: 88, alignItems: 'center', paddingVertical: 10, borderRadius: 16, backgroundColor: on ? 'rgba(171,159,242,0.16)' : C.s1, borderWidth: 1.5, borderColor: on ? C.brand : 'transparent' }}>
             <Art src={r.src} size={46} radius={0} />
-            <Txt v="small" color={r.color} style={{ fontFamily: F.bold, fontSize: 11.5, marginTop: 4, textAlign: 'center' }} lines={1}>{r.label}</Txt>
+            <Txt v="small" color={r.color} style={{ ...FONT.bold, fontSize: 11.5, marginTop: 4, textAlign: 'center' }} lines={1}>{r.label}</Txt>
             <Txt v="small" style={{ fontSize: 10.5 }}>{r.n === 1 ? 'Start' : `${r.pts} pts`}</Txt>
           </View>
         );

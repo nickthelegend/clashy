@@ -23,7 +23,7 @@ import { Search as SearchIcon, Swords } from '@/ui/icons';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, LiveChart, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const CARD = '#111116';
 const HAIR = '#1F1F27';
@@ -52,7 +52,7 @@ function Head({ title, right }: { title: string; right?: string }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, borderWidth: 1, borderColor: HAIR, paddingVertical: 12, paddingHorizontal: 12 }}>
+    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 12 }}>
       <Txt v="small" style={{ fontSize: 11.5 }} lines={1}>{label}</Txt>
       <Txt v="h2" lines={1} style={{ marginTop: 3, fontVariant: ['tabular-nums'] }}>{value}</Txt>
     </View>
@@ -75,7 +75,7 @@ function BarBtn({ title, bg, fg, onPress, icon, disabled }: { title: string; bg:
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={title}
       style={({ pressed }) => ({ flex: 1, height: 54, borderRadius: 27, backgroundColor: bg, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
       {icon}
-      <Text numberOfLines={1} style={{ fontFamily: F.bold, fontSize: 16, color: fg }}>{title}</Text>
+      <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 16, color: fg }}>{title}</Text>
     </Pressable>
   );
 }
@@ -90,7 +90,7 @@ function NotFound({ sym }: { sym: string }) {
       <View style={{ marginTop: 12, gap: 8 }}>
         {STOCKS.map((st) => (
           <Pressable key={st.symbol} onPress={() => router.replace(`/stock/${st.symbol}` as Href)}
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 20, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 20, backgroundColor: CARD, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
             <Image source={STOCK_ART[st.symbol]} style={{ width: 40, height: 40 }} contentFit="contain" />
             <View style={{ flex: 1 }}><Txt v="label">{st.name}</Txt><Txt v="small">{st.symbol}</Txt></View>
             <Txt v="label" color={C.dim}>›</Txt>
@@ -240,7 +240,7 @@ function StockPage({ st }: { st: Stock }) {
         {/* header */}
         <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
-          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center' }}>
             <Image source={STOCK_ART[st.symbol]} style={{ width: 38, height: 38 }} contentFit="contain" />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -258,7 +258,7 @@ function StockPage({ st }: { st: Stock }) {
           <Row style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
             {samples.length > 1 ? (
               <View style={{ backgroundColor: moved >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Txt v="small" color={lineColor} style={{ fontFamily: F.semi, fontVariant: ['tabular-nums'] }}>{signed(moved)} ({pctText(movedPct)})</Txt>
+                <Txt v="small" color={lineColor} style={{ ...FONT.semi, fontVariant: ['tabular-nums'] }}>{signed(moved)} ({pctText(movedPct)})</Txt>
               </View>
             ) : null}
             <Row style={{ gap: 6 }}>
@@ -275,7 +275,7 @@ function StockPage({ st }: { st: Stock }) {
             samples.length > 1 ? (
               <LiveChart data={samples.map((x) => x.p)} w={chartW} h={220} color={lineColor} minSpan={0.0006} />
             ) : (
-              <View style={{ width: chartW, height: 220, borderRadius: 22, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+              <View style={{ width: chartW, height: 220, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
                 <LiveDot color={C.brandSoft} />
                 <Txt v="label" style={{ marginTop: 10, textAlign: 'center' }}>Watching the price</Txt>
                 <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>The chart draws itself from the live price while this page is open. Nothing before that is shown.</Txt>
@@ -294,7 +294,7 @@ function StockPage({ st }: { st: Stock }) {
         {/* your position */}
         <Head title="Your position" />
         {!me ? (
-          <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <Image source={STOCK_ART[st.symbol]} style={{ width: 56, height: 56 }} contentFit="contain" />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="label">Sign in to buy {st.symbol}</Txt>
@@ -303,7 +303,7 @@ function StockPage({ st }: { st: Stock }) {
             <Btn title="Sign in" kind="white" h={44} onPress={() => (wallet.login ? wallet.login() : setErr('Sign in from Home to trade'))} />
           </View>
         ) : port.status === 'loading' ? <SkeletonRows n={1} square /> : port.status === 'error' ? <ErrorLine msg={port.error} onRetry={port.reload} /> : held ? (
-          <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 16 }}>
+          <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, padding: 16 }}>
             <Row style={{ alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
               <View style={{ flexShrink: 1 }}>
                 <Txt v="small">Value</Txt>
@@ -320,10 +320,10 @@ function StockPage({ st }: { st: Stock }) {
               <Cell label="You paid" value={fmtUsd(pos!.cost)} />
               <Cell label="Avg. price" value={pos!.shares > 0 ? fmtUsd(pos!.cost / pos!.shares) : '–'} align="right" />
             </Row>
-            {pos!.realized !== 0 ? <Txt v="small" style={{ marginTop: 10 }}>Already taken off the table: <Txt v="small" color={pos!.realized >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{signed(pos!.realized)}</Txt></Txt> : null}
+            {pos!.realized !== 0 ? <Txt v="small" style={{ marginTop: 10 }}>Already taken off the table: <Txt v="small" color={pos!.realized >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{signed(pos!.realized)}</Txt></Txt> : null}
           </Animated.View>
         ) : (
-          <Pressable onPress={openBuy} style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+          <Pressable onPress={openBuy} style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <Image source={ART.coinsPile} style={{ width: 56, height: 56 }} contentFit="contain" />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="label">You don't own {st.symbol} yet</Txt>
@@ -339,19 +339,19 @@ function StockPage({ st }: { st: Stock }) {
         {/* who holds it */}
         <Head title="Who holds it" right={holders.length ? `${holders.length} player${holders.length === 1 ? '' : 's'}` : undefined} />
         {holdings.status === 'loading' || profiles.status === 'loading' ? <SkeletonRows n={3} /> : holdings.status === 'error' ? <ErrorLine msg={holdings.error} onRetry={holdings.reload} /> : profiles.status === 'error' ? <ErrorLine msg={profiles.error} onRetry={profiles.reload} /> : holders.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12', borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed' }}>
+          <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12' }}>
             <Image source={STOCK_ART[st.symbol]} style={{ width: 72, height: 72 }} contentFit="contain" />
             <Txt v="label" style={{ marginTop: 6 }}>Nobody holds {st.symbol} yet</Txt>
             <Txt v="small" style={{ marginTop: 3, textAlign: 'center', lineHeight: 18 }}>Be the first. Everyone who buys shows up here with what they paid and how it's doing.</Txt>
           </View>
         ) : (
-          <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+          <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
             {shownHolders.map(({ h, value: v, pnl: g }, i) => {
               const p = profMap.get(h.owner.toBase58());
               const isMe = !!me && h.owner.equals(me);
               return (
                 <Pressable key={h.owner.toBase58()} onPress={() => router.push(`/u/${h.owner.toBase58()}` as Href)}
-                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, minHeight: 64, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : isMe ? 'rgba(91,108,255,0.10)' : 'transparent' })}>
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, minHeight: 64, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : isMe ? 'rgba(171,159,242,0.10)' : 'transparent' })}>
                   <Txt v="label" color={i === 0 ? '#FFD66B' : C.dim} style={{ width: 24, fontVariant: ['tabular-nums'] }}>{i + 1}</Txt>
                   <ProfileAvatar p={p} size={40} />
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -360,14 +360,14 @@ function StockPage({ st }: { st: Stock }) {
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Txt v="label" style={{ fontVariant: ['tabular-nums'] }}>{price ? fmtUsd(v) : '…'}</Txt>
-                    <Txt v="small" color={g >= 0 ? C.up : C.down} style={{ fontFamily: F.semi, fontVariant: ['tabular-nums'] }}>{price ? signed(g) : ''}</Txt>
+                    <Txt v="small" color={g >= 0 ? C.up : C.down} style={{ ...FONT.semi, fontVariant: ['tabular-nums'] }}>{price ? signed(g) : ''}</Txt>
                   </View>
                 </Pressable>
               );
             })}
             {holders.length > 8 ? (
               <Pressable onPress={() => setAllHolders((x) => !x)} style={{ height: 48, alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: '#18181E' }}>
-                <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>{allHolders ? 'Show fewer' : `Show all ${holders.length}`}</Txt>
+                <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>{allHolders ? 'Show fewer' : `Show all ${holders.length}`}</Txt>
               </Pressable>
             ) : null}
           </View>
@@ -376,13 +376,13 @@ function StockPage({ st }: { st: Stock }) {
         {/* calls */}
         <Head title={`Calls on ${st.symbol}`} right={calls.length ? `${calls.length} call${calls.length === 1 ? '' : 's'}` : undefined} />
         {board.status === 'loading' ? <SkeletonRows n={2} /> : board.status === 'error' ? <ErrorLine msg={board.error} onRetry={board.reload} /> : calls.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12', borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed' }}>
+          <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12' }}>
             <Image source={ART.megaphone} style={{ width: 72, height: 72 }} contentFit="contain" />
             <Txt v="label" style={{ marginTop: 6 }}>No calls on {st.symbol} yet</Txt>
             <Txt v="small" style={{ marginTop: 3, textAlign: 'center', lineHeight: 18 }}>Post one from Home and attach {st.symbol}. Your real position rides along with it.</Txt>
           </View>
         ) : (
-          <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, paddingHorizontal: 14 }}>
+          <View style={{ backgroundColor: CARD, borderRadius: 24, paddingHorizontal: 14 }}>
             {calls.slice(0, 20).map((p, i) => (
               <Pressable key={p.seq} onPress={() => router.push(`/post/${p.seq}` as Href)} style={({ pressed }) => ({ borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', opacity: pressed ? 0.85 : 1 })}>
                 <PostItem post={p} profiles={profMap} holdings={holdMap} prices={px} me={myProfile}
@@ -420,7 +420,7 @@ function StockPage({ st }: { st: Stock }) {
           <Image source={STOCK_ART[st.symbol]} style={{ width: 80, height: 80 }} contentFit="contain" />
           {price && pos ? <Money value={pos.shares * price} size={40} /> : <Txt v="title">…</Txt>}
           <Txt v="small">{pos ? `${pos.shares.toFixed(4)} ${st.symbol} · paid ${fmtUsd(pos.cost)}` : ''}</Txt>
-          {held && price ? <Txt v="small" color={pnl >= 0 ? C.up : C.down} style={{ fontFamily: F.semi, marginTop: 4 }}>{signed(pnl)} if you sell now</Txt> : null}
+          {held && price ? <Txt v="small" color={pnl >= 0 ? C.up : C.down} style={{ ...FONT.semi, marginTop: 4 }}>{signed(pnl)} if you sell now</Txt> : null}
         </View>
         {err ? <ErrorLine msg={err} /> : null}
         <Btn title={busy === 'sell' ? 'Selling…' : 'Sell all into the Stash'} kind="white" h={52} style={{ marginTop: 16 }} disabled={!!busy || !held} onPress={sellAll} />

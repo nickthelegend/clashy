@@ -77,7 +77,7 @@ export function ClashyWallet({ children }: { children: ReactNode }) {
         embeddedWallets: { ethereum: { createOnLogin: 'off' }, solana: { createOnLogin: 'all-users' }, showWalletUIs: false },
         appearance: {
           theme: 'dark',
-          accentColor: '#5B6CFF',
+          accentColor: '#AB9FF2',
           walletChainType: 'solana-only',
           landingHeader: 'Sign in to Clashy',
           loginMessage: 'Your Clashy wallet holds USDC. No SOL, no seed phrase: fees are on us.',

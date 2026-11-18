@@ -14,7 +14,7 @@ import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Btn, ErrorLine, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, fmtUsd } from '@/ui/tokens';
 
 const WEEK = 7 * 86_400;
 /** Monday 00:00 UTC of the current week. */
@@ -72,16 +72,16 @@ export default function Cup() {
       <View style={{ alignItems: 'center', marginTop: -6 }}>
         <ClayLoop name="cupBig" size={170} style={{ borderRadius: 24 }} />
         <View style={{ backgroundColor: C.opp, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 }}>
-          <Txt v="small" color="#fff" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.6 }}>Live · ends Monday 00:00 UTC</Txt>
+          <Txt v="small" color="#fff" style={{ ...FONT.bold, fontSize: 11, letterSpacing: 0.6 }}>Live · ends Monday 00:00 UTC</Txt>
         </View>
-        <Txt v="title" style={{ fontSize: 44, marginTop: 8, fontFamily: F.display, letterSpacing: -1 }}>Weekly Cup</Txt>
+        <Txt v="title" style={{ fontSize: 44, marginTop: 8, ...FONT.display, letterSpacing: -1 }}>Weekly Cup</Txt>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>Profit on the stocks in your Stash, plus clash winnings this week.</Txt>
       </View>
       <Row style={{ gap: 8, marginTop: 14 }}>
         {['Days', 'Hrs', 'Min', 'Sec'].map((k, i) => (
           <View key={k} style={{ flex: 1, backgroundColor: i === 3 ? C.brand : C.s1, borderRadius: 14, paddingVertical: 10, alignItems: 'center' }}>
-            <Txt v="title" style={{ fontSize: 26 }} color={i === 3 ? '#fff' : C.ink}>{String(parts[i]).padStart(2, '0')}</Txt>
-            <Txt v="small" color={i === 3 ? '#DDE1FF' : C.muted} style={{ fontSize: 10, fontFamily: F.semi }}>{k}</Txt>
+            <Txt v="title" style={{ fontSize: 26 }} color={i === 3 ? C.onBrand : C.ink}>{String(parts[i]).padStart(2, '0')}</Txt>
+            <Txt v="small" color={i === 3 ? 'rgba(22,15,51,0.72)' : C.muted} style={{ fontSize: 10, ...FONT.semi }}>{k}</Txt>
           </View>
         ))}
       </Row>
@@ -105,7 +105,7 @@ export default function Cup() {
                   <Txt v="label" lines={1} style={{ marginTop: 4 }}>{r.profile?.name ?? 'player'}</Txt>
                   <Txt v="small" color={r.total >= 0 ? C.up : C.down}>{r.total >= 0 ? '+' : '−'}{fmtUsd(Math.abs(r.total))}</Txt>
                   <View style={{ width: '100%', height: place === 1 ? 70 : place === 2 ? 50 : 36, marginTop: 6, borderTopLeftRadius: 12, borderTopRightRadius: 12, backgroundColor: place === 1 ? C.brand : C.s1, alignItems: 'center', justifyContent: 'center' }}>
-                    <Txt v="h2" color={place === 1 ? '#fff' : C.ink} style={{ fontFamily: F.display, fontSize: 22 }}>{place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}</Txt>
+                    <Txt v="h2" color={place === 1 ? C.onBrand : C.ink} style={{ ...FONT.display, fontSize: 22 }}>{place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}</Txt>
                   </View>
                 </View>
               );
@@ -113,7 +113,7 @@ export default function Cup() {
           </Row>
           <View style={{ backgroundColor: C.s1, borderRadius: 18, paddingVertical: 4, marginTop: 0 }}>
             {rows.slice(3).map((r, i) => (
-              <Row key={r.owner.toBase58()} style={{ gap: 10, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: r.owner.toBase58() === me ? 'rgba(91,108,255,0.14)' : 'transparent' }}>
+              <Row key={r.owner.toBase58()} style={{ gap: 10, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: r.owner.toBase58() === me ? 'rgba(171,159,242,0.15)' : 'transparent' }}>
                 <Txt v="label" style={{ width: 28 }}>{i + 4}</Txt>
                 <ProfileAvatar p={r.profile} size={30} />
                 <Txt v="label" style={{ flex: 1 }} lines={1}>{r.profile?.name ?? 'player'}</Txt>
@@ -121,7 +121,7 @@ export default function Cup() {
               </Row>
             ))}
           </View>
-          <View style={{ marginTop: 14, backgroundColor: C.s1, borderRadius: 18, padding: 12, borderWidth: 1.5, borderColor: myIdx >= 0 ? C.opp : C.s2, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ marginTop: 14, backgroundColor: C.s1, borderRadius: 18, padding: 12, borderWidth: 1.5, borderColor: myIdx >= 0 ? C.opp : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Txt v="label" style={{ width: 34 }}>{myIdx >= 0 ? `#${myIdx + 1}` : '–'}</Txt>
             <View style={{ flex: 1 }}>
               <Txt v="label">{myIdx >= 0 ? 'You' : 'Not ranked yet'}</Txt>

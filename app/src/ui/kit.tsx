@@ -5,19 +5,19 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
-import { C, F, R, fmtPct } from './tokens';
+import { C, F, FONT, R, fmtPct } from './tokens';
 import { Back, Search as SearchIcon, Swords } from './icons';
 
 /* ---------- type ---------- */
 type TxtVariant = 'hero' | 'title' | 'h2' | 'body' | 'label' | 'small' | 'num';
 const T: Record<TxtVariant, TextStyle> = {
-  hero: { fontFamily: F.semi, fontSize: 56, letterSpacing: -2 },
-  title: { fontFamily: F.semi, fontSize: 26, letterSpacing: -0.8 },
-  h2: { fontFamily: F.semi, fontSize: 17, letterSpacing: -0.3 },
-  body: { fontFamily: F.medium, fontSize: 14, letterSpacing: -0.1 },
-  label: { fontFamily: F.semi, fontSize: 14 },
-  small: { fontFamily: F.medium, fontSize: 12.5, color: C.muted },
-  num: { fontFamily: F.semi, fontSize: 15, fontVariant: ['tabular-nums'] },
+  hero: { ...FONT.bold, fontSize: 56, letterSpacing: -2.2 },
+  title: { ...FONT.bold, fontSize: 30, letterSpacing: -0.9, lineHeight: 35 },
+  h2: { ...FONT.semi, fontSize: 18, letterSpacing: -0.35 },
+  body: { ...FONT.regular, fontSize: 15.5, letterSpacing: -0.15, lineHeight: 21 },
+  label: { ...FONT.semi, fontSize: 15, letterSpacing: -0.2 },
+  small: { ...FONT.regular, fontSize: 13.5, color: C.muted, letterSpacing: -0.05 },
+  num: { ...FONT.semi, fontSize: 15.5, fontVariant: ['tabular-nums'] },
 };
 export const Txt = ({ v = 'body', color, style, children, lines }: { v?: TxtVariant; color?: string; style?: StyleProp<TextStyle>; children: ReactNode; lines?: number }) => (
   <Text numberOfLines={lines} style={[{ color: C.ink }, T[v], color ? { color } : null, style]}>{children}</Text>
@@ -27,7 +27,7 @@ export const Txt = ({ v = 'body', color, style, children, lines }: { v?: TxtVari
 export const Money = ({ value, size = 26, color = C.ink }: { value: number; size?: number; color?: string }) => {
   const [w, c] = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split('.');
   return (
-    <Text style={{ fontFamily: F.semi, fontSize: size, letterSpacing: -size * 0.035, color, fontVariant: ['tabular-nums'] }}>
+    <Text style={{ ...FONT.semi, fontSize: size, letterSpacing: -size * 0.035, color, fontVariant: ['tabular-nums'] }}>
       ${w}<Text style={{ color: C.dim }}>.{c}</Text>
     </Text>
   );
@@ -58,13 +58,13 @@ export const Press = ({ onPress, style, children, haptic = true, disabled }: { o
 /* ---------- buttons ---------- */
 type BtnKind = 'brand' | 'white' | 'long' | 'short' | 'ghost';
 const BK: Record<BtnKind, { bg: string; fg: string }> = {
-  brand: { bg: C.brand, fg: '#fff' }, white: { bg: C.white, fg: '#000' }, long: { bg: C.up, fg: '#03140A' },
+  brand: { bg: C.brand, fg: C.onBrand }, white: { bg: C.white, fg: '#000' }, long: { bg: C.up, fg: '#03140A' },
   short: { bg: C.down, fg: '#fff' }, ghost: { bg: C.s2, fg: C.ink },
 };
 export const Btn = ({ title, kind = 'brand', onPress, h = 48, style, disabled, icon }: { title: string; kind?: BtnKind; onPress?: () => void; h?: number; style?: StyleProp<ViewStyle>; disabled?: boolean; icon?: ReactNode }) => (
   <Press onPress={onPress} disabled={disabled} style={[{ height: h, borderRadius: h <= 38 ? 11 : 14, backgroundColor: BK[kind].bg, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: h <= 38 ? 14 : 18 }, style]}>
     {icon}
-    <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: h <= 38 ? 13.5 : 15, letterSpacing: -0.1, color: BK[kind].fg }}>{title}</Text>
+    <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: h <= 38 ? 13.5 : 15, letterSpacing: -0.1, color: BK[kind].fg }}>{title}</Text>
   </Press>
 );
 export const IconBtn = ({ children, onPress, size = 38, dot }: { children: ReactNode; onPress?: () => void; size?: number; dot?: boolean }) => (
@@ -73,20 +73,24 @@ export const IconBtn = ({ children, onPress, size = 38, dot }: { children: React
     {dot ? <View style={{ position: 'absolute', top: 8, right: 9, width: 7, height: 7, borderRadius: 4, backgroundColor: C.opp }} /> : null}
   </Press>
 );
-export const BackBtn = ({ onPress }: { onPress: () => void }) => <IconBtn onPress={onPress} size={34}><Back size={18} color={C.ink} /></IconBtn>;
+export const BackBtn = ({ onPress }: { onPress: () => void }) => (
+  <Press onPress={onPress} style={{ width: 40, height: 40, marginLeft: -8, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+    <Back size={22} color={C.ink} />
+  </Press>
+);
 
 /* ---------- pills, chips, tabs ---------- */
 export const ChangePill = ({ pct }: { pct: number }) => {
   const up = pct >= 0;
   return (
     <View style={{ alignSelf: 'flex-end', backgroundColor: up ? C.upBg : C.downBg, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1, marginTop: 3 }}>
-      <Text style={{ fontFamily: F.semi, fontSize: 11.5, color: up ? C.up : C.down, fontVariant: ['tabular-nums'] }}>{fmtPct(pct)}</Text>
+      <Text style={{ ...FONT.semi, fontSize: 11.5, color: up ? C.up : C.down, fontVariant: ['tabular-nums'] }}>{fmtPct(pct)}</Text>
     </View>
   );
 };
 export const Tag = ({ text, color = C.down }: { text: string; color?: string }) => (
   <View style={{ borderWidth: 1, borderColor: color + '88', borderRadius: 5, paddingHorizontal: 4 }}>
-    <Text style={{ fontFamily: F.semi, fontSize: 9.5, color }}>{text}</Text>
+    <Text style={{ ...FONT.semi, fontSize: 9.5, color }}>{text}</Text>
   </View>
 );
 /** Underlined text tabs (fomo: Watchlist / Tokens / Perps). */
@@ -96,7 +100,7 @@ export const UnderTabs = <K extends string>({ items, value, onChange }: { items:
       const on = it.key === value;
       return (
         <Pressable key={it.key} onPress={() => onChange(it.key)} style={{ paddingBottom: 7, borderBottomWidth: 2, borderBottomColor: on ? C.ink : 'transparent' }}>
-          <Text style={{ fontFamily: F.semi, fontSize: 14.5, color: on ? C.ink : C.dim }}>{it.label}</Text>
+          <Text style={{ ...FONT.semi, fontSize: 14.5, color: on ? C.ink : C.dim }}>{it.label}</Text>
         </Pressable>
       );
     })}
@@ -109,7 +113,7 @@ export const Chips = <K extends string>({ items, value, onChange, light }: { ite
       const on = it.key === value;
       return (
         <Pressable key={it.key} onPress={() => onChange(it.key)} style={{ paddingHorizontal: 11, paddingVertical: 6, borderRadius: 9, backgroundColor: on ? (light ? C.white : C.s2) : 'transparent' }}>
-          <Text style={{ fontFamily: F.medium, fontSize: 12.5, color: on ? (light ? '#000' : C.ink) : C.muted }}>{it.label}</Text>
+          <Text style={{ ...FONT.medium, fontSize: 12.5, color: on ? (light ? '#000' : C.ink) : C.muted }}>{it.label}</Text>
         </Pressable>
       );
     })}
@@ -125,7 +129,7 @@ export const Avatar = ({ name, size = 38, uri, ring, sticker = true }: { name: s
   if (sticker) return <Image source={stickerFor(name)} style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#000' }, border]} contentFit="cover" />;
   return (
     <View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: AV[i][0], alignItems: 'center', justifyContent: 'center' }, border]}>
-      <Text style={{ fontFamily: F.bold, fontSize: size * 0.36, color: '#07071A' }}>{name.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase()}</Text>
+      <Text style={{ ...FONT.bold, fontSize: size * 0.36, color: '#07071A' }}>{name.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase()}</Text>
     </View>
   );
 };
@@ -135,7 +139,7 @@ export const TokenArt = ({ symbol, uri, size = 44 }: { symbol: string; uri?: str
   const m = MAJOR_ART[symbol];
   return (
     <View style={{ width: size, height: size, borderRadius: size * 0.24, backgroundColor: m?.bg ?? C.s2, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: F.bold, fontSize: size * 0.45, color: '#fff' }}>{m?.glyph ?? symbol.slice(0, 1)}</Text>
+      <Text style={{ ...FONT.bold, fontSize: size * 0.45, color: '#fff' }}>{m?.glyph ?? symbol.slice(0, 1)}</Text>
     </View>
   );
 };
@@ -401,7 +405,7 @@ export const SearchBar = ({ value, onChange, placeholder }: { value: string; onC
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, borderRadius: R.md, backgroundColor: C.s1, paddingHorizontal: 12 }}>
     <SearchIcon size={16} color={C.muted} />
     <TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={C.muted} autoCapitalize="none" autoCorrect={false}
-      style={{ flex: 1, color: C.ink, fontFamily: F.medium, fontSize: 14 }} />
+      style={{ flex: 1, color: C.ink, ...FONT.medium, fontSize: 14 }} />
   </View>
 );
 
@@ -450,9 +454,9 @@ export const LiveChart = ({ data, w, h = 240, refLine, refLabel, minSpan = 0.000
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: ex - 6, top: ey - 6, width: 12, height: 12, borderRadius: 6, backgroundColor: lc }, ring]} />
       <View pointerEvents="none" style={{ position: 'absolute', left: ex - 5, top: ey - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: lc, borderWidth: 2, borderColor: '#000' }} />
       <View pointerEvents="none" style={{ position: 'absolute', right: 4, top: Math.max(2, Math.min(h - 24, ey - 11)), backgroundColor: lc, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 3 }}>
-        <Text style={{ fontFamily: F.bold, fontSize: 11, color: '#000' }}>{last >= 1000 ? last.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.toPrecision(5)}</Text>
+        <Text style={{ ...FONT.bold, fontSize: 11, color: '#000' }}>{last >= 1000 ? last.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.toPrecision(5)}</Text>
       </View>
-      {refLine !== undefined && refLabel ? <Text style={{ position: 'absolute', left: 8, top: Math.max(2, Y(refLine) - 18), fontFamily: F.semi, fontSize: 10.5, color: C.brandSoft }}>{refLabel}</Text> : null}
+      {refLine !== undefined && refLabel ? <Text style={{ position: 'absolute', left: 8, top: Math.max(2, Y(refLine) - 18), ...FONT.semi, fontSize: 10.5, color: C.brandSoft }}>{refLabel}</Text> : null}
     </View>
   );
 };

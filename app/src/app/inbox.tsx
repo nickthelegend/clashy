@@ -12,7 +12,7 @@ import { ProfileAvatar } from '@/ui/feed';
 import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, fmtUsd } from '@/ui/tokens';
 
 type Item = { key: string; ts: number; who?: PublicKey; art?: number; title: string; body: string; action?: { label: string; to: Href } };
 
@@ -70,21 +70,21 @@ export default function Inbox() {
         <Row style={{ gap: 12 }}>
           <Lottie name="flame" size={58} loop />
           <View style={{ flex: 1 }}>
-            <Txt v="title" color="#fff" style={{ fontSize: 26, fontFamily: F.display }}>{streak > 0 ? `${streak}-day streak` : 'Start a streak'}</Txt>
+            <Txt v="title" color="#fff" style={{ fontSize: 26, ...FONT.display }}>{streak > 0 ? `${streak}-day streak` : 'Start a streak'}</Txt>
             <Txt v="small" color="#FFE3EE">Save, invest or play once a day to keep it. {p?.bestDayStreak ? `Best ${p.bestDayStreak}.` : ''}</Txt>
           </View>
         </Row>
         <Row style={{ gap: 6, marginTop: 14 }}>
           {Array.from({ length: 7 }, (_, i) => (
             <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 10, backgroundColor: i < filled ? '#fff' : 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' }}>
-              <Txt v="label" color={i < filled ? '#F0468C' : '#fff'} style={{ fontFamily: F.bold }}>{i < filled ? '✓' : i + 1}</Txt>
+              <Txt v="label" color={i < filled ? '#F0468C' : '#fff'} style={{ ...FONT.bold }}>{i < filled ? '✓' : i + 1}</Txt>
             </View>
           ))}
         </Row>
       </View>
       <Txt v="small" style={{ marginTop: 8 }}>{doneToday ? 'Today counts. Come back tomorrow to keep it going.' : streak > 0 ? 'Not yet today: save, invest or play to keep your streak.' : 'Save, invest or play today to start one.'}</Txt>
 
-      <Txt v="small" style={{ fontFamily: F.semi, fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 6 }}>New</Txt>
+      <Txt v="small" style={{ ...FONT.semi, fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 6 }}>New</Txt>
       {!me ? <Pending art={ART.bellArt} title="Sign in" body="Replies, likes, squad challenges and votes show here." action="Sign in" onAction={() => wallet.login?.()} />
         : inbox.status === 'loading' ? <SkeletonRows n={4} /> : inbox.status === 'error' ? <Txt v="small">{inbox.error}</Txt> : inbox.data.length === 0 ? (
           <Pending art={ART.bellArt} title="All caught up" body="Post a call or join a squad: replies, likes, challenges and votes land here." />
@@ -92,7 +92,7 @@ export default function Inbox() {
           <Row key={it.key} style={{ gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
             {it.who ? <ProfileAvatar p={names.get(it.who.toBase58())} size={40} /> : <Image source={it.art} style={{ width: 40, height: 40 }} contentFit="contain" />}
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="label" lines={2}>{it.who ? <Txt v="label" style={{ fontFamily: F.bold }}>{names.get(it.who.toBase58())?.name ?? 'someone'} </Txt> : null}{it.title}</Txt>
+              <Txt v="label" lines={2}>{it.who ? <Txt v="label" style={{ ...FONT.bold }}>{names.get(it.who.toBase58())?.name ?? 'someone'} </Txt> : null}{it.title}</Txt>
               <Txt v="small" lines={2}>{it.body}{it.ts > 1e9 && it.ts < Date.now() / 1000 - 1 ? ` · ${ago(it.ts)} ago` : ''}</Txt>
             </View>
             {it.action ? <Btn title={it.action.label} h={32} onPress={() => router.push(it.action!.to)} /> : null}

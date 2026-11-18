@@ -21,7 +21,7 @@ import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Pending, Row, SkeletonRows
 import { Share, Swords } from '@/ui/icons';
 import { useDeskColumn } from '@/ui/layout';
 import { Badge, CARD, GOLD, HAIR, LevelBar, MemberStack, SquadBanner } from '@/ui/squads/parts';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Chain = ReturnType<typeof useChain>;
 type MemberRow = { wallet: PublicKey; joinedAt: number; deposit: number };
@@ -76,7 +76,7 @@ async function ensurePlayer(chain: Chain) {
 }
 
 const Stat = ({ k, v, color = C.ink, sub }: { k: string; v: string; color?: string; sub?: string }) => (
-  <View style={{ flexBasis: '47%', flexGrow: 1, backgroundColor: '#17171D', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: HAIR }}>
+  <View style={{ flexBasis: '47%', flexGrow: 1, backgroundColor: '#17171D', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14 }}>
     <Txt v="small" lines={1} style={{ fontSize: 12 }}>{k}</Txt>
     <Txt v="title" lines={1} color={color} style={{ fontSize: 22, marginTop: 2, fontVariant: ['tabular-nums'] }}>{v}</Txt>
     {sub ? <Txt v="small" lines={1} style={{ fontSize: 11, marginTop: 1 }}>{sub}</Txt> : null}
@@ -177,18 +177,18 @@ export default function SquadPublic() {
         ) : (
           <>
             {/* banner, crest, name */}
-            <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 14, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR }}>
+            <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 14, borderRadius: 24, backgroundColor: CARD }}>
               <SquadBanner crest={s.crest} height={150}><ClayLoop name="clanCity" width="100%" height={150} cover /></SquadBanner>
               {s.atWar ? <View style={{ position: 'absolute', top: 12, right: 12 }}><Badge text="At war" color={C.opp} /></View> : null}
               <View style={{ paddingHorizontal: 16, paddingTop: 36, paddingBottom: 16 }}>
                 <Row style={{ gap: 8 }}>
                   <Txt v="title" lines={1} style={{ flexShrink: 1, fontSize: 26 }}>{s.name}</Txt>
-                  {isMember ? <Badge text="You're in" color="rgba(91,108,255,0.25)" fg={C.brandSoft} /> : null}
+                  {isMember ? <Badge text="You're in" color="rgba(171,159,242,0.25)" fg={C.brandSoft} /> : null}
                 </Row>
                 <Row style={{ gap: 6, marginTop: 6 }}>
                   <Image source={ART.crown} style={{ width: 16, height: 16 }} contentFit="contain" />
                   <Txt v="small" lines={1} color="#B9B9C3" style={{ flex: 1 }}>
-                    Captain <Txt v="small" color={GOLD} style={{ fontFamily: F.semi }}>{capt?.name ? `@${capt.name}` : short(s.captain.toBase58())}</Txt> · {s.memberCount} member{s.memberCount === 1 ? '' : 's'}
+                    Captain <Txt v="small" color={GOLD} style={{ ...FONT.semi }}>{capt?.name ? `@${capt.name}` : short(s.captain.toBase58())}</Txt> · {s.memberCount} member{s.memberCount === 1 ? '' : 's'}
                   </Txt>
                 </Row>
                 <View style={{ marginTop: 14 }}><LevelBar level={s.level} xp={s.xp} floor={s.levelFloor} next={s.levelNext} /></View>
@@ -225,7 +225,7 @@ export default function SquadPublic() {
               </View>
             ) : null}
             {pastWars.length ? pastWars.map((w) => (
-              <View key={w.key.toBase58()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, paddingHorizontal: 14, minHeight: 60, paddingVertical: 10, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, marginBottom: 8 }}>
+              <View key={w.key.toBase58()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, paddingHorizontal: 14, minHeight: 60, paddingVertical: 10, backgroundColor: CARD, marginBottom: 8 }}>
                 <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: w.result === 'won' ? C.upBg : w.result === 'lost' ? C.downBg : C.s2, alignItems: 'center', justifyContent: 'center' }}>
                   <Swords size={16} color={w.result === 'won' ? C.up : w.result === 'lost' ? C.down : C.muted} />
                 </View>
@@ -236,7 +236,7 @@ export default function SquadPublic() {
                 <Txt v="label" color={w.result === 'won' ? C.up : w.result === 'lost' ? C.down : C.muted}>{w.result === 'won' ? 'Won' : w.result === 'lost' ? 'Lost' : 'Tie'}</Txt>
               </View>
             )) : !liveWar ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 14, backgroundColor: '#0E0E12', borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, padding: 14, backgroundColor: '#0E0E12' }}>
                 <Image source={ART.tileWar} style={{ width: 44, height: 44 }} contentFit="contain" />
                 <Txt v="small" style={{ flex: 1, lineHeight: 18 }}>No wars fought yet. The captain can challenge another squad, chest against chest.</Txt>
               </View>
@@ -244,7 +244,7 @@ export default function SquadPublic() {
 
             {/* members */}
             <Head title="Members" right={`${s.members.length}`} />
-            <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
               {shown.map((m, i) => {
                 const p = prof.get(m.wallet.toBase58());
                 const isCapt = m.wallet.equals(s.captain);
@@ -277,7 +277,7 @@ export default function SquadPublic() {
             {chat.status === 'ready' && chat.data ? (
               <>
                 <Head title="#general" right={chat.data.count ? `${chat.data.count} message${chat.data.count === 1 ? '' : 's'}` : undefined} />
-                <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 14, gap: 12 }}>
+                <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 14, gap: 12 }}>
                   {msgs.length === 0 ? (
                     <Row style={{ gap: 12 }}>
                       <Image source={ART.emptyChats} style={{ width: 44, height: 44 }} contentFit="contain" />

@@ -1,31 +1,56 @@
-// Clashy design tokens (v12: the fomo / pump.fun app look).
-// Pure black, flat surfaces, Inter, numbers as the hero.
+// Clashy design tokens (v13: Nick's Nov 18 reference, a Phantom-style dark wallet redesign).
+// Pure black, no outlined cards, a soft lavender accent with dark text on it, big bold headlines, grey supporting
+// text, list rows on hairlines. Type is SF Pro on Apple devices (the system font: it can't be bundled, so it's only
+// used where the OS has it) and Inter, its closest open match, everywhere else.
+import { Platform, type TextStyle } from 'react-native';
+
 export const C = {
   bg: '#000000',
-  s1: '#111113', // card / input surface
-  s2: '#1C1C1F', // chips, icon buttons, secondary buttons
-  line: '#1C1C1F',
-  ink: '#F5F5F7',
-  muted: '#7C7C86',
-  dim: '#5A5A64',
-  brand: '#5B6CFF', // you, every primary action
-  brandSoft: '#AEB6FF',
+  s1: '#121214', // a raised surface (sheets, the odd grouped list)
+  s2: '#1E1C25', // chips, icon buttons, secondary buttons, the selected chip
+  line: '#1E1E22', // hairlines between rows
+  ink: '#F7F7F8',
+  muted: '#A0A0AA',
+  dim: '#62626C',
+  brand: '#AB9FF2', // you, every primary action
+  onBrand: '#160F33', // text and icons on the lavender
+  brandSoft: '#BDB3F7', // links and secondary accents
   opp: '#F0468C', // the opponent
   up: '#30D158',
   down: '#FF453A',
   upBg: 'rgba(48,209,88,0.14)',
   downBg: 'rgba(255,69,58,0.14)',
-  white: '#F5F5F7',
+  white: '#F7F7F8',
 } as const;
 
+/** Inter family names (loaded by app/_layout.tsx): the fallback where SF Pro isn't on the device. */
 export const F = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
   semi: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
-  /** Headlines and big numbers: Inter Bold, the app's one family (the Archivo italic experiment was rolled back). */
   display: 'Inter_700Bold',
   displayB: 'Inter_700Bold',
+} as const;
+
+const APPLE_WEB = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text"';
+type W = '400' | '500' | '600' | '700' | '800';
+const face = (inter: string, weight: W): TextStyle => Platform.select<TextStyle>({
+  // iOS: the system font is SF Pro, picked by weight
+  ios: { fontFamily: 'System', fontWeight: weight },
+  // web: SF Pro on Apple devices, the matching Inter weight elsewhere
+  web: { fontFamily: `${APPLE_WEB}, ${inter}, Inter, system-ui, sans-serif`, fontWeight: weight },
+  // Android: Inter by name (a weight on a custom family can fall back to Roboto)
+  default: { fontFamily: inter },
+});
+/** Spread into a text style: `{ ...FONT.semi, fontSize: 15 }`. */
+export const FONT = {
+  regular: face(F.regular, '400'),
+  medium: face(F.medium, '500'),
+  semi: face(F.semi, '600'),
+  bold: face(F.bold, '700'),
+  display: face(F.bold, '700'),
+  displayB: face(F.bold, '800'),
 } as const;
 
 export const R = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 } as const;

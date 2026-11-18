@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { Del } from './icons';
-import { C, F } from './tokens';
+import { C, F, FONT } from './tokens';
 
 export type Key = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '.' | '0' | 'del';
 const ROWS: Key[][] = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['.', '0', 'del']];
@@ -82,7 +82,7 @@ export function Keypad({ onKey, onClear, onEnter, decimals = true, compact, acti
                 })}>
                 {k === 'del' ? <Del size={compact ? 24 : 26} color={C.ink} />
                   : k === '.' ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.ink, marginTop: compact ? 10 : 12 }} />
-                    : <Text style={{ fontFamily: F.semi, fontSize: compact ? 23 : 26, color: C.ink, fontVariant: ['tabular-nums'] }}>{k}</Text>}
+                    : <Text style={{ ...FONT.semi, fontSize: compact ? 23 : 26, color: C.ink, fontVariant: ['tabular-nums'] }}>{k}</Text>}
               </Pressable>
             );
           })}

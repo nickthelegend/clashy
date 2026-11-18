@@ -10,7 +10,7 @@ import { CoinToken, coinName } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
 import { ART, Row, Txt } from '@/ui/kit';
 import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
-import { C, F, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, fmtUsd } from '@/ui/tokens';
 
 /** "42s", "3:05", "1h 20m", "2d 4h". */
 export const fmtLeft = (s: number) => {
@@ -29,7 +29,7 @@ export function SectionHead({ title, sub, right }: { title: string; sub?: string
   return (
     <Row style={{ marginTop: 28, marginBottom: 12, gap: 10 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink, letterSpacing: -0.4 }} numberOfLines={1}>{title}</Text>
+        <Text style={{ ...FONT.display, fontSize: 24, color: C.ink, letterSpacing: -0.4 }} numberOfLines={1}>{title}</Text>
         {sub ? <Txt v="small" lines={1}>{sub}</Txt> : null}
       </View>
       {right}
@@ -52,7 +52,7 @@ export function PnlPill({ label, usd }: { label: string; usd: number }) {
   const c = tone(usd);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: usd > 0.004 ? C.upBg : usd < -0.004 ? C.downBg : C.s2, borderRadius: 10, paddingHorizontal: 9, height: 26 }}>
-      <Txt v="small" color={c} style={{ fontFamily: F.semi, fontSize: 12 }}>{label}</Txt>
+      <Txt v="small" color={c} style={{ ...FONT.semi, fontSize: 12 }}>{label}</Txt>
       <Txt v="label" color={c} style={{ fontSize: 13, fontVariant: ['tabular-nums'] }}>{fmtSigned(usd)}</Txt>
     </View>
   );
@@ -61,7 +61,7 @@ export function PnlPill({ label, usd }: { label: string; usd: number }) {
 /** One small stat box in the chest hero. */
 export function Stat({ k, v, color = C.ink }: { k: string; v: string; color?: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 0, backgroundColor: '#1C1C23', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 9, borderWidth: 1, borderColor: HAIR }}>
+    <View style={{ flex: 1, minWidth: 0, backgroundColor: '#1C1C23', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 9 }}>
       <Txt v="small" lines={1} style={{ fontSize: 11 }}>{k}</Txt>
       <Txt v="label" lines={1} color={color} style={{ fontSize: 15, fontVariant: ['tabular-nums'], marginTop: 1 }}>{v}</Txt>
     </View>
@@ -83,7 +83,7 @@ export function VoteBar({ yes, no }: { yes: number; no: number }) {
 
 const Chip = ({ text, color = C.muted, bg = C.s2 }: { text: string; color?: string; bg?: string }) => (
   <View style={{ borderRadius: 9, paddingHorizontal: 8, height: 24, justifyContent: 'center', backgroundColor: bg }}>
-    <Txt v="small" color={color} style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 0.3, fontVariant: ['tabular-nums'] }}>{text}</Txt>
+    <Txt v="small" color={color} style={{ ...FONT.bold, fontSize: 11, letterSpacing: 0.3, fontVariant: ['tabular-nums'] }}>{text}</Txt>
   </View>
 );
 
@@ -94,24 +94,24 @@ export function TradeCard({ sym, side, sizePct, notional, proposer, proposerName
 }) {
   const up = side === 1;
   return (
-    <Animated.View entering={FadeInDown.springify()} style={{ backgroundColor: CARD, borderRadius: 24, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: HAIR }}>
+    <Animated.View entering={FadeInDown.springify()} style={{ backgroundColor: CARD, borderRadius: 24, padding: 14, marginBottom: 10 }}>
       <Row style={{ gap: 12 }}>
         <CoinToken sym={sym} size={52} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: up ? C.up : C.down }} numberOfLines={1}>{up ? '▲ UP' : '▼ DOWN'} · {sym}</Text>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: up ? C.up : C.down }} numberOfLines={1}>{up ? '▲ UP' : '▼ DOWN'} · {sym}</Text>
           <Txt v="small" lines={1}>{coinName(sym)} · {sizePct}% of the chest · {fmtUsd(notional)}</Txt>
         </View>
         {left > 0 ? <Chip text={fmtLeft(left)} color={C.ink} bg="rgba(240,70,140,0.18)" /> : <Chip text="Closed" />}
       </Row>
       <Row style={{ gap: 8, marginTop: 12 }}>
         <ProfileAvatar p={proposer} size={22} />
-        <Txt v="small" lines={1} style={{ flex: 1 }}>Proposed by <Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{proposerName}</Txt></Txt>
+        <Txt v="small" lines={1} style={{ flex: 1 }}>Proposed by <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{proposerName}</Txt></Txt>
       </Row>
       <View style={{ marginTop: 12 }}><VoteBar yes={yes} no={no} /></View>
       <Row style={{ justifyContent: 'space-between', marginTop: 6 }}>
-        <Txt v="small" color={C.up} style={{ fontFamily: F.semi }}>Yes {Math.round(yes * 100)}%</Txt>
+        <Txt v="small" color={C.up} style={{ ...FONT.semi }}>Yes {Math.round(yes * 100)}%</Txt>
         <Txt v="small" style={{ fontSize: 11 }}>over 50% passes early</Txt>
-        <Txt v="small" color={C.down} style={{ fontFamily: F.semi }}>No {Math.round(no * 100)}%</Txt>
+        <Txt v="small" color={C.down} style={{ ...FONT.semi }}>No {Math.round(no * 100)}%</Txt>
       </Row>
       {children ? <View style={{ marginTop: 12, gap: 8 }}>{children}</View> : null}
     </Animated.View>
@@ -124,7 +124,7 @@ export function PositionCard({ sym, side, notional, entry, now, open, pnl, actio
 }) {
   const up = side === 1;
   return (
-    <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: HAIR }}>
+    <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 12, marginBottom: 10 }}>
       <Row style={{ gap: 12 }}>
         <CoinToken sym={sym} size={44} />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -134,7 +134,7 @@ export function PositionCard({ sym, side, notional, entry, now, open, pnl, actio
           </Row>
           <Txt v="small" lines={1} style={{ marginTop: 2 }}>{fmtUsd(notional)} · {fmtUsd(entry)} → {now !== null ? fmtUsd(now) : '…'}</Txt>
         </View>
-        <Text style={{ fontFamily: F.semi, fontSize: 20, color: tone(pnl), fontVariant: ['tabular-nums'] }}>{fmtSigned(pnl)}</Text>
+        <Text style={{ ...FONT.semi, fontSize: 20, color: tone(pnl), fontVariant: ['tabular-nums'] }}>{fmtSigned(pnl)}</Text>
       </Row>
       {action ? <View style={{ marginTop: 10 }}>{action}</View> : null}
     </View>
@@ -146,7 +146,7 @@ export function CrestRing({ crest, size = 76, color }: { crest: number | null; s
   return (
     <View style={{ borderRadius: size * 0.34, borderWidth: 3, borderColor: color, padding: 3 }}>
       <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: '#1C1C22', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-        {crest === null ? <Text style={{ fontFamily: F.display, fontSize: size * 0.45, color: '#3A3A44' }}>?</Text>
+        {crest === null ? <Text style={{ ...FONT.display, fontSize: size * 0.45, color: '#3A3A44' }}>?</Text>
           : <Image source={crestSrc(crest)} style={{ width: size * 0.92, height: size * 0.92 }} contentFit="contain" />}
       </View>
     </View>
@@ -163,8 +163,8 @@ export function SquadVersus({ us, them, usName, themName, usScore, themScore, us
   const side = (crest: number | null, name: string, color: string, score?: string, sub?: string, delay = 0) => (
     <Animated.View entering={FadeInDown.delay(delay).springify()} style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
       <CrestRing crest={crest} color={color} size={72} />
-      <Txt v="label" lines={1} style={{ marginTop: 8, fontFamily: F.semi, fontSize: 15, maxWidth: '100%' }}>{name}</Txt>
-      {score ? <Text style={{ fontFamily: F.display, fontSize: 26, color: score.startsWith('−') ? C.down : score.startsWith('+') ? C.up : C.ink, marginTop: 2, fontVariant: ['tabular-nums'] }}>{score}</Text> : null}
+      <Txt v="label" lines={1} style={{ marginTop: 8, ...FONT.semi, fontSize: 15, maxWidth: '100%' }}>{name}</Txt>
+      {score ? <Text style={{ ...FONT.display, fontSize: 26, color: score.startsWith('−') ? C.down : score.startsWith('+') ? C.up : C.ink, marginTop: 2, fontVariant: ['tabular-nums'] }}>{score}</Text> : null}
       {sub ? <Txt v="small" lines={1} style={{ fontSize: 11 }}>{sub}</Txt> : null}
     </Animated.View>
   );
@@ -172,7 +172,7 @@ export function SquadVersus({ us, them, usName, themName, usScore, themScore, us
     <Row style={{ alignItems: 'flex-start', gap: 6 }}>
       {side(us, usName, C.brand, usScore, usSub)}
       <Animated.View style={[{ marginTop: 26, width: 44, alignItems: 'center' }, vs]}>
-        <Text style={{ fontFamily: F.display, fontSize: 32, color: GOLD, textShadowColor: C.opp, textShadowRadius: 12 }}>VS</Text>
+        <Text style={{ ...FONT.display, fontSize: 32, color: GOLD, textShadowColor: C.opp, textShadowRadius: 12 }}>VS</Text>
       </Animated.View>
       {side(them, themName, them === null ? '#2A2A33' : C.opp, themScore, themSub, 120)}
     </Row>
@@ -185,11 +185,11 @@ export function MemberRow({ members }: { members: { key: string; p?: Profile; na
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
       {members.map((m) => (
         <View key={m.key} style={{ width: 64, alignItems: 'center' }}>
-          <View style={{ borderRadius: 30, borderWidth: 2.5, borderColor: m.captain ? GOLD : m.me ? C.brand : HAIR, padding: 2 }}>
+          <View style={{ borderRadius: 30, borderWidth: 2.5, borderColor: m.captain ? GOLD : m.me ? C.brand : 'transparent', padding: 2 }}>
             <ProfileAvatar p={m.p} size={50} />
           </View>
           {m.captain ? <Image source={ART.crown} style={{ position: 'absolute', top: -8, right: 2, width: 20, height: 20 }} contentFit="contain" /> : null}
-          <Txt v="small" lines={1} color={m.captain ? GOLD : C.ink} style={{ fontFamily: F.semi, fontSize: 11.5, marginTop: 5, maxWidth: 64 }}>{m.name}</Txt>
+          <Txt v="small" lines={1} color={m.captain ? GOLD : C.ink} style={{ ...FONT.semi, fontSize: 11.5, marginTop: 5, maxWidth: 64 }}>{m.name}</Txt>
           {m.me ? <Txt v="small" color={C.dim} style={{ fontSize: 10 }}>you</Txt> : null}
         </View>
       ))}
@@ -200,9 +200,9 @@ export function MemberRow({ members }: { members: { key: string; p?: Profile; na
 /** A coin to trade, in the propose drawer. */
 export function CoinTile({ sym, price, on, onPress }: { sym: string; price: number | null; on: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityLabel={coinName(sym)} style={({ pressed }) => ({ flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 12, borderRadius: 20, backgroundColor: on ? '#1E2040' : '#1B1B21', borderWidth: 2, borderColor: on ? C.brand : '#26262E', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+    <Pressable onPress={onPress} accessibilityLabel={coinName(sym)} style={({ pressed }) => ({ flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 12, borderRadius: 20, backgroundColor: on ? '#221F33' : '#1B1B21', borderWidth: 2, borderColor: on ? C.brand : 'transparent', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
       <CoinToken sym={sym} size={46} />
-      <Txt v="label" style={{ marginTop: 6, fontFamily: F.semi, fontSize: 15 }}>{sym}</Txt>
+      <Txt v="label" style={{ marginTop: 6, ...FONT.semi, fontSize: 15 }}>{sym}</Txt>
       <Txt v="small" lines={1} style={{ fontSize: 11 }}>{price ? fmtUsd(price) : '…'}</Txt>
     </Pressable>
   );
@@ -213,9 +213,9 @@ export function DirPick({ dir, onChange }: { dir: 1 | 2; onChange: (d: 1 | 2) =>
   const b = (d: 1 | 2, arrow: string, label: string, color: string) => {
     const on = dir === d;
     return (
-      <Pressable onPress={() => onChange(d)} style={({ pressed }) => ({ flex: 1, height: 76, borderRadius: 22, backgroundColor: on ? color : '#1B1B21', borderWidth: 2, borderColor: on ? color : '#26262E', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-        <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: on ? '#0A0A0D' : color, lineHeight: 24 }}>{arrow}</Text>
-        <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: on ? '#0A0A0D' : C.ink }}>{label}</Text>
+      <Pressable onPress={() => onChange(d)} style={({ pressed }) => ({ flex: 1, height: 76, borderRadius: 22, backgroundColor: on ? color : '#1B1B21', borderWidth: 2, borderColor: on ? color : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+        <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: on ? '#0A0A0D' : color, lineHeight: 24 }}>{arrow}</Text>
+        <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: on ? '#0A0A0D' : C.ink }}>{label}</Text>
       </Pressable>
     );
   };
@@ -229,7 +229,7 @@ export function Pills<K extends string>({ items, value, onChange }: { items: { k
       {items.map((it) => {
         const on = it.key === value;
         return (
-          <Pressable key={it.key} onPress={() => onChange(it.key)} style={({ pressed }) => ({ flex: 1, minWidth: 0, minHeight: 48, paddingVertical: 6, borderRadius: 16, backgroundColor: on ? C.ink : '#1B1B21', borderWidth: 1, borderColor: on ? C.ink : '#26262E', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+          <Pressable key={it.key} onPress={() => onChange(it.key)} style={({ pressed }) => ({ flex: 1, minWidth: 0, minHeight: 48, paddingVertical: 6, borderRadius: 16, backgroundColor: on ? C.ink : '#1B1B21', borderWidth: 1, borderColor: on ? C.ink : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
             <Txt v="label" color={on ? '#000' : C.ink} lines={1}>{it.label}</Txt>
             {it.sub ? <Txt v="small" lines={1} color={on ? '#3A3A44' : C.muted} style={{ fontSize: 11 }}>{it.sub}</Txt> : null}
           </Pressable>
@@ -243,7 +243,7 @@ export function Pills<K extends string>({ items, value, onChange }: { items: { k
 export function BigGo({ title, onPress, disabled, color = C.opp, fg = '#fff' }: { title: string; onPress: () => void; disabled?: boolean; color?: string; fg?: string }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({ height: 60, borderRadius: 22, backgroundColor: color, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: color, shadowOpacity: disabled ? 0 : 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
-      <Text style={{ fontFamily: F.semi, fontSize: 21, color: fg, paddingHorizontal: 16 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{title}</Text>
+      <Text style={{ ...FONT.semi, fontSize: 21, color: fg, paddingHorizontal: 16 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{title}</Text>
     </Pressable>
   );
 }
@@ -251,14 +251,14 @@ export function BigGo({ title, onPress, disabled, color = C.opp, fg = '#fff' }: 
 /** A rival squad in the challenge drawer. */
 export function RivalRow({ crest, name, line, on, onPress }: { crest: number; name: string; line: string; on: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, padding: 8, borderRadius: 18, marginBottom: 6, backgroundColor: on ? 'rgba(240,70,140,0.14)' : pressed ? '#22222A' : '#1B1B21', borderWidth: 1.5, borderColor: on ? C.opp : '#26262E' })}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, padding: 8, borderRadius: 18, marginBottom: 6, backgroundColor: on ? 'rgba(240,70,140,0.14)' : pressed ? '#22222A' : '#1B1B21', borderWidth: 1.5, borderColor: on ? C.opp : 'transparent' })}>
       <Image source={crestSrc(crest)} style={{ width: 44, height: 44 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{name}</Txt>
         <Txt v="small" lines={1}>{line}</Txt>
       </View>
       <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: on ? C.opp : '#3A3A44', backgroundColor: on ? C.opp : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-        {on ? <Txt v="small" color="#fff" style={{ fontFamily: F.bold, fontSize: 12 }}>✓</Txt> : null}
+        {on ? <Txt v="small" color="#fff" style={{ ...FONT.bold, fontSize: 12 }}>✓</Txt> : null}
       </View>
     </Pressable>
   );
@@ -279,9 +279,9 @@ export function PastWar({ result, rival, us, them }: { result: 'won' | 'lost' | 
 /** An empty or explain card with clay art. */
 export function ArtCard({ art, title, body, children }: { art: ReactNode; title: string; body: string; children?: ReactNode }) {
   return (
-    <View style={{ alignItems: 'center', backgroundColor: CARD, borderRadius: 24, padding: 18, borderWidth: 1, borderColor: HAIR }}>
+    <View style={{ alignItems: 'center', backgroundColor: CARD, borderRadius: 24, padding: 18 }}>
       {art}
-      <Text style={{ fontFamily: F.semi, fontSize: 20, color: C.ink, marginTop: 8, textAlign: 'center' }}>{title}</Text>
+      <Text style={{ ...FONT.semi, fontSize: 20, color: C.ink, marginTop: 8, textAlign: 'center' }}>{title}</Text>
       <Txt v="small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 18 }}>{body}</Txt>
       {children ? <View style={{ alignSelf: 'stretch', marginTop: 14, gap: 8 }}>{children}</View> : null}
     </View>

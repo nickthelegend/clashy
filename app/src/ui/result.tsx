@@ -11,7 +11,7 @@ import { reader } from '@/chain/reads';
 import { ProfileAvatar } from './feed';
 import { Lottie } from './lottie';
 import { Btn, Card, ErrorLine, Row, Txt } from './kit';
-import { C, F, fmtUsd } from './tokens';
+import { C, F, FONT, fmtUsd } from './tokens';
 
 type Chain = ReturnType<typeof useChain>;
 const RP_WIN = 25;
@@ -94,8 +94,8 @@ export function WinExtras({ chain, duel, winnings }: { chain: Chain; duel: Publi
         <Card style={{ padding: 12, backgroundColor: '#0D0D10' }}>
           <Txt v="label">{st.climbed > 0 ? `Up ${st.climbed} spot${st.climbed === 1 ? '' : 's'} in ${st.name}` : `#${st.place} in ${st.name}`}</Txt>
           {st.rows.slice(0, 4).map((r, i) => (
-            <Row key={r.owner.toBase58()} style={{ gap: 10, marginTop: 8, backgroundColor: me && r.owner.equals(me) ? 'rgba(91,108,255,0.14)' : 'transparent', borderRadius: 10, padding: 4 }}>
-              <Txt v="label" style={{ width: 26, fontFamily: F.bold }}>{i + 1}</Txt>
+            <Row key={r.owner.toBase58()} style={{ gap: 10, marginTop: 8, backgroundColor: me && r.owner.equals(me) ? 'rgba(171,159,242,0.15)' : 'transparent', borderRadius: 10, padding: 4 }}>
+              <Txt v="label" style={{ width: 26, ...FONT.bold }}>{i + 1}</Txt>
               <ProfileAvatar p={names.get(r.owner.toBase58())} size={26} />
               <Txt v="label" style={{ flex: 1 }} lines={1}>{names.get(r.owner.toBase58())?.name ?? 'member'}</Txt>
               <Txt v="small">{r.rp} pts</Txt>

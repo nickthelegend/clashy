@@ -19,7 +19,7 @@ import { Heart, Reply, Share } from '@/ui/icons';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { Lottie } from '@/ui/lottie';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 /** The board keeps this many of the newest posts; older ones fall off the ring. */
 const RING = 24;
@@ -61,7 +61,7 @@ function ClashLink({ duel, author }: { duel: PublicKey; author: PublicKey }) {
   const pot = v.stake * 2;
   const payout = (pot - Math.floor((pot * 300) / 10_000)) / USDC;
   return (
-    <Pressable onPress={() => go(`/match/${duel.toBase58()}`)} style={({ pressed }) => ({ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 18, borderWidth: 1, borderColor: EDGE, padding: 12, minHeight: 74, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+    <Pressable onPress={() => go(`/match/${duel.toBase58()}`)} style={({ pressed }) => ({ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#0D0D10', borderRadius: 18, padding: 12, minHeight: 74, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <CoinToken sym={sym} size={46} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>Clash on {coinName(sym)}</Txt>
@@ -70,7 +70,7 @@ function ClashLink({ duel, author }: { duel: PublicKey; author: PublicKey }) {
       {settled ? (
         <View style={{ alignItems: 'flex-end' }}>
           <Txt v="small" style={{ fontSize: 11 }}>{won ? 'Won' : tie ? 'Tie' : 'Lost'}</Txt>
-          <Text style={{ fontFamily: F.bold, fontSize: 16, color: won ? C.up : tie ? C.ink : C.down, fontVariant: ['tabular-nums'] }}>{won ? `+${fmtUsd(payout - v.stake / USDC)}` : tie ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Text>
+          <Text style={{ ...FONT.bold, fontSize: 16, color: won ? C.up : tie ? C.ink : C.down, fontVariant: ['tabular-nums'] }}>{won ? `+${fmtUsd(payout - v.stake / USDC)}` : tie ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -102,7 +102,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
           <Txt v="label" lines={1} style={{ fontSize: 16 }}>{nameOf(author, post.author)}</Txt>
           <Txt v="small" lines={1}>{author ? `Player #${author.number + 1}` : 'No profile yet'}{author && author.dayStreak >= 2 ? ` · 🔥 ${author.dayStreak}-day streak` : ''}</Txt>
         </View>
-        <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>Profile ›</Txt>
+        <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>Profile ›</Txt>
       </Pressable>
 
       <Txt v="body" style={{ marginTop: 14, fontSize: 21, lineHeight: 29, letterSpacing: -0.3 }}>{post.text}</Txt>
@@ -116,7 +116,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
 
       {stock ? (
         <Row style={{ marginTop: 12, gap: 8 }}>
-          <Pressable onPress={() => go(`/stock/${stock.symbol}`)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingLeft: 8, paddingRight: 14, borderRadius: 22, backgroundColor: pressed ? '#1B1B21' : CARD, borderWidth: 1, borderColor: EDGE })}>
+          <Pressable onPress={() => go(`/stock/${stock.symbol}`)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingLeft: 8, paddingRight: 14, borderRadius: 22, backgroundColor: pressed ? '#1B1B21' : CARD })}>
             <Image source={STOCK_ART[stock.symbol]} style={{ width: 26, height: 26 }} contentFit="contain" />
             <Txt v="label" style={{ fontSize: 13.5 }}>{stock.symbol}</Txt>
             <Txt v="small" color={C.ink}>{price ? fmtUsd(price) : '…'}</Txt>
@@ -150,7 +150,7 @@ function Gone({ title, body, top }: { title: string; body: string; top: number }
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: top + 6, paddingHorizontal: S.gutter, paddingBottom: 40 }}>
       <Bar title="Call" />
-      <View style={{ alignItems: 'center', marginTop: 36, backgroundColor: CARD, borderRadius: 26, borderWidth: 1, borderColor: EDGE, paddingHorizontal: 20, paddingVertical: 26 }}>
+      <View style={{ alignItems: 'center', marginTop: 36, backgroundColor: CARD, borderRadius: 26, paddingHorizontal: 20, paddingVertical: 26 }}>
         <Image source={ART.emptySearch} style={{ width: 150, height: 150 }} contentFit="contain" />
         <Txt v="title" style={{ textAlign: 'center', marginTop: 8, fontSize: 24, lineHeight: 30 }}>{title}</Txt>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 8, lineHeight: 19, fontSize: 13.5 }}>{body}</Txt>
@@ -242,7 +242,7 @@ export default function CallThread() {
                 <PostItem post={parent} profiles={profMap} holdings={holdMap} prices={px} me={myProfile} onReply={reply} onLike={like} liking={liking} threadBelow />
               </Pressable>
             ) : post.replyTo !== null ? (
-              <Row style={{ gap: 10, marginTop: 8, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: CARD, borderRadius: 14, borderWidth: 1, borderColor: EDGE }}>
+              <Row style={{ gap: 10, marginTop: 8, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: CARD, borderRadius: 14 }}>
                 <Reply size={15} color={C.dim} />
                 <Txt v="small" style={{ flex: 1 }}>Replying to call #{post.replyTo}, which has scrolled off the board.</Txt>
               </Row>
@@ -269,7 +269,7 @@ export default function CallThread() {
                 ) : null}
               </>
             ) : (
-              <View style={{ alignItems: 'center', marginTop: 18, backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: EDGE, padding: 18 }}>
+              <View style={{ alignItems: 'center', marginTop: 18, backgroundColor: CARD, borderRadius: 24, padding: 18 }}>
                 <Image source={ART.chat} style={{ width: 84, height: 84 }} contentFit="contain" />
                 <Txt v="h2" style={{ marginTop: 6 }}>{post.replies > 0 ? 'Replies scrolled off' : 'No replies yet'}</Txt>
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 18 }}>
@@ -289,11 +289,11 @@ export default function CallThread() {
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10, paddingBottom: insets.bottom + 10 }}>
           <View style={{ ...col, paddingHorizontal: S.gutter }}>
             <Pressable onPress={() => reply(post)} accessibilityLabel="Post your reply"
-              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderRadius: 23, paddingLeft: 6, paddingRight: 6, backgroundColor: pressed ? '#18181E' : CARD, borderWidth: 1, borderColor: EDGE, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderRadius: 23, paddingLeft: 6, paddingRight: 6, backgroundColor: pressed ? '#18181E' : CARD, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
               {myProfile ? <ProfileAvatar p={myProfile} size={34} /> : <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.s2 }} />}
               <Txt v="body" color={C.muted} style={{ flex: 1, fontSize: 15 }} lines={1}>{myProfile ? 'Post your reply' : wallet.status === 'out' ? 'Sign in to reply' : 'Post your reply'}</Txt>
               <View style={{ height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: C.brand, justifyContent: 'center' }}>
-                <Txt v="label" color="#fff" style={{ fontSize: 13 }}>Reply</Txt>
+                <Txt v="label" color={C.onBrand} style={{ fontSize: 13 }}>Reply</Txt>
               </View>
             </Pressable>
           </View>

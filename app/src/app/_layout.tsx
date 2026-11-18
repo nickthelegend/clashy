@@ -24,7 +24,7 @@ if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
 if (typeof document !== 'undefined' && !document.getElementById('clashy-web-css')) {
   const el = document.createElement('style');
   el.id = 'clashy-web-css';
-  el.textContent = 'input,textarea{outline:none!important;caret-color:#5B6CFF}'
+  el.textContent = 'input,textarea{outline:none!important;caret-color:#AB9FF2}'
     + '[role=button]:focus-visible,a:focus-visible{outline:2px solid #AEB6FF;outline-offset:2px}'
     + 'html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;background:#000}'
     + 'input::placeholder,textarea::placeholder{color:#5A5A64}';

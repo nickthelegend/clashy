@@ -22,7 +22,7 @@ import { Back, Gear, Heart, Reply, Share, Swords, WalletI } from './icons';
 import { ART, AVATARS, BADGES, Bone, Btn, ChangePill, Chips, ErrorLine, Money, Pending, RANKS, Row, SkeletonRows, Txt, rankFor } from './kit';
 import { Sheet } from './sheet';
 import { useDeskColumn } from './layout';
-import { C, F, S, fmtUsd } from './tokens';
+import { C, F, FONT, S, fmtUsd } from './tokens';
 
 const CARD = '#15151B';
 const HAIR = '#23232B';
@@ -156,7 +156,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
 
       <View style={{ marginTop: 12, paddingHorizontal: 4 }}>
         {prof.status === 'loading' ? <Bone w={180} h={28} r={8} /> : (
-          <Txt v="title" lines={1} style={{ fontFamily: F.display, fontSize: 30, letterSpacing: -0.6, lineHeight: 36 }}>{handle}</Txt>
+          <Txt v="title" lines={1} style={{ ...FONT.display, fontSize: 30, letterSpacing: -0.6, lineHeight: 36 }}>{handle}</Txt>
         )}
         <Txt v="small" lines={1} style={{ marginTop: 2 }}>
           {[p ? `Player #${p.number + 1}` : null, clan ? clan.name : null, short(id)].filter(Boolean).join(' · ')}
@@ -175,7 +175,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
 
       {/* ---------- track record ---------- */}
       <View style={{ marginTop: 24 }}>
-        <Txt v="small" style={{ fontFamily: F.semi, letterSpacing: 0.2 }}>Net worth</Txt>
+        <Txt v="small" style={{ ...FONT.semi, letterSpacing: 0.2 }}>Net worth</Txt>
         <View style={{ marginTop: 2, minHeight: 56, justifyContent: 'center' }}>
           {worthReady ? <Money value={worth} size={48} /> : <Bone w={190} h={40} r={10} />}
         </View>
@@ -185,7 +185,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
           </View>
           <Txt v="small">today</Txt>
           <Txt v="small" color={C.dim}>·</Txt>
-          <Txt v="small" color={tone(allTime)} style={{ fontFamily: F.semi }}>{signed(allTime)}</Txt>
+          <Txt v="small" color={tone(allTime)} style={{ ...FONT.semi }}>{signed(allTime)}</Txt>
           <Txt v="small">all time</Txt>
         </Row>
         <Row style={{ gap: 8, marginTop: 14 }}>
@@ -194,7 +194,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
           <Part label="Stocks" value={port.status === 'ready' && (positions.length === 0 || prices.status === 'ready') ? stockValue : null} onPress={isMe ? () => router.push('/stash' as never) : undefined} />
         </Row>
 
-        <View style={{ marginTop: 16, backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, paddingTop: 14, paddingBottom: 10, overflow: 'hidden' }}>
+        <View style={{ marginTop: 16, backgroundColor: CARD, borderRadius: 22, paddingTop: 14, paddingBottom: 10, overflow: 'hidden' }}>
           <Row style={{ paddingHorizontal: 14, justifyContent: 'space-between' }}>
             <Txt v="label">P&amp;L</Txt>
             {series.length ? <Txt v="label" color={tone(delta)}>{signed(delta)} <Txt v="small">{range === 'all' ? 'all time' : `past ${range}`}</Txt></Txt> : null}
@@ -221,18 +221,18 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         <Stat value={rec.status === 'loading' ? null : decided ? `${Math.round((wins / decided) * 100)}%` : '–'} label="Win rate" />
         <Stat value={prof.status === 'loading' ? null : String(p?.dayStreak ?? 0)} label="Day streak" />
       </Row>
-      <Pressable onPress={() => router.push('/leaderboard')} style={({ pressed }) => ({ marginTop: 8, backgroundColor: pressed ? '#1A1A21' : CARD, borderRadius: 18, borderWidth: 1, borderColor: HAIR, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 })}>
+      <Pressable onPress={() => router.push('/leaderboard')} style={({ pressed }) => ({ marginTop: 8, backgroundColor: pressed ? '#1A1A21' : CARD, borderRadius: 18, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 })}>
         <Image source={rank.src} style={{ width: 44, height: 44 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Row style={{ justifyContent: 'space-between' }}>
-            <Txt v="label" style={{ fontFamily: F.semi, fontSize: 16 }} color={rank.color}>{rank.label}</Txt>
+            <Txt v="label" style={{ ...FONT.semi, fontSize: 16 }} color={rank.color}>{rank.label}</Txt>
             <Txt v="small" lines={1}>{next ? `${r?.rp ?? 0} / ${next.pts} RP to ${next.label}` : `${r?.rp ?? 0} RP · top tier`}</Txt>
           </Row>
           <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s2, marginTop: 8, overflow: 'hidden' }}>
             <View style={{ height: 6, borderRadius: 3, backgroundColor: rank.color, width: `${next ? Math.min(100, Math.max(3, (((r?.rp ?? 0) - rank.pts) / (next.pts - rank.pts)) * 100)) : 100}%` }} />
           </View>
         </View>
-        <Txt v="small" style={{ fontFamily: F.semi, fontSize: 18 }}>›</Txt>
+        <Txt v="small" style={{ ...FONT.semi, fontSize: 18 }}>›</Txt>
       </Pressable>
 
       {/* ---------- tabs ---------- */}
@@ -248,7 +248,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
             <Pressable key={k} onPress={() => { Haptics.selectionAsync(); setTab(k); }} style={{ flex: 1, alignItems: 'center', paddingTop: 6, minHeight: 44, justifyContent: 'flex-end' }}>
               <Row style={{ gap: 4, paddingBottom: 9 }}>
                 <Txt v="label" color={on ? C.ink : C.dim} style={{ fontSize: 14 }}>{label}</Txt>
-                {n ? <Txt v="small" color={on ? C.brandSoft : C.dim} style={{ fontSize: 11, fontFamily: F.semi }}>{n}</Txt> : null}
+                {n ? <Txt v="small" color={on ? C.brandSoft : C.dim} style={{ fontSize: 11, ...FONT.semi }}>{n}</Txt> : null}
               </Row>
               <View style={{ height: 2.5, width: '70%', borderRadius: 2, backgroundColor: on ? C.brand : 'transparent', marginBottom: -1 }} />
             </Pressable>
@@ -273,7 +273,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
                       <Image source={STOCK_ART[h.stock.symbol]} style={{ width: 42, height: 42 }} contentFit="contain" />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Row style={{ gap: 6 }}><Txt v="label" lines={1} style={{ flexShrink: 1 }}>{h.stock.name}</Txt><Txt v="small" style={{ fontFamily: F.semi, fontSize: 11 }} color={C.brandSoft}>{h.stock.symbol}</Txt></Row>
+                      <Row style={{ gap: 6 }}><Txt v="label" lines={1} style={{ flexShrink: 1 }}>{h.stock.name}</Txt><Txt v="small" style={{ ...FONT.semi, fontSize: 11 }} color={C.brandSoft}>{h.stock.symbol}</Txt></Row>
                       <Txt v="small" lines={1} style={{ marginTop: 2 }}>{sh.toFixed(4)} sh{h.shares > 0 ? ` · paid ${fmtUsd(h.cost)}` : ' · in wallet'}</Txt>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
@@ -301,14 +301,14 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
             {BADGES.map((b) => {
               const got = earned[b.key];
               return (
-                <View key={b.key} style={{ width: '48.5%', backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: got ? GOLD + '55' : HAIR, padding: 12, alignItems: 'center', overflow: 'hidden' }}>
+                <View key={b.key} style={{ width: '48.5%', backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: got ? GOLD + '55' : 'transparent', padding: 12, alignItems: 'center', overflow: 'hidden' }}>
                   {got ? <LinearGradient colors={[GOLD + '26', 'transparent']} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 110 }} /> : null}
                   <Image source={b.src} style={{ width: 96, height: 96, opacity: got ? 1 : 0.25 }} contentFit="contain" />
-                  {!got ? <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}><Txt v="small" style={{ fontSize: 9.5, fontFamily: F.bold, letterSpacing: 0.6 }}>Locked</Txt></View> : null}
-                  <Txt v="label" style={{ marginTop: 6, fontFamily: F.semi, fontSize: 15, textAlign: 'center' }} lines={1}>{b.label}</Txt>
+                  {!got ? <View style={{ position: 'absolute', top: 10, right: 10, backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}><Txt v="small" style={{ fontSize: 9.5, ...FONT.bold, letterSpacing: 0.6 }}>Locked</Txt></View> : null}
+                  <Txt v="label" style={{ marginTop: 6, ...FONT.semi, fontSize: 15, textAlign: 'center' }} lines={1}>{b.label}</Txt>
                   <View style={{ marginTop: 6, minHeight: 32, justifyContent: 'center' }}>
                     {got ? (
-                      <View style={{ backgroundColor: C.upBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}><Txt v="small" color={C.up} style={{ fontFamily: F.semi, fontSize: 11.5 }}>Earned</Txt></View>
+                      <View style={{ backgroundColor: C.upBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}><Txt v="small" color={C.up} style={{ ...FONT.semi, fontSize: 11.5 }}>Earned</Txt></View>
                     ) : <Txt v="small" style={{ textAlign: 'center', fontSize: 11.5, lineHeight: 15 }}>{progress[b.key] ?? how[b.key]}</Txt>}
                   </View>
                 </View>
@@ -347,9 +347,9 @@ function Pill({ title, kind, onPress, icon, disabled }: { title: string; kind: '
 
 function Chip({ text, color, art }: { text: string; color: string; art?: number }) {
   return (
-    <Row style={{ gap: 4, height: 26, paddingLeft: art ? 4 : 9, paddingRight: 9, borderRadius: 13, backgroundColor: C.s1, borderWidth: 1, borderColor: HAIR }}>
+    <Row style={{ gap: 4, height: 26, paddingLeft: art ? 4 : 9, paddingRight: 9, borderRadius: 13, backgroundColor: C.s1 }}>
       {art ? <Image source={art} style={{ width: 18, height: 18 }} contentFit="contain" /> : null}
-      <Txt v="small" color={color} style={{ fontFamily: F.semi, fontSize: 12 }}>{text}</Txt>
+      <Txt v="small" color={color} style={{ ...FONT.semi, fontSize: 12 }}>{text}</Txt>
     </Row>
   );
 }
@@ -365,8 +365,8 @@ function Part({ label, value, onPress }: { label: string; value: number | null; 
 
 function Stat({ value, label }: { value: string | null; label: string }) {
   return (
-    <View style={{ flex: 1, backgroundColor: CARD, borderRadius: 18, borderWidth: 1, borderColor: HAIR, paddingVertical: 14, paddingHorizontal: 12 }}>
-      {value === null ? <Bone w={40} h={26} r={6} /> : <Txt v="title" style={{ fontFamily: F.display, fontSize: 28, letterSpacing: -0.5, lineHeight: 32 }} color={value === '–' ? C.dim : C.ink}>{value}</Txt>}
+    <View style={{ flex: 1, backgroundColor: CARD, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 12 }}>
+      {value === null ? <Bone w={40} h={26} r={6} /> : <Txt v="title" style={{ ...FONT.display, fontSize: 28, letterSpacing: -0.5, lineHeight: 32 }} color={value === '–' ? C.dim : C.ink}>{value}</Txt>}
       <Txt v="small" style={{ marginTop: 4, fontSize: 11.5 }} lines={1}>{label}</Txt>
     </View>
   );
@@ -438,7 +438,7 @@ function ClashRow({ d, rival }: { d: DuelRow; rival?: Profile }) {
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>vs {rival ? `@${rival.name}` : short(d.rival.toBase58())}</Txt>
-        <Txt v="small" lines={1} style={{ marginTop: 2 }}><Txt v="small" color={col} style={{ fontFamily: F.semi }}>{res}</Txt> · {COIN_SYMBOLS[d.coin] ?? '?'} · {ago(d.endTs)} ago</Txt>
+        <Txt v="small" lines={1} style={{ marginTop: 2 }}><Txt v="small" color={col} style={{ ...FONT.semi }}>{res}</Txt> · {COIN_SYMBOLS[d.coin] ?? '?'} · {ago(d.endTs)} ago</Txt>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Txt v="num" color={col}>{d.won === null ? '±$0.00' : signed(pnl)}</Txt>
@@ -455,10 +455,10 @@ function CallCard({ post, positions, prices, duels, owner }: { post: Post; posit
   const duel = post.kind === 2 ? duels.find((d) => d.key.equals(post.refkey)) : undefined;
   const tag = post.replyTo !== null ? { t: 'Reply', c: C.muted } : post.kind === 1 ? { t: 'Call', c: C.brandSoft } : post.kind === 2 ? { t: 'Clash', c: C.opp } : { t: 'Post', c: C.muted };
   return (
-    <View style={{ backgroundColor: CARD, borderRadius: 20, borderWidth: 1, borderColor: HAIR, padding: 14, marginBottom: 10 }}>
+    <View style={{ backgroundColor: CARD, borderRadius: 20, padding: 14, marginBottom: 10 }}>
       <Row style={{ gap: 8 }}>
         <View style={{ borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: tag.c + '22' }}>
-          <Txt v="small" color={tag.c} style={{ fontFamily: F.bold, fontSize: 10, letterSpacing: 0.6 }}>{tag.t}</Txt>
+          <Txt v="small" color={tag.c} style={{ ...FONT.bold, fontSize: 10, letterSpacing: 0.6 }}>{tag.t}</Txt>
         </View>
         <Txt v="small">{ago(post.ts)} ago</Txt>
         <View style={{ flex: 1 }} />
@@ -471,7 +471,7 @@ function CallCard({ post, positions, prices, duels, owner }: { post: Post; posit
           holding={pos ? { owner, stock, shares: pos.shares, cost: pos.cost, realized: pos.realized, soldUsdc: 0 } : undefined} />
       ) : null}
       {duel ? (
-        <Row style={{ marginTop: 10, gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 }}>
+        <Row style={{ marginTop: 10, gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, padding: 12 }}>
           <Image source={ART.tileDuel} style={{ width: 40, height: 40 }} contentFit="contain" />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Txt v="label" lines={1}>Clash on {COIN_SYMBOLS[duel.coin] ?? '?'}</Txt>
@@ -503,10 +503,10 @@ function EditProfileSheet({ open, onClose, profile, onSaved }: { open: boolean; 
   };
   return (
     <Sheet open={open} onClose={onClose} title="Edit profile">
-      <Row style={{ gap: 12, marginTop: 6, marginBottom: 14, backgroundColor: '#1B1B21', borderRadius: 20, padding: 12, borderWidth: 1, borderColor: '#26262E' }}>
+      <Row style={{ gap: 12, marginTop: 6, marginBottom: 14, backgroundColor: '#1B1B21', borderRadius: 20, padding: 12 }}>
         <Image source={AVATARS[pick % AVATARS.length]} style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#000' }} contentFit="cover" />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt v="label" lines={1} style={{ fontFamily: F.semi, fontSize: 18 }}>@{profile.name}</Txt>
+          <Txt v="label" lines={1} style={{ ...FONT.semi, fontSize: 18 }}>@{profile.name}</Txt>
           <Txt v="small" style={{ marginTop: 2 }}>Your name is yours for good. Pick an avatar; it saves on Solana and Clashy pays the fee.</Txt>
         </View>
       </Row>
@@ -519,7 +519,7 @@ function EditProfileSheet({ open, onClose, profile, onSaved }: { open: boolean; 
               <Image source={src} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: '#000' }} contentFit="cover" />
               {profile.avatar === i ? (
                 <View style={{ position: 'absolute', bottom: -2, alignSelf: 'center', backgroundColor: C.s2, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Txt v="small" style={{ fontSize: 10, fontFamily: F.semi }} color={C.ink}>Now</Txt>
+                  <Txt v="small" style={{ fontSize: 10, ...FONT.semi }} color={C.ink}>Now</Txt>
                 </View>
               ) : null}
             </Pressable>
@@ -544,12 +544,12 @@ export function ProfileSignedOut({ onSignIn, error, loading }: { onSignIn?: () =
       </View>
       <View style={{ marginTop: -52, paddingLeft: 10 }}>
         <View style={{ alignSelf: 'flex-start', padding: 4, borderRadius: 60, backgroundColor: C.bg }}>
-          <View style={{ width: 106, height: 106, borderRadius: 53, borderWidth: 2.5, borderColor: C.s2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: C.s1 }}>
+          <View style={{ width: 106, height: 106, borderRadius: 53, borderWidth: 2.5, borderColor: C.s2, alignItems: 'center', justifyContent: 'center', backgroundColor: C.s1 }}>
             <Image source={ART.emptyProfile} style={{ width: 78, height: 78 }} contentFit="contain" />
           </View>
         </View>
       </View>
-      <Txt v="title" style={{ fontFamily: F.display, fontSize: 30, marginTop: 14, lineHeight: 36 }}>Your track record</Txt>
+      <Txt v="title" style={{ ...FONT.display, fontSize: 30, marginTop: 14, lineHeight: 36 }}>Your track record</Txt>
       <Txt v="body" color={C.muted} style={{ marginTop: 6, lineHeight: 20 }}>
         Sign in to get your Clashy wallet. Every clash you settle, every stock you buy and every call you post builds your profile, on chain.
       </Txt>
@@ -558,9 +558,9 @@ export function ProfileSignedOut({ onSignIn, error, loading }: { onSignIn?: () =
       )}
       <Row style={{ gap: 8, marginTop: 18 }}>
         {[['Net worth', ART.coinsPile], ['P&L line', ART.tileLine], ['Trophies', ART.winTrophy]].map(([t, a]) => (
-          <View key={t as string} style={{ flex: 1, backgroundColor: CARD, borderRadius: 18, borderWidth: 1, borderColor: HAIR, padding: 12, alignItems: 'center' }}>
+          <View key={t as string} style={{ flex: 1, backgroundColor: CARD, borderRadius: 18, padding: 12, alignItems: 'center' }}>
             <Image source={a as number} style={{ width: 56, height: 56 }} contentFit="contain" />
-            <Txt v="small" style={{ marginTop: 6, fontFamily: F.semi }} color={C.ink}>{t as string}</Txt>
+            <Txt v="small" style={{ marginTop: 6, ...FONT.semi }} color={C.ink}>{t as string}</Txt>
           </View>
         ))}
       </Row>

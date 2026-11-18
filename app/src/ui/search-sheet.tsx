@@ -20,7 +20,7 @@ import { Search as SearchIcon } from './icons';
 import { ART, CRESTS, Row, Sparkline, Txt, rankFor } from './kit';
 import { MarketLogo } from './practice-kit';
 import { Sheet } from './sheet';
-import { C, F } from './tokens';
+import { C, F, FONT } from './tokens';
 
 const HAIR = '#24242B';
 const RECENT = 'clashy:search:recent:v1';
@@ -73,7 +73,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: on }}
       style={({ pressed }) => ({ height: 34, paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, justifyContent: 'center', borderColor: on ? 'rgba(48,209,88,0.35)' : '#2E2E36', backgroundColor: on ? 'rgba(48,209,88,0.12)' : 'transparent', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-      <Text style={{ fontFamily: F.semi, fontSize: 13.5, color: on ? C.up : C.ink }}>{label}</Text>
+      <Text style={{ ...FONT.semi, fontSize: 13.5, color: on ? C.up : C.ink }}>{label}</Text>
     </Pressable>
   );
 }
@@ -197,10 +197,10 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
         <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Search players, squads, stocks and coins…" placeholderTextColor={C.dim}
           autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search"
           onSubmitEditing={() => { if (hits[0]) open(hits[0]); }}
-          style={{ flex: 1, minWidth: 0, height: 50, color: C.ink, fontFamily: F.medium, fontSize: 16.5 }} />
+          style={{ flex: 1, minWidth: 0, height: 50, color: C.ink, ...FONT.medium, fontSize: 16.5 }} />
         {q ? (
           <Pressable onPress={() => setQ('')} accessibilityLabel="Clear search" hitSlop={8} style={({ pressed }) => ({ width: 30, height: 30, borderRadius: 15, backgroundColor: pressed ? '#2A2A33' : C.s2, alignItems: 'center', justifyContent: 'center' })}>
-            <Text style={{ color: C.ink, fontFamily: F.bold, fontSize: 12 }}>✕</Text>
+            <Text style={{ color: C.ink, ...FONT.bold, fontSize: 12 }}>✕</Text>
           </Pressable>
         ) : null}
       </Row>
@@ -262,7 +262,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
               return (
                 <Pressable key={owner} onPress={() => open({ key: `u:${owner}`, href: `/u/${owner}`, title: p?.name ?? 'Player', sub: `${r.rp} pts`, pic: { kind: 'player', owner } })} accessibilityRole="button" accessibilityLabel={p?.name}
                   style={({ pressed }) => ({ width: 140, alignItems: 'center', borderRadius: 16, backgroundColor: pressed ? '#202027' : '#1A1A20', paddingVertical: 14, paddingHorizontal: 8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-                  <Txt v="small" color={i === 0 ? '#FFD66B' : C.muted} style={{ fontFamily: F.semi }}>#{i + 1}</Txt>
+                  <Txt v="small" color={i === 0 ? '#FFD66B' : C.muted} style={{ ...FONT.semi }}>#{i + 1}</Txt>
                   <View style={{ marginTop: 6 }}><ProfileAvatar p={p} size={52} /></View>
                   <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '100%' }}>{p?.name}</Txt>
                   <Txt v="small" lines={1}>{rankFor(r.rp).label} · {r.rp} pts</Txt>
@@ -305,7 +305,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
 const Kbd = ({ k, label }: { k: string; label?: string }) => (
   <Row style={{ gap: 6 }}>
     <View style={{ minWidth: 26, height: 22, paddingHorizontal: 6, borderRadius: 6, borderWidth: 1, borderColor: '#34343E', alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontFamily: F.semi, fontSize: 11, color: C.muted }}>{k}</Text>
+      <Text style={{ ...FONT.semi, fontSize: 11, color: C.muted }}>{k}</Text>
     </View>
     {label ? <Txt v="small" style={{ fontSize: 12 }}>{label}</Txt> : null}
   </Row>

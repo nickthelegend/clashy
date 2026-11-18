@@ -8,7 +8,7 @@ import type { Profile } from '@/chain/social';
 import { COIN_SYMBOLS } from '@/chain/client';
 import { ProfileAvatar, STOCK_ART } from './feed';
 import { ART, Txt } from './kit';
-import { C, F, fmtUsd } from './tokens';
+import { C, F, FONT, fmtUsd } from './tokens';
 
 const COIN_NAME: Record<string, string> = { SOL: 'Solana', BTC: 'Bitcoin', ETH: 'Ethereum', NVDA: 'NVIDIA', TSLA: 'Tesla', AAPL: 'Apple', SPY: 'S&P 500', GOOGL: 'Alphabet' };
 const COIN_COLOR: Record<string, string> = { SOL: '#9B6BFF', BTC: '#F7931A', ETH: '#7C8CFF', NVDA: '#5B6CFF', TSLA: '#F0468C', AAPL: '#E8E2D4', SPY: '#FFC94A', GOOGL: '#3DDC97' };
@@ -38,7 +38,7 @@ export function CoinToken({ sym, size = 120 }: { sym: string; size?: number }) {
   const c = COIN_COLOR[sym] ?? C.brand;
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: c, alignItems: 'center', justifyContent: 'center', borderWidth: size * 0.06, borderColor: 'rgba(255,255,255,0.35)' }}>
-      <Text style={{ fontFamily: F.display, fontSize: size * 0.3, color: '#0A0A0D' }}>{sym}</Text>
+      <Text style={{ ...FONT.display, fontSize: size * 0.3, color: '#0A0A0D' }}>{sym}</Text>
     </View>
   );
 }
@@ -52,20 +52,20 @@ export function FaceOff({ me, rival, meLabel = 'You', rivalLabel, size = 92 }: {
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
       <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', width: size + 30 }}>
         <View style={{ borderRadius: size, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={me} size={size} /></View>
-        <Txt v="label" style={{ marginTop: 8, fontFamily: F.semi, fontSize: 16 }} lines={1}>{meLabel}</Txt>
+        <Txt v="label" style={{ marginTop: 8, ...FONT.semi, fontSize: 16 }} lines={1}>{meLabel}</Txt>
       </Animated.View>
       <Animated.View style={vs}>
-        <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#FFC94A', textShadowColor: C.opp, textShadowRadius: 12 }}>VS</Text>
+        <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: '#FFC94A', textShadowColor: C.opp, textShadowRadius: 12 }}>VS</Text>
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(120).springify()} style={{ alignItems: 'center', width: size + 30 }}>
         <View style={{ borderRadius: size, borderWidth: 4, borderColor: rival ? C.opp : '#2A2A33', padding: 3 }}>
           {rival === null ? (
             <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#1C1C22', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontFamily: F.display, fontSize: size * 0.45, color: '#3A3A44' }}>?</Text>
+              <Text style={{ ...FONT.display, fontSize: size * 0.45, color: '#3A3A44' }}>?</Text>
             </View>
           ) : <ProfileAvatar p={rival} size={size} />}
         </View>
-        <Txt v="label" style={{ marginTop: 8, fontFamily: F.semi, fontSize: 16 }} lines={1} color={rival === null ? C.muted : C.ink}>{rivalLabel ?? 'Rival'}</Txt>
+        <Txt v="label" style={{ marginTop: 8, ...FONT.semi, fontSize: 16 }} lines={1} color={rival === null ? C.muted : C.ink}>{rivalLabel ?? 'Rival'}</Txt>
       </Animated.View>
     </View>
   );
@@ -82,12 +82,12 @@ export function CoinRoll({ pool, landed, size = 150 }: { pool: string[]; landed?
   const sym = landed ?? pool[i] ?? '…';
   return (
     <View style={{ alignItems: 'center' }}>
-      <View style={{ width: size + 40, height: size + 40, borderRadius: 36, backgroundColor: '#101015', borderWidth: 2, borderColor: landed ? '#FFC94A' : '#26262E', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <View style={{ width: size + 40, height: size + 40, borderRadius: 36, backgroundColor: '#101015', borderWidth: 2, borderColor: landed ? '#FFC94A' : 'transparent', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         <Animated.View key={landed ? `l-${sym}` : `s-${i}`} entering={landed ? ZoomIn.springify().damping(9) : FadeIn.duration(80)}>
           <CoinToken sym={sym} size={size} />
         </Animated.View>
       </View>
-      <Text style={{ fontFamily: F.display, fontSize: 34, color: C.ink, marginTop: 12, letterSpacing: -0.5 }}>{landed ? coinName(sym) : 'Rolling…'}</Text>
+      <Text style={{ ...FONT.display, fontSize: 34, color: C.ink, marginTop: 12, letterSpacing: -0.5 }}>{landed ? coinName(sym) : 'Rolling…'}</Text>
       <Txt v="small" color={landed ? '#FFC94A' : C.muted}>{landed ? 'Rolled by MagicBlock VRF' : 'MagicBlock VRF is picking one for both of you'}</Txt>
     </View>
   );
@@ -97,8 +97,8 @@ export function CoinRoll({ pool, landed, size = 150 }: { pool: string[]; landed?
 export function CallButtons({ onUp, onDown, disabled, upLabel = 'UP', downLabel = 'DOWN' }: { onUp: () => void; onDown: () => void; disabled?: boolean; upLabel?: string; downLabel?: string }) {
   const big = (label: string, arrow: string, color: string, on: () => void) => (
     <Pressable onPress={on} disabled={disabled} style={({ pressed }) => ({ flex: 1, height: 132, borderRadius: 28, backgroundColor: color, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }], opacity: disabled ? 0.5 : 1, shadowColor: color, shadowOpacity: 0.6, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
-      <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#0A0A0D', lineHeight: 46 }}>{arrow}</Text>
-      <Text style={{ fontFamily: F.display, fontSize: 34, color: '#0A0A0D' }}>{label}</Text>
+      <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: '#0A0A0D', lineHeight: 46 }}>{arrow}</Text>
+      <Text style={{ ...FONT.display, fontSize: 34, color: '#0A0A0D' }}>{label}</Text>
     </Pressable>
   );
   return (
@@ -124,9 +124,9 @@ export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirC
       <View style={{ alignItems: 'center', marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: onRollup ? 'rgba(240,70,140,0.16)' : '#1A1A20', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 }}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.opp }} />
-          <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{onRollup ? 'LIVE' : 'Final bell · settling'}</Txt>
+          <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{onRollup ? 'LIVE' : 'Final bell · settling'}</Txt>
         </View>
-        <Text style={{ fontFamily: F.display, fontSize: 64, color: C.ink, marginTop: 10, letterSpacing: -1 }}>{left !== null ? (left >= 60 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : `${Math.ceil(left)}`) : '…'}</Text>
+        <Text style={{ ...FONT.display, fontSize: 64, color: C.ink, marginTop: 10, letterSpacing: -1 }}>{left !== null ? (left >= 60 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : `${Math.ceil(left)}`) : '…'}</Text>
         <Txt v="small">{coinName(sym)} {price ? fmtUsd(price) : '…'} · {move >= 0 ? '+' : ''}{move.toFixed(3)}% since the start</Txt>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -146,11 +146,11 @@ export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirC
         ) : (
           <>
             <View>
-              <Text style={{ fontFamily: F.display, fontSize: 30, color: myPnl >= 0 ? C.up : C.down }}>{fmt(myPnl)}</Text>
+              <Text style={{ ...FONT.display, fontSize: 30, color: myPnl >= 0 ? C.up : C.down }}>{fmt(myPnl)}</Text>
               <Txt v="small">You called {myCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontFamily: F.display, fontSize: 30, color: theirPnl >= 0 ? C.up : C.down }}>{fmt(theirPnl)}</Text>
+              <Text style={{ ...FONT.display, fontSize: 30, color: theirPnl >= 0 ? C.up : C.down }}>{fmt(theirPnl)}</Text>
               <Txt v="small">{rival?.name ?? 'Rival'} called {theirCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
             </View>
           </>
@@ -165,7 +165,7 @@ function PerpsSide({ pnl, call, lev, ko, entry, who, right }: { pnl: number; cal
   const out = ko || pnl <= -100;
   return (
     <View style={{ flex: 1, alignItems: right ? 'flex-end' : 'flex-start' }}>
-      <Txt v="title" color={out ? C.down : pnl >= 0 ? C.up : C.down} style={{ fontFamily: F.bold }}>{out ? 'Liquidated' : `${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%`}</Txt>
+      <Txt v="title" color={out ? C.down : pnl >= 0 ? C.up : C.down} style={{ ...FONT.bold }}>{out ? 'Liquidated' : `${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%`}</Txt>
       <Txt v="small" color={C.ink} style={{ textAlign: right ? 'right' : 'left' }}>{who} · {call === 2 ? 'Short' : 'Long'} {lev}×</Txt>
       <Txt v="small" style={{ textAlign: right ? 'right' : 'left' }}>{out ? 'Lost the whole stake' : `Liquidated at ${entry ? fmtUsd(liqPrice(entry, call, lev)) : '…'}`}</Txt>
     </View>
@@ -175,10 +175,10 @@ function PerpsSide({ pnl, call, lev, ko, entry, who, right }: { pnl: number; cal
 /** Lobby mode card. */
 export function ModeCard({ title, sub, art, on, onPress }: { title: string; sub: string; art: React.ReactNode; on: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 24, padding: 14, backgroundColor: on ? C.brand : '#15151B', borderWidth: 2, borderColor: on ? '#8C98FF' : '#23232B', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 24, padding: 14, backgroundColor: on ? C.brand : '#15151B', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
       <View style={{ height: 78, alignItems: 'center', justifyContent: 'center' }}>{art}</View>
-      <Text style={{ fontFamily: F.display, fontSize: 24, color: on ? '#fff' : C.ink, marginTop: 6 }}>{title}</Text>
-      <Txt v="small" color={on ? '#DDE1FF' : C.muted}>{sub}</Txt>
+      <Text style={{ ...FONT.display, fontSize: 24, color: on ? C.onBrand : C.ink, marginTop: 6 }}>{title}</Text>
+      <Txt v="small" color={on ? 'rgba(22,15,51,0.72)' : C.muted}>{sub}</Txt>
     </Pressable>
   );
 }
@@ -187,7 +187,7 @@ export function ModeCard({ title, sub, art, on, onPress }: { title: string; sub:
 export function OpenClash({ who, stake, secs, mask, lev = 1, onJoin, disabled }: { who?: Profile; stake: number; secs: number; mask: number; lev?: number; onJoin: () => void; disabled?: boolean }) {
   const stocks = (mask & 0b1111_1000) !== 0 && (mask & 0b111) === 0;
   return (
-    <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#15151B', borderRadius: 22, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#23232B' }}>
+    <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#15151B', borderRadius: 22, padding: 12, marginBottom: 10 }}>
       <ProfileAvatar p={who} size={46} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{who?.name ?? 'Someone'} wants a clash</Txt>
@@ -199,14 +199,14 @@ export function OpenClash({ who, stake, secs, mask, lev = 1, onJoin, disabled }:
         </Row2>
       </View>
       <Pressable onPress={onJoin} disabled={disabled} style={({ pressed }) => ({ backgroundColor: C.opp, borderRadius: 16, paddingHorizontal: 16, height: 42, justifyContent: 'center', opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-        <Text style={{ fontFamily: F.semi, fontSize: 17, color: '#fff' }}>Clash</Text>
+        <Text style={{ ...FONT.semi, fontSize: 17, color: '#fff' }}>Clash</Text>
       </Pressable>
     </Animated.View>
   );
 }
 const Row2 = ({ children }: { children: React.ReactNode }) => <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>{children}</View>;
 export const Badge = ({ text, color }: { text: string; color: string }) => (
-  <View style={{ borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: color + '26' }}><Txt v="small" color={color} style={{ fontFamily: F.bold, fontSize: 10 }}>{text}</Txt></View>
+  <View style={{ borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: color + '26' }}><Txt v="small" color={color} style={{ ...FONT.bold, fontSize: 10 }}>{text}</Txt></View>
 );
 
 /** A soft pulsing halo for "waiting" moments. */

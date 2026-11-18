@@ -8,7 +8,7 @@ import { Sheet } from './sheet';
 import { errText } from '@/chain/useChain';
 import { Keypad, editAmount, type Key } from './keypad';
 import { ErrorLine, Txt } from './kit';
-import { C, F } from './tokens';
+import { C, F, FONT } from './tokens';
 
 export type AmountProps = {
   open: boolean; onClose: () => void; title: string; sub?: string; art?: ReactNode; presets?: number[]; max?: number; min?: number;
@@ -36,20 +36,20 @@ export function AmountSheet({ open, onClose, title, sub, art, presets = [5, 10, 
       {done !== null ? (
         <View style={{ alignItems: 'center', paddingVertical: 18 }}>
           <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: '#04120A', marginTop: -2 }}>✓</Text>
+            <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: '#04120A', marginTop: -2 }}>✓</Text>
           </Animated.View>
-          <Animated.Text entering={FadeIn.delay(150)} style={{ fontFamily: F.semi, fontSize: 22, color: C.ink, marginTop: 18 }}>{success}</Animated.Text>
-          <Animated.Text entering={FadeIn.delay(220)} style={{ fontFamily: F.semi, fontSize: 52, color: C.ink, letterSpacing: -2, marginTop: 2 }}>${done.toFixed(2)}</Animated.Text>
+          <Animated.Text entering={FadeIn.delay(150)} style={{ ...FONT.semi, fontSize: 22, color: C.ink, marginTop: 18 }}>{success}</Animated.Text>
+          <Animated.Text entering={FadeIn.delay(220)} style={{ ...FONT.semi, fontSize: 52, color: C.ink, letterSpacing: -2, marginTop: 2 }}>${done.toFixed(2)}</Animated.Text>
           {successSub ? <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{successSub}</Txt> : null}
           <Pressable onPress={onClose} style={({ pressed }) => ({ alignSelf: 'stretch', marginTop: 26, height: 58, borderRadius: 29, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-            <Text style={{ fontFamily: F.bold, fontSize: 17, color: '#04120A' }}>Done ✓</Text>
+            <Text style={{ ...FONT.bold, fontSize: 17, color: '#04120A' }}>Done ✓</Text>
           </Pressable>
         </View>
       ) : (
         <View>
           {art ? <View style={{ alignItems: 'center', marginBottom: 2 }}>{art}</View> : null}
           {sub ? <Txt v="small" style={{ textAlign: 'center' }}>{sub}</Txt> : null}
-          <Text style={{ fontFamily: F.semi, fontSize: 64, color: v ? C.ink : C.dim, letterSpacing: -3, textAlign: 'center', marginTop: 6 }}>
+          <Text style={{ ...FONT.semi, fontSize: 64, color: v ? C.ink : C.dim, letterSpacing: -3, textAlign: 'center', marginTop: 6 }}>
             ${whole}<Text style={{ color: C.dim }}>{v.includes('.') ? `.${cents ?? ''}` : ''}</Text>
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
@@ -69,7 +69,7 @@ export function AmountSheet({ open, onClose, title, sub, art, presets = [5, 10, 
           </View>
           {err ? <ErrorLine msg={err} /> : null}
           <Pressable onPress={go} disabled={busy || !v} style={({ pressed }) => ({ marginTop: 14, height: 58, borderRadius: 29, backgroundColor: v ? C.ink : '#2A2A31', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-            <Text style={{ fontFamily: F.bold, fontSize: 17, color: v ? '#000' : C.muted }}>{busy ? 'Confirming…' : v ? confirm(n) : 'Enter an amount'}</Text>
+            <Text style={{ ...FONT.bold, fontSize: 17, color: v ? '#000' : C.muted }}>{busy ? 'Confirming…' : v ? confirm(n) : 'Enter an amount'}</Text>
           </Pressable>
         </View>
       )}
