@@ -15,3 +15,10 @@ Picked by Nick on Nov 15, 2026: "use clay dough please". It replaces the bold st
 - **Banned:** real logos and brands (coins are generic), any existing game's characters, fomo.family's art.
 
 **Wordmark (final, option A "Slice"; alternatives in `assets/brand/options/`):** `assets/brand/wordmark*.svg`.
+
+**Nav icons (Nov 18):** `assets/art/tab/tab-{home,chats,play,squads,you,wallet}.webp`: a clay house with a pink
+pennant, two speech bubbles, crossed swords with a gold star, a gold-rimmed shield with a star, and a gold-rimmed
+player medallion, plus a wallet with a gold clasp for the desktop sidebar. The five tab icons were generated as one
+ChatGPT sheet so they match (the wallet came from the same chat), then cut into 192 px tiles; the
+`-off` copies are desaturated and darkened for unselected tabs. `ui/tab-icons.tsx` cross-fades between the two, and
+the same icons appear in the bottom tab bar and the desktop sidebar.
