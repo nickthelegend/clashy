@@ -329,7 +329,7 @@ async function jupPrices(ids: string[]): Promise<{ status: number; body: string 
 
 async function jupProxy(path: string): Promise<{ status: number; body: string }> {
   // audit M2: no dot segments, encoded dots or backslashes, and no other upstream path can be reached
-  if (/\.\.|%2e|%2f|\\/i.test(path) || path.length > 600) return { status: 400, body: JSON.stringify({ error: 'bad path' }) };
+  if (/\.\.|%2e|%2f|\\/i.test(path) || path.length > 16_000) return { status: 400, body: JSON.stringify({ error: 'bad path' }) };
   if (!JUP_ALLOWED.some((r) => r.test(path))) return { status: 404, body: JSON.stringify({ error: 'not a proxied market endpoint' }) };
   if (path.startsWith('/lite/price/v3?')) {
     const ids = [...new Set((new URLSearchParams(path.split('?')[1]).get('ids') ?? '').split(',').filter((x) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(x)))].slice(0, 300);
