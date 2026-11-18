@@ -152,10 +152,11 @@ export default function OnChainDuel() {
         await once('start', () => onEr('Start duel on the rollup', progs.er.methods.startDuel().accountsPartial({ signer: wallet, duel: active, price: P.feed(d.coin) })));
       }
       // LIVE: both devices ask for a check every 2 s (idempotent, signed by the sponsor alone); the finishing check commits and undelegates
-      // the creator's device checks; the joiner's only steps in if the bell passed 6 s ago and nobody finished it
-      const backup = me === 1 && Date.now() / 1000 > d.startTs + d.lenSecs + 6;
+      // the creator's device checks; at the bell the joiner's checks too, so neither side alone picks the closing moment
+      // (audit H1; the full fix, a price sampled at the bell, is in docs/AUDIT.md)
+      const backup = me === 1 && Date.now() / 1000 >= d.startTs + d.lenSecs;
       if (d.status === 3 && d.onEr && (me === 0 || backup) && Date.now() % 2000 < 1000) {
-        await onEr('Check duel', progs.er.methods.checkDuel().accountsPartial({ payer: sponsor, duel: active, price: P.feed(d.coin) })).catch(() => {});
+        await onEr('Check duel', progs.er.methods.checkDuel().accountsPartial({ payer: sponsor, duel: active, price: P.feed(d.coin) })).catch((e) => setErr(`Checking the duel failed: ${errText(e)}`));
       }
       // FINISHED and home on Solana: either player settles
       // FINISHED and home: the creator settles; the joiner settles only if it is still unsettled 6 s later

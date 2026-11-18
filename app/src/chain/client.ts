@@ -62,6 +62,10 @@ export type WalletSigner = {
 const WALLET_KEY = 'clashy:chain:wallet';
 /** A device-held test wallet for the local stack (automated tests, phones without Privy). Mainnet uses Privy. */
 export async function loadWallet(): Promise<Keypair> {
+  // a device test key sits in plain app storage: fine for the local stack and devnet test money, never for real USDC
+  if ((process.env.EXPO_PUBLIC_CLASHY_NET ?? '').toLowerCase().startsWith('mainnet')) {
+    throw new Error('Setup required: the device test wallet is off on mainnet. Sign in with Privy.');
+  }
   const raw = await AsyncStorage.getItem(WALLET_KEY);
   if (raw) return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw)));
   const kp = Keypair.generate();

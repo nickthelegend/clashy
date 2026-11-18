@@ -330,6 +330,7 @@ pub mod clashy {
 
     pub fn initialize(ctx: Context<Initialize>, rake_bps: u16, vrf_required: bool, crank: Pubkey, treasury: Pubkey) -> Result<()> {
         require!(rake_bps <= MAX_RAKE_BPS, ClashyError::RakeTooHigh);
+        require_keys_neq!(crank, ctx.accounts.authority.key(), ClashyError::CrankIsAdmin);
         let c = &mut ctx.accounts.config;
         c.authority = ctx.accounts.authority.key();
         c.treasury = treasury;
@@ -360,6 +361,7 @@ pub mod clashy {
 
     pub fn update_config(ctx: Context<AdminConfig>, rake_bps: u16, vrf_required: bool, crank: Pubkey, treasury: Pubkey) -> Result<()> {
         require!(rake_bps <= MAX_RAKE_BPS, ClashyError::RakeTooHigh);
+        require_keys_neq!(crank, ctx.accounts.authority.key(), ClashyError::CrankIsAdmin);
         let c = &mut ctx.accounts.config;
         c.rake_bps = rake_bps;
         c.vrf_required = vrf_required;
@@ -404,7 +406,7 @@ pub mod clashy {
         ctx.accounts.delegate_feed(
             &ctx.accounts.authority,
             &[FEED_SEED, &[coin]],
-            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+            DelegateConfig { validator: Some(pinned_validator(&ctx.accounts.config)?), ..Default::default() },
         )?;
         Ok(())
     }
@@ -648,7 +650,7 @@ pub mod clashy {
         ctx.accounts.delegate_board(
             &ctx.accounts.authority,
             &[BOARD_SEED, &[id]],
-            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+            DelegateConfig { validator: Some(pinned_validator(&ctx.accounts.config)?), ..Default::default() },
         )?;
         Ok(())
     }
@@ -712,7 +714,8 @@ pub mod clashy {
         ctx.accounts.delegate_channel(
             &ctx.accounts.payer,
             &[CHANNEL_SEED, clan.as_ref(), &[id]],
-            DelegateConfig { validator: ctx.remaining_accounts.first().map(|a| a.key()), ..Default::default() },
+            // audit M3: the validator is the one the admin pinned, never one a member picks
+            DelegateConfig { validator: Some(pinned_validator(&ctx.accounts.config)?), ..Default::default() },
         )?;
         Ok(())
     }
@@ -803,7 +806,10 @@ pub mod clashy {
         let now = Clock::get()?.unix_timestamp;
         let d = &ctx.accounts.duel;
         require!(d.status == duel_status::MATCHED || d.status == duel_status::ROLLED, ClashyError::WrongStatus);
-        require!(now > d.matched_at + DUEL_SETUP_SECS, ClashyError::NotExpired);
+        // audit (critical): once both picks are in, nobody can forfeit the other until the reveal window has closed,
+        // so "reveal and abort in one transaction" can't steal the pot; picks themselves close at DUEL_SETUP_SECS
+        let both = d.picks_committed == 0b11;
+        require!(now > d.matched_at + DUEL_SETUP_SECS + if both { DUEL_REVEAL_SECS } else { 0 }, ClashyError::NotExpired);
         require_keys_eq!(ctx.accounts.treasury.key(), ctx.accounts.config.treasury, ClashyError::PayoutMismatch);
         let forfeit_to: u8 = if d.picks_committed == 0b11 && d.picks_revealed == 0b01 { 1 }
             else if d.picks_committed == 0b11 && d.picks_revealed == 0b10 { 2 } else { 0 };
@@ -892,8 +898,10 @@ pub mod clashy {
 
     /// Seals a pick: hash = sha256(side || leverage_le || salt).
     pub fn commit_pick(ctx: Context<PlayerDuel>, hash: [u8; 32]) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
         let d = &mut ctx.accounts.duel;
         require!(d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+        require!(now <= d.matched_at + DUEL_SETUP_SECS, ClashyError::StepClosed);
         let i = player_index(d, &ctx.accounts.signer.key())?;
         require!(d.picks_committed & (1 << i) == 0, ClashyError::AlreadyDone);
         d.pick_hash[i] = hash;
@@ -902,8 +910,10 @@ pub mod clashy {
     }
 
     pub fn reveal_pick(ctx: Context<PlayerDuel>, dir: u8, lev: u16, salt: [u8; 32]) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
         let d = &mut ctx.accounts.duel;
         require!(d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+        require!(now <= d.matched_at + DUEL_SETUP_SECS + DUEL_REVEAL_SECS, ClashyError::StepClosed);
         require!(d.picks_committed == 0b11, ClashyError::CommitsPending);
         require!(dir == side::LONG || dir == side::SHORT, ClashyError::BadSide);
         require!(lev >= 1 && lev <= MAX_LEVERAGE, ClashyError::BadLeverage);
@@ -1127,6 +1137,8 @@ pub mod clashy {
     /// Group trading: a member proposes a trade on the chest.
     pub fn propose(ctx: Context<Propose>, coin: u8, dir: u8, lev: u16, size_bps: u16, vote_secs: i64) -> Result<()> {
         coin_feed(&ctx.accounts.config, coin)?;
+        // audit (medium): a member with nothing in the chest can't keep it locked with an endless proposal
+        require!(ctx.accounts.member.shares > 0, ClashyError::NoShares);
         require!(dir == side::LONG || dir == side::SHORT, ClashyError::BadSide);
         require!(lev >= 1 && lev <= MAX_CLAN_LEV, ClashyError::BadLeverage);
         require!(size_bps >= 100 && size_bps as i64 <= BPS, ClashyError::BadSize);
@@ -1494,7 +1506,8 @@ pub mod clashy {
         let t = &ctx.accounts.tournament;
         require!(t.status == tour_status::OPEN && t.coin != NO_COIN, ClashyError::WrongStatus);
         require!(t.count >= 2, ClashyError::TooFewPlayers);
-        require_keys_eq!(ctx.accounts.signer.key(), t.creator, ClashyError::Unauthorized);
+        // audit (high): the creator starts it, or anyone once the lobby time is up, so entries can't be held hostage
+        require!(ctx.accounts.signer.key() == t.creator || now > t.created_at + TOUR_LOBBY_SECS, ClashyError::Unauthorized);
         let feed = coin_feed(&ctx.accounts.config, t.coin)?;
         let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE)?;
         let t = &mut ctx.accounts.tournament;
@@ -1618,6 +1631,12 @@ pub mod clashy {
 // Money accounts: `vault` / `chest` are USDC token accounts at program PDAs, owned by the `auth` PDA.
 // `payer` is whoever pays rent and fees (the sponsor in the app), never the source of a stake: stakes
 // always come from the player's own USDC token account, signed by the player.
+
+/// The rollup validator every delegation goes to: the one the admin pinned with set_er_validator (audit M3).
+fn pinned_validator(config: &Config) -> Result<Pubkey> {
+    require!(config.er_validator != Pubkey::default(), ClashyError::NoValidator);
+    Ok(config.er_validator)
+}
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -2396,6 +2415,8 @@ pub struct OpenChannel<'info> {
 pub struct DelegateChannel<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
     pub wallet: Signer<'info>,
     #[account(seeds = [MEMBER_SEED, clan.as_ref(), wallet.key().as_ref()], bump = member.bump)]
     pub member: Box<Account<'info, Member>>,

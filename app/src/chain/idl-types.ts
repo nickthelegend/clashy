@@ -1820,6 +1820,24 @@ export type Clashy = {
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "wallet",
           "signer": true
         },
@@ -7775,6 +7793,21 @@ export type Clashy = {
       "code": 6069,
       "name": "postGone",
       "msg": "That post is no longer on the board"
+    },
+    {
+      "code": 6070,
+      "name": "crankIsAdmin",
+      "msg": "The crank key must not be the admin key"
+    },
+    {
+      "code": 6071,
+      "name": "stepClosed",
+      "msg": "Too late: the time for this step has passed"
+    },
+    {
+      "code": 6072,
+      "name": "noShares",
+      "msg": "Only members with shares in the chest can propose a trade"
     }
   ],
   "types": [

@@ -27,6 +27,13 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
   - **Art:** Lottie onboarding and a squad war scene.
   - **Backend:** the social server ([server/](server/)) and the whole backend in Docker
     ([docker/README.md](docker/README.md)).
+  - **Security audit:** [docs/AUDIT.md](docs/AUDIT.md), done with Trail of Bits' Solana and insecure-defaults
+    checklists by three independent reviewers. All 4 Criticals are fixed with tests. The open Highs are the gate for
+    mainnet.
+  - **Archive and database:** every call and squad message is archived by `chain/scripts/indexer.ts`. Storage is
+    SQLite on testnet and Supabase Postgres on mainnet (`CLASHY_DATABASE_URL`).
+  - **Deploying:** `bash deploy/up.sh testnet|mainnet` (settings in `deploy/*.env.example`), followed by a read-only
+    preflight.
   - **System design and costs:** [docs/SYSTEM-DESIGN.md](docs/SYSTEM-DESIGN.md). It covers 100 players (load-tested
     at p95 8 ms with 0 errors) and a 6.58 SOL exact-size mainnet deploy (measured), not 12 SOL.
 - **App:** the practice games run on live prices with no money. Three screens play the real program on the local

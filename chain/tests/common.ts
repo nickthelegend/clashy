@@ -7,14 +7,20 @@ import { BN, Program } from '@coral-xyz/anchor';
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { createAssociatedTokenAccountIdempotent, getAssociatedTokenAddressSync, mintTo } from '@solana/spl-token';
 import { createHash, randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { Clashy } from '../target/types/clashy.ts';
 
 const idl = JSON.parse(readFileSync(new URL('../target/idl/clashy.json', import.meta.url), 'utf8'));
 export const BASE_URL = process.env.CLASHY_BASE ?? 'http://127.0.0.1:8999';
 export const ER_URL = process.env.CLASHY_ER ?? 'http://127.0.0.1:7799';
 /** Local stack (tests, app development) unless CLASHY_BASE points at devnet or mainnet. */
-export const IS_LOCAL = process.env.CLASHY_LOCAL === '1' || /127\.0\.0\.1|localhost/.test(BASE_URL);
+const BASE_HOST = (() => { try { return new URL(BASE_URL).hostname; } catch { return ''; } })();
+/** Hosts a local chain can live on: this machine, or the Docker host / the compose service from inside a container. */
+const LOCAL_HOSTS = ['127.0.0.1', 'localhost', 'host.docker.internal', 'chain'];
+if (process.env.CLASHY_LOCAL === '1' && !LOCAL_HOSTS.includes(BASE_HOST)) {
+  throw new Error(`CLASHY_LOCAL=1 but ${BASE_HOST || BASE_URL} is not a local chain: refusing local rules (test faucet, local keys) against a real network`);
+}
+export const IS_LOCAL = BASE_HOST === '127.0.0.1' || BASE_HOST === 'localhost' || (process.env.CLASHY_LOCAL === '1' && LOCAL_HOSTS.includes(BASE_HOST));
 function setupRequired(name: string, what: string): never {
   throw new Error(`Setup required: set ${name} (${what}) to run against ${BASE_URL}`);
 }
@@ -52,20 +58,38 @@ export function loadKeypair(path: string) {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))));
 }
 
-/** Admin + crank key. Off the local stack it must come from CLASHY_AUTHORITY (a keypair file path; never printed). */
-export const authority = process.env.CLASHY_AUTHORITY
-  ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.CLASHY_AUTHORITY, 'utf8'))))
-  : IS_LOCAL ? loadKeypair('../.keys/local-authority.json') : setupRequired('CLASHY_AUTHORITY', 'path to the admin/crank keypair');
+const fromFile = (path: string) => Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(path, 'utf8'))));
+/** Which keys a process may load off the local stack (audits C1, M1): `admin` (setup, deploy, tests: all of them),
+ *  `relay` (the sponsor only), `crank` (the crank only). Touching a key the role doesn't hold throws. */
+const ROLE = process.env.CLASHY_ROLE ?? 'admin';
+const holds = (k: 'admin' | 'crank' | 'sponsor') => IS_LOCAL || ROLE === 'admin' || (ROLE === 'relay' && k === 'sponsor') || (ROLE === 'crank' && k === 'crank');
+const noKey = (what: string) => new Proxy({}, { get() { throw new Error(`this process (${ROLE}) holds no ${what} key`); } }) as Keypair;
+/** A local test key, made on first use (local stack only). */
+function localKey(path: string) {
+  const url = new URL(path, import.meta.url);
+  if (!existsSync(url)) writeFileSync(url, JSON.stringify([...Keypair.generate().secretKey]), { mode: 0o600 });
+  return loadKeypair(path);
+}
+/** Admin key (config, coins, feeds; on devnet/mainnet also the upgrade authority, ideally a multisig). Off the local
+ *  stack: CLASHY_AUTHORITY (a keypair file path; never printed). */
+export const authority = !holds('admin') ? noKey('admin')
+  : process.env.CLASHY_AUTHORITY ? fromFile(process.env.CLASHY_AUTHORITY)
+    : IS_LOCAL ? loadKeypair('../.keys/local-authority.json') : setupRequired('CLASHY_AUTHORITY', 'path to the admin keypair');
+/** Price crank: it can only push prices, and it must not be the admin key (audit C1, enforced by the program). Off the
+ *  local stack: CLASHY_CRANK (a keypair file path; never printed). Locally: .keys/local-crank.json, made on first use. */
+export const crank = !holds('crank') ? noKey('crank')
+  : process.env.CLASHY_CRANK ? fromFile(process.env.CLASHY_CRANK)
+    : IS_LOCAL ? localKey('../.keys/local-crank.json') : setupRequired('CLASHY_CRANK', 'path to the price-crank keypair (not the admin key)');
 /** Pays every fee and rent so players only ever hold USDC. Off the local stack: CLASHY_SPONSOR (keypair file path; never printed). */
-export const sponsor = process.env.CLASHY_SPONSOR
-  ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.CLASHY_SPONSOR, 'utf8'))))
-  : IS_LOCAL ? loadKeypair('../.keys/local-sponsor.json') : setupRequired('CLASHY_SPONSOR', 'path to the fee/rent sponsor keypair');
+export const sponsor = !holds('sponsor') ? noKey('sponsor')
+  : process.env.CLASHY_SPONSOR ? fromFile(process.env.CLASHY_SPONSOR)
+    : IS_LOCAL ? loadKeypair('../.keys/local-sponsor.json') : setupRequired('CLASHY_SPONSOR', 'path to the fee/rent sponsor keypair');
 /** The stake currency. The local fork serves mainnet USDC's address with a local mint authority (scripts/usdc-mint.ts). */
 export const USDC_MINT = new PublicKey(process.env.CLASHY_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 export const USDC = 1_000_000;
 export const base = new Connection(BASE_URL, 'confirmed');
 export const er = new Connection(ER_URL, 'confirmed');
-const wallet = new anchor.Wallet(authority);
+const wallet = new anchor.Wallet(holds('admin') ? authority : ROLE === 'crank' ? crank : sponsor);
 export const baseProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, wallet, { commitment: 'confirmed' }));
 export const erProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(er, wallet, { commitment: 'confirmed' }));
 export const programId = baseProgram.programId;
@@ -197,8 +221,9 @@ function signNeeded(tx: Transaction, payer: Keypair, extra: Keypair[]) {
 }
 /** The sponsor is the fee payer; the player signs for what is theirs (their stake, their picks). */
 const sponsoredWallet = (kp?: Keypair) => ({
-  publicKey: sponsor.publicKey,
-  payer: sponsor,
+  // getters: a crank process holds no sponsor key, and only touches this wallet if it tries to sponsor something
+  get publicKey() { return sponsor.publicKey; },
+  get payer() { return sponsor; },
   signTransaction: async <T extends Transaction | VersionedTransaction>(tx: T): Promise<T> => {
     if (tx instanceof VersionedTransaction) throw new Error('versioned transactions are not used here');
     signNeeded(tx as Transaction, sponsor, kp ? [kp] : []);
@@ -252,7 +277,15 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
     // the rake lands in the treasury owner's USDC account
     const treasury = await createAssociatedTokenAccountIdempotent(base, authority, USDC_MINT, treasuryOwner, { commitment: 'confirmed' });
     // off the local stack every coin is rolled by MagicBlock VRF; the commit-reveal fallback is refused
-    await baseProgram.methods.initialize(300, !IS_LOCAL, authority.publicKey, treasury).accountsPartial({ authority: authority.publicKey, usdcMint: USDC_MINT }).rpc();
+    await baseProgram.methods.initialize(300, !IS_LOCAL, crank.publicKey, treasury).accountsPartial({ authority: authority.publicKey, usdcMint: USDC_MINT }).rpc();
+  }
+  // the crank is its own key (audit C1): move an older config whose crank was the admin key onto it
+  const cur = await baseProgram.account.config.fetch(P.config);
+  if (!cur.crank.equals(crank.publicKey)) {
+    await baseProgram.methods.updateConfig(cur.rakeBps, cur.vrfRequired, crank.publicKey, cur.treasury).accountsPartial({ authority: authority.publicKey }).rpc();
+  }
+  if (IS_LOCAL && (await base.getBalance(crank.publicKey)) < LAMPORTS_PER_SOL) {
+    await base.confirmTransaction(await base.requestAirdrop(crank.publicKey, 5 * LAMPORTS_PER_SOL), 'confirmed');
   }
   // local stack: coin rolls go to MagicBlock's test queue, which their local vrf-oracle answers;
   // devnet and mainnet keep the base queue that initialize sets
@@ -275,7 +308,7 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
       info = await base.getAccountInfo(feed);
     }
     if (info!.owner.equals(programId)) {
-      await baseProgram.methods.pushPrice(new BN(startPx[i].toString())).accountsPartial({ crank: authority.publicKey, feed }).rpc();
+      await baseProgram.methods.pushPrice(new BN(startPx[i].toString())).accountsPartial({ crank: crank.publicKey, feed }).signers([crank]).rpc();
       await baseProgram.methods.delegateFeed(i).accountsPartial({ authority: authority.publicKey, feed }).remainingAccounts([{ pubkey: LOCAL_ER_VALIDATOR, isSigner: false, isWritable: false }]).rpc();
     }
   }
@@ -305,16 +338,16 @@ export async function ensureSetup(treasuryOwner: PublicKey) {
 /** Crank: pushes live Coinbase prices into the delegated feeds on the rollup. Returns the prices pushed. */
 export async function pushPrices(): Promise<bigint[]> {
   const prices = await livePrices();
-  await Promise.all(prices.map((p, i) => sendEr(erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.feed(i) }), authority, authority)));
+  await Promise.all(prices.map((p, i) => sendEr(erProgram.methods.pushPrice(new BN(p.toString())).accountsPartial({ crank: crank.publicKey, feed: P.feed(i) }), crank, crank)));
   return prices;
 }
 
 /** Crank: writes live prices into the Solana-side base feeds, all coins in one transaction. */
 export async function pushBasePrices(prices?: bigint[]): Promise<bigint[]> {
   const px = prices ?? (await livePrices());
-  const ixs = await Promise.all(px.map((p, i) => baseProgram.methods.pushBasePrice(new BN(p.toString())).accountsPartial({ crank: authority.publicKey, feed: P.baseFeed(i) }).instruction()));
+  const ixs = await Promise.all(px.map((p, i) => baseProgram.methods.pushBasePrice(new BN(p.toString())).accountsPartial({ crank: crank.publicKey, feed: P.baseFeed(i) }).instruction()));
   const tx = new Transaction().add(...ixs);
-  await sendAndConfirmTransaction(base, tx, [authority], { commitment: 'confirmed' });
+  await sendAndConfirmTransaction(base, tx, [crank], { commitment: 'confirmed' });
   return px;
 }
 

@@ -14,8 +14,9 @@ name: clashy
 x-chain-env: &chain-env
   CLASHY_BASE: ${CLASHY_BASE:-http://${CHAIN_HOST:-host.docker.internal}:8999}
   CLASHY_ER: ${CLASHY_ER:-http://${CHAIN_HOST:-host.docker.internal}:7799}
-  # the local stack's rules (test-USDC faucet, local keys); 0 for devnet or mainnet
-  CLASHY_LOCAL: ${CLASHY_LOCAL:-1}
+  # the local stack's rules (test-USDC faucet, local keys): off unless .env says CLASHY_LOCAL=1, and refused against a
+  # real network's RPC (audit H2)
+  CLASHY_LOCAL: ${CLASHY_LOCAL:-0}
   CLASHY_APP_ORIGIN: ${CLASHY_APP_ORIGIN:-*}
 
 services:
@@ -31,7 +32,7 @@ services:
       # empty: SQLite on the social-data volume (testnet). Set it (Supabase Postgres) for mainnet.
       CLASHY_DATABASE_URL: ${CLASHY_DATABASE_URL:-}
     volumes: [social-data:/data]
-    ports: ["8791:8791"]
+    ports: ["127.0.0.1:8791:8791"]
     restart: unless-stopped
     mem_limit: 160m
 
@@ -42,12 +43,13 @@ services:
     environment:
       <<: *chain-env
       CLASHY_RELAY_BIND: 0.0.0.0
+      CLASHY_ROLE: relay
     # chain/.env for local secrets; deploy/<target>.env (CLASHY_DEPLOY_ENV, set by deploy/up.sh) overrides it
     env_file: [{ path: chain/.env, required: false }, { path: "${CLASHY_DEPLOY_ENV:-deploy/none.env}", required: false }]
     volumes:
       - ./chain/.keys:/app/chain/.keys:ro
       - ./chain/.localnet:/app/chain/.localnet
-    ports: ["8790:8790"]
+    ports: ["127.0.0.1:8790:8790"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
     mem_limit: 320m
@@ -56,7 +58,9 @@ services:
     image: clashy-chain-services
     depends_on: [relay]
     command: ["npx", "tsx", "scripts/crank.ts"]
-    environment: *chain-env
+    environment:
+      <<: *chain-env
+      CLASHY_ROLE: crank
     # chain/.env for local secrets; deploy/<target>.env (CLASHY_DEPLOY_ENV, set by deploy/up.sh) overrides it
     env_file: [{ path: chain/.env, required: false }, { path: "${CLASHY_DEPLOY_ENV:-deploy/none.env}", required: false }]
     volumes:
@@ -85,7 +89,7 @@ services:
     volumes:
       - ./app/dist:/usr/share/nginx/html:ro
       - ./docker/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports: ["8080:80"]
+    ports: ["127.0.0.1:8080:80"]
     restart: unless-stopped
     mem_limit: 64m
 
@@ -99,7 +103,7 @@ services:
       - ./chain/.keys:/app/chain/.keys:ro
       - ./chain/target/deploy:/app/chain/target/deploy:ro
       - ./chain/.localnet:/app/chain/.localnet
-    ports: ["8999:8999", "9000:9000", "7799:7799", "7800:7800"]
+    ports: ["127.0.0.1:8999:8999", "127.0.0.1:9000:9000", "127.0.0.1:7799:7799", "127.0.0.1:7800:7800"]
     restart: unless-stopped
     mem_limit: 4g
 

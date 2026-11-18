@@ -133,7 +133,12 @@ async function route(c: Ctx): Promise<unknown> {
     if (d === 'accept') await store.accept(me, them); else await store.decline(me, them);
     return { ok: true };
   }
-  if (m === 'GET' && (a === 'followers' || a === 'following') && b) return { [a]: await store.list(wallet(b), a) };
+  if (m === 'GET' && (a === 'followers' || a === 'following') && b) {
+    const owner = wallet(b);
+    // a private account's lists are for its accepted followers (audit, low)
+    if ((await store.profile(owner, null)).private && c.me !== owner && (!c.me || (await store.followOf(c.me, owner)) !== 'accepted')) throw new HttpError(403, 'This account is private');
+    return { [a]: await store.list(owner, a) };
+  }
   if (m === 'GET' && a === 'inbox') return store.inbox(need(c));
   if (a === 'dm' && b) {
     const me = need(c), them = wallet(b);

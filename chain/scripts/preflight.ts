@@ -46,6 +46,8 @@ const keyFile = (k: string) => {
 };
 const sponsor = keyFile('CLASHY_SPONSOR');
 const authority = keyFile('CLASHY_AUTHORITY');
+const crankKey = keyFile('CLASHY_CRANK');
+if (crankKey && authority && crankKey.equals(authority)) add('FAIL', 'CLASHY_CRANK', 'is the admin key: the crank must have its own key (the program refuses this)');
 
 // endpoints and chain state
 const programId = new PublicKey(JSON.parse(readFileSync(new URL('../target/idl/clashy.json', import.meta.url), 'utf8')).address);
@@ -68,7 +70,7 @@ async function chain() {
     add(sol >= min ? 'PASS' : 'FAIL', `${who} balance`, `${sol.toFixed(4)} SOL (needs at least ${min})`);
   };
   await bal('Sponsor', sponsor, main ? 1 : 0.5);
-  await bal('Authority (crank)', authority, main ? 0.3 : 0.2);
+  await bal('Crank', crankKey, main ? 0.3 : 0.2);
 }
 async function rollup() {
   if (!env('CLASHY_ER')) return;

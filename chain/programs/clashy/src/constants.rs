@@ -43,6 +43,8 @@ pub const MAX_LEVERAGE: u16 = 100;
 pub const MAX_CHALLENGE_SECS: i64 = 7 * 86_400;
 /// A matched duel must reach the rollup within this; otherwise anyone can abort it (refund or forfeit).
 pub const DUEL_SETUP_SECS: i64 = 600;
+/// After picks close, both players get this long to reveal (audit: no forfeit while a reveal is still possible).
+pub const DUEL_REVEAL_SECS: i64 = 300;
 /// An unstarted tournament lobby can be cancelled by anyone after this.
 pub const TOUR_LOBBY_SECS: i64 = 3_600;
 /// A proposal the captain never executes can be closed by anyone this long after its deadline.

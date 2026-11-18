@@ -21,8 +21,8 @@
 //   npx tsx scripts/sponsor.ts              (port 8790; CLASHY_SPONSOR_PORT to change)
 import http from 'node:http';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { ComputeBudgetProgram, PublicKey, Transaction, type Connection } from '@solana/web3.js';
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { ComputeBudgetProgram, PublicKey, SystemProgram, Transaction, type Connection } from '@solana/web3.js';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { PrivyClient } from '@privy-io/server-auth';
 import { fileURLToPath } from 'node:url';
 try { process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url))); } catch { /* no chain/.env: Privy checks off */ }
@@ -65,20 +65,37 @@ type Layer = 'base' | 'er';
 class Refused extends Error { status = 400; }
 
 /** Checks a transaction the sponsor is asked to pay for. Returns the wallets that signed it (for rate limiting). */
+/** Caps on what one transaction may ask the sponsor to pay (audit C1). */
+const MAX_CU = 1_400_000;
+const MAX_CU_PRICE = 100_000n; // micro-lamports per unit: at most 0.00014 SOL of priority fee
+const MAX_FEE = 250_000; // lamports, checked against the network's own quote before signing
+/** Instructions in the last vetted transaction (account-creation quotas read it). */
+let creates: string[] = [];
 export function vet(tx: Transaction, layer: Layer): string[] {
+  creates = [];
   const me = sponsor.publicKey;
   if (!tx.feePayer?.equals(me)) throw new Refused('the sponsor must be the fee payer');
   if (tx.instructions.length === 0 || tx.instructions.length > 6) throw new Refused('1 to 6 instructions');
   const signers = new Set<string>();
+  let budget = 0;
+  const atas: { ata: PublicKey; owner: PublicKey }[] = [];
+  const funded = new Set<string>(); // token accounts a USDC transfer in this transaction pays into
   for (const ix of tx.instructions) {
     for (const k of ix.keys) if (k.isSigner && !k.pubkey.equals(me)) signers.add(k.pubkey.toBase58());
-    if (ix.programId.equals(ComputeBudgetProgram.programId)) continue;
+    if (ix.programId.equals(ComputeBudgetProgram.programId)) {
+      // audit C1: only a capped unit limit (2) and a capped price (3); anything else could make the sponsor pay a huge fee
+      const tag = ix.data[0];
+      if (tag === 2 && ix.data.length === 5 && ix.data.readUInt32LE(1) <= MAX_CU) { budget++; continue; }
+      if (tag === 3 && ix.data.length === 9 && ix.data.readBigUInt64LE(1) <= MAX_CU_PRICE) { budget++; continue; }
+      throw new Refused('compute budget: only a capped unit limit and price');
+    }
     if (ix.programId.equals(TOKEN_PROGRAM_ID)) {
       // withdrawing: TransferChecked (12) of USDC out of the signer's own USDC account [source, mint, dest, owner]
       if (layer !== 'base' || ix.data[0] !== 12 || ix.keys.length !== 4) throw new Refused('only a USDC transfer out of your own account');
       const [src, mint, , owner] = ix.keys;
       if (!mint.pubkey.equals(USDC_MINT) || !owner.isSigner || owner.pubkey.equals(me)) throw new Refused('only USDC, signed by its owner');
       if (!src.pubkey.equals(usdcAta(owner.pubkey))) throw new Refused('only from your own USDC account');
+      funded.add(ix.keys[2].pubkey.toBase58());
       continue;
     }
     if (ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID)) {
@@ -90,6 +107,12 @@ export function vet(tx: Transaction, layer: Layer): string[] {
       const stockAcc = !!mint && STOCK_MINTS.has(mint.toBase58()) && !!ix.keys[5]?.pubkey.equals(TOKEN_2022);
       if (!usdcAcc && !stockAcc) throw new Refused('only USDC or tokenized-stock token accounts');
       ix.keys.forEach((k, i) => { if (i !== 0 && k.pubkey.equals(me)) throw new Refused('the sponsor can only fund the account'); });
+      // audit C2: it must be the owner's own associated account, made by the System Program
+      const owner = ix.keys[2]?.pubkey;
+      if (!owner || !ix.keys[1]?.pubkey.equals(getAssociatedTokenAddressSync(mint!, owner, true, ix.keys[5]!.pubkey)) || !ix.keys[4]?.pubkey.equals(SystemProgram.programId)) {
+        throw new Refused('only the owner\'s own token account');
+      }
+      atas.push({ ata: ix.keys[1].pubkey, owner });
       continue;
     }
     if (!ix.programId.equals(programId)) throw new Refused(`program ${ix.programId.toBase58()} is not sponsored`);
@@ -101,6 +124,13 @@ export function vet(tx: Transaction, layer: Layer): string[] {
         throw new Refused(`the sponsor cannot be ${def.name}.${def.accounts[i]?.name ?? `account ${i}`}`);
       }
     });
+    creates.push(def.name);
+  }
+  if (budget === tx.instructions.length) throw new Refused('nothing to sponsor');
+  // audit C2: the sponsor pays rent for a token account only when its owner signs this transaction (so it is bound to the
+  // signed-in player) or when this transaction sends USDC into it (paying someone who has no account yet)
+  for (const a of atas) {
+    if (!signers.has(a.owner.toBase58()) && !funded.has(a.ata.toBase58())) throw new Refused('the account owner must sign, or receive USDC in the same transaction');
   }
   return [...signers];
 }
@@ -115,6 +145,22 @@ function limit(wallets: string[]) {
     recent.push(now);
     hits.set(w, recent);
   }
+}
+
+/** Daily caps per player on what makes the sponsor pay lasting rent (audit H1/C2): new squads, channels, token accounts. */
+const QUOTA: Record<string, number> = { create_clan: 2, open_channel: 8, ata: 6 };
+const quotas = new Map<string, { day: number; n: Record<string, number> }>();
+function quota(who: string, names: string[], tx: Transaction) {
+  const day = Math.floor(Date.now() / 86_400_000);
+  let q = quotas.get(who);
+  if (!q || q.day !== day) { q = { day, n: {} }; quotas.set(who, q); }
+  const want: Record<string, number> = {};
+  for (const n of names) if (QUOTA[n]) want[n] = (want[n] ?? 0) + 1;
+  const atas = tx.instructions.filter((ix) => ix.programId.equals(ASSOCIATED_TOKEN_PROGRAM_ID)).length;
+  if (atas) want.ata = atas;
+  for (const [k, v] of Object.entries(want)) if ((q.n[k] ?? 0) + v > QUOTA[k]) throw Object.assign(new Refused(`daily limit reached for ${k.replace('_', ' ')}`), { status: 429 });
+  for (const [k, v] of Object.entries(want)) q.n[k] = (q.n[k] ?? 0) + v;
+  if (quotas.size > 50_000) for (const [k, v] of quotas) if (v.day !== day) quotas.delete(k);
 }
 
 async function confirm(conn: Connection, sig: string) {
@@ -165,6 +211,11 @@ async function relay(body: { tx?: string; layer?: Layer }, token?: string) {
   const signers = vet(tx, layer);
   const user = await authorize(token, signers);
   limit(user ? [user, ...signers] : signers);
+  quota(user ?? signers[0] ?? '(none)', creates, tx);
+  if (layer === 'base') {
+    const fee = (await base.getFeeForMessage(tx.compileMessage(), 'confirmed')).value;
+    if (fee === null || fee > MAX_FEE) throw new Refused(`the fee for this transaction is too high to sponsor (${fee ?? 'unknown'} lamports)`);
+  }
   tx.partialSign(sponsor);
   if (!tx.verifySignatures(true)) throw new Refused('a required signature is missing or invalid');
   const conn = layer === 'er' ? er : base;
@@ -211,7 +262,7 @@ const JUP_UPSTREAMS: Record<string, string> = {
 const SYM = '[A-Za-z0-9-]{1,24}';
 const B58 = '[1-9A-HJ-NP-Za-km-z]{32,44}';
 const JUP_ALLOWED = [
-  /^\/lite\/price\/v3\?/, /^\/lite\/tokens\/v2\/(search|tag|toptrending|toporganicscore|toptraded|recent)\b/, /^\/perps\/v1\/pool-info\?/,
+  /^\/lite\/price\/v3\?/, /^\/lite\/tokens\/v2\/(search|tag|toptrending|toporganicscore|toptraded|recent)(\/[0-9a-z]{1,6})?(\?|$)/, /^\/perps\/v1\/pool-info\?/,
   /^\/phoenix\/exchange\/(markets|prices)$/,
   new RegExp(`^/phoenix/v1/(candles/${SYM}\\?|funding/${SYM}/rates\\?|view/orderbook/${SYM}$|market/${SYM}/stats\\?|trades/${SYM}/fills\\?)`),
   /^\/pacifica\/api\/v1\/info(\/prices|\/fees)?$/,
@@ -277,6 +328,8 @@ async function jupPrices(ids: string[]): Promise<{ status: number; body: string 
 }
 
 async function jupProxy(path: string): Promise<{ status: number; body: string }> {
+  // audit M2: no dot segments, encoded dots or backslashes, and no other upstream path can be reached
+  if (/\.\.|%2e|%2f|\\/i.test(path) || path.length > 600) return { status: 400, body: JSON.stringify({ error: 'bad path' }) };
   if (!JUP_ALLOWED.some((r) => r.test(path))) return { status: 404, body: JSON.stringify({ error: 'not a proxied market endpoint' }) };
   if (path.startsWith('/lite/price/v3?')) {
     const ids = [...new Set((new URLSearchParams(path.split('?')[1]).get('ids') ?? '').split(',').filter((x) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(x)))].slice(0, 300);
@@ -292,6 +345,7 @@ async function jupProxy(path: string): Promise<{ status: number; body: string }>
     try {
       const r = await fetch(`${JUP_UPSTREAMS[up]}/${rest.join('/')}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(10_000) });
       const body = await r.text();
+      if (body.length > 2_000_000) throw new Error('answer too large');
       // keep the last good answer through a rate limit for up to a minute, so a 429 burst does not blank every client
       // market lists keep their last good answer through any error; a price older than a minute is dropped instead
       if (r.ok || !hit?.body || (isLive(path) && Date.now() - entry.okAt > 60_000)) { entry.status = r.status; entry.body = body; }
@@ -325,6 +379,16 @@ try {
 const WARM = ['/lite/tokens/v2/toptrending/1h?limit=100', '/lite/tokens/v2/toptrending/24h?limit=100', '/phoenix/exchange/markets', '/pacifica/api/v1/info', '/pacifica/api/v1/info/fees'];
 setInterval(() => { for (const p of WARM) jupProxy(p).catch(() => {}); }, 55_000).unref();
 
+/** Market reads per IP: 900 a minute is about 15 open screens polling; more is a scraper (audit M2). */
+const ipHits = new Map<string, { t: number; n: number }>();
+function ipLimit(ip: string) {
+  const now = Date.now();
+  let h = ipHits.get(ip);
+  if (!h || now - h.t > 60_000) { h = { t: now, n: 0 }; ipHits.set(ip, h); }
+  if (++h.n > 900) throw Object.assign(new Refused('slow down: too many market reads'), { status: 429 });
+  if (ipHits.size > 20_000) for (const [k, v] of ipHits) if (now - v.t > 60_000) ipHits.delete(k);
+}
+
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
@@ -333,11 +397,12 @@ const server = http.createServer(async (req, res) => {
   const send = (status: number, data: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(data)); };
   try {
     if (req.method === 'GET' && req.url === '/info') {
-      return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: IS_LOCAL, base: BASE_URL, er: ER_URL, privy: !!PRIVY, authRequired: AUTH_REQUIRED });
+      return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: IS_LOCAL, base: new URL(BASE_URL).host, er: new URL(ER_URL).host, privy: !!PRIVY, authRequired: AUTH_REQUIRED });
     }
     if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/history') {
       return send(200, history(new URL(req.url ?? '/', 'http://relay').searchParams.get('range')));
     }
+    if (req.method === 'GET' && /^\/(jup|mkt|history)/.test(req.url ?? '')) ipLimit(String(req.socket.remoteAddress ?? '?'));
     if (req.method === 'GET' && /^\/(jup|mkt)\//.test(req.url ?? '')) {
       const r = await jupProxy((req.url ?? '').slice(4));
       res.writeHead(r.status, { 'content-type': 'application/json' }).end(r.body);

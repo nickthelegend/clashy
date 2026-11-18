@@ -51,6 +51,14 @@ function cu16(b: Uint8Array, at: number): [number, number] {
 }
 const contains = (hay: Uint8Array, needle: Uint8Array) => Buffer.from(hay).indexOf(Buffer.from(needle)) !== -1;
 const ED_DER = Buffer.from('302a300506032b6570032100', 'hex');
+/** The eight small-order Ed25519 point encodings (libsodium's blocklist): no real wallet has one, and some verifiers
+ *  accept forged signatures for them (audit, info). */
+const SMALL_ORDER = new Set([
+  '0100000000000000000000000000000000000000000000000000000000000000', 'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f',
+  '0000000000000000000000000000000000000000000000000000000000000000', '0000000000000000000000000000000000000000000000000000000000000080',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a', 'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05', '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85',
+]);
 
 /** Checks the signed sign-in transaction (base64) for this nonce; returns the wallet it proves. */
 export function verifySignIn(nonce: string, txB64: string): string {
@@ -69,6 +77,7 @@ export function verifySignIn(nonce: string, txB64: string): string {
   const payer = msg.slice(k, k + 32);
   const blockhash = msg.slice(k + 32 * nKeys, k + 32 * nKeys + 32);
   if (Buffer.compare(Buffer.from(payer), Buffer.from(b58decode(pending.wallet))) !== 0) throw new HttpError(401, 'Signed by a different wallet');
+  if (SMALL_ORDER.has(Buffer.from(payer).toString('hex'))) throw new HttpError(401, 'Not a usable wallet key');
   if (blockhash.some((x) => x !== 0)) throw new HttpError(400, 'A sign-in must not be a sendable transaction');
   if (!contains(msg, MEMO) || !contains(msg, new TextEncoder().encode(signInText(pending.wallet, nonce)))) throw new HttpError(400, 'The sign-in text is missing');
   const key = createPublicKey({ key: Buffer.concat([ED_DER, Buffer.from(payer)]), format: 'der', type: 'spki' });

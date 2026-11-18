@@ -2,7 +2,8 @@
 # Deploys the Clashy program to devnet or mainnet and runs first-time setup (config with VRF required and
 # MagicBlock's base VRF queue, three price feeds delegated to the rollup, Solana base feeds).
 #
-#   CLASHY_AUTHORITY=/path/to/admin.json   admin + crank keypair (file path; never printed)
+#   CLASHY_AUTHORITY=/path/to/admin.json   admin + upgrade keypair (file path; never printed). Keep it off the servers.
+#   CLASHY_CRANK=/path/to/crank.json       the price crank's own keypair; must differ from the admin key (audit C1)
 #   CLASHY_TREASURY=<pubkey>               wallet that receives the rake
 #   CLASHY_ER=<url>                        MagicBlock Ephemeral Rollup RPC for that cluster
 #   CLASHY_ER_VALIDATOR=<pubkey>           that rollup's validator identity
@@ -30,7 +31,7 @@ case "$CLUSTER" in
 esac
 
 missing=()
-for v in CLASHY_AUTHORITY CLASHY_TREASURY CLASHY_ER CLASHY_ER_VALIDATOR CLASHY_SPONSOR; do
+for v in CLASHY_AUTHORITY CLASHY_CRANK CLASHY_TREASURY CLASHY_ER CLASHY_ER_VALIDATOR CLASHY_SPONSOR; do
   [ -n "${!v:-}" ] || missing+=("$v")
 done
 if [ ${#missing[@]} -gt 0 ]; then
@@ -44,6 +45,8 @@ SO=target/deploy/clashy.so
 [ -s "$SO" ] || { echo "Build first: anchor build" >&2; exit 1; }
 SIZE=$(stat -f%z "$SO" 2>/dev/null || stat -c%s "$SO")
 ADMIN=$(solana-keygen pubkey "$CLASHY_AUTHORITY")
+[ -f "$CLASHY_CRANK" ] || { echo "Setup required: CLASHY_CRANK is not a file" >&2; exit 1; }
+[ "$(solana-keygen pubkey "$CLASHY_CRANK")" != "$ADMIN" ] || { echo "The crank key is the admin key: give the crank its own keypair (the program refuses this)" >&2; exit 1; }
 HAVE=$(solana balance "$ADMIN" --url "$URL" --lamports | awk '{print $1}')
 # a deploy holds the program twice for a moment (buffer + program data), plus fees and setup accounts
 RENT=$(solana rent "$SIZE" --url "$URL" --lamports | awk '/Rent-exempt minimum/ {print $3}')
@@ -54,16 +57,18 @@ if [ "$HAVE" -lt "$NEED" ]; then
   echo "Not enough SOL on $ADMIN for the deploy (have $HAVE, need about $NEED lamports)." >&2; exit 1
 fi
 
-solana program deploy "$SO" --program-id target/deploy/clashy-keypair.json \
+# --max-len = the exact size: rent for the program once, not twice (docs/SYSTEM-DESIGN.md 5.1; upgrades use `solana program extend`)
+solana program deploy "$SO" --program-id target/deploy/clashy-keypair.json --max-len "$SIZE" \
   --keypair "$CLASHY_AUTHORITY" --upgrade-authority "$CLASHY_AUTHORITY" --url "$URL"
 
-CLASHY_BASE="$URL" npx tsx scripts/crank.ts --setup-only
+CLASHY_ROLE=admin CLASHY_BASE="$URL" npx tsx scripts/crank.ts --setup-only
 cat <<EOF
 
 Deployed and set up on $CLUSTER. Next:
   1. Run the crank and the sponsor relay as services with this environment:
-       CLASHY_BASE=$URL npx tsx scripts/crank.ts
-       CLASHY_BASE=$URL CLASHY_APP_ORIGIN=<app origin> npx tsx scripts/sponsor.ts   (the sponsor wallet needs SOL)
+       CLASHY_ROLE=crank CLASHY_CRANK=<crank key file> CLASHY_BASE=$URL npx tsx scripts/crank.ts      (no admin key on the server)
+       CLASHY_ROLE=relay CLASHY_BASE=$URL CLASHY_APP_ORIGIN=<app origin> npx tsx scripts/sponsor.ts   (the sponsor wallet needs SOL)
+     or, on one VM: bash deploy/up.sh testnet|mainnet
   2. Point the app at it: EXPO_PUBLIC_CLASHY_BASE=$URL EXPO_PUBLIC_CLASHY_ER=$CLASHY_ER
      EXPO_PUBLIC_CLASHY_ER_VALIDATOR=$CLASHY_ER_VALIDATOR EXPO_PUBLIC_CLASHY_NET=$CLUSTER
      EXPO_PUBLIC_CLASHY_USDC_MINT=$CLASHY_USDC_MINT EXPO_PUBLIC_CLASHY_SPONSOR=<relay url> EXPO_PUBLIC_PRIVY_APP_ID=<app id>

@@ -48,7 +48,18 @@ describe('sponsor relay: what it will not pay for', () => {
     assert.throws(() => vet(tx(SystemProgram.transfer({ fromPubkey: sponsor.publicKey, toPubkey: p.publicKey, lamports: 1 })), 'base'), /is not sponsored/);
     const otherMint = Keypair.generate().publicKey;
     const ata = createAssociatedTokenAccountIdempotentInstruction(sponsor.publicKey, getAssociatedTokenAddressSync(otherMint, p.publicKey), p.publicKey, otherMint);
-    assert.throws(() => vet(tx(ata), 'base'), /only USDC token accounts/);
+    assert.throws(() => vet(tx(ata), 'base'), /only USDC or tokenized-stock token accounts/);
+    // audit C1: only a capped unit limit and price, and never a transaction made of nothing but compute budget
+    assert.throws(() => vet(tx(ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000_000_000 })), 'base'), /compute budget/);
+    assert.throws(() => vet(tx(ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 })), 'base'), /nothing to sponsor/);
+    assert.throws(() => vet(tx(ComputeBudgetProgram.requestHeapFrame({ bytes: 256 * 1024 })), 'base'), /compute budget/);
+    // audit C2: a USDC account for an owner who neither signs nor receives USDC in this transaction is not paid for
+    const stranger = Keypair.generate().publicKey;
+    const farm = createAssociatedTokenAccountIdempotentInstruction(sponsor.publicKey, getAssociatedTokenAddressSync(USDC_MINT, stranger), stranger, USDC_MINT);
+    assert.throws(() => vet(tx(farm), 'base'), /owner must sign/);
+    // nor one at an address that isn't the owner's own associated account
+    const wrongAddr = createAssociatedTokenAccountIdempotentInstruction(sponsor.publicKey, getAssociatedTokenAddressSync(USDC_MINT, Keypair.generate().publicKey), stranger, USDC_MINT);
+    assert.throws(() => vet(tx(wrongAddr), 'base'), /own token account/);
   });
 });
 

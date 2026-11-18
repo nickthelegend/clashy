@@ -142,4 +142,11 @@ pub enum ClashyError {
     AlreadyLiked,
     #[msg("That post is no longer on the board")]
     PostGone,
+    /// Audit C1: the always-online crank key must not also be the admin (and upgrade) key.
+    #[msg("The crank key must not be the admin key")]
+    CrankIsAdmin,
+    #[msg("Too late: the time for this step has passed")]
+    StepClosed,
+    #[msg("Only members with shares in the chest can propose a trade")]
+    NoShares,
 }

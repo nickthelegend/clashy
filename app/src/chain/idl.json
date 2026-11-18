@@ -1814,6 +1814,24 @@
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "wallet",
           "signer": true
         },
@@ -7769,6 +7787,21 @@
       "code": 6069,
       "name": "PostGone",
       "msg": "That post is no longer on the board"
+    },
+    {
+      "code": 6070,
+      "name": "CrankIsAdmin",
+      "msg": "The crank key must not be the admin key"
+    },
+    {
+      "code": 6071,
+      "name": "StepClosed",
+      "msg": "Too late: the time for this step has passed"
+    },
+    {
+      "code": 6072,
+      "name": "NoShares",
+      "msg": "Only members with shares in the chest can propose a trade"
     }
   ],
   "types": [
