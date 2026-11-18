@@ -4,7 +4,6 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
 import { BN, COIN_SYMBOLS, P, FEED_BOARD } from '@/chain/client';
@@ -13,10 +12,10 @@ import { errText, useChain } from '@/chain/useChain';
 import { readHoldings, readPortfolio, readStash, useBoard, usePoll, usePrices, useProfiles, type Post } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
-import { ProfileAvatar, STOCK_ART, Thread } from '@/ui/feed';
+import { ProfileAvatar, Thread } from '@/ui/feed';
 import { useCreate } from '@/ui/create';
 import { TopCallCard } from '@/ui/top-call';
-import { Bell, Jar, Search as SearchI } from '@/ui/icons';
+import { Bell, Jar, Plus, Search as SearchI } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
@@ -199,22 +198,14 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      {myProfile ? (
-        // tap to open the call drawer
-        <Pressable onPress={() => openCall(null)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#1B1B21' : C.s1, borderRadius: 22, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: '#1F1F26' })}>
-          <ProfileAvatar p={myProfile} size={40} />
-          <View style={{ flex: 1 }}>
-            <Txt v="title" style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
-            <Txt v="small" style={{ marginTop: 1 }}>Stocks, coins, perps or memecoins</Txt>
-          </View>
-          <Row>
-            {[STOCK_ART.NVDA, ART.logoSOL, ART.logoBTC].map((src, i) => <Image key={i} source={src} style={{ width: 30, height: 30, borderRadius: 15, marginLeft: i ? -9 : 0, borderWidth: 2, borderColor: C.s1 }} contentFit="cover" />)}
-          </Row>
-        </Pressable>
-      ) : null}
-
-      <View style={{ marginTop: 8 }}>
+      <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'calls', label: 'Calls' }, { key: 'duels', label: 'Clash results' }]} />
+        {/* post a new call: opens the call drawer */}
+        <Pressable onPress={() => (myProfile ? openCall(null) : wallet.login?.())} accessibilityRole="button" accessibilityLabel="Post a call" hitSlop={8}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, height: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: C.brand, opacity: pressed ? 0.85 : 1 })}>
+          <Plus size={14} color={C.onBrand} />
+          <Txt v="small" color={C.onBrand} style={{ ...FONT.semi, fontSize: 13 }}>Call</Txt>
+        </Pressable>
       </View>
       {likeErr ? <ErrorLine msg={likeErr} /> : null}
 
