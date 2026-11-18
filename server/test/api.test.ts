@@ -11,6 +11,7 @@ import { b58decode, b58encode } from '../src/b58.ts';
 
 const PORT = 18791 + Math.floor(Math.random() * 500);
 const URL_ = `http://127.0.0.1:${PORT}`;
+const INDEXER = 'i'.repeat(48);
 let proc: ChildProcess;
 let dir: string;
 
@@ -46,7 +47,7 @@ async function signIn(w: W, tamper?: 'other' | 'sendable' | 'text') {
 
 before(async () => {
   dir = mkdtempSync(join(tmpdir(), 'clashy-social-'));
-  proc = spawn(process.execPath, ['src/index.ts'], { env: { ...process.env, PORT: String(PORT), CLASHY_DATA: dir, CLASHY_ENV: 'local' }, stdio: 'pipe' });
+  proc = spawn(process.execPath, ['src/index.ts'], { env: { ...process.env, PORT: String(PORT), CLASHY_DATA: dir, CLASHY_ENV: 'local', CLASHY_INDEXER_SECRET: INDEXER, ...(process.env.TEST_DATABASE_URL ? { CLASHY_DATABASE_URL: process.env.TEST_DATABASE_URL } : {}) }, stdio: 'pipe' });
   for (let i = 0; i < 50; i++) {
     try { if ((await fetch(URL_ + '/health')).ok) return; } catch { /* starting */ }
     await new Promise((r) => setTimeout(r, 100));
@@ -54,6 +55,7 @@ before(async () => {
   throw new Error('server did not start');
 });
 after(() => { proc.kill(); rmSync(dir, { recursive: true, force: true }); });
+
 
 const ann = wallet(), bo = wallet(), cy = wallet();
 
@@ -111,4 +113,28 @@ test('messages: requests until you reply, unread counts and read receipts', asyn
   assert.equal((await call('GET', `/v1/dm/${cy.addr}`, bo)).json.theirRead, t.messages[1].id, 'bo sees it was read');
   assert.equal((await call('POST', `/v1/dm/${bo.addr}`, cy, { body: '   ' })).status, 400);
   assert.equal((await call('GET', `/v1/dm/${bo.addr}`)).status, 401);
+});
+
+test('archive: only the indexer writes; posts are public; squad history is for members only', async () => {
+  const clan = wallet().addr, refkey = wallet().addr;
+  const seq = 1_000_000 + Math.floor(Math.random() * 1e6);
+  const batch = {
+    posts: [{ seq, author: ann.addr, ts: 1795000000, kind: 4, refkey, replyTo: null, text: 'SOL to 80', likes: 2, replies: 0 }],
+    chat: [{ clan, ch: 0, i: 7, author: bo.addr, ts: 1795000001, kind: 0, refkey, text: 'gm squad' }],
+    members: [{ clan, wallets: [bo.addr] }],
+  };
+  const post = (h: Record<string, string>, b: unknown) => fetch(URL_ + '/internal/archive', { method: 'POST', headers: { 'content-type': 'application/json', ...h }, body: JSON.stringify(b) });
+  assert.equal((await post({}, batch)).status, 401);
+  assert.equal((await post({ 'x-clashy-indexer': 'i'.repeat(47) + 'j' }, batch)).status, 401);
+  assert.equal((await post({ 'x-clashy-indexer': INDEXER }, { posts: [{ ...batch.posts[0], author: 'not-a-wallet' }] })).status, 400);
+  assert.equal((await post({ 'x-clashy-indexer': INDEXER }, batch)).status, 200);
+  assert.equal((await post({ 'x-clashy-indexer': INDEXER }, { posts: [{ ...batch.posts[0], likes: 5 }] })).status, 200, 'likes update in place');
+  const one = (await call('GET', `/v1/posts/${seq}`)).json;
+  assert.equal(one.text, 'SOL to 80'); assert.equal(one.likes, 5); assert.equal(one.replyTo, null);
+  const mine = (await call('GET', `/v1/posts?author=${ann.addr}`)).json.posts;
+  assert.ok(mine.some((x: { seq: number }) => x.seq === seq));
+  assert.equal((await call('GET', `/v1/chat/${clan}/0`, bo)).json.messages[0].text, 'gm squad');
+  assert.equal((await call('GET', `/v1/chat/${clan}/0`, ann)).status, 403, 'not a member');
+  assert.equal((await call('GET', `/v1/chat/${clan}/0`)).status, 401);
+  assert.equal((await call('GET', '/v1/posts/999999999999')).status, 404);
 });

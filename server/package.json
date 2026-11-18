@@ -5,9 +5,14 @@
   "description": "Clashy's social server: DMs, follows, follow requests, notifications and bios for wallets that sign in with Solana",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=23.6" },
+  "engines": {
+    "node": ">=23.6"
+  },
   "scripts": {
     "start": "node src/index.ts",
     "test": "node --test --test-concurrency=1 test/api.test.ts"
+  },
+  "dependencies": {
+    "postgres": "3.4.7"
   }
 }

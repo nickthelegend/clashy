@@ -26,6 +26,10 @@ services:
       CLASHY_SOCIAL_SECRET: ${CLASHY_SOCIAL_SECRET:-}
       CLASHY_TRUST_PROXY: ${CLASHY_TRUST_PROXY:-0}
       CLASHY_APP_ORIGIN: ${CLASHY_APP_ORIGIN:-*}
+      # the archive's writer; must match the indexer's
+      CLASHY_INDEXER_SECRET: ${CLASHY_INDEXER_SECRET:-}
+      # empty: SQLite on the social-data volume (testnet). Set it (Supabase Postgres) for mainnet.
+      CLASHY_DATABASE_URL: ${CLASHY_DATABASE_URL:-}
     volumes: [social-data:/data]
     ports: ["8791:8791"]
     restart: unless-stopped
@@ -38,7 +42,8 @@ services:
     environment:
       <<: *chain-env
       CLASHY_RELAY_BIND: 0.0.0.0
-    env_file: [{ path: chain/.env, required: false }]
+    # chain/.env for local secrets; deploy/<target>.env (CLASHY_DEPLOY_ENV, set by deploy/up.sh) overrides it
+    env_file: [{ path: chain/.env, required: false }, { path: "${CLASHY_DEPLOY_ENV:-deploy/none.env}", required: false }]
     volumes:
       - ./chain/.keys:/app/chain/.keys:ro
       - ./chain/.localnet:/app/chain/.localnet
@@ -52,13 +57,28 @@ services:
     depends_on: [relay]
     command: ["npx", "tsx", "scripts/crank.ts"]
     environment: *chain-env
-    env_file: [{ path: chain/.env, required: false }]
+    # chain/.env for local secrets; deploy/<target>.env (CLASHY_DEPLOY_ENV, set by deploy/up.sh) overrides it
+    env_file: [{ path: chain/.env, required: false }, { path: "${CLASHY_DEPLOY_ENV:-deploy/none.env}", required: false }]
     volumes:
       - ./chain/.keys:/app/chain/.keys:ro
       - ./chain/.localnet:/app/chain/.localnet
     extra_hosts: ["host.docker.internal:host-gateway"]
     restart: unless-stopped
     mem_limit: 320m
+
+  # copies the rollup's calls board and squad channels into the social server's archive (read-only on chain, no keys)
+  indexer:
+    image: clashy-chain-services
+    depends_on: [relay, social]
+    command: ["npx", "tsx", "scripts/indexer.ts"]
+    environment:
+      <<: *chain-env
+      CLASHY_SOCIAL: http://social:8791
+      CLASHY_INDEXER_SECRET: ${CLASHY_INDEXER_SECRET:-}
+    env_file: [{ path: "${CLASHY_DEPLOY_ENV:-deploy/none.env}", required: false }]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    restart: unless-stopped
+    mem_limit: 256m
 
   web:
     image: nginx:1.27-alpine

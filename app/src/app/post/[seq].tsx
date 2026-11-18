@@ -14,6 +14,7 @@ import { holdingKey, likedBy, reader, readHoldings, useBoard, usePoll, usePrices
 import { stockByMint } from '@/chain/stocks';
 import { CoinToken, coinName } from '@/ui/clash';
 import { useCreate } from '@/ui/create';
+import { useArchivedPost } from '@/chain/social-api';
 import { PositionCard, PostItem, ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { MarketCallCard } from '@/ui/market-call';
 import { callTarget } from '@/chain/calls';
@@ -181,9 +182,12 @@ export default function CallThread() {
   const posts = board.status === 'ready' ? board.data : [];
   const profMap: Map<string, Profile> = profiles.status === 'ready' ? profiles.data : new Map();
   const myProfile = me ? profMap.get(me.toBase58()) : undefined;
-  const post = posts.find((p) => p.seq === seq);
+  const live = posts.find((p) => p.seq === seq);
+  // a call that rolled off the on-chain board comes from the archive (the indexer copies every call)
+  const arch = useArchivedPost(board.status === 'ready' && !live && valid ? seq : null);
+  const post = live ?? arch.post ?? undefined;
   const parent = post && post.replyTo !== null ? posts.find((p) => p.seq === post.replyTo) : undefined;
-  const replies = post ? posts.filter((p) => p.replyTo === post.seq).sort((a, b) => a.seq - b.seq) : [];
+  const replies = post ? (live ? posts.filter((p) => p.replyTo === post.seq).sort((a, b) => a.seq - b.seq) : arch.replies) : [];
 
   // the author's live position on every stock call in this thread
   const shown = [post, parent, ...replies].filter((p): p is Post => !!p && p.kind === 1);
@@ -213,11 +217,11 @@ export default function CallThread() {
   };
 
   if (!valid) return <Gone top={insets.top} title="No call here" body={`"${raw ?? ''}" is not a call number. Open a call from the feed to see its thread.`} />;
-  if (board.status === 'ready' && !post) {
+  if (board.status === 'ready' && !post && (arch.post !== undefined || arch.error)) {
     const newest = posts[0]?.seq ?? -1;
     return seq > newest
       ? <Gone top={insets.top} title="Not posted yet" body={`Call #${seq} does not exist yet: the newest call on the board is #${Math.max(0, newest)}.`} />
-      : <Gone top={insets.top} title="This call scrolled off the board" body={`The public board keeps only the ${RING} newest posts on chain. Call #${seq} is older than that, so there is nothing left to show, and we won't make it up.`} />;
+      : <Gone top={insets.top} title="This call scrolled off the board" body={arch.error ? `The board keeps only the ${RING} newest posts on chain, and Clashy's archive couldn't be reached: ${arch.error}` : `The board keeps only the ${RING} newest posts on chain, and Clashy's archive doesn't have call #${seq}: it was posted before the archive started.`} />;
   }
 
   const author = post ? profMap.get(post.author.toBase58()) : undefined;

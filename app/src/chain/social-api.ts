@@ -7,6 +7,8 @@ import { PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWallet } from './wallet';
 import type { WalletSigner } from './client';
+import { CALL_PERP, CALL_TOKEN, splitTrade } from './calls';
+import type { Post } from './social';
 
 export const SOCIAL = process.env.EXPO_PUBLIC_CLASHY_SOCIAL ?? 'http://127.0.0.1:8791';
 const MEMO = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
@@ -105,3 +107,26 @@ export function useSocial<T>(path: string | null, ms: number, auth = true) {
 
 export function useInbox(ms = 4000) { const w = useWallet(); return useSocial<Inbox>(w.signer ? '/v1/inbox' : null, ms); }
 export const useSocialProfile = (owner: string | null, ms = 15_000) => useSocial<SocialProfile>(owner ? `/v1/profile/${owner}` : null, ms);
+
+/* ---------- the archive: calls that rolled off the on-chain board ---------- */
+type ArchivedPost = { seq: number; author: string; ts: number; kind: number; refkey: string; replyTo: number | null; text: string; likes: number; replies: number };
+const toPost = (a: ArchivedPost): Post => {
+  const { body, trade } = a.kind === CALL_TOKEN || a.kind === CALL_PERP ? splitTrade(a.text) : { body: a.text, trade: null };
+  return { seq: a.seq, author: new PublicKey(a.author), ts: a.ts, kind: a.kind, refkey: new PublicKey(a.refkey), replyTo: a.replyTo, likes: a.likes, replies: a.replies, text: body, trade, liked: [] };
+};
+/** A call and its replies from the archive (pass null until the live board has been checked and doesn't have it).
+ *  post: undefined while reading, null when the archive doesn't have it either. */
+export function useArchivedPost(seq: number | null) {
+  const [s, setS] = useState<{ post?: Post | null; replies: Post[]; error?: string }>({ replies: [] });
+  useEffect(() => {
+    if (seq === null) return;
+    let alive = true;
+    Promise.all([
+      raw<ArchivedPost>(`/v1/posts/${seq}`).then(toPost).catch((e: SocialError) => { if (e.status === 404) return null; throw e; }),
+      raw<{ posts: ArchivedPost[] }>(`/v1/posts?replyTo=${seq}&limit=100`).then((r) => r.posts.map(toPost).sort((a, b) => a.seq - b.seq)),
+    ]).then(([post, replies]) => alive && setS({ post, replies }))
+      .catch((e: Error) => alive && setS({ post: null, replies: [], error: e.message }));
+    return () => { alive = false; };
+  }, [seq]);
+  return s;
+}

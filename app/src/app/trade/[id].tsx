@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { callTarget } from '@/chain/calls';
 import { usePractice } from '@/chain/practice';
 import { useBoard, useProfiles } from '@/chain/social';
+import { useArchivedPost } from '@/chain/social-api';
 import { useMarket } from '@/ui/market-call';
 import { ART, Bone, ErrorLine, Pending, Row } from '@/ui/kit';
 import { CARD, tradeOf } from '@/ui/practice-kit';
@@ -46,10 +47,13 @@ function MyTrade({ id }: { id: string }) {
 function PostedTrade({ seq }: { seq: number }) {
   const board = useBoard();
   const profiles = useProfiles();
-  const post = board.status === 'ready' ? board.data.find((x) => x.seq === seq) : undefined;
+  const live = board.status === 'ready' ? board.data.find((x) => x.seq === seq) : undefined;
+  // a trade that rolled off the on-chain board comes from the archive (the indexer copies every call)
+  const arch = useArchivedPost(board.status === 'ready' && !live && Number.isInteger(seq) ? seq : null);
+  const post = live ?? arch.post ?? undefined;
   const target = post ? callTarget(post) : null;
   const m = useMarket(target?.kind === 'market' ? target.id : null);
-  if (board.status === 'loading') return <Loading />;
+  if (board.status === 'loading' || (board.status === 'ready' && !live && arch.post === undefined && !arch.error)) return <Loading />;
   if (board.status === 'error') return <TradeShell><View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}><ErrorLine msg={board.error} onRetry={board.reload} /></View></TradeShell>;
   if (!post || !post.trade || target?.kind !== 'market') {
     return (

@@ -8,6 +8,24 @@ Goals:
 Every number below was either measured on our stack (marked *measured*) or comes from the provider's own page (linked).
 The rest is marked as an estimate.
 
+## 0. Two versions
+
+| | **Testnet: the hackathon build** | **Mainnet: after the hackathon** |
+|---|---|---|
+| Chain | Solana devnet + MagicBlock devnet rollup (`devnet-eu.magicblock.app`) | Solana mainnet + MagicBlock mainnet rollup (`eu.magicblock.app`) |
+| Money | Devnet USDC (a test mint; no real value) | Real USDC; the sponsor holds real SOL |
+| Social, archive | SQLite on the VM's volume (backed up nightly) | **Supabase Postgres** (`CLASHY_DATABASE_URL`), pooled, with point-in-time recovery |
+| RPC | Devnet public RPC or Helius free | Helius Developer ($49/mo), never the public endpoint |
+| Keys | Sponsor, authority and crank in `chain/.keys` on the VM | Authority and upgrade key behind a Squads multisig; a **separate crank key** (prices only); sponsor float topped up |
+| Prices | Crank pushes to the rollup every 1 s and to Solana every 5 s | Rollup pushes from the crank; Solana side moves to MagicBlock's oracle (cuts about 2.6 SOL/month) |
+| Hosting | One VM (Hetzner, about EUR 6/mo): `bash deploy/up.sh testnet` | Same compose on a 4 GB VM plus Supabase; web on a CDN: `bash deploy/up.sh mainnet` |
+| Gate | `preflight.ts testnet` passes | `preflight.ts mainnet` passes, **every Critical and High in [docs/AUDIT.md](AUDIT.md) fixed and re-audited**, devnet rehearsal done |
+| Settings | [deploy/testnet.env.example](../deploy/testnet.env.example) | [deploy/mainnet.env.example](../deploy/mainnet.env.example) |
+
+Both versions run the same code and the same docker-compose.yml; only the settings file differs. `deploy/up.sh <target>`
+builds the images, starts the stack behind Caddy and runs the read-only preflight, which lists every missing setting,
+key, balance and endpoint.
+
 ## 1. The pieces
 
 ```
@@ -19,7 +37,9 @@ The rest is marked as an estimate.
                          │             GeckoTerminal), serves price history                                        │
                          │   crank     pushes prices to the rollup every 1 s and to Solana every 5 s, records      │
                          │             history                                                                     │
-                         │   social    DMs, follows, follow requests, notifications, bios (SQLite, WAL)            │
+                         │   social    DMs, follows, follow requests, notifications, bios, and the public archive │
+                         │             of calls and squad chat (SQLite on testnet, Supabase Postgres on mainnet)    │
+                         │   indexer   copies the rollup's calls board and squad channels into the archive        │
                          └───────┬────────────────────────────┬────────────────────────────────────────────────────┘
                                  │                            │
                ┌─────────────────▼───────────┐   ┌────────────▼─────────────────────────────────────┐
@@ -38,7 +58,8 @@ The rest is marked as an estimate.
 | Live game state: duel scoring, Royale rounds, price feeds | MagicBlock Ephemeral Rollup | Millisecond updates, no per-transaction fee, committed back to Solana |
 | Calls board, squad chat | MagicBlock Ephemeral Rollup | Public, fast and free to write |
 | Names, avatars, Elo and ranks, streaks, play-safe limits | Solana | Part of the player's record, and other programs can read them |
-| DMs, follows, notifications, bios | Social server (SQLite) | Private, high-volume and not money. On chain it would cost rent per message for no benefit |
+| DMs, follows, notifications, bios | Social server (SQLite or Postgres) | Private, high-volume and not money. On chain it would cost rent per message for no benefit |
+| History of calls and squad chat | Social server archive, written by the indexer | The on-chain board and channels are 24-entry rings; the archive keeps everything, public calls and members-only chat |
 | Market data, price history | Relay cache and crank files | Shared across players so upstream rate limits hold |
 
 ## 2. Flows

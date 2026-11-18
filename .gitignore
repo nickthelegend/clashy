@@ -10,3 +10,6 @@ assets/gen-nov17/vlogs/
 assets/gen-nov17/frames/
 app/dist-devwallet/
 app/dist-*/
+
+# filled-in deploy settings hold secrets; only the .example files are tracked
+deploy/*.env
