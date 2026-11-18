@@ -159,7 +159,7 @@ export default function PracticeHome() {
         </Row>
 
         {/* paper balance */}
-        <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 16, marginTop: 18 }}>
+        <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, padding: 16, marginTop: 18 }}>
           <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <View style={{ flexShrink: 1, minWidth: 0 }}>
               <Txt v="small">Paper balance</Txt>
@@ -214,7 +214,7 @@ export default function PracticeHome() {
         {orders.length ? (
           <>
             <Head title="Open orders" right={`${orders.length} resting`} />
-            <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
               {orders.map((o, i) => (
                 <Pressable key={o.id} onPress={() => router.push(`/practice/${o.marketId}` as Href)}
                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
@@ -261,11 +261,11 @@ export default function PracticeHome() {
         {pxErr ? <ErrorLine msg={pxErr} /> : null}
         <View style={{ marginTop: 10 }}>
           {catErr && !cat ? (
-            <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 14 }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}>
               <ErrorLine msg={catErr} onRetry={reload} />
             </View>
           ) : !cat ? (
-            <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, paddingHorizontal: 14 }}><SkeletonRows n={6} /></View>
+            <View style={{ backgroundColor: CARD, borderRadius: 24, paddingHorizontal: 14 }}><SkeletonRows n={6} /></View>
           ) : list.length === 0 ? (
             query ? (
               <EmptyCard art={ART.emptySearch} title={`Nothing called "${q.trim()}"`} body="Try a ticker like NVDA, SOL or a memecoin's name. Practice lists the markets live on Jupiter right now." />
@@ -273,7 +273,7 @@ export default function PracticeHome() {
               <EmptyCard art={ART.emptySearch} title="No markets here right now" body={tab === 'meme' ? 'No pump.fun launch is trending on Jupiter at the moment. Check back in a minute.' : 'Jupiter returned no markets for this list.'} />
             )
           ) : (
-            <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
               {list.map((m, i) => <MarketRow key={m.id} m={m} px={prices[m.mint]} first={i === 0} />)}
             </View>
           )}
@@ -291,7 +291,7 @@ export default function PracticeHome() {
         {!pr.book ? <SkeletonRows n={2} /> : closed.length === 0 ? (
           <EmptyCard art={ART.emptyLeaderboard} title="No closed trades yet" body="Every trade you close lands here with its profit or loss, and counts towards your win rate." />
         ) : (
-          <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+          <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
             {shownHistory.map((c, i) => <HistoryRow key={c.id} c={c} first={i === 0} />)}
             {closed.length > 10 ? (
               <Pressable onPress={() => setAllHistory((x) => !x)} style={{ height: 48, alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: '#18181E' }}>

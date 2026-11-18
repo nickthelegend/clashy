@@ -38,7 +38,7 @@ export function MarketLogo({ m, size = 40 }: { m: LogoOf; size?: number }) {
   }
   if (tile) {
     return (
-      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {local ? <Image source={local} style={{ width: size * 0.86, height: size * 0.86 }} contentFit="contain" />
           : m.icon ? <Image source={{ uri: m.icon }} style={{ width: size, height: size }} contentFit="cover" transition={150} /> : null}
       </View>
@@ -69,7 +69,7 @@ export function SideTag({ p }: { p: Pick<Position, 'kind' | 'side' | 'lev'> }) {
 
 export function Stat({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, borderWidth: 1, borderColor: HAIR, paddingVertical: 12, paddingHorizontal: 12 }}>
+    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 12 }}>
       <Txt v="small" style={{ fontSize: 11.5 }} lines={1}>{label}</Txt>
       <Txt v="h2" color={color} lines={1} style={{ marginTop: 3, fontVariant: ['tabular-nums'] }}>{value}</Txt>
       {sub ? <Txt v="small" style={{ fontSize: 11, marginTop: 1 }} lines={1}>{sub}</Txt> : null}
@@ -107,7 +107,7 @@ export function BarBtn({ title, bg, fg, onPress, disabled, h = 54 }: { title: st
 
 export function EmptyCard({ art, title, body, action }: { art: number; title: string; body: string; action?: ReactNode }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12', borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed' }}>
+    <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12' }}>
       <Image source={art} style={{ width: 72, height: 72 }} contentFit="contain" />
       <Txt v="label" style={{ marginTop: 6, textAlign: 'center' }}>{title}</Txt>
       <Txt v="small" style={{ marginTop: 3, textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
@@ -126,7 +126,7 @@ export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; o
   const liq = liqPrice(p);
   const color = pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down;
   // a card that isn't a link is a plain view: a disabled wrapper would mark its Close button disabled for assistive tech
-  const card = { backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 14 } as const;
+  const card = { backgroundColor: CARD, borderRadius: 22, padding: 14 } as const;
   return (
     <Card onPress={onPress} style={card}>
       <Row style={{ gap: 12 }}>
@@ -233,7 +233,7 @@ export function CloseSheet({ p, px, pr, onClose, feed: given }: { p: Position | 
             <Txt v="small">Profit if you close now</Txt>
             <Txt v="hero" color={pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down} style={{ fontSize: 48, fontVariant: ['tabular-nums'] }}>{pnl === undefined ? '…' : signedUsd(pnl)}</Txt>
           </View>
-          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, borderWidth: 1, borderColor: '#26262E', padding: 14, marginTop: 14, gap: 10 }}>
+          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, padding: 14, marginTop: 14, gap: 10 }}>
             <Line k={onBook ? `Average fill on ${VENUES[q.venue!].name}` : 'Live price'} v={fmtPrice(price)} />
             {onBook ? <Line k="Mark price" v={fmtPrice(px?.usdPrice)} /> : null}
             <Line k="Back to your balance" v={back === undefined ? '…' : `$${back.toFixed(2)}`} />

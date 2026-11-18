@@ -7,8 +7,6 @@ import { VENUES, mid, spreadBps, type BookFeed, type Candle, type Level, type Pr
 import { LiveDot, Row, Txt } from './kit';
 import { C } from './tokens';
 
-const HAIR = '#1F1F27';
-
 export function VenueChip({ venue, small }: { venue: Venue; small?: boolean }) {
   const book = venue !== 'jupiter';
   return (
@@ -80,7 +78,7 @@ function Side({ rows, kind, max, d, onPick }: { rows: [number, number, number][]
     <View>
       {rows.map(([p, a, cum]) => (
         <Pressable key={`${kind}${p}`} onPress={onPick ? () => onPick(p) : undefined} disabled={!onPick} accessibilityLabel={`${kind === 'bid' ? 'Bid' : 'Ask'} ${p}`}
-          style={({ pressed }) => ({ height: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
+          style={({ pressed }) => ({ height: 24, flexDirection: 'row', alignItems: 'center', backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
           <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: 2, bottom: 2, width: `${Math.min(100, (cum / max) * 100)}%`, backgroundColor: kind === 'bid' ? 'rgba(48,209,88,0.11)' : 'rgba(255,69,58,0.11)', borderRadius: 3 }} />
           <Txt v="small" color={col} style={{ flex: 1, fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtP(p, d)}</Txt>
           <Txt v="small" color={C.ink} style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtSize(a)}</Txt>
@@ -110,13 +108,13 @@ export function OrderBookView({ feed, base, onPick }: { feed: BookFeed; base: st
   }
   return (
     <View>
-      <Row style={{ paddingHorizontal: 10, height: 26 }}>
+      <Row style={{ height: 26 }}>
         <Txt v="small" style={{ flex: 1, fontSize: 11 }}>Price (USD)</Txt>
         <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Size ({base})</Txt>
         <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Total</Txt>
       </Row>
       <Side rows={[...asks].reverse()} kind="ask" max={max} d={d} onPick={onPick} />
-      <Row style={{ height: 34, paddingHorizontal: 10, gap: 10, borderTopWidth: 1, borderBottomWidth: 1, borderColor: HAIR, backgroundColor: '#0D0D11' }}>
+      <Row style={{ height: 36, gap: 10 }}>
         <Txt v="label" style={{ fontVariant: ['tabular-nums'] }}>{m !== undefined ? fmtP(m, d) : '–'}</Txt>
         <Txt v="small" style={{ flex: 1 }}>mid</Txt>
         <Txt v="small" style={{ fontVariant: ['tabular-nums'] }}>Spread {sp !== undefined ? `${sp < 10 ? sp.toFixed(2) : sp.toFixed(1)} bps` : '–'}</Txt>
@@ -132,13 +130,13 @@ export function TapeView({ trades, base }: { trades: Print[]; base: string }) {
   if (!trades.length) return <View style={{ height: 120, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">No trades seen yet</Txt></View>;
   return (
     <View>
-      <Row style={{ paddingHorizontal: 10, height: 26 }}>
+      <Row style={{ height: 26 }}>
         <Txt v="small" style={{ flex: 1, fontSize: 11 }}>Price (USD)</Txt>
         <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Size ({base})</Txt>
         <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Time</Txt>
       </Row>
       {trades.slice(0, ROWS * 2 + 1).map((t) => (
-        <Row key={t.id} style={{ height: 24, paddingHorizontal: 10 }}>
+        <Row key={t.id} style={{ height: 24 }}>
           <Txt v="small" color={t.side === 'buy' ? C.up : C.down} style={{ flex: 1, fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtP(t.price, d)}</Txt>
           <Txt v="small" color={C.ink} style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtSize(t.size)}</Txt>
           <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{clock(t.t, now)}</Txt>

@@ -1,8 +1,8 @@
 // The "+" in the tab bar: a bottom drawer with the four things you can start (a call, a clash, a save, a squad),
 // and the call composer as its own drawer. Any screen can open them through useCreate() (Reply on a post does).
 import { router, type Href } from 'expo-router';
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform, Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { PublicKey } from '@solana/web3.js';
 import { BN, USDC, usdcAta } from '@/chain/client';
@@ -15,10 +15,11 @@ import { ART, Btn, ErrorLine, Row, Txt } from './kit';
 import { Lottie } from './lottie';
 import { Sheet, SheetTile } from './sheet';
 import { AmountSheet } from './amount';
+import { SearchSheet } from './search-sheet';
 import { C, F, fmtUsd } from './tokens';
 
-type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void };
-const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {} });
+type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void; openSearch: () => void };
+const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {}, openSearch: () => {} });
 export const useCreate = () => useContext(CreateCtx);
 
 function CallDrawer({ open, onClose, replyTo }: { open: boolean; onClose: () => void; replyTo: Post | null }) {
@@ -83,12 +84,21 @@ export function CreateProvider({ children }: { children: ReactNode }) {
   const [replyTo, setReplyTo] = useState<Post | null>(null);
   const [save, setSave] = useState(false);
   const [arena, setArena] = useState(false);
+  const [search, setSearch] = useState(false);
   const ctx: Ctx = {
     openMenu: () => setMenu(true),
     openCall: (r) => { setReplyTo(r ?? null); setCall(true); },
     openSave: () => setSave(true),
     openArena: () => setArena(true),
+    openSearch: () => setSearch(true),
   };
+  // ⌘K / Ctrl+K opens search from anywhere in the tabs (web)
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const down = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearch(true); } };
+    window.addEventListener('keydown', down);
+    return () => window.removeEventListener('keydown', down);
+  }, []);
   const go = (fn: () => void) => () => { setMenu(false); setTimeout(fn, 260); };
   return (
     <CreateCtx.Provider value={ctx}>
@@ -102,6 +112,7 @@ export function CreateProvider({ children }: { children: ReactNode }) {
       <CallDrawer open={call} onClose={() => setCall(false)} replyTo={replyTo} />
       <SaveDrawer open={save} onClose={() => setSave(false)} />
       <ArenaDrawer open={arena} onClose={() => setArena(false)} />
+      <SearchSheet open={search} onClose={() => setSearch(false)} />
     </CreateCtx.Provider>
   );
 }
