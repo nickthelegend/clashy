@@ -23,6 +23,7 @@ import {
   ArtCard, BigGo, CoinTile, DirPick, HeadAction, MemberRow, PastWar, Pills, PnlPill, PositionCard, RivalRow, SectionHead, SquadVersus, Stat, TradeCard, fmtLeft,
 } from '@/ui/chest';
 import { ClayLoop } from '@/ui/clay';
+import { WarScene } from '@/ui/lottie';
 import { ART, BackBtn, Btn, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Bone, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
@@ -408,7 +409,7 @@ export default function OnchainClan() {
               );
             })}
             {activeWars.length === 0 ? (
-              <ArtCard art={<ClayLoop name="war" width={220} height={124} style={{ borderRadius: 20 }} cover />} title={captain ? 'Pick a fight' : 'No war right now'}
+              <ArtCard art={<WarScene width={240} height={144} />} title={captain ? 'Pick a fight' : 'No war right now'}
                 body={captain ? `Stake ${fmtUsd(WAR_STAKE_USDC)} of the chest against a rival squad. Whoever trades the better return over the window takes both stakes.` : 'Your captain can challenge a rival squad. Whoever trades the better return takes both stakes.'}>
                 {captain ? <Btn title="Challenge a squad" kind="short" h={50} style={{ borderRadius: 25 }} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : null}
               </ArtCard>

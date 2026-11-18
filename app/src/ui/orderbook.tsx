@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import Svg, { G, Line as SLine, Rect } from 'react-native-svg';
 import { VENUES, mid, spreadBps, type BookFeed, type Candle, type Level, type Print, type Venue } from '@/chain/venues';
 import { LiveDot, Row, Txt } from './kit';
+import { Scrub, fmtWhen } from './scrub';
 import { C } from './tokens';
 
 export function VenueChip({ venue, small }: { venue: Venue; small?: boolean }) {
@@ -66,6 +67,8 @@ export function CandleChart({ candles, w, h = 220, last }: { candles: Candle[]; 
       </View>
       <Txt v="small" style={{ position: 'absolute', right: 4, top: 2, fontSize: 10 }}>{fmtP(hi0, d)}</Txt>
       <Txt v="small" style={{ position: 'absolute', right: 4, bottom: 0, fontSize: 10 }}>{fmtP(lo0, d)}</Txt>
+      <Scrub w={w - R_} h={h} n={data.length} xAt={(i) => i * cw + cw / 2} yAt={(i) => Y(data[i].c)}
+        label={(i) => { const k = data[i]; return { value: fmtP(k.c, d), color: k.c >= k.o ? C.up : C.down, sub: `O ${fmtP(k.o, d)} H ${fmtP(k.h, d)} L ${fmtP(k.l, d)} · ${fmtWhen(k.t)}` }; }} />
     </View>
   );
 }

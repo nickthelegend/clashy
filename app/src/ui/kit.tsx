@@ -6,6 +6,9 @@ import { Pressable, StyleProp, StyleSheet, Text, TextInput, TextStyle, View, Vie
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { C, F, FONT, R, fmtPct } from './tokens';
+import { Scrub, fmtNum, fmtWhen } from './scrub';
+/** "+0.42%" from a reference value. */
+const signedMove = (v: number, ref: number) => { const p = ref ? (v / ref - 1) * 100 : 0; return `${p >= 0 ? '+' : '−'}${Math.abs(p).toFixed(2)}%`; };
 import { Back, Search as SearchIcon, Swords } from './icons';
 
 /* ---------- type ---------- */
@@ -164,6 +167,7 @@ export const Sparkline = ({ data, w = 120, h = 36, color }: { data: number[]; w?
 };
 /** Area chart; optional knockout lines (yours in brand, opponent's in pink). */
 export const PriceChart = ({ data, w, h = 220, koYou, koOpp }: { data: number[]; w: number; h?: number; koYou?: number; koOpp?: number }) => {
+  const px = (i: number) => 6 + (i * (w - 12)) / Math.max(1, data.length - 1);
   if (data.length < 2) return <View style={{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">Loading price…</Txt></View>;
   const extra = [koYou, koOpp].filter((x): x is number => x !== undefined);
   const lo = Math.min(...data, ...extra), hi = Math.max(...data, ...extra), pad = (hi - lo) * 0.08;
@@ -171,6 +175,7 @@ export const PriceChart = ({ data, w, h = 220, koYou, koOpp }: { data: number[];
   const y = (v: number) => 6 + (1 - (v - L) / (H - L)) * (h - 12);
   const d = toPath(data, w, h, 6, L, H);
   return (
+    <View style={{ width: w, height: h }}>
     <Svg width={w} height={h}>
       <Defs><LinearGradient id="g" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={C.brand} stopOpacity={0.22} /><Stop offset="1" stopColor={C.brand} stopOpacity={0} /></LinearGradient></Defs>
       <Path d={`${d} L${w - 6},${h} L6,${h}Z`} fill="url(#g)" />
@@ -178,6 +183,8 @@ export const PriceChart = ({ data, w, h = 220, koYou, koOpp }: { data: number[];
       {koYou !== undefined ? <Line x1={0} x2={w} y1={y(koYou)} y2={y(koYou)} stroke={C.brand} strokeWidth={1.5} strokeDasharray="6 5" /> : null}
       {koOpp !== undefined ? <Line x1={0} x2={w} y1={y(koOpp)} y2={y(koOpp)} stroke={C.opp} strokeWidth={1.5} strokeDasharray="6 5" /> : null}
     </Svg>
+    <Scrub w={w} h={h} n={data.length} xAt={px} yAt={(i) => y(data[i])} label={(i) => ({ value: fmtNum(data[i]), sub: `${signedMove(data[i], data[0])} from the start` })} />
+    </View>
   );
 };
 
@@ -422,7 +429,7 @@ const smooth = (pts: [number, number][]) => {
 };
 /** Price chart for games: real history plus live ticks, a smoothed line, at least ±minSpan of range so quiet markets
  *  don't look like stairs, an optional reference line (e.g. a round's start price), and a pulsing live dot. */
-export const LiveChart = ({ data, w, h = 240, refLine, refLabel, minSpan = 0.0008, color = C.brand }: { data: number[]; w: number; h?: number; refLine?: number; refLabel?: string; minSpan?: number; color?: string }) => {
+export const LiveChart = ({ data, w, h = 240, refLine, refLabel, minSpan = 0.0008, color = C.brand, times, fmt = fmtNum }: { data: number[]; w: number; h?: number; refLine?: number; refLabel?: string; minSpan?: number; color?: string; /** ms per point, for the crosshair's time */ times?: number[]; fmt?: (v: number) => string }) => {
   const pulse = useSharedValue(1);
   useEffect(() => { pulse.value = withRepeat(withTiming(2.4, { duration: 1100 }), -1, false); }, [pulse]);
   const ring = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }], opacity: 1.4 - pulse.value / 2 }));
@@ -457,6 +464,8 @@ export const LiveChart = ({ data, w, h = 240, refLine, refLabel, minSpan = 0.000
         <Text style={{ ...FONT.bold, fontSize: 11, color: '#000' }}>{last >= 1000 ? last.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.toPrecision(5)}</Text>
       </View>
       {refLine !== undefined && refLabel ? <Text style={{ position: 'absolute', left: 8, top: Math.max(2, Y(refLine) - 18), ...FONT.semi, fontSize: 10.5, color: C.brandSoft }}>{refLabel}</Text> : null}
+      <Scrub w={w} h={h} n={data.length} xAt={X} yAt={(i) => Y(data[i])} color={lc}
+        label={(i) => ({ value: fmt(data[i]), sub: [`${signedMove(data[i], refLine ?? data[0])} ${refLine !== undefined ? 'from entry' : 'from the start'}`, times?.[i] ? fmtWhen(times[i]) : null].filter(Boolean).join(' · ') })} />
     </View>
   );
 };

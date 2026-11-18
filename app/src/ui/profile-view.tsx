@@ -26,6 +26,7 @@ import { social, useSocialProfile, type FollowState } from '@/chain/social-api';
 import { ART, AVATARS, BADGES, Bone, Btn, ChangePill, Chips, ErrorLine, Money, Pending, RANKS, Row, SkeletonRows, Txt, rankFor } from './kit';
 import { Sheet } from './sheet';
 import { useDeskColumn } from './layout';
+import { Scrub, fmtWhen } from './scrub';
 import { C, F, FONT, S, fmtUsd } from './tokens';
 
 const CARD = '#15151B';
@@ -439,6 +440,8 @@ function PnlChart({ points, h }: { points: PnlPoint[]; h: number }) {
           <Txt v="small" color={C.dim} style={{ position: 'absolute', left: 12, top: Math.max(0, Math.min(h - 14, zy - 7)), fontSize: 10.5, lineHeight: 14 }}>$0</Txt>
           <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: ex - 6, top: ey - 6, width: 12, height: 12, borderRadius: 6, backgroundColor: col }, ring]} />
           <View pointerEvents="none" style={{ position: 'absolute', left: ex - 5, top: ey - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: col, borderWidth: 2, borderColor: '#000' }} />
+          <Scrub w={w} h={h} n={points.length} xAt={(i) => X(points[i].ts)} yAt={(i) => Y(points[i].v)}
+            label={(i) => ({ value: `${points[i].v >= 0 ? '+' : '−'}$${Math.abs(points[i].v).toFixed(2)}`, color: points[i].v >= 0 ? C.up : C.down, sub: `P&L · ${fmtWhen(points[i].ts * 1000)}` })} />
         </>
       ) : null}
     </View>

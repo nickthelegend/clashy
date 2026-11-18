@@ -39,14 +39,17 @@ export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, sou
   const def = MODES.find((x) => x.k === mode)!;
 
   let line: number[] = [];
+  let times: number[] = [];
   let caption = '';
   if (mode === 'live') {
     line = samples.map((x) => x.p);
+    times = samples.map((x) => x.t);
     caption = samples.length > 1 ? `${source} · live since you opened · ${span(samples[samples.length - 1].t - samples[0].t)}` : `${source} · watching the live price`;
   } else if (hs && hist.data) {
     const pts = hist.data.points.filter((x) => typeof x.p[hs] === 'number');
     line = pts.map((x) => x.p[hs]);
-    if (price !== undefined && line.length) line = [...line, price];
+    times = pts.map((x) => x.t * 1000);
+    if (price !== undefined && line.length) { line = [...line, price]; times = [...times, Date.now()]; }
     const covers = !!pts[0] && pts[0].t <= Date.now() / 1000 - def.secs + 5 * 60;
     caption = `Clashy's on-chain ${hs} feed · a sample a minute${pts[0] && !covers ? ` · since ${when(pts[0].t)}` : ''}`;
   }
@@ -60,7 +63,7 @@ export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, sou
     <View style={{ marginTop: 10 }}>
       <View onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))} style={{ marginHorizontal: -4 }}>
         {w === 0 ? <View style={{ height: h }} />
-          : line.length > 1 ? <LiveChart data={line} w={w} h={h} color={color} minSpan={minSpan} />
+          : line.length > 1 ? <LiveChart data={line} times={times} w={w} h={h} color={color} minSpan={minSpan} />
             : mode !== 'live' && hist.error ? <View style={{ height: h, justifyContent: 'center', paddingHorizontal: 8 }}><ErrorLine msg={hist.error} onRetry={hist.reload} /></View>
               : mode !== 'live' && !hist.data ? <View style={{ height: h, justifyContent: 'center', alignItems: 'center' }}><Bone w={'94%'} h={h - 40} r={18} /></View>
                 : (
