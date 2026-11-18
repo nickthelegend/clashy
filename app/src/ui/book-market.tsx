@@ -4,13 +4,13 @@
 // real taker fee; limit orders rest post-only and fill at their price when the book trades through it. Paper money.
 import { router, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { errText } from '@/chain/useChain';
 import {
-  VENUES, fmtPrice, isFresh, levSteps, liqPrice, signedPct, signedUsd, useLiquidations, useOrderFills, usePractice, usePrices,
+  VENUES, fmtPrice, isFresh, levSteps, liqPrice, notional, pnlOf, signedPct, signedUsd, useLiquidations, useOrderFills, usePractice, usePrices,
   type BookVenue, type Market, type Order, type Position, type Practice, type Px, type Quote, type Side,
 } from '@/chain/practice';
 import { TF_MS, bookFresh, fillUsd, mid, useBookFeed, useCandles, type BookFeed, type Timeframe } from '@/chain/venues';
@@ -62,6 +62,47 @@ function UnderTabs<T extends string>({ value, options, onChange }: { value: T; o
   );
 }
 
+/** The order form's frame: a drawer on phones, a card in the desktop terminal. */
+function FormShell({ inline, open, onClose, children }: { inline?: boolean; open: boolean; onClose: () => void; children: ReactNode }) {
+  if (inline) return <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 16 }}>{children}</View>;
+  return <Sheet open={open} onClose={onClose}>{children}</Sheet>;
+}
+function TermStat({ k, v, color }: { k: string; v: string; color?: string }) {
+  return (
+    <View>
+      <Txt v="small" style={{ fontSize: 11 }} lines={1}>{k}</Txt>
+      <Txt v="label" color={color} lines={1} style={{ fontSize: 14, marginTop: 1, fontVariant: ['tabular-nums'] }}>{v}</Txt>
+    </View>
+  );
+}
+function TermBtn({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}
+      style={({ pressed }) => ({ height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: pressed ? '#2A2A33' : '#1F1F26', alignItems: 'center', justifyContent: 'center' })}>
+      <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{title}</Txt>
+    </Pressable>
+  );
+}
+/** A compact table: a header row, then rows of cells (text or any element); a row with onPress opens its trade. */
+function TermTable({ head, rows, empty }: { head: string[]; rows: { key: string; cells: (string | ReactNode)[]; onPress?: () => void }[]; empty: string }) {
+  if (!rows.length) return <Txt v="small" style={{ paddingVertical: 18, textAlign: 'center' }}>{empty}</Txt>;
+  const cell = (c: string | ReactNode, i: number) => (
+    <View key={i} style={{ flex: i === head.length - 1 ? 1.4 : i === 5 ? 1.6 : 1, minWidth: 0, alignItems: i === head.length - 1 ? 'flex-end' : 'flex-start' }}>
+      {typeof c === 'string' ? <Txt v="small" color={C.ink} lines={1} style={{ fontSize: 13, fontVariant: ['tabular-nums'] }}>{c}</Txt> : c}
+    </View>
+  );
+  return (
+    <View>
+      <Row style={{ paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: HAIR }}>{head.map((h, i) => cell(<Txt key={i} v="small" style={{ fontSize: 11.5 }}>{h}</Txt>, i))}</Row>
+      {rows.map((r) => (
+        <Pressable key={r.key} onPress={r.onPress} disabled={!r.onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', minHeight: 46, borderBottomWidth: 1, borderBottomColor: '#17171D', backgroundColor: pressed ? '#16161C' : 'transparent' })}>
+          {r.cells.map(cell)}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 function StatCell({ k, v, color }: { k: string; v: string; color?: string }) {
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
@@ -94,6 +135,13 @@ export function BookMarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
   const [preset, setPreset] = useState<CopyArgs | undefined>(copy);
   const [closing, setClosing] = useState<Position | null>(null);
   const [cancelErr, setCancelErr] = useState<string>();
+  // the desktop terminal (web, 1180 px and wider): an always-open order form, a positions table, a full-height chart
+  const { width: winW } = useWindowDimensions();
+  const wide = Platform.OS === 'web' && winW >= 1180;
+  const [chartH, setChartH] = useState(0);
+  const [desk, setDesk] = useState<'positions' | 'orders' | 'history'>('positions');
+  const [pick, setPick] = useState<{ side: Side; limit: number; n: number } | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   const mark = px?.usdPrice ?? feed.stats.mark;
   const prev = feed.stats.prevDay;
@@ -109,6 +157,114 @@ export function BookMarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
     setCancelErr(undefined);
     try { await pr.cancel(o.id); Haptics.selectionAsync(); } catch (e) { setCancelErr(errText(e)); }
   };
+
+  if (wide) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, padding: 12, gap: 12 }}>
+        {/* the bar: market, mark price, the venue's live stats */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18, backgroundColor: CARD, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 10 }}>
+          <BackBtn onPress={back} />
+          <Row style={{ gap: 10 }}>
+            <MarketLogo m={m} size={40} />
+            <View>
+              <Txt v="h2" lines={1}>{m.symbol}</Txt>
+              <Row style={{ gap: 6, marginTop: 1 }}><VenueChip venue={venue} small /><Txt v="small" lines={1}>{m.name}</Txt></Row>
+            </View>
+          </Row>
+          <View style={{ minWidth: 150 }}>
+            {mark === undefined ? <Bone w={130} h={30} r={8} /> : <Txt v="title" style={{ fontSize: 28, fontVariant: ['tabular-nums'] }} lines={1}>{fmtPrice(mark)}</Txt>}
+            <Row style={{ gap: 6 }}>
+              <LiveDot color={px && isFresh(px) ? C.up : C.dim} />
+              <Txt v="small" style={{ fontSize: 11.5 }}>Mark · {px && isFresh(px) ? 'live' : 'reading'}</Txt>
+            </Row>
+          </View>
+          <TermStat k="24h" v={ch !== undefined ? signedPct(ch) : '–'} color={ch === undefined ? undefined : ch >= 0 ? C.up : C.down} />
+          <TermStat k="Funding /hr" v={funding !== undefined ? `${funding >= 0 ? '' : '−'}${pct(Math.abs(funding))}` : '…'} color={funding === undefined ? undefined : funding >= 0 ? C.up : C.down} />
+          <TermStat k="Open interest" v={feed.stats.oi !== undefined ? fmtUsdC(feed.stats.oi) : '–'} />
+          <TermStat k="24h volume" v={feed.stats.vol24h !== undefined ? fmtUsdC(feed.stats.vol24h) : '–'} />
+          <TermStat k="Max leverage" v={`${m.maxLev}x`} />
+          <View style={{ flex: 1 }} />
+          <PaperBadge />
+        </View>
+
+        <View style={{ flex: 1, flexDirection: 'row', gap: 12, minHeight: 0 }}>
+          {/* chart over positions */}
+          <View style={{ flex: 1, gap: 12, minWidth: 0 }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 12, flex: 1.35, minHeight: 0 }}>
+              <Row style={{ gap: 2 }}>
+                {TFS.map((t) => {
+                  const on = t === tf;
+                  return (
+                    <Pressable key={t} onPress={() => setTf(t)} accessibilityRole="button" accessibilityState={{ selected: on }}
+                      style={{ height: 32, minWidth: 40, paddingHorizontal: 10, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.s2 : 'transparent' }}>
+                      <Txt v="small" color={on ? C.ink : C.dim} style={{ ...(on ? FONT.semi : FONT.medium), fontSize: 13 }}>{t}</Txt>
+                    </Pressable>
+                  );
+                })}
+                <View style={{ flex: 1 }} />
+                <Txt v="small" style={{ fontSize: 11.5 }}>{VENUES[venue].name} candles{candles && candles.length > 1 ? ` · last ${Math.min(60, candles.length)} · ${span(Math.min(60, candles.length) * TF_MS[tf])}` : ''}</Txt>
+              </Row>
+              <View style={{ flex: 1, marginTop: 6 }} onLayout={(e) => { setChartW(Math.floor(e.nativeEvent.layout.width)); setChartH(Math.floor(e.nativeEvent.layout.height)); }}>
+                {chartW > 0 && chartH > 0 && candles && candles.length > 1 ? <CandleChart candles={candles} w={chartW} h={chartH} last={mark} />
+                  : cErr ? <ErrorLine msg={cErr} onRetry={cReload} />
+                    : <Bone w={'100%'} h={Math.max(120, chartH - 10)} r={14} />}
+              </View>
+            </View>
+            <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 12, flex: 1, minHeight: 0 }}>
+              <UnderTabs value={desk} onChange={setDesk} options={[{ k: 'positions', label: `Positions${mine.length ? ` · ${mine.length}` : ''}` }, { k: 'orders', label: `Open orders${orders.length ? ` · ${orders.length}` : ''}` }, { k: 'history', label: 'History' }]} />
+              <ScrollView style={{ flex: 1 }}>
+                {desk === 'positions' ? (
+                  <TermTable head={['Side', 'Size', 'Entry', 'Mark', 'Liq.', 'P&L', '']} empty={pr.book ? `No paper position on ${m.symbol}. Use the order form on the right.` : 'Loading your book…'}
+                    rows={mine.map((p) => {
+                      const pnl = mark !== undefined ? pnlOf(p, mark) : undefined;
+                      const lq = liqPrice(p);
+                      return { key: p.id, onPress: () => router.push(myTradeHref(p)), cells: [
+                        <SideTag key="s" p={p} />, usd2(notional(p)), fmtP(p.entry, d), mark !== undefined ? fmtP(mark, d) : '…', lq === null ? '–' : fmtP(lq, d),
+                        <Txt key="p" v="label" color={pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'], fontSize: 13.5 }}>{pnl === undefined ? '…' : `${signedUsd(pnl)} (${signedPct((pnl / p.margin) * 100)})`}</Txt>,
+                        <Row key="a" style={{ gap: 6, justifyContent: 'flex-end' }}><ShareTrade p={p} /><TermBtn title="Close" onPress={() => setClosing(p)} /></Row>,
+                      ] };
+                    })} />
+                ) : desk === 'orders' ? (
+                  <TermTable head={['Side', 'Limit', 'Margin', 'Size', '']} empty="No resting limit orders. Click a price in the book to place one."
+                    rows={orders.map((o) => ({ key: o.id, cells: [<SideTag key="s" p={{ kind: 'perp', side: o.side, lev: o.lev }} />, fmtP(o.limit, d), usd2(o.margin), usd2(o.margin * o.lev), <Row key="a" style={{ justifyContent: 'flex-end' }}><TermBtn title="Cancel" onPress={() => cancel(o)} /></Row>] }))} />
+                ) : (
+                  <TermTable head={['Side', 'Entry', 'Exit', 'When', 'P&L', '']} empty="Nothing closed on this market yet."
+                    rows={past.map((c) => ({ key: c.id, onPress: () => router.push(myTradeHref(c)), cells: [<SideTag key="s" p={c} />, fmtP(c.entry, d), fmtP(c.exit, d), new Date(c.closedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                      <Txt key="p" v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'], fontSize: 13.5 }}>{signedUsd(c.pnl)}{c.reason === 'liquidated' ? ' · liq.' : ''}</Txt>, <Row key="a" style={{ justifyContent: 'flex-end' }}><ShareTrade p={c} /></Row>] }))} />
+                )}
+                {cancelErr ? <ErrorLine msg={cancelErr} /> : null}
+                {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
+              </ScrollView>
+            </View>
+          </View>
+
+          {/* the live book and the tape */}
+          <View style={{ width: 310, backgroundColor: CARD, borderRadius: 22, padding: 12, minHeight: 0 }}>
+            <UnderTabs value={panel} onChange={setPanel} options={[{ k: 'book', label: 'Order book' }, { k: 'trades', label: 'Trades' }]} />
+            <ScrollView style={{ flex: 1 }}>
+              {panel === 'book' ? <OrderBookView feed={feed} base={sym} onPick={(p) => setPick({ side: mark !== undefined && p > mark ? 'short' : 'long', limit: p, n: Date.now() })} />
+                : <TapeView trades={feed.trades} base={sym} />}
+            </ScrollView>
+            <Row style={{ gap: 6, paddingTop: 8 }}>
+              <LiveDot color={feed.mode === 'stream' ? C.up : feed.mode === 'snapshot' ? '#FFB020' : C.dim} />
+              <Txt v="small" style={{ flex: 1, fontSize: 11 }} lines={2}>{feed.mode === 'stream' ? `Live from ${VENUES[venue].name}` : feed.mode === 'snapshot' ? 'Stream down: snapshots every 2 s' : 'Connecting'}{panel === 'book' ? ' · click a price for a limit order' : ''}</Txt>
+            </Row>
+            {feed.error ? <ErrorLine msg={feed.error} /> : null}
+          </View>
+
+          {/* the order form, always open */}
+          <ScrollView style={{ width: 360, flexGrow: 0 }} contentContainerStyle={{ paddingBottom: 12 }}>
+            <BookOrderSheet key={formKey} inline open side={pick?.side ?? preset?.side ?? 'long'} limit0={pick?.limit} preset={preset} onClose={() => { setFormKey((k) => k + 1); setPick(null); setPreset(undefined); }}
+              m={m} px={px} feed={feed} funding={funding} pr={pr} />
+            <Txt v="small" style={{ marginTop: 10, lineHeight: 17, fontSize: 11.5, paddingHorizontal: 6 }}>
+              Practice · paper money. The book, trades, candles, fees and funding are {VENUES[venue].name}'s own, live. Market orders walk the real book; limit orders are post-only. Nothing is sent to {VENUES[venue].name}.
+            </Txt>
+          </ScrollView>
+        </View>
+        <CloseSheet p={closing} px={closing ? prices[closing.mint] : undefined} pr={pr} onClose={() => setClosing(null)} feed={feed} />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -285,8 +441,8 @@ const PRESETS = [100, 500, 1000];
 /** What was typed, with thousands separators: "64,636.0". */
 const typed = (s: string) => { const [w, f] = s.split('.'); return `${Number(w || '0').toLocaleString('en-US')}${s.includes('.') ? `.${f ?? ''}` : ''}`; };
 
-function BookOrderSheet({ open, onClose, side: side0, limit0, preset, m, px, feed, funding, pr }: {
-  open: boolean; onClose: () => void; side: Side; limit0?: number; preset?: CopyArgs; m: Market; px?: Px; feed: BookFeed; funding?: number; pr: Practice;
+function BookOrderSheet({ open, onClose, side: side0, limit0, preset, m, px, feed, funding, pr, inline }: {
+  open: boolean; onClose: () => void; side: Side; limit0?: number; preset?: CopyArgs; m: Market; px?: Px; feed: BookFeed; funding?: number; pr: Practice; inline?: boolean;
 }) {
   const venue = m.venue as BookVenue;
   const copyLev = preset ? Math.max(1, Math.min(preset.lev, m.maxLev)) : undefined;
@@ -365,7 +521,7 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, preset, m, px, fee
   };
 
   return (
-    <Sheet open={open} onClose={onClose}>
+    <FormShell inline={inline} open={open} onClose={onClose}>
       {done ? (
         <View style={{ alignItems: 'center', paddingVertical: 14 }}>
           <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 92, height: 92, borderRadius: 46, backgroundColor: actColor, alignItems: 'center', justifyContent: 'center' }}>
@@ -473,6 +629,6 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, preset, m, px, fee
           <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice · paper money. Priced from {VENUES[venue].name}'s live book; nothing is sent.</Txt>
         </View>
       )}
-    </Sheet>
+    </FormShell>
   );
 }
