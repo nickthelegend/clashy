@@ -15,7 +15,7 @@ import { VenueChip } from '@/ui/orderbook';
 import { ART, BackBtn, Bone, ChangePill, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
-  BarBtn, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
+  BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -188,6 +188,25 @@ export default function PracticeHome() {
           <Txt v="small" style={{ flex: 1, lineHeight: 17 }}>Practice · paper money. Real live prices from Jupiter, Phoenix and Pacifica; no real USDC moves.</Txt>
         </Row>
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
+
+        {/* the practice clash against the bot */}
+        <Pressable onPress={() => router.push('/practice/clash' as Href)} accessibilityRole="button" accessibilityLabel="Practice clash against Clashy Bot"
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 16, padding: 14, borderRadius: 22, backgroundColor: pressed ? '#17171F' : '#121219', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+          <BotPic size={52} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Row style={{ gap: 6 }}><Txt v="label">Clash Clashy Bot</Txt><BotTag /></Row>
+            <Txt v="small" lines={2} style={{ marginTop: 2, lineHeight: 17 }}>
+              {(() => {
+                const done = (pr.book?.clashes ?? []).filter((c) => c.result === 'won' || c.result === 'lost');
+                const won = done.filter((c) => c.result === 'won').length;
+                return done.length ? `You ${won} – ${done.length - won} the bot. The real 60-second clash with practice money.` : 'The real 60-second clash with practice money. Beat the bot, then clash real players.';
+              })()}
+            </Txt>
+          </View>
+          <View style={{ height: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: C.brand, justifyContent: 'center' }}>
+            <Txt v="label" color="#fff">{pr.book?.liveClash ? 'Resume' : 'Play'}</Txt>
+          </View>
+        </Pressable>
 
         {/* open trades */}
         <Head title="Open trades" right={pr.book?.open.length ? `${pr.book.open.length} open` : undefined} />

@@ -15,6 +15,7 @@ import { ART, Btn, ErrorLine, Row, Txt } from './kit';
 import { Lottie } from './lottie';
 import { Sheet, SheetTile } from './sheet';
 import { AmountSheet } from './amount';
+import { BotPic } from './practice-kit';
 import { SearchSheet } from './search-sheet';
 import { C, F, fmtUsd } from './tokens';
 
@@ -70,7 +71,8 @@ function ArenaDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
       <SheetTile art={<View style={{ flexDirection: 'row' }}><Image source={ART.logoSOL} style={{ width: 30, height: 30 }} /><Image source={ART.logoBTC} style={{ width: 30, height: 30, marginLeft: -10 }} /></View>} title="Perps clash" line="Long or short with leverage · 60 s · liquidated means out" accent="#9B6BFF" onPress={go('/clash?mode=perps')} />
       <SheetTile art={art(ART.tileRoyale)} title="Battle royale" line="Up to 16 players · $2 in · last one standing" accent="#FFC94A" onPress={go('/onchain-royale')} />
       <SheetTile art={art(ART.tileWar)} title="Squad war" line="Your squad's chest against another squad" accent={C.brand} onPress={go('/clans')} />
-      <SheetTile art={art(ART.tileLine)} title="Practice" line="Paper money · stocks, perps and memecoins on live prices" accent={C.up} onPress={go('/practice')} />
+      <SheetTile art={<BotPic size={50} />} title="Practice clash" line="Free · clash Clashy Bot with practice money, live prices" accent={C.brandSoft} onPress={go('/practice/clash')} />
+      <SheetTile art={art(ART.tileLine)} title="Paper trading" line="$10,000 practice money · stocks, 190 perps, memecoins" accent={C.up} onPress={go('/practice')} />
       <Pressable onPress={go('/arena')} style={{ alignItems: 'center', paddingVertical: 12 }}>
         <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>Live games, top players and results ›</Txt>
       </Pressable>

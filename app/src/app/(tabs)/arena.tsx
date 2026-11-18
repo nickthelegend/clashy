@@ -13,6 +13,7 @@ import { ago, isTestAccount, useProfiles, type Profile } from '@/chain/social';
 import { ClayLoop } from '@/ui/clay';
 import { Badge, CoinToken } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
+import { BotPic } from '@/ui/practice-kit';
 import { ART, ErrorLine, LiveDot, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { C, F, S, fmtUsd } from '@/ui/tokens';
 
@@ -117,7 +118,7 @@ export default function Play() {
       </Row>
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
         <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
-        <GameTile title="Practice" sub="Paper money" line="Stocks, perps, memecoins" loop="line" tint={C.up} onPress={go('/practice')} />
+        <GameTile title="Practice clash" sub="vs Clashy Bot · free" line="Practice money, live prices" art={<BotPic size={56} />} tint={C.brandSoft} onPress={go('/practice/clash')} />
       </Row>
 
       {/* the Weekly Cup */}

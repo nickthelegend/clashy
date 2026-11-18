@@ -49,6 +49,19 @@ export function MarketLogo({ m, size = 40 }: { m: LogoOf; size?: number }) {
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.s2 }} />;
 }
 
+const BOT_PIC = require('../../assets/images/icon.png');
+/** Clashy Bot's picture: the Clashy mark, so it never passes for a player. */
+export function BotPic({ size = 46 }: { size?: number }) {
+  return <Image source={BOT_PIC} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#000' }} contentFit="cover" accessibilityLabel="Clashy Bot" />;
+}
+export function BotTag() {
+  return (
+    <View style={{ backgroundColor: 'rgba(91,108,255,0.18)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+      <Txt v="small" color={C.brandSoft} style={{ fontSize: 10.5, letterSpacing: 0.4 }}>BOT</Txt>
+    </View>
+  );
+}
+
 export function PaperBadge() {
   return (
     <View style={{ backgroundColor: 'rgba(91,108,255,0.16)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
