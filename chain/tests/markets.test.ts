@@ -47,6 +47,20 @@ describe('relay market proxy', () => {
       assert.equal((await get(p)).status, 404, `${p} is refused`);
     }
   });
+  test('Jupiter prices are shared per mint: a burst of overlapping reads all answer with real prices', async () => {
+    // Jupiter's free price API allows a few reads a second; the relay keeps one price per mint and batches the misses
+    const SOL = 'So11111111111111111111111111111111111111112', JUP = 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN', BONK = 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263';
+    const sets = [[SOL], [SOL, JUP], [JUP, BONK], [SOL, JUP, BONK], [BONK], [SOL, BONK]];
+    const res = await Promise.all([...sets, ...sets].map(async (ids) => {
+      const r = await fetch(`${RELAY}/jup/lite/price/v3?ids=${ids.join(',')}`, { signal: AbortSignal.timeout(30_000) });
+      return { ids, status: r.status, body: (await r.json()) as Record<string, { usdPrice?: number }> };
+    }));
+    for (const { ids, status, body } of res) {
+      assert.equal(status, 200, `${ids.length} mints answered ${status}`);
+      for (const m of ids) assert.ok((body[m]?.usdPrice ?? 0) > 0, `${m.slice(0, 4)} has a live price`);
+    }
+    assert.equal((await fetch(`${RELAY}/jup/lite/price/v3?ids=not-a-mint`)).status, 400, 'a bad id is refused');
+  });
 });
 
 describe('Phoenix (on-chain order book)', () => {

@@ -220,8 +220,58 @@ const jupCache = new Map<string, { at: number; okAt: number; status: number; bod
 const isLive = (path: string) => /^\/lite\/price|^\/phoenix\/(exchange\/prices|v1\/(candles|view\/orderbook|trades))|^\/pacifica\/api\/v1\/(info\/prices|kline|book|trades)/.test(path);
 const jupTtl = (path: string) => (path.startsWith('/lite/price') ? 10_000 : /orderbook|\/book\?|\/trades\?|\/fills\?|prices$/.test(path) ? 1_500
   : /candles|kline/.test(path) ? 15_000 : path.startsWith('/perps') ? 30_000 : 60_000);
+/**
+ * Jupiter prices, shared per mint. Every screen asks for its own set of mints, and Jupiter's free price API allows only
+ * a few reads a second, so caching per request URL spent the budget many times over. Here each mint's last good price
+ * is kept for 10 s; stale mints from every client are read together, 50 per call, one call at a time, at most one a
+ * second. A price older than a minute is never served; when nothing fresh is left the upstream error is passed on.
+ */
+const PRICE = new Map<string, { okAt: number; v: unknown }>();
+let priceGate: Promise<void> = Promise.resolve();
+let nextPriceAt = 0;
+async function jupPrices(ids: string[]): Promise<{ status: number; body: string }> {
+  const fresh = (m: string) => { const p = PRICE.get(m); return !!p && Date.now() - p.okAt <= 10_000; };
+  const fail: { e: { status: number; body: string } | null } = { e: null };
+  if (ids.some((m) => !fresh(m))) {
+    const run = priceGate.then(async () => {
+      const stale = ids.filter((m) => !fresh(m));
+      for (let i = 0; i < stale.length; i += 50) {
+        const batch = stale.slice(i, i + 50);
+        const wait = nextPriceAt - Date.now();
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+        nextPriceAt = Date.now() + 1_100;
+        try {
+          const r = await fetch(`${JUP_UPSTREAMS.lite}/price/v3?ids=${batch.join(',')}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(10_000) });
+          const body = await r.text();
+          if (!r.ok) { fail.e = { status: r.status, body }; continue; }
+          const j = JSON.parse(body) as Record<string, unknown>;
+          const t = Date.now();
+          for (const m of batch) PRICE.set(m, { okAt: t, v: j[m] ?? null });
+        } catch (e) {
+          fail.e = { status: 502, body: JSON.stringify({ error: `lite unreachable: ${(e as Error).message}` }) };
+        }
+      }
+    });
+    priceGate = run.catch(() => undefined);
+    await run;
+  }
+  const out: Record<string, unknown> = {};
+  let any = false;
+  for (const m of ids) {
+    const p = PRICE.get(m);
+    if (p && Date.now() - p.okAt <= 60_000) { any = true; if (p.v) out[m] = p.v; }
+  }
+  if (!any && fail.e) return fail.e;
+  return { status: 200, body: JSON.stringify(out) };
+}
+
 async function jupProxy(path: string): Promise<{ status: number; body: string }> {
   if (!JUP_ALLOWED.some((r) => r.test(path))) return { status: 404, body: JSON.stringify({ error: 'not a proxied market endpoint' }) };
+  if (path.startsWith('/lite/price/v3?')) {
+    const ids = [...new Set((new URLSearchParams(path.split('?')[1]).get('ids') ?? '').split(',').filter((x) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(x)))].slice(0, 300);
+    if (!ids.length) return { status: 400, body: JSON.stringify({ error: 'ids: one or more token mints' }) };
+    return jupPrices(ids);
+  }
   const hit = jupCache.get(path);
   if (hit && Date.now() - hit.at < jupTtl(path)) return hit;
   if (hit?.pending) { await hit.pending; return jupCache.get(path)!; }
