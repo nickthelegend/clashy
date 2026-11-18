@@ -25,6 +25,7 @@ import { useDeskColumn } from '@/ui/layout';
 import { Sheet, SheetTile } from '@/ui/sheet';
 import { Badge, CARD, Channel, GOLD, Group, HAIR, LevelBar, RailButton, RailIcon, SquadBanner, Tile, crestSrc } from '@/ui/squads/parts';
 import { CreateSquadSheet } from '@/ui/squads/sheets';
+import { useCreate } from '@/ui/create';
 import { C, F, FONT } from '@/ui/tokens';
 
 const RAIL = 72;
@@ -42,6 +43,7 @@ export default function Squads() {
   const insets = useSafeAreaInsets();
   const col = useDeskColumn(820);
   const chain = useChain();
+  const { openSearch } = useCreate();
   const { me, wallet } = chain;
   const params = useLocalSearchParams<{ clan?: string }>();
   const [sel, setSel] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export default function Squads() {
               <RailIcon key={q.key.toBase58()} crest={q.crest} label={q.name} selected={!!clanKey && q.key.equals(clanKey)} unread={unreadOf(q.key)} onPress={() => pick(q.key)} />
             ))}
             {squads.length ? <View style={{ width: 30, height: 2, borderRadius: 1, backgroundColor: '#24242C', marginVertical: 8 }} /> : null}
-            <RailButton glyph="✦" label="Discover squads" onPress={() => router.push('/squads/discover' as Href)} />
+            <RailButton glyph="✦" label="Find other squads" onPress={() => openSearch('squads')} />
             <RailButton glyph="+" label="Start a squad" onPress={() => (me ? setCreating(true) : wallet.login?.())} />
           </ScrollView>
         </View>
@@ -237,6 +239,7 @@ export default function Squads() {
 
 /** No squads yet: the clubhouse, two ways in, and the top real squads to peek at. */
 function EmptySquads({ signedOut, onLogin, onCreate }: { signedOut: boolean; onLogin: () => void; onCreate: () => void }) {
+  const { openSearch } = useCreate();
   const clans = useClansOnchain();
   const profiles = useProfiles();
   const prof = profiles.status === 'ready' ? profiles.data : null;
@@ -250,7 +253,7 @@ function EmptySquads({ signedOut, onLogin, onCreate }: { signedOut: boolean; onL
           <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }} color="#B9B9C3">A crew with a shared USDC chest you trade by vote, live chat, clashes and squad wars. Join as many as you like.</Txt>
           {signedOut ? <Btn title="Sign in" kind="white" h={52} style={{ marginTop: 14 }} onPress={onLogin} /> : (
             <>
-              <Btn title="Discover squads" h={52} style={{ marginTop: 14 }} onPress={() => router.push('/squads/discover' as Href)} />
+              <Btn title="Find a squad" h={52} style={{ marginTop: 14 }} onPress={() => openSearch('squads')} />
               <Btn title="Start a squad" kind="ghost" h={48} style={{ marginTop: 8 }} onPress={onCreate} />
             </>
           )}

@@ -150,19 +150,20 @@ function TradeCard({ post, names, onOpen }: { post: Post; names: Map<string, Pro
   );
 }
 
-export function SearchSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export type SearchTab = 'hot' | 'players' | 'trades' | 'squads';
+export function SearchSheet({ open, onClose, tab }: { open: boolean; onClose: () => void; tab?: SearchTab }) {
   const { height: H } = useWindowDimensions();
   return (
     <Sheet open={open} onClose={onClose} height={H * 0.9}>
-      {open ? <SearchBody onClose={onClose} minH={H * 0.9 - 70} /> : null}
+      {open ? <SearchBody onClose={onClose} minH={H * 0.9 - 70} tab0={tab} /> : null}
     </Sheet>
   );
 }
 
-function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
+function SearchBody({ onClose, minH, tab0 }: { onClose: () => void; minH: number; tab0?: SearchTab }) {
   const { width } = useWindowDimensions();
   const [q, setQ] = useState('');
-  const [tab, setTab] = useState<'hot' | 'players' | 'trades'>('hot');
+  const [tab, setTab] = useState<SearchTab>(tab0 ?? 'hot');
   const [recent, setRecent] = useState<string[]>([]);
   const [viewed, setViewed] = useState<Viewed[]>([]);
   const cards = useRef<{ scrollTo: (o: { x: number; animated?: boolean }) => void } | null>(null);
@@ -180,6 +181,8 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
   const trades = useMemo(() => (board.status === 'ready' ? board.data : []).filter((p) => p.trade && p.replyTo === null && !isTestAccount(names.get(p.author.toBase58()))).slice(0, 20), [board, names]);
   const hot = useMemo(() => (hist.status === 'ready' ? hotFrom(hist.data) : []), [hist]);
   const top = (ranks.status === 'ready' ? ranks.data : []).filter((r) => names.has(r.owner.toBase58()) && !isTestAccount(names.get(r.owner.toBase58()))).slice(0, 10);
+  const squads = useMemo(() => ((clans.status === 'ready' ? clans.data : []) as ClanRow[]).filter((c) => c.name && !isTestAccount(names.get(c.captain.toBase58())))
+    .sort((a, b) => b.score - a.score || b.members - a.members).slice(0, 12), [clans, names]);
   const query = q.trim().toLowerCase().replace(/^[@$]/, '');
 
   // results while typing: players, squads, then markets (stocks and every Practice market)
@@ -278,6 +281,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
             <Chip label="Hot markets" on={tab === 'hot'} onPress={() => { setTab('hot'); cardX.current = 0; }} />
             <Chip label="Top players" on={tab === 'players'} onPress={() => { setTab('players'); cardX.current = 0; }} />
             <Chip label="Trades" on={tab === 'trades'} onPress={() => { setTab('trades'); cardX.current = 0; }} />
+            <Chip label="Squads" on={tab === 'squads'} onPress={() => { setTab('squads'); cardX.current = 0; }} />
             <View style={{ flex: 1 }} />
             {web ? (
               <>
@@ -318,6 +322,20 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
                 ) : trades.map((p) => (
                   <TradeCard key={p.seq} post={p} names={names} onOpen={(m) => open({ key: `t:${p.seq}`, href: `/trade/${p.seq}`, title: `${names.get(p.author.toBase58())?.name ?? 'A player'}'s trade`, sub: m ? m.symbol : 'Trade', pic: m ? { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } } : { kind: 'player', owner: p.author.toBase58() } })} />
                 ))
+            ) : tab === 'squads' ? (
+              clans.status === 'error' ? <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{clans.error}</Txt></View>
+                : !squads.length ? <View style={{ height: 150, justifyContent: 'center', maxWidth: 300 }}><Txt v="small">{clans.status === 'loading' ? 'Reading squads on chain…' : 'No squads yet. Start the first one.'}</Txt></View>
+                  : squads.map((c, i) => (
+                    <Pressable key={c.key.toBase58()} onPress={() => open({ key: `s:${c.key.toBase58()}`, href: `/squad/${c.key.toBase58()}`, title: c.name, sub: `Squad · ${c.members} members`, pic: { kind: 'squad', crest: c.crest } })}
+                      accessibilityRole="button" accessibilityLabel={`${c.name} squad`}
+                      style={({ pressed }) => ({ width: 150, alignItems: 'center', borderRadius: 16, backgroundColor: pressed ? '#202027' : '#1A1A20', paddingVertical: 12, paddingHorizontal: 8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+                      <Txt v="small" color={i === 0 ? '#FFD66B' : i === 1 ? '#D9DEE8' : i === 2 ? '#E7A36B' : C.muted} style={{ ...FONT.semi }}>#{i + 1}</Txt>
+                      <Image source={CRESTS[c.crest % CRESTS.length]} style={{ width: 58, height: 58, marginTop: 4 }} contentFit="contain" />
+                      <Txt v="label" lines={1} style={{ fontSize: 14, marginTop: 6 }}>{c.name}</Txt>
+                      <Txt v="small" lines={1} style={{ fontSize: 11.5 }}>{c.members} member{c.members === 1 ? '' : 's'} · ${c.chest.toFixed(0)} chest</Txt>
+                      <Txt v="small" color={c.wins >= c.losses ? C.up : C.down} style={{ fontSize: 11.5, ...FONT.semi, marginTop: 2 }}>{c.wins}W {c.losses}L in wars</Txt>
+                    </Pressable>
+                  ))
             ) : !top.length ? (
               <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{ranks.status === 'loading' || profiles.status === 'loading' ? 'Reading the leaderboard…' : 'Win a clash to get on the board.'}</Txt></View>
             ) : top.map((r, i) => {

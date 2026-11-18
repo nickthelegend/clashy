@@ -20,7 +20,9 @@ import { ClayLoop } from './clay';
 import { ProfileAvatar, PositionCard, STOCK_ART } from './feed';
 import { MarketCallCard } from './market-call';
 import { callTarget } from '@/chain/calls';
-import { Back, Gear, Heart, Reply, Share, Swords, WalletI } from './icons';
+import { Back, Chat as ChatI, Gear, Heart, Reply, Share, Swords, WalletI } from './icons';
+import { useWallet } from '@/chain/wallet';
+import { social, useSocialProfile, type FollowState } from '@/chain/social-api';
 import { ART, AVATARS, BADGES, Bone, Btn, ChangePill, Chips, ErrorLine, Money, Pending, RANKS, Row, SkeletonRows, Txt, rankFor } from './kit';
 import { Sheet } from './sheet';
 import { useDeskColumn } from './layout';
@@ -41,7 +43,8 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
   const id = owner.toBase58();
   const [tab, setTab] = useState<Tab>('positions');
   const [range, setRange] = useState<Range>('all');
-  const [editing, setEditing] = useState(false);
+  const wallet = useWallet();
+  const soc = useSocialProfile(id);
   const [toast, setToast] = useState<string>();
 
   const prof = usePoll(() => readProfile(owner), 10_000, [id]);
@@ -133,7 +136,8 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         <LinearGradient colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']} locations={[0, 0.4, 1]} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
         <Row style={{ position: 'absolute', top: 12, left: 12, right: 12, justifyContent: 'space-between' }}>
           {onBack ? <RoundBtn label="Back" onPress={onBack}><Back size={18} color={C.ink} /></RoundBtn> : <View />}
-          {isMe ? <Row style={{ gap: 8 }}><RoundBtn label="Wallet" onPress={() => router.push('/wallet')}><WalletI size={18} color={C.ink} /></RoundBtn><RoundBtn label="Settings" onPress={() => router.push('/settings' as never)}><Gear size={18} color={C.ink} /></RoundBtn></Row> : null}
+          {isMe ? <Row style={{ gap: 8 }}><RoundBtn label="Wallet" onPress={() => router.push('/wallet')}><WalletI size={18} color={C.ink} /></RoundBtn><RoundBtn label="Settings" onPress={() => router.push('/settings' as never)}><Gear size={18} color={C.ink} /></RoundBtn></Row>
+            : <RoundBtn label="Share profile" onPress={share}><Share size={18} color={C.ink} /></RoundBtn>}
         </Row>
       </View>
 
@@ -148,11 +152,17 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         </View>
         <Row style={{ flex: 1, justifyContent: 'flex-end', gap: 8, paddingBottom: 6 }}>
           {isMe ? (
-            <Pill title="Edit profile" kind="white" onPress={() => setEditing(true)} disabled={!p} />
+            <>
+              <Pill title="Edit profile" kind="white" onPress={() => router.push('/edit-profile' as never)} disabled={!p} />
+              <RoundBtn label="Share profile" onPress={share} size={44}><Share size={18} color={C.ink} /></RoundBtn>
+            </>
           ) : (
-            <Pill title="Clash" kind="brand" icon={<Swords size={16} color="#fff" />} onPress={() => router.push('/clash' as never)} />
+            <>
+              <FollowPill owner={id} soc={soc} />
+              <RoundBtn label="Message" onPress={() => (wallet.signer ? router.push(`/dm/${id}` as never) : wallet.login?.())} size={44}><ChatI size={18} color={C.ink} /></RoundBtn>
+              <RoundBtn label="Clash" onPress={() => router.push('/clash' as never)} size={44}><Swords size={18} color={C.ink} /></RoundBtn>
+            </>
           )}
-          <RoundBtn label="Share profile" onPress={share} size={44}><Share size={18} color={C.ink} /></RoundBtn>
         </Row>
       </Row>
 
@@ -163,6 +173,14 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         <Txt v="small" lines={1} style={{ marginTop: 2 }}>
           {[p ? `Player #${p.number + 1}` : null, clan ? clan.name : null, short(id)].filter(Boolean).join(' · ')}
         </Txt>
+        {soc.data?.bio ? <Txt v="body" style={{ marginTop: 8, lineHeight: 21 }}>{soc.data.bio}</Txt> : null}
+        {soc.data?.link ? <Txt v="small" color={C.brandSoft} lines={1} style={{ marginTop: 4, ...FONT.semi }} >{soc.data.link.replace(/^https:\/\//, '')}</Txt> : null}
+        <Row style={{ gap: 16, marginTop: 8 }}>
+          <Txt v="small" color={C.muted}><Txt v="small" color={C.ink} style={{ ...FONT.bold }}>{soc.data ? soc.data.followers.toLocaleString('en-US') : '–'}</Txt> followers</Txt>
+          <Txt v="small" color={C.muted}><Txt v="small" color={C.ink} style={{ ...FONT.bold }}>{soc.data ? soc.data.following.toLocaleString('en-US') : '–'}</Txt> following</Txt>
+          {soc.data?.you?.followsYou ? <View style={{ backgroundColor: C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 1 }}><Txt v="small" color={C.ink} style={{ fontSize: 11.5 }}>Follows you</Txt></View> : null}
+          {soc.data?.private ? <Txt v="small" color={C.dim}>Private</Txt> : null}
+        </Row>
         <Row style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
           <Chip art={ART.streak} text={p && p.dayStreak > 0 ? `${p.dayStreak}-day streak` : 'No streak'} color={p && p.dayStreak > 0 ? '#FF9F45' : C.muted} />
           <Chip art={rank.src} text={rank.label} color={rank.color} />
@@ -320,7 +338,6 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         )}
       </View>
 
-      {isMe && p ? <EditProfileSheet open={editing} onClose={() => setEditing(false)} profile={p} onSaved={() => { prof.reload(); profiles.reload(); setToast('Avatar saved on Solana'); }} /> : null}
     </ScrollView>
   );
 }
@@ -488,51 +505,24 @@ function CallCard({ post, positions, prices, duels, owner }: { post: Post; posit
   );
 }
 
-/** Edit profile: pick one of the 20 clay avatars and save it on chain (set_avatar; the sponsor relay pays). */
-function EditProfileSheet({ open, onClose, profile, onSaved }: { open: boolean; onClose: () => void; profile: Profile; onSaved: () => void }) {
-  const chain = useChain();
-  const [pick, setPick] = useState(profile.avatar);
-  const [saving, setSaving] = useState(false);
+/** Follow / Following / Requested on another player's profile (Clashy's social server). */
+function FollowPill({ owner, soc }: { owner: string; soc: ReturnType<typeof useSocialProfile> }) {
+  const wallet = useWallet();
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
-  useEffect(() => { if (open) { setPick(profile.avatar); setErr(undefined); } }, [open, profile.avatar]);
-  const save = async () => {
-    if (!chain.progs || !chain.me) { setErr('The relay is offline; try again in a minute'); return; }
-    setSaving(true); setErr(undefined);
-    try {
-      await chain.onBase('Change avatar', () => chain.progs!.base.methods.setAvatar(pick).accountsPartial({ owner: chain.me! }).rpc());
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onSaved();
-      onClose();
-    } catch (e) { setErr(errText(e)); } finally { setSaving(false); }
+  const state: FollowState = soc.data?.you?.follow ?? 'none';
+  const go = async () => {
+    if (!wallet.signer) { wallet.login?.(); return; }
+    setBusy(true); setErr(undefined);
+    try { await social(wallet.signer, `/v1/follow/${owner}`, { method: state === 'none' ? 'POST' : 'DELETE' }); Haptics.selectionAsync(); soc.reload(); }
+    catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   return (
-    <Sheet open={open} onClose={onClose} title="Edit profile">
-      <Row style={{ gap: 12, marginTop: 6, marginBottom: 14, backgroundColor: '#1B1B21', borderRadius: 20, padding: 12 }}>
-        <Image source={AVATARS[pick % AVATARS.length]} style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#000' }} contentFit="cover" />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt v="label" lines={1} style={{ ...FONT.semi, fontSize: 18 }}>@{profile.name}</Txt>
-          <Txt v="small" style={{ marginTop: 2 }}>Your name is yours for good. Pick an avatar; it saves on Solana and Clashy pays the fee.</Txt>
-        </View>
-      </Row>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
-        {AVATARS.map((src, i) => {
-          const on = pick === i;
-          return (
-            <Pressable key={i} accessibilityLabel={`Avatar ${i + 1}`} onPress={() => { Haptics.selectionAsync(); setPick(i); }}
-              style={{ width: '23%', aspectRatio: 1, borderRadius: 999, padding: 3, borderWidth: 3, borderColor: on ? C.brand : 'transparent' }}>
-              <Image source={src} style={{ width: '100%', height: '100%', borderRadius: 999, backgroundColor: '#000' }} contentFit="cover" />
-              {profile.avatar === i ? (
-                <View style={{ position: 'absolute', bottom: -2, alignSelf: 'center', backgroundColor: C.s2, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 1 }}>
-                  <Txt v="small" style={{ fontSize: 10, ...FONT.semi }} color={C.ink}>Now</Txt>
-                </View>
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </View>
-      {err ? <ErrorLine msg={err} /> : null}
-      <Btn title={saving ? 'Saving on Solana…' : pick === profile.avatar ? 'Pick a new avatar' : 'Save avatar'} disabled={saving || pick === profile.avatar} onPress={save} style={{ marginTop: 16 }} />
-    </Sheet>
+    <View>
+      <Pill title={busy ? '…' : state === 'accepted' ? 'Following' : state === 'pending' ? 'Requested' : soc.data?.you?.followsYou ? 'Follow back' : 'Follow'}
+        kind={state === 'none' ? 'brand' : 'white'} onPress={go} disabled={busy || (!!wallet.signer && !soc.data && !soc.error)} />
+      {err || (soc.error && !soc.data) ? <Txt v="small" color={C.down} lines={2} style={{ fontSize: 11, maxWidth: 160, marginTop: 2 }}>{err ?? soc.error}</Txt> : null}
+    </View>
   );
 }
 

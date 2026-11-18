@@ -79,28 +79,21 @@ export default function DiscoverSquads() {
           </Pressable>
         </View>
 
-        {/* top three */}
+        {/* the podium: #2, #1, #3 on gold, silver and bronze steps */}
         {loading ? (
-          <View style={{ paddingHorizontal: 16, marginTop: 14 }}><SkeletonRows n={1} square /></View>
+          <View style={{ paddingHorizontal: 16, marginTop: 16 }}><SkeletonRows n={1} square /></View>
         ) : top.length ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingTop: 16 }} decelerationRate="fast" snapToInterval={234}>
-            {top.map((s, i) => (
-              <Pressable key={s.key.toBase58()} onPress={() => setOpen(s)} style={({ pressed }) => ({ width: 224, borderRadius: 22, overflow: 'hidden', backgroundColor: CARD, borderWidth: 1, borderColor: i === 0 ? 'rgba(255,201,74,0.45)' : HAIR, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-                <View style={{ height: 96 }}>
-                  {i === 0 ? <ClayLoop name="clanCity" width="100%" height={96} cover /> : <Image source={ART.clanCity} style={{ width: '100%', height: 96 }} contentFit="cover" />}
-                  <LinearGradient colors={['rgba(21,21,27,0)', CARD]} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 60 }} />
-                  <Image source={MEDALS[i]} style={{ position: 'absolute', top: 8, right: 8, width: 34, height: 34 }} contentFit="contain" />
-                </View>
-                <View style={{ padding: 12, paddingTop: 0, marginTop: -26 }}>
-                  <Image source={crestSrc(s.crest)} style={{ width: 52, height: 52 }} contentFit="contain" />
-                  <Txt v="label" lines={1} style={{ fontSize: 16, marginTop: 4 }}>{s.name}</Txt>
-                  <Txt v="small" lines={1}>{s.members} member{s.members === 1 ? '' : 's'} · Lv {s.level}</Txt>
-                  <Txt v="title" color={pnlColor(s.pnl, C.up, C.down, C.ink)} style={{ fontSize: 24, marginTop: 6, fontVariant: ['tabular-nums'] }}>{fmtPnl(s.pnl)}</Txt>
-                  <Txt v="small" style={{ fontSize: 11 }}>combined P&L</Txt>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+            <LinearGradient colors={['#1B1730', '#0D0D12']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ borderRadius: 28, paddingTop: 16, paddingHorizontal: 10, overflow: 'hidden' }}>
+              <Row style={{ justifyContent: 'space-between', paddingHorizontal: 6 }}>
+                <Txt v="label" style={{ fontSize: 15 }}>Top squads</Txt>
+                <Txt v="small" style={{ fontSize: 12 }}>by combined P&L</Txt>
+              </Row>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 10, gap: 8 }}>
+                {[1, 0, 2].map((i) => <Podium key={i} s={top[i]} place={i} mine={!!top[i] && mySet.has(top[i].key.toBase58())} onPress={() => (top[i] ? setOpen(top[i]) : me ? setCreating(true) : chain.wallet.login?.())} />)}
+              </View>
+            </LinearGradient>
+          </View>
         ) : null}
 
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
@@ -132,6 +125,46 @@ export default function DiscoverSquads() {
       <SquadSheet squad={open} rank={open ? rankOf(open.key) : 0} mine={!!open && mySet.has(open.key.toBase58())} profiles={prof} chain={chain} onClose={() => setOpen(null)} onOpen={goTo} />
       <CreateSquadSheet open={creating} onClose={() => setCreating(false)} chain={chain} onCreated={(k) => { setCreating(false); goTo(k); }} />
     </View>
+  );
+}
+
+const STEP = [
+  { h: 92, size: 84, colors: ['#FFE08A', '#E9A93A'] as const, ink: '#3A2600', label: '1st' },
+  { h: 66, size: 66, colors: ['#EEF1F7', '#A9B1C1'] as const, ink: '#23272F', label: '2nd' },
+  { h: 50, size: 60, colors: ['#F2B886', '#B8683A'] as const, ink: '#2E1405', label: '3rd' },
+];
+/** One step of the podium: the crest and medal on top, the name and P&L, the coloured step with its place. */
+function Podium({ s, place, mine, onPress }: { s?: SquadRank; place: number; mine: boolean; onPress: () => void }) {
+  const st = STEP[place];
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={s ? `${st.label}: ${s.name}, ${fmtPnl(s.pnl)}` : `${st.label} place is open: start a squad`}
+      style={({ pressed }) => ({ flex: 1, alignItems: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+      {s ? (
+        <>
+          <View>
+            <Image source={crestSrc(s.crest)} style={{ width: st.size, height: st.size }} contentFit="contain" />
+            <Image source={MEDALS[place]} style={{ position: 'absolute', right: -8, top: -6, width: 28, height: 28 }} contentFit="contain" />
+          </View>
+          <Row style={{ gap: 4, marginTop: 4, maxWidth: '100%' }}>
+            <Txt v="label" lines={1} style={{ fontSize: 14, flexShrink: 1 }}>{s.name}</Txt>
+            {mine ? <View style={{ backgroundColor: 'rgba(171,159,242,0.25)', borderRadius: 5, paddingHorizontal: 4 }}><Txt v="small" color={C.brandSoft} style={{ fontSize: 9, ...FONT.bold }}>IN</Txt></View> : null}
+          </Row>
+          <Txt v="num" color={pnlColor(s.pnl, C.up, C.down, C.ink)} style={{ fontSize: 15, marginTop: 1 }}>{fmtPnl(s.pnl)}</Txt>
+          <Txt v="small" lines={1} style={{ fontSize: 11 }}>{s.members} member{s.members === 1 ? '' : 's'} · Lv {s.level}</Txt>
+        </>
+      ) : (
+        <>
+          <View style={{ width: st.size * 0.8, height: st.size * 0.8, borderRadius: st.size, borderWidth: 2, borderStyle: 'dashed', borderColor: '#3A3550', alignItems: 'center', justifyContent: 'center' }}>
+            <Txt v="title" color={C.brandSoft} style={{ fontSize: 26 }}>+</Txt>
+          </View>
+          <Txt v="small" color={C.brandSoft} style={{ fontSize: 12, marginTop: 6, ...FONT.semi }}>Your squad?</Txt>
+          <Txt v="small" style={{ fontSize: 11 }}>Spot open</Txt>
+        </>
+      )}
+      <LinearGradient colors={s ? st.colors : ['#24212F', '#17151F']} style={{ marginTop: 8, alignSelf: 'stretch', height: st.h, borderTopLeftRadius: 16, borderTopRightRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
+        <Txt v="title" color={s ? st.ink : C.dim} style={{ fontSize: place === 0 ? 30 : 24, ...FONT.display }}>{place + 1}</Txt>
+      </LinearGradient>
+    </Pressable>
   );
 }
 

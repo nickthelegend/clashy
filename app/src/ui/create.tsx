@@ -18,12 +18,12 @@ import { Lottie } from './lottie';
 import { Sheet, SheetLabel, SheetTile } from './sheet';
 import { AmountSheet } from './amount';
 import { BotPic } from './practice-kit';
-import { SearchSheet } from './search-sheet';
+import { SearchSheet, type SearchTab } from './search-sheet';
 import { C, F, FONT, fmtUsd } from './tokens';
 
 /** A call to start on a market, optionally with the author's Practice trade on it. */
 export type CallShare = { marketId: string; trade?: TradeTag };
-type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null, share?: CallShare) => void; openSave: () => void; openArena: () => void; openSearch: () => void; arenaOpen: boolean };
+type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null, share?: CallShare) => void; openSave: () => void; openArena: () => void; openSearch: (tab?: SearchTab) => void; arenaOpen: boolean };
 const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {}, openSearch: () => {}, arenaOpen: false });
 export const useCreate = () => useContext(CreateCtx);
 
@@ -94,12 +94,13 @@ export function CreateProvider({ children }: { children: ReactNode }) {
   const [save, setSave] = useState(false);
   const [arena, setArena] = useState(false);
   const [search, setSearch] = useState(false);
+  const [searchTab, setSearchTab] = useState<SearchTab | undefined>();
   const ctx: Ctx = {
     openMenu: () => setMenu(true),
     openCall: (r, s) => { setReplyTo(r ?? null); setShare(r ? null : s ?? null); setCall(true); },
     openSave: () => setSave(true),
     openArena: () => setArena(true),
-    openSearch: () => setSearch(true),
+    openSearch: (tab?: SearchTab) => { setSearchTab(tab); setSearch(true); },
     arenaOpen: arena,
   };
   // ⌘K / Ctrl+K opens search from anywhere (web)
@@ -122,7 +123,7 @@ export function CreateProvider({ children }: { children: ReactNode }) {
       <CallDrawer open={call} onClose={() => setCall(false)} replyTo={replyTo} share={share} />
       <SaveDrawer open={save} onClose={() => setSave(false)} />
       <ArenaDrawer open={arena} onClose={() => setArena(false)} />
-      <SearchSheet open={search} onClose={() => setSearch(false)} />
+      <SearchSheet open={search} onClose={() => setSearch(false)} tab={searchTab} />
     </CreateCtx.Provider>
   );
 }
