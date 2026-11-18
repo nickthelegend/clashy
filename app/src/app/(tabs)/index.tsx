@@ -15,6 +15,7 @@ import { STOCKS } from '@/chain/stocks';
 import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar, STOCK_ART, Thread } from '@/ui/feed';
 import { useCreate } from '@/ui/create';
+import { TopCallCard } from '@/ui/top-call';
 import { Bell, Jar, Search as SearchI } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
@@ -175,21 +176,8 @@ export default function HomeScreen() {
             <Txt v="label">Top calls right now</Txt>
             <Pressable onPress={() => router.push('/cup' as Href)}><Txt v="small" color={C.brandSoft}>Weekly Cup ›</Txt></Pressable>
           </Row>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
-            {topCalls.map((t) => (
-              <Pressable key={t.key} onPress={() => router.push(`/u/${t.owner}` as Href)} style={{ width: 150, backgroundColor: '#15151B', borderRadius: 20, padding: 12 }}>
-                <Row style={{ gap: 8 }}>
-                  <ProfileAvatar p={profMap.get(t.owner)} size={28} />
-                  <Txt v="label" lines={1} style={{ flex: 1, fontSize: 13 }}>{profMap.get(t.owner)?.name ?? 'player'}</Txt>
-                </Row>
-                <Row style={{ gap: 6, marginTop: 10 }}>
-                  <Image source={STOCK_ART[t.sym]} style={{ width: 26, height: 26 }} contentFit="contain" />
-                  <Txt v="small">{t.sym}</Txt>
-                </Row>
-                <Txt v="title" color={t.pnl >= 0 ? C.up : C.down} style={{ fontSize: 20, marginTop: 4 }}>{t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toFixed(2)}</Txt>
-                <Txt v="small" style={{ fontSize: 11 }}>on ${t.cost.toFixed(2)}</Txt>
-              </Pressable>
-            ))}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10, alignItems: 'flex-end' }}>
+            {topCalls.map((t, i) => <TopCallCard key={t.key} t={t} rank={i + 1} profile={profMap.get(t.owner)} />)}
           </ScrollView>
         </View>
       ) : null}
