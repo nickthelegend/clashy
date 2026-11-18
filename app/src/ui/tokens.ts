@@ -1,4 +1,7 @@
-// Clashy design tokens (v13: Nick's Nov 18 reference, a Phantom-style dark wallet redesign).
+// Clashy design tokens (v14, Nov 18: the look of the trading apps people already use: OKX Wallet, Phantom, Coinbase,
+// Robinhood. Black, white and grey with one accent (lavender); green and red only on numbers; one big number per
+// screen, compact rows, logos instead of illustrations. Game colours (C.opp, gold) only inside a live game.)
+// v13: Nick's Nov 18 reference, a Phantom-style dark wallet redesign.
 // Pure black, no outlined cards, a soft lavender accent with dark text on it, big bold headlines, grey supporting
 // text, list rows on hairlines. Type is SF Pro on Apple devices (the system font: it can't be bundled, so it's only
 // used where the OS has it) and Inter, its closest open match, everywhere else.
@@ -7,6 +10,7 @@ import { Platform, type TextStyle } from 'react-native';
 export const C = {
   bg: '#000000',
   s1: '#121214', // a raised surface (sheets, the odd grouped list)
+  card: '#0F0F12', // the one card surface: grouped rows, a summary, a chart panel
   s2: '#1E1C25', // chips, icon buttons, secondary buttons, the selected chip
   line: '#1E1E22', // hairlines between rows
   ink: '#F7F7F8',

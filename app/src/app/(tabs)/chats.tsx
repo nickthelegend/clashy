@@ -9,11 +9,11 @@ import { Image } from 'expo-image';
 import { useChain } from '@/chain/useChain';
 import { ago, usePoll, useProfiles } from '@/chain/social';
 import { CHANNELS, metaOf, readChannelMetas, readMySquads, readSeen, seenOf } from '@/chain/squads';
-import { SheetLabel, SheetTile } from '@/ui/sheet';
+import { SheetTile } from '@/ui/sheet';
 import { useDeskColumn } from '@/ui/layout';
-import { Search } from '@/ui/icons';
+import { Bell, Chat, Search, Shield } from '@/ui/icons';
 import { ART, Btn, CRESTS, ErrorLine, IconBtn, Pending, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
-import { C, F, FONT, S } from '@/ui/tokens';
+import { C, FONT, S } from '@/ui/tokens';
 
 type Filter = 'all' | 'unread' | 'general' | 'trades';
 const FILTERS: { key: Filter; label: string }[] = [{ key: 'all', label: 'All' }, { key: 'unread', label: 'Unread' }, { key: 'general', label: '#general' }, { key: 'trades', label: '#trades' }];
@@ -57,13 +57,15 @@ export default function Chats() {
         </Row>
       </Row>
       {searching ? <View style={{ marginBottom: 12 }}><SearchBar value={q} onChange={setQ} placeholder="Search your squads" /></View> : null}
-      <Row style={{ gap: 6, marginBottom: 14 }}>
+      {/* filters: a segmented control, the selected one in ink on the card track */}
+      <View style={{ flexDirection: 'row', gap: 4, padding: 4, marginBottom: 12, borderRadius: 18, backgroundColor: C.card }}>
         {FILTERS.map((x) => (
-          <Pressable key={x.key} onPress={() => setF(x.key)} style={{ flex: 1, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: f === x.key ? C.white : C.s2 }}>
-            <Text style={{ ...FONT.semi, fontSize: 13, color: f === x.key ? '#000' : C.ink }}>{x.label}</Text>
+          <Pressable key={x.key} onPress={() => setF(x.key)} accessibilityRole="tab" accessibilityState={{ selected: f === x.key }}
+            style={({ pressed }) => ({ flex: 1, minWidth: 0, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: f === x.key ? C.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+            <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 13, color: f === x.key ? '#000' : C.muted }}>{x.label}</Text>
           </Pressable>
         ))}
-      </Row>
+      </View>
 
       {!me ? (
         <Pending art={ART.emptyChats} title="Sign in to chat" body="Your squads' chats show here: #general, #trades and every challenge." action="Sign in" onAction={() => chain.wallet.login?.()} />
@@ -78,7 +80,7 @@ export default function Chats() {
           <Pressable key={`${sq.key.toBase58()}:${ch.id}`} onPress={() => router.push({ pathname: '/clan-chat', params: { clan: sq.key.toBase58(), ch: String(ch.id) } } as unknown as Href)}
             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, opacity: pressed ? 0.6 : 1 })}>
             <View>
-              <Image source={CRESTS[sq.crest % CRESTS.length]} style={{ width: 50, height: 50 }} contentFit="contain" />
+              <Image source={CRESTS[sq.crest % CRESTS.length]} style={{ width: 44, height: 44 }} contentFit="contain" />
               <View style={{ position: 'absolute', right: -4, bottom: -2, backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 4, borderWidth: 2, borderColor: C.bg }}><Txt v="small" color={C.ink} style={{ fontSize: 10, ...FONT.bold }}>#</Txt></View>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -100,12 +102,12 @@ export default function Chats() {
 
       {me && squads.status === 'ready' && squads.data.length > 0 && list.length < 6 ? (
         <View style={{ marginTop: 22 }}>
-          <SheetLabel index={0}>More people to talk to</SheetLabel>
-          <SheetTile index={1} art={<Image source={ART.clanCity} style={{ width: 48, height: 48 }} contentFit="contain" />} title="Find another squad"
+          <Txt v="h2" style={{ marginBottom: 2 }}>More people to talk to</Txt>
+          <SheetTile index={1} art={<Shield size={20} color={C.ink} />} title="Find another squad"
             line="Each squad you join adds its #general and #trades here" onPress={() => router.push('/squads/discover' as Href)} />
-          <SheetTile index={2} art={<Image source={ART.bellArt} style={{ width: 44, height: 44 }} contentFit="contain" />} title="Inbox"
+          <SheetTile index={2} art={<Bell size={19} color={C.ink} />} title="Inbox"
             line="Replies, likes and clash challenges on your calls" onPress={() => router.push('/inbox' as Href)} />
-          <SheetTile index={3} art={<Image source={ART.megaphone} style={{ width: 44, height: 44 }} contentFit="contain" />} title="Post a call"
+          <SheetTile index={3} art={<Chat size={19} color={C.ink} />} title="Post a call"
             line="Say where a price goes next; anyone can reply or clash you" onPress={() => router.push('/' as Href)} />
         </View>
       ) : null}

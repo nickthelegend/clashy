@@ -1,6 +1,7 @@
 // A squad's chat channel (#general, #trades), live on the MagicBlock rollup (members only, enforced by the program).
 // Route: /clan-chat?clan=<squad pubkey>&ch=<0|1>; without a squad it opens your main squad's #general. Messages are
-// read from the channel account on the rollup, Discord style (grouped by author, avatar, name, time, day dividers).
+// read from the channel account on the rollup and shown as calm bubbles (yours lavender on the right, others grey with
+// avatar, name and time, grouped by author, with day dividers).
 // "Clash" opens a real 5 USDC duel on chain and posts it as a card anyone in the squad can accept; accepting takes you
 // to the duel board where it is joined for real. Opening a channel the first time moves it onto the rollup.
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,13 +14,12 @@ import { BN, CRYPTO_MASK, NET, P, PublicKey, USDC, USDC_MINT, random32, readDuel
 import { errText, short, useChain } from '@/chain/useChain';
 import { channelState, readChannel, readClanServer, readMyClan, reader, usePoll, useProfiles, type ChatMsg } from '@/chain/social';
 import { CHANNELS, channelName, isMember, markSeen } from '@/chain/squads';
-import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
-import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
-import { Swords } from '@/ui/icons';
+import { ART, BackBtn, Btn, ErrorLine, LiveDot, Pending, Row, Txt } from '@/ui/kit';
+import { ArrowUp, Crown, Swords } from '@/ui/icons';
 import { useDeskColumn } from '@/ui/layout';
-import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
-import { C, F, FONT } from '@/ui/tokens';
+import { crestSrc } from '@/ui/squads/parts';
+import { C, FONT } from '@/ui/tokens';
 
 const STAKE = 5;
 const time = (ts: number) => new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -37,14 +37,16 @@ function ChallengeCard({ m, mine, onAccept }: { m: ChatMsg; mine: boolean; onAcc
   const open = !!d && d.status === 0 && d.expiresAt > Date.now() / 1000;
   const state = !d ? (duel.status === 'error' ? 'Cannot read the duel' : 'Loading…') : d.status === 0 ? (open ? 'Open' : 'Expired') : d.status === 6 ? 'Cancelled' : d.status === 5 ? 'Settled' : 'Accepted';
   return (
-    <View style={{ marginTop: 6, backgroundColor: CARD, borderRadius: 16, borderWidth: 1, borderColor: open ? 'rgba(240,70,140,0.45)' : HAIR, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center', maxWidth: 420 }}>
-      <Image source={ART.tileDuel} style={{ width: 46, height: 46 }} contentFit="contain" />
+    <View style={{ marginTop: 4, backgroundColor: C.card, borderRadius: 18, padding: 12, flexDirection: 'row', gap: 12, alignItems: 'center', width: '100%', maxWidth: 360 }}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+        <Swords size={18} color={C.ink} />
+      </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Txt v="label" style={{ ...FONT.semi, fontSize: 15 }}>Clash me</Txt>
-        <Txt v="small" lines={1}>{STAKE} USDC each · one coin · 60 s</Txt>
+        <Txt v="label">Clash me</Txt>
+        <Txt v="small" lines={1} style={{ marginTop: 1 }}>{STAKE} USDC each · one coin · 60 s</Txt>
         <Row style={{ gap: 5, marginTop: 3 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: open ? C.opp : C.dim }} />
-          <Txt v="small" color={open ? C.opp : C.muted} style={{ fontSize: 11.5, ...FONT.semi }}>{state}</Txt>
+          {open ? <LiveDot color={C.up} /> : <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.dim }} />}
+          <Txt v="small" color={open ? C.up : C.muted} style={{ fontSize: 12, ...FONT.medium }}>{state}</Txt>
         </Row>
       </View>
       {open && !mine ? <Btn title="Accept" h={38} onPress={onAccept} /> : null}
@@ -122,11 +124,9 @@ export default function ClanChat() {
   const back = () => (router.canGoBack() ? router.back() : router.replace('/clans' as Href));
 
   const Empty = ({ title, body, action, onAction, disabled }: { title: string; body: string; action?: string; onAction?: () => void; disabled?: boolean }) => (
-    <View style={{ alignItems: 'center', marginTop: 36, paddingHorizontal: 20 }}>
-      <ClayLoop name="chat" size={140} style={{ borderRadius: 28 }} />
-      <Txt v="title" style={{ marginTop: 10, ...FONT.semi, fontSize: 19, letterSpacing: -0.3, textAlign: 'center' }}>{title}</Txt>
-      <Txt v="small" style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
-      {action ? <Btn title={action} h={50} style={{ marginTop: 14, alignSelf: 'stretch' }} disabled={disabled} onPress={onAction} /> : null}
+    <View style={{ marginTop: 20 }}>
+      <Pending art={ART.chat} title={title} body={body} />
+      {action ? <Btn title={action} h={48} disabled={disabled} onPress={onAction} /> : null}
     </View>
   );
 
@@ -134,25 +134,22 @@ export default function ClanChat() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[{ flex: 1, paddingTop: insets.top + 8 }, col]}>
         {/* header: back, squad crest, # channel, squad name */}
-        <Row style={{ gap: 10, paddingHorizontal: 14, paddingBottom: 10 }}>
+        <Row style={{ gap: 10, paddingHorizontal: 14, paddingBottom: 8 }}>
           <BackBtn onPress={back} />
-          {s ? <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center' }}><Image source={crestSrc(s.crest)} style={{ width: 32, height: 32 }} contentFit="contain" /></View> : null}
+          {s ? <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Image source={crestSrc(s.crest)} style={{ width: 30, height: 30 }} contentFit="contain" /></View> : null}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Row style={{ gap: 4 }}>
-              <Txt v="label" color={C.muted} style={{ fontSize: 17, ...FONT.bold }}>#</Txt>
-              <Txt v="label" lines={1} style={{ fontSize: 16.5, ...FONT.bold, flexShrink: 1 }}>{chName}</Txt>
-            </Row>
+            <Txt v="label" lines={1} style={{ fontSize: 16 }}>#{chName}</Txt>
             <Txt v="small" style={{ fontSize: 12 }} lines={1}>{s ? `${s.name} · ${s.members.length} member${s.members.length === 1 ? '' : 's'}` : myClan.status === 'ready' && !clan ? 'No squad' : 'Loading…'}</Txt>
           </View>
-          {st === 'live' ? <Row style={{ gap: 5 }}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.up }} /><Txt v="small" color={C.up} style={{ fontSize: 11.5 }}>Rollup</Txt></Row> : null}
+          {st === 'live' ? <Row style={{ gap: 5 }}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.up }} /><Txt v="small" color={C.up} style={{ fontSize: 12 }}>Rollup</Txt></Row> : null}
         </Row>
         {/* channel switcher */}
         {clan ? (
-          <Row style={{ gap: 6, paddingHorizontal: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#16161C' }}>
+          <Row style={{ gap: 6, paddingHorizontal: 14, paddingBottom: 8 }}>
             {CHANNELS.map((c) => (
-              <Pressable key={c.id} onPress={() => switchTo(c.id)} style={{ height: 32, paddingHorizontal: 12, borderRadius: 10, backgroundColor: c.id === ch ? '#22222B' : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.bold, fontSize: 13 }}>#</Txt>
-                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.semi, fontSize: 13 }}>{c.name}</Txt>
+              <Pressable key={c.id} onPress={() => switchTo(c.id)} accessibilityRole="tab" accessibilityState={{ selected: c.id === ch }} hitSlop={4}
+                style={{ height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: c.id === ch ? C.s2 : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.medium }}>#{c.name}</Txt>
               </Pressable>
             ))}
           </Row>
@@ -170,48 +167,64 @@ export default function ClanChat() {
               action={busy === 'open' ? 'Opening…' : `Open #${chName}`} disabled={!!busy || state.status !== 'ready' || !me} onAction={openChannel} />
           ) : (
             <>
-              <View style={{ paddingTop: 8, paddingBottom: 16, borderBottomWidth: msgs.length ? 1 : 0, borderBottomColor: '#16161C', marginBottom: 8 }}>
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#1C1C23', alignItems: 'center', justifyContent: 'center' }}>
-                  <Txt v="title" color={C.ink} style={{ fontSize: 30, ...FONT.bold }}>#</Txt>
+              <Row style={{ gap: 12, paddingTop: 4, paddingBottom: 12 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+                  <Txt v="h2">#</Txt>
                 </View>
-                <Txt v="title" style={{ ...FONT.display, fontSize: 24, marginTop: 10 }}>Welcome to #{chName}</Txt>
-                <Txt v="small" style={{ marginTop: 4, lineHeight: 18 }}>The start of {s?.name ?? 'the squad'}'s #{chName}. {CHANNELS.find((c) => c.id === ch)?.blurb ?? ''}. {count > msgs.length ? `Showing the latest ${msgs.length} of ${count}.` : ''}</Txt>
-              </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Txt v="label" lines={1}>Welcome to #{chName}</Txt>
+                  <Txt v="small" lines={2} style={{ marginTop: 1, lineHeight: 17 }}>{CHANNELS.find((c) => c.id === ch)?.blurb ?? `The start of ${s?.name ?? 'the squad'}'s #${chName}`}.{count > msgs.length ? ` Showing the latest ${msgs.length} of ${count}.` : ''}</Txt>
+                </View>
+              </Row>
               {msgs.length === 0 ? <Txt v="small" style={{ marginTop: 8 }}>No messages yet. Say gm, or tap Clash to challenge the squad.</Txt> : msgs.map((m, i) => {
                 const p = prof.get(m.author.toBase58());
                 const prev = msgs[i - 1];
                 const newDay = !prev || dayKey(prev.ts) !== dayKey(m.ts);
                 const grouped = !newDay && !!prev && prev.author.equals(m.author) && m.ts - prev.ts < 300 && prev.kind === 0 && m.kind === 0;
                 const capt = !!s?.captain.equals(m.author);
+                const mineMsg = !!me && m.author.equals(me);
                 return (
                   <View key={m.i}>
                     {newDay ? (
                       <Row style={{ gap: 10, marginVertical: 12 }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#1C1C23' }} />
-                        <Txt v="small" color={C.dim} style={{ fontSize: 11, ...FONT.semi }}>{dayLabel(m.ts)}</Txt>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#1C1C23' }} />
+                        <View style={{ flex: 1, height: 1, backgroundColor: C.line }} />
+                        <Txt v="small" color={C.dim} style={{ fontSize: 12, ...FONT.medium }}>{dayLabel(m.ts)}</Txt>
+                        <View style={{ flex: 1, height: 1, backgroundColor: C.line }} />
                       </Row>
                     ) : null}
                     {m.kind === 1 ? (
-                      <Row style={{ gap: 8, marginTop: 10, paddingLeft: 6 }}>
-                        <Swords size={13} color={C.opp} />
-                        <Txt v="small" style={{ flex: 1, fontSize: 12.5 }}><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt> posted a clash challenge · {time(m.ts)}</Txt>
+                      <Row style={{ gap: 6, marginTop: 10, justifyContent: mineMsg ? 'flex-end' : 'flex-start' }}>
+                        <Swords size={13} color={C.muted} />
+                        <Txt v="small" lines={1} style={{ fontSize: 12, flexShrink: 1 }}><Txt v="small" color={C.ink} style={{ ...FONT.medium, fontSize: 12 }}>{mineMsg ? 'You' : p?.name ?? short(m.author.toBase58())}</Txt> posted a clash challenge · {time(m.ts)}</Txt>
                       </Row>
                     ) : null}
-                    <Row style={{ gap: 12, alignItems: 'flex-start', marginTop: grouped ? 2 : m.kind === 1 ? 4 : 14 }}>
-                      {grouped ? <View style={{ width: 40 }} /> : <ProfileAvatar p={p} size={40} />}
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        {grouped ? null : (
-                          <Row style={{ gap: 6, flexWrap: 'wrap' }}>
-                            <Txt v="label" color={capt ? GOLD : C.ink} style={{ fontSize: 14.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt>
-                            {capt ? <Image source={ART.crown} style={{ width: 14, height: 14 }} contentFit="contain" /> : null}
-                            <Txt v="small" color={C.dim} style={{ fontSize: 11 }}>{time(m.ts)}</Txt>
-                          </Row>
-                        )}
-                        {m.kind === 1 ? <ChallengeCard m={m} mine={!!me && m.author.equals(me)} onAccept={accept} />
-                          : <Txt v="body" color="#DCDCE2" style={{ fontSize: 15, lineHeight: 21, marginTop: grouped ? 0 : 1 }}>{m.text}</Txt>}
+                    {mineMsg ? (
+                      // my own message: a lavender bubble on the right
+                      <View style={{ alignItems: 'flex-end', marginTop: grouped ? 3 : m.kind === 1 ? 4 : 12 }}>
+                        {grouped || m.kind === 1 ? null : <Txt v="small" color={C.dim} style={{ fontSize: 11.5, marginBottom: 3 }}>{time(m.ts)}</Txt>}
+                        {m.kind === 1 ? <ChallengeCard m={m} mine onAccept={accept} />
+                          : <View style={{ maxWidth: '82%', backgroundColor: C.brand, borderRadius: 18, paddingHorizontal: 13, paddingVertical: 8 }}>
+                              <Txt v="body" color={C.onBrand}>{m.text}</Txt>
+                            </View>}
                       </View>
-                    </Row>
+                    ) : (
+                      <Row style={{ gap: 10, alignItems: 'flex-end', marginTop: grouped ? 3 : m.kind === 1 ? 4 : 12 }}>
+                        {grouped ? <View style={{ width: 32 }} /> : <ProfileAvatar p={p} size={32} />}
+                        <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-start' }}>
+                          {grouped || m.kind === 1 ? null : (
+                            <Row style={{ gap: 5, marginBottom: 3, paddingLeft: 4 }}>
+                              <Txt v="small" color={C.ink} lines={1} style={{ ...FONT.semi, flexShrink: 1 }}>{p?.name ?? short(m.author.toBase58())}</Txt>
+                              {capt ? <Crown size={12} color={C.brandSoft} /> : null}
+                              <Txt v="small" color={C.dim} style={{ fontSize: 11.5 }}>{time(m.ts)}</Txt>
+                            </Row>
+                          )}
+                          {m.kind === 1 ? <ChallengeCard m={m} mine={false} onAccept={accept} />
+                            : <View style={{ maxWidth: '88%', backgroundColor: C.s2, borderRadius: 18, paddingHorizontal: 13, paddingVertical: 8 }}>
+                                <Txt v="body">{m.text}</Txt>
+                              </View>}
+                        </View>
+                      </Row>
+                    )}
                   </View>
                 );
               })}
@@ -221,18 +234,18 @@ export default function ClanChat() {
         </ScrollView>
         {err ? <View style={{ paddingHorizontal: 14 }}><ErrorLine msg={err} /></View> : null}
         {st === 'live' && !notMember && clan ? (
-          <Row style={{ gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: insets.bottom + 10 }}>
-            <Pressable onPress={challenge} disabled={!!busy} accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
-              style={({ pressed }) => ({ height: 46, paddingHorizontal: 12, borderRadius: 23, backgroundColor: pressed ? '#2A2A33' : '#1C1C23', flexDirection: 'row', alignItems: 'center', gap: 6, opacity: busy && busy !== 'challenge' ? 0.5 : 1 })}>
-              <Swords size={15} color={C.opp} />
-              <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 13 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
+          <Row style={{ gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: insets.bottom + 10 }}>
+            <Pressable onPress={challenge} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
+              style={({ pressed }) => ({ height: 46, paddingHorizontal: 14, borderRadius: 23, backgroundColor: pressed ? C.s1 : C.s2, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: busy && busy !== 'challenge' ? 0.5 : 1 })}>
+              <Swords size={16} color={C.ink} />
+              <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
             </Pressable>
-            <View style={{ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#1C1C23', flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 4 }}>
+            <View style={{ flex: 1, minWidth: 0, height: 46, borderRadius: 23, backgroundColor: C.s2, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 4 }}>
               <TextInput value={text} onChangeText={setText} onSubmitEditing={send} placeholder={`Message #${chName}`} placeholderTextColor={C.dim} maxLength={120} returnKeyType="send"
-                style={{ flex: 1, height: 44, color: C.ink, ...FONT.medium, fontSize: 15, minWidth: 0 }} />
-              <Pressable onPress={send} disabled={!!busy || !text.trim()} accessibilityLabel="Send"
-                style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: text.trim() ? C.brand : '#2A2A33', alignItems: 'center', justifyContent: 'center' }}>
-                <Txt v="label" color={text.trim() ? C.onBrand : C.muted} style={{ fontSize: 18, marginTop: -2 }}>{busy === 'send' ? '…' : '↑'}</Txt>
+                style={{ flex: 1, height: 44, color: C.ink, ...FONT.regular, fontSize: 15, minWidth: 0 }} />
+              <Pressable onPress={send} disabled={!!busy || !text.trim()} accessibilityRole="button" accessibilityLabel="Send"
+                style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: text.trim() ? C.brand : C.s1, alignItems: 'center', justifyContent: 'center' }}>
+                {busy === 'send' ? <Txt v="label" color={C.onBrand}>…</Txt> : <ArrowUp size={18} color={text.trim() ? C.onBrand : C.muted} />}
               </Pressable>
             </View>
           </Row>

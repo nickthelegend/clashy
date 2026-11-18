@@ -9,6 +9,7 @@ import { useFeed, useLiveCounts } from '@/chain/reads';
 import { Chat, Collapse, Home, Shield, Swords, User, WalletI } from './icons';
 import { ART, Art, Btn, LiveDot, Row, Txt, Wordmark } from './kit';
 import { C, F, FONT, R } from './tokens';
+import { Watchlist } from './watchlist';
 
 type NavProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: (c: string) => ReactNode; collapsed: boolean };
 function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavProps & { ref?: unknown }) {
@@ -54,11 +55,11 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       </View>
       <View style={{ flex: 1 }} />
       {collapsed ? (
-        <Pressable onPress={() => router.push('/arena')} style={{ height: 52, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
-          <Image source={ART.sidebarBattle} style={{ width: 30, height: 30 }} contentFit="contain" />
+        <Pressable onPress={() => router.push('/arena')} style={{ height: 48, borderRadius: 24, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+          <Swords size={20} color={C.onBrand} />
         </Pressable>
       ) : (
-        <Btn title="Battle" h={52} icon={<Swords size={18} color="#fff" />} onPress={() => router.push('/arena')} />
+        <Btn title="Play" h={48} icon={<Swords size={18} color={C.onBrand} />} onPress={() => router.push('/arena')} />
       )}
     </View>
   );
@@ -71,33 +72,32 @@ export function RightRail() {
   const live = feed.status === 'ready' ? feed.data.live : [];
   const c = counts.status === 'ready' ? counts.data : null;
   return (
-    <ScrollView style={{ width: 340, flexGrow: 0, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: C.line }} contentContainerStyle={{ padding: 16, gap: 14 }}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <Row style={{ gap: 8 }}><Txt v="h2">Live duels</Txt><Image source={ART.railLive} style={{ width: 54, height: 24 }} contentFit="contain" /></Row>
-        <Row style={{ gap: 6 }}><LiveDot color={live.length ? C.down : C.dim} /><Txt v="small">{feed.status === 'ready' ? `${live.length} live` : '…'}</Txt></Row>
+    <ScrollView style={{ width: 340, flexGrow: 0, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: C.line }} contentContainerStyle={{ padding: 16, paddingTop: 4 }}>
+      {/* the markets, the way a trading app's side panel shows them */}
+      <Watchlist title="Markets" more={{ label: 'All markets', href: '/practice' }} />
+
+      <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 8 }}>
+        <Txt v="h2">Live clashes</Txt>
+        <Row style={{ gap: 6 }}><LiveDot color={live.length ? C.up : C.dim} /><Txt v="small">{feed.status === 'ready' ? `${live.length} live` : '…'}</Txt></Row>
       </Row>
-      <View style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 14, gap: 8 }}>
+      <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 14, gap: 8 }}>
         {counts.status === 'error' ? <Txt v="small" color={C.down}>{counts.error}</Txt> : live.length ? live.slice(0, 4).map((d) => (
           <Row key={d.key.toBase58()} style={{ justifyContent: 'space-between' }}>
-            <Txt v="small" color={C.ink}>{['SOL', 'BTC', 'ETH'][d.coin] ?? '…'} · {d.stake * 2} USDC pot</Txt><Txt v="small">live</Txt>
+            <Txt v="small" color={C.ink}>{['SOL', 'BTC', 'ETH'][d.coin] ?? '…'} · {d.stake * 2} USDC pot</Txt><Txt v="small" color={C.up}>Live</Txt>
           </Row>
-        )) : (
-          <View style={{ alignItems: 'center', gap: 8 }}>
-            <Art src={ART.radar} size={64} radius={0} />
-            <Txt v="small" style={{ textAlign: 'center', lineHeight: 18 }}>No clash is live right now.</Txt>
-          </View>
-        )}
-        <Txt v="small" style={{ textAlign: 'center' }}>{c ? `${c.openDuels} open challenge${c.openDuels === 1 ? '' : 's'} · ${c.openRoyales} Royale lobb${c.openRoyales === 1 ? 'y' : 'ies'}` : ' '}</Txt>
-        <Btn title="Clash for $5" kind="ghost" h={36} onPress={() => router.push('/onchain')} />
+        )) : <Txt v="small">No clash is live right now.</Txt>}
+        <Txt v="small">{c ? `${c.openDuels} open challenge${c.openDuels === 1 ? '' : 's'} · ${c.openRoyales} Royale lobb${c.openRoyales === 1 ? 'y' : 'ies'}` : ' '}</Txt>
+        <Btn title="Clash for $5" h={40} style={{ marginTop: 4 }} onPress={() => router.push('/onchain')} />
       </View>
-      <Row style={{ justifyContent: 'space-between', marginTop: 4 }}>
-        <Txt v="h2">Squads</Txt>
-        <Pressable onPress={() => router.push('/clans')}><Txt v="small">All squads</Txt></Pressable>
-      </Row>
-      <View style={{ backgroundColor: C.s1, borderRadius: R.lg, padding: 14, gap: 10 }}>
-        <Row style={{ gap: 10 }}><Art src={ART.crestCreate} size={40} radius={0} /><View style={{ flex: 1 }}><Txt v="label">{c ? `${c.clans} squad${c.clans === 1 ? '' : 's'}` : 'Clans'}</Txt><Txt v="small">USDC chests, votes and wars</Txt></View></Row>
-        <Btn title="Open your squad" kind="ghost" h={36} onPress={() => router.push('/onchain-clan')} />
-      </View>
+
+      <Pressable onPress={() => router.push('/clans')} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Shield size={18} color={C.ink} /></View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="label">{c ? `${c.clans} squad${c.clans === 1 ? '' : 's'}` : 'Squads'}</Txt>
+          <Txt v="small" lines={1}>USDC chests, votes and wars</Txt>
+        </View>
+        <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>
+      </Pressable>
     </ScrollView>
   );
 }

@@ -21,7 +21,7 @@ export default function PublicProfile() {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: S.gutter }}>
         <Row style={{ marginBottom: 14 }}><BackBtn onPress={back} /></Row>
-        <Pending art={ART.emptySearch} title="No player at this address" body={`"${id ?? ''}" is not a Solana address. Open a profile from the feed, a clash or the leaderboard.`} action="Go home" onAction={() => router.replace('/')} />
+        <Pending art={ART.emptySearch} title="No player at this address" body={`"${id ?? ''}" is not a Solana address.`} action="Go home" onAction={() => router.replace('/')} />
       </ScrollView>
     );
   const isMe = !!wallet.signer && wallet.signer.publicKey.equals(owner);

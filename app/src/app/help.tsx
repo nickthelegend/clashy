@@ -1,5 +1,5 @@
 // How Clashy works: a plain-words help center. One section per part of the game (Clash, Royale, Squads, the Stash,
-// the Weekly Cup, fees, playing safe, your money), each with its clay art, the key facts and tap-to-open questions.
+// the Weekly Cup, fees, playing safe, your money), each with its icon, the key facts and tap-to-open questions.
 // The fee rate is read live from the program's config account, and the play-safe section shows your own limit and
 // break when you are signed in. Open a section directly with /help?topic=fees (or /help#fees on web).
 import { router, useLocalSearchParams, type Href } from 'expo-router';
@@ -12,13 +12,10 @@ import Svg, { Path } from 'react-native-svg';
 import { IS_LOCAL_NET, NET, P, PROGRAM_ID } from '@/chain/client';
 import { readProfile, reader, usePoll } from '@/chain/social';
 import { useWallet } from '@/chain/wallet';
-import { ClayLoop, type ClayName } from '@/ui/clay';
+import { Crown, Gear, Jar, Search as SearchIcon, Shield, Swords, WalletI } from '@/ui/icons';
 import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
-
-const CARD = '#111116';
-const HAIR = '#1F1F27';
+import { C, FONT, S, fmtUsd } from '@/ui/tokens';
 
 type TopicKey = 'clash' | 'royale' | 'squads' | 'stash' | 'cup' | 'fees' | 'safe' | 'money';
 const TOPICS: { key: TopicKey; label: string }[] = [
@@ -52,62 +49,63 @@ function Chevron({ color = C.muted }: { color?: string }) {
   return <Svg width={18} height={18} viewBox="0 0 24 24"><Path d="M6 9l6 6 6-6" stroke={color} strokeWidth={2.4} fill="none" strokeLinecap="round" strokeLinejoin="round" /></Svg>;
 }
 
-function Faq({ q, children, open, onToggle, last }: { q: string; children: ReactNode; open: boolean; onToggle: () => void; last?: boolean }) {
+function Faq({ q, children, open, onToggle, first }: { q: string; children: ReactNode; open: boolean; onToggle: () => void; first?: boolean }) {
   const rot = useSharedValue(open ? 1 : 0);
   useEffect(() => { rot.value = withTiming(open ? 1 : 0, { duration: 200 }); }, [open, rot]);
   const chev = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value * 180}deg` }] }));
   return (
-    <Animated.View layout={LinearTransition.duration(220)} style={{ borderTopWidth: 1, borderTopColor: HAIR, overflow: 'hidden', borderBottomLeftRadius: last ? 24 : 0, borderBottomRightRadius: last ? 24 : 0 }}>
+    <Animated.View layout={LinearTransition.duration(220)} style={{ borderTopWidth: first ? 0 : 1, borderTopColor: C.line, overflow: 'hidden' }}>
       <Pressable onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }}
-        style={({ pressed }) => ({ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: pressed ? '#17171D' : 'transparent' })}>
-        <Txt v="label" color={open ? C.ink : '#D6D6DD'} style={{ flex: 1, fontSize: 15, lineHeight: 20 }}>{q}</Txt>
+        style={({ pressed }) => ({ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: pressed ? C.s1 : 'transparent' })}>
+        <Txt v="label" style={{ flex: 1, lineHeight: 20 }}>{q}</Txt>
         <Animated.View style={chev}><Chevron color={open ? C.ink : C.muted} /></Animated.View>
       </Pressable>
       {open ? (
-        <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -2 }}>
+        <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={{ paddingHorizontal: 14, paddingBottom: 14, marginTop: -2 }}>
           {children}
         </Animated.View>
       ) : null}
     </Animated.View>
   );
 }
-const A = ({ children }: { children: ReactNode }) => <Txt v="body" color="#B9B9C3" style={{ fontSize: 14.5, lineHeight: 21 }}>{children}</Txt>;
+const A = ({ children }: { children: ReactNode }) => <Txt v="body" color={C.muted} style={{ lineHeight: 21 }}>{children}</Txt>;
 const B = ({ children, color = C.ink }: { children: ReactNode; color?: string }) => <Text style={{ ...FONT.semi, color }}>{children}</Text>;
 
-function Fact({ text, color = C.ink, bg = '#1C1C23' }: { text: string; color?: string; bg?: string }) {
+/** A key fact as a small grey chip. */
+function Fact({ text }: { text: string }) {
   return (
-    <View style={{ backgroundColor: bg, borderRadius: 10, paddingHorizontal: 10, height: 30, justifyContent: 'center' }}>
-      <Txt v="small" color={color} style={{ ...FONT.bold, fontSize: 12 }}>{text}</Txt>
+    <View style={{ backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 9, height: 26, justifyContent: 'center' }}>
+      <Txt v="small" color={C.ink} style={{ ...FONT.medium, fontSize: 12 }}>{text}</Txt>
     </View>
   );
 }
 
 type Q = { q: string; a: ReactNode };
-function Section({ id, title, lead, loop, still, tint, facts, faqs, focus, extra, onLayout }: {
-  id: TopicKey; title: string; lead: string; loop: ClayName; still: number; tint: string; facts: { text: string; color?: string; bg?: string }[];
+function Section({ id, title, lead, icon, facts, faqs, focus, extra, onLayout }: {
+  id: TopicKey; title: string; lead: string; icon: ReactNode; facts: { text: string }[];
   faqs: Q[]; focus: boolean; extra?: ReactNode; onLayout: (id: TopicKey, e: LayoutChangeEvent) => void;
 }) {
   const [open, setOpen] = useState<number | null>(focus ? 0 : null);
   useEffect(() => { if (focus) setOpen((o) => (o === null ? 0 : o)); }, [focus]);
   return (
-    <View onLayout={(e) => onLayout(id, e)} style={{ marginTop: 14 }}>
-      <Animated.View entering={FadeInDown.duration(320)} style={{ backgroundColor: CARD, borderRadius: 26, borderWidth: focus ? 1.5 : 1, borderColor: focus ? tint + 'AA' : 'transparent' }}>
-        <Row style={{ gap: 14, padding: 16, alignItems: 'center' }}>
-          <View style={{ width: 84, height: 84, borderRadius: 22, backgroundColor: tint + '1F', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-            {focus ? <ClayLoop name={loop} size={84} style={{ backgroundColor: 'transparent' }} /> : <Image source={still} style={{ width: 76, height: 76 }} contentFit="contain" />}
-          </View>
+    <View onLayout={(e) => onLayout(id, e)} style={{ marginTop: 28 }}>
+      <Animated.View entering={FadeInDown.duration(300)}>
+        <Row style={{ gap: 12 }}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{icon}</View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Txt v="title" color={tint} lines={1} style={{ fontSize: 22, lineHeight: 27, letterSpacing: -0.5 }}>{title}</Txt>
-            <Txt v="small" color="#C9C9D1" style={{ marginTop: 4, lineHeight: 18, fontSize: 13 }}>{lead}</Txt>
+            <Txt v="h2" lines={1}>{title}</Txt>
+            <Txt v="small" style={{ marginTop: 2, lineHeight: 18 }}>{lead}</Txt>
           </View>
         </Row>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 16, paddingBottom: 14, marginTop: -2 }}>
-          {facts.map((f) => <Fact key={f.text} {...f} />)}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+          {facts.map((f) => <Fact key={f.text} text={f.text} />)}
         </View>
-        {extra ? <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>{extra}</View> : null}
-        {faqs.map((f, i) => (
-          <Faq key={f.q} q={f.q} open={open === i} onToggle={() => setOpen((o) => (o === i ? null : i))} last={i === faqs.length - 1}>{f.a}</Faq>
-        ))}
+        {extra ? <View style={{ marginTop: 12 }}>{extra}</View> : null}
+        <View style={{ marginTop: 12, backgroundColor: C.card, borderRadius: 18, overflow: 'hidden' }}>
+          {faqs.map((f, i) => (
+            <Faq key={f.q} q={f.q} open={open === i} onToggle={() => setOpen((o) => (o === i ? null : i))} first={i === 0}>{f.a}</Faq>
+          ))}
+        </View>
       </Animated.View>
     </View>
   );
@@ -118,16 +116,16 @@ function PotTable({ bps }: { bps: number }) {
   const rows = [5, 10, 25].map((s) => ({ s, ...split(s * 2, bps) }));
   const cell = { flex: 1, textAlign: 'right' as const, fontVariant: ['tabular-nums' as const] };
   return (
-    <View style={{ backgroundColor: '#17171D', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 }}>
+    <View style={{ backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 }}>
       <Row style={{ height: 32 }}>
         {['Stake', 'Pot', 'Fee', 'Winner gets'].map((h, i) => (
           <Txt key={h} v="small" color={C.dim} style={[{ fontSize: 11.5, ...FONT.semi }, i ? cell : { flex: 0.8 }]}>{h}</Txt>
         ))}
       </Row>
       {rows.map((r) => (
-        <Row key={r.s} style={{ height: 36, borderTopWidth: 1, borderTopColor: HAIR }}>
+        <Row key={r.s} style={{ height: 36, borderTopWidth: 1, borderTopColor: C.line }}>
           <Txt v="label" style={{ flex: 0.8, fontVariant: ['tabular-nums'] }}>${r.s}</Txt>
-          <Txt v="label" color="#C9C9D1" style={cell}>{fmtUsd(r.s * 2)}</Txt>
+          <Txt v="label" style={cell}>{fmtUsd(r.s * 2)}</Txt>
           <Txt v="label" color={C.muted} style={cell}>{fmtUsd(r.fee)}</Txt>
           <Txt v="label" color={C.up} style={cell}>{fmtUsd(r.rest)}</Txt>
         </Row>
@@ -179,31 +177,25 @@ export default function Help() {
     <ScrollView ref={scroll} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
       <Row style={{ gap: 10 }}><BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/' as Href))} /></Row>
 
-      {/* hero */}
-      <View style={{ marginTop: 12, borderRadius: 28, overflow: 'hidden', backgroundColor: CARD }}>
-        <ClayLoop name="journey" width="100%" height={180} cover />
-        <View style={{ padding: 18, paddingTop: 14 }}>
-          <Txt v="title" style={{ fontSize: 30, lineHeight: 35, letterSpacing: -1 }}>How Clashy works</Txt>
-          <Txt v="body" color="#B9B9C3" style={{ marginTop: 6, lineHeight: 20 }}>Call where a price goes next. Beat a friend 1 v 1, outlast a whole table, team up with a squad, and save what you win. Real USDC, real rules, no small print.</Txt>
-        </View>
-      </View>
+      <Txt v="title" style={{ marginTop: 10 }}>How Clashy works</Txt>
+      <Txt v="small" style={{ marginTop: 2, lineHeight: 18 }}>Call where a price goes next. Real USDC, real rules, no small print.</Txt>
 
       {/* topic jump chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 14, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 14, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, paddingVertical: 5, gap: 6 }}>
         {TOPICS.map((t) => {
           const on = focus === t.key;
           return (
             <Pressable key={t.key} onPress={() => pick(t.key)} accessibilityRole="button" accessibilityState={{ selected: on }}
-              style={({ pressed }) => ({ height: 44, paddingHorizontal: 16, borderRadius: 22, justifyContent: 'center', backgroundColor: on ? C.white : pressed ? '#24242C' : C.s2, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-              <Txt v="label" color={on ? '#000' : C.ink} style={{ fontSize: 13.5 }}>{t.label}</Txt>
+              hitSlop={5} style={({ pressed }) => ({ height: 34, paddingHorizontal: 13, borderRadius: 17, justifyContent: 'center', backgroundColor: on ? C.ink : C.s2, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+              <Txt v="small" color={on ? '#000' : C.ink} style={{ ...FONT.medium }}>{t.label}</Txt>
             </Pressable>
           );
         })}
       </ScrollView>
 
-      <Section id="clash" focus={focus === 'clash'} onLayout={onLayout} title="Clash" tint={C.opp} loop="duel" still={ART.tileDuel}
+      <Section id="clash" focus={focus === 'clash'} onLayout={onLayout} title="Clash" icon={<Swords size={20} color={C.ink} />}
         lead="1 v 1. Same coin, two sealed calls. Whoever calls it best takes the pot."
-        facts={[{ text: '$5 · $10 · $25' }, { text: 'Stocks · 1 hour', color: '#FFC94A' }, { text: 'Crypto · 60 s', color: C.brandSoft }, { text: 'Ties refund', color: C.up }]}
+        facts={[{ text: '$5 · $10 · $25' }, { text: 'Stocks · 1 hour' }, { text: 'Crypto · 60 s' }, { text: 'Ties refund' }]}
         faqs={[
           { q: 'How does a clash work?', a: <A>Pick a stake (<B>$5, $10 or $25</B>) and a market: a real stock over <B>1 hour</B> (NVIDIA, Tesla, Apple, the S&P 500 or Alphabet) or crypto over <B>60 seconds</B> (SOL, BTC or ETH). A rival puts in the same stake, the coin is picked at random for both of you, and you each call it up or down. Best call wins the pot.</A> },
           { q: 'Can my rival see my call?', a: <A>No. Your call is sealed until you have both locked in, so nobody can wait and copy you. No leverage either: it is your call against theirs.</A> },
@@ -212,9 +204,9 @@ export default function Help() {
           { q: 'What if nobody joins, or my rival vanishes?', a: <A>An open clash nobody has joined can be cancelled for a full refund, no fee. If a matched clash never gets going, either player can end it after 10 minutes: both stakes come back, unless one player locked in a call and the other never showed it, in which case the one who played wins the pot.</A> },
         ]} />
 
-      <Section id="royale" focus={focus === 'royale'} onLayout={onLayout} title="Royale" tint="#FFC94A" loop="royale" still={ART.tileRoyale}
+      <Section id="royale" focus={focus === 'royale'} onLayout={onLayout} title="Royale" icon={<Crown size={20} color={C.ink} />}
         lead="A table of up to 16 players. Call each round, lose a heart when you're wrong, last one standing wins."
-        facts={[{ text: '$2 entry' }, { text: '2 to 16 seats' }, { text: '1 to 3 hearts', color: C.opp }, { text: '10 s rounds', color: C.brandSoft }]}
+        facts={[{ text: '$2 entry' }, { text: '2 to 16 seats' }, { text: '1 to 3 hearts' }, { text: '10 s rounds' }]}
         faqs={[
           { q: 'How does a Royale work?', a: <A>Join a table for <B>2 USDC</B>. The host picks the size (2, 4, 8 or 16 seats) and how many hearts everyone starts with (1 to 3). Every round lasts 10 seconds: call up or down, and a wrong call costs you a heart. Run out of hearts and you are out.</A> },
           { q: 'Who wins?', a: <A>The last player standing takes the pot. If the rounds run out with more than one player left, the ones with the most hearts split it. If everyone falls in the same round, the players who were still in before that round share the win.</A> },
@@ -222,9 +214,9 @@ export default function Help() {
           { q: 'What if the table never fills?', a: <A>A Royale cancelled before round 1 sends every entry straight back to its player, in full.</A> },
         ]} />
 
-      <Section id="squads" focus={focus === 'squads'} onLayout={onLayout} title="Squads" tint={C.brandSoft} loop="onSquad" still={ART.onSquad}
+      <Section id="squads" focus={focus === 'squads'} onLayout={onLayout} title="Squads" icon={<Shield size={20} color={C.ink} />}
         lead="Your crew. Chat, pool money in a shared chest, vote on trades and take on other squads."
-        facts={[{ text: 'Join as many as you like' }, { text: 'Free to join', color: C.up }, { text: 'Squad wars', color: C.opp }]}
+        facts={[{ text: 'Join as many as you like' }, { text: 'Free to join' }, { text: 'Squad wars' }]}
         faqs={[
           { q: 'What is a squad?', a: <A>A group of players with its own chat (#general and #trades), a shared USDC chest and a level that grows with members, chest size and wars won. You can be in <B>as many squads as you like</B>, and starting one is free.</A> },
           { q: 'How does the shared chest work?', a: <A>Members put USDC in and get shares of the chest. The squad trades with it by vote, and votes weigh by shares, so the people with more in have more say. You can cash out your shares at any time; that is also the one thing to do before you leave a squad.</A> },
@@ -232,9 +224,9 @@ export default function Help() {
           { q: 'Who runs the squad?', a: <A>The captain: whoever started it. The captain declares wars; members chat, deposit, vote and clash each other.</A> },
         ]} />
 
-      <Section id="stash" focus={focus === 'stash'} onLayout={onLayout} title="Stash" tint={C.up} loop="stash" still={ART.stash}
+      <Section id="stash" focus={focus === 'stash'} onLayout={onLayout} title="Stash" icon={<Jar size={20} color={C.ink} />}
         lead="A savings jar only you can open. Save the change, keep part of every win, own real stocks."
-        facts={[{ text: 'Only you can open it' }, { text: 'No lockups', color: C.up }, { text: 'Real stocks via Orca', color: '#FFC94A' }]}
+        facts={[{ text: 'Only you can open it' }, { text: 'No lockups' }, { text: 'Real stocks via Orca' }]}
         faqs={[
           { q: 'What is the Stash?', a: <A>Your own savings jar, kept apart from the money you play with. Nobody else can take money out of it, Clashy included. Set a goal and watch it fill.</A> },
           { q: 'How do round-ups work?', a: <A>When you pay someone from Clashy, the change up to your round-up step (say, the next $1) goes into your Stash in the same payment. Small amounts, saved without thinking about it.</A> },
@@ -243,18 +235,18 @@ export default function Help() {
           { q: 'Is my money locked?', a: <A>Never. Take money out of the Stash whenever you want, with no lockups and no fees.</A> },
         ]} />
 
-      <Section id="cup" focus={focus === 'cup'} onLayout={onLayout} title="Weekly Cup" tint="#FFD66B" loop="cupBig" still={ART.cupBig}
+      <Section id="cup" focus={focus === 'cup'} onLayout={onLayout} title="Weekly Cup" icon={<Image source={ART.cupBig} style={{ width: 30, height: 30 }} contentFit="contain" />}
         lead="Who's calling it best this week. One board for everyone, fresh every Monday."
-        facts={[{ text: 'Resets Monday 00:00 UTC' }, { text: 'No entry fee', color: C.up }]}
+        facts={[{ text: 'Resets Monday 00:00 UTC' }, { text: 'No entry fee' }]}
         faqs={[
           { q: 'How is the Cup scored?', a: <A>Your standing is your profit on stocks bought through the Stash plus what you won in clashes this week. It is all worked out from what happened on chain; nobody types in a score.</A> },
           { q: 'When does it reset?', a: <A>Every Monday at 00:00 UTC. The clash part starts again from zero; your stock profit carries on, since it is the profit on what you hold.</A> },
           { q: 'Do I need to sign up?', a: <A>No. Play a clash or own a stock in the Stash and you are on the board.</A> },
         ]} />
 
-      <Section id="fees" focus={focus === 'fees'} onLayout={onLayout} title="Fees" tint={C.ink} loop="spend" still={ART.spend}
+      <Section id="fees" focus={focus === 'fees'} onLayout={onLayout} title="Fees" icon={<Txt v="label" style={{ fontSize: 17 }}>%</Txt>}
         lead={`One fee, only when a game pays out: ${bps === null ? 'a small cut' : pct(bps)} of the pot. Everything else is free.`}
-        facts={[{ text: `${rate} of each pot` }, { text: 'Network fees on us', color: C.up }, { text: 'No deposit or withdraw fees', color: C.up }]}
+        facts={[{ text: `${rate} of each pot` }, { text: 'Network fees on us' }, { text: 'No deposit or withdraw fees' }]}
         extra={(
           <View>
             <PotTable bps={r} />
@@ -268,23 +260,23 @@ export default function Help() {
           { q: 'Does it cost anything to add or take out money?', a: <A>No deposit or withdraw fees from Clashy. Sending USDC out, saving to the Stash and taking it back are all free. Buying or selling stocks trades at the Orca pool price, which includes the pool's own small trading fee; Clashy adds nothing on top.</A> },
         ]} />
 
-      <Section id="safe" focus={focus === 'safe'} onLayout={onLayout} title="Play safe" tint={C.brand} loop="limits" still={ART.limits}
+      <Section id="safe" focus={focus === 'safe'} onLayout={onLayout} title="Play safe" icon={<Gear size={20} color={C.ink} />}
         lead="Stakes are real money. Set your own limits, and the rules make sure they hold, even against you."
-        facts={[{ text: 'Daily limit, enforced on chain' }, { text: 'Lowering is instant', color: C.up }, { text: 'Raising waits 24 h', color: '#FFC94A' }]}
+        facts={[{ text: 'Daily limit, enforced on chain' }, { text: 'Lowering is instant' }, { text: 'Raising waits 24 h' }]}
         extra={me ? (
-          <View style={{ backgroundColor: '#17171D', borderRadius: 18, padding: 14 }}>
-            <Txt v="label" color={C.muted} style={{ fontSize: 13 }}>Your limits</Txt>
+          <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
+            <Txt v="small" style={{ ...FONT.semi }}>Your limits</Txt>
             {prof.status === 'loading' ? <Txt v="small" style={{ marginTop: 6 }}>Reading your limits…</Txt>
               : prof.status === 'error' ? <ErrorLine msg={prof.error} onRetry={prof.reload} />
               : !p ? <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }}>Pick a name first: your limits start at $50 a day the moment you join.</Txt> : (
                 <>
                   <Row style={{ marginTop: 8, alignItems: 'flex-end' }}>
-                    <Txt v="title" style={{ fontSize: 28, fontVariant: ['tabular-nums'] }}>{fmtUsd(p.dailyLimit)}</Txt>
-                    <Txt v="small" style={{ marginLeft: 6, marginBottom: 6 }}>a day</Txt>
+                    <Txt v="num" style={{ fontSize: 20 }}>{fmtUsd(p.dailyLimit)}</Txt>
+                    <Txt v="small" style={{ marginLeft: 6, marginBottom: 2 }}>a day</Txt>
                     <View style={{ flex: 1 }} />
-                    <Txt v="small" style={{ marginBottom: 6 }}>{fmtUsd(usedToday)} used today</Txt>
+                    <Txt v="small" style={{ marginBottom: 2 }}>{fmtUsd(usedToday)} used today</Txt>
                   </Row>
-                  <View style={{ height: 6, borderRadius: 3, backgroundColor: '#24242C', marginTop: 8, overflow: 'hidden' }}>
+                  <View style={{ height: 6, borderRadius: 3, backgroundColor: C.s2, marginTop: 8, overflow: 'hidden' }}>
                     <View style={{ width: `${Math.min(100, p.dailyLimit ? (usedToday / p.dailyLimit) * 100 : 0)}%`, height: 6, backgroundColor: usedToday >= p.dailyLimit ? C.down : C.brand }} />
                   </View>
                   {p.pendingAt ? <Txt v="small" style={{ marginTop: 8 }}>Raise to {fmtUsd(p.pendingLimit)} applies {new Date(p.pendingAt * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</Txt> : null}
@@ -301,9 +293,9 @@ export default function Help() {
           { q: 'How much should I play with?', a: <A>Only money you can afford to lose. Stakes are real USDC and you can lose them. If it stops being fun, take a break, and talk to someone you trust.</A> },
         ]} />
 
-      <Section id="money" focus={focus === 'money'} onLayout={onLayout} title="Your money" tint="#5AC8FA" loop="onInvest" still={ART.onInvest}
+      <Section id="money" focus={focus === 'money'} onLayout={onLayout} title="Your money" icon={<WalletI size={20} color={C.ink} />}
         lead="Your own wallet, your own key. Clashy can't move your money; only the game rules can."
-        facts={[{ text: 'Your own wallet' }, { text: 'USDC only', color: '#5AC8FA' }, { text: 'Clashy never sees your key', color: C.up }]}
+        facts={[{ text: 'Your own wallet' }, { text: 'USDC only' }, { text: 'Clashy never sees your key' }]}
         faqs={[
           { q: 'Where is my money?', a: <A>In your own wallet on Solana, made for you when you sign in with email or Google. No seed phrase to write down, and it only ever needs USDC.</A> },
           { q: 'What happens to my stake during a game?', a: <A>It waits in the Clashy program's escrow until the game settles, then goes straight to the winner, or back to you on a tie or refund. Nobody can take it out early, Clashy included.</A> },
@@ -311,13 +303,14 @@ export default function Help() {
           { q: 'Can I check all this myself?', a: <A>Yes. Every stake, payout and fee is a public Solana transaction. Your wallet page links each one to Solana Explorer.</A> },
         ]} />
 
-      <Pressable onPress={explorer} style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12', opacity: pressed ? 0.7 : 1 })}>
-        <Image source={ART.levelStar} style={{ width: 40, height: 40 }} contentFit="contain" />
+      <Pressable onPress={explorer} accessibilityRole="link" accessibilityLabel="See the Clashy program on Solana Explorer"
+        style={({ pressed }) => ({ marginTop: 24, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><SearchIcon size={18} color={C.ink} /></View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt v="label">Every rule here runs on chain</Txt>
-          <Txt v="small" style={{ marginTop: 2 }}>See the Clashy program on Solana Explorer</Txt>
+          <Txt v="label" lines={1}>Every rule here runs on chain</Txt>
+          <Txt v="small" lines={1} style={{ marginTop: 1 }}>See the Clashy program on Solana Explorer</Txt>
         </View>
-        <Txt v="label" color={C.muted}>›</Txt>
+        <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>
       </Pressable>
     </ScrollView>
   );

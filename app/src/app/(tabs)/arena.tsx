@@ -10,11 +10,11 @@ import { COIN_SYMBOLS } from '@/chain/client';
 import { useChain } from '@/chain/useChain';
 import { useFeed, useLeaderboardOnchain, useLiveCounts, type FeedDuel } from '@/chain/reads';
 import { ago, isTestAccount, useProfiles, type Profile } from '@/chain/social';
-import { ClayLoop } from '@/ui/clay';
 import { Badge, CoinToken } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
 import { BotPic } from '@/ui/practice-kit';
 import { ART, ErrorLine, LiveDot, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { Bolt, Crown, Shield } from '@/ui/icons';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
@@ -31,9 +31,9 @@ const go = (to: string) => () => router.push(to as Href);
 
 function Head({ title, right, onRight }: { title: string; right?: string; onRight?: () => void }) {
   return (
-    <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 12 }}>
-      <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>{title}</Text>
-      {right ? <Pressable onPress={onRight} hitSlop={10}><Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>{right} ›</Txt></Pressable> : null}
+    <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 6 }}>
+      <Txt v="h2">{title}</Txt>
+      {right ? <Pressable onPress={onRight} hitSlop={10}><Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>{right}</Txt></Pressable> : null}
     </Row>
   );
 }
@@ -46,21 +46,21 @@ function VersusRow({ d, names, live }: { d: FeedDuel; names: Map<string, Profile
   const pot = d.stake * 2 * 0.97;
   return (
     <Pressable onPress={() => router.push(`/match/${d.key.toBase58()}` as Href)}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#111116', borderRadius: 20, padding: 12, marginBottom: 8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-      <View style={{ width: 74, height: 46 }}>
-        <View style={{ position: 'absolute', left: 0, top: 0, borderRadius: 24, borderWidth: 2, borderColor: d.winner === 1 ? C.up : '#111116' }}><ProfileAvatar p={a} size={42} /></View>
-        <View style={{ position: 'absolute', left: 30, top: 0, borderRadius: 24, borderWidth: 2, borderColor: d.winner === 2 ? C.up : '#111116' }}><ProfileAvatar p={b} size={42} /></View>
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+      <View style={{ width: 62, height: 40 }}>
+        <View style={{ position: 'absolute', left: 0, top: 0, borderRadius: 21, borderWidth: 2, borderColor: d.winner === 1 ? C.up : C.bg }}><ProfileAvatar p={a} size={36} /></View>
+        <View style={{ position: 'absolute', left: 24, top: 0, borderRadius: 21, borderWidth: 2, borderColor: d.winner === 2 ? C.up : C.bg }}><ProfileAvatar p={b} size={36} /></View>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}><Txt v="label" color={d.winner === 1 ? C.up : C.ink}>{a?.name ?? 'someone'}</Txt> <Txt v="small" color={C.dim}>vs</Txt> <Txt v="label" color={d.winner === 2 ? C.up : C.ink}>{b?.name ?? 'someone'}</Txt></Txt>
         <Row style={{ gap: 6, marginTop: 3 }}>
-          {live ? <><LiveDot /><Txt v="small" color={C.down} style={{ ...FONT.semi }}>LIVE</Txt></> : <Txt v="small">{ago(d.ts)}</Txt>}
+          {live ? <><LiveDot color={C.up} /><Txt v="small" color={C.up} style={{ ...FONT.medium }}>Live</Txt></> : <Txt v="small">{ago(d.ts)}</Txt>}
           <Txt v="small">· {fmtUsd(d.stake)} each</Txt>
         </Row>
       </View>
       <View style={{ alignItems: 'flex-end', gap: 4 }}>
-        <CoinToken sym={sym} size={30} />
-        {live ? null : won ? <Txt v="small" color={C.up} style={{ ...FONT.bold }}>+{fmtUsd(pot - d.stake)}</Txt> : <Txt v="small">Tie</Txt>}
+        <CoinToken sym={sym} size={24} />
+        {live ? null : won ? <Txt v="small" color={C.up} style={{ ...FONT.semi, fontVariant: ['tabular-nums'] }}>+{fmtUsd(pot - d.stake)}</Txt> : <Txt v="small">Tie</Txt>}
       </View>
     </Pressable>
   );
@@ -90,93 +90,83 @@ export default function Play() {
         </Pressable>
       </Row>
 
-      {/* the hero: Clash */}
-      <Animated.View entering={FadeInDown.duration(380)}>
-        <Pressable onPress={go('/clash')} style={({ pressed }) => ({ marginTop: 16, borderRadius: 30, overflow: 'hidden', backgroundColor: '#14101C', borderWidth: 1.5, borderColor: '#3A2340', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-          <View style={{ position: 'absolute', right: -40, top: -40, width: 260, height: 260, borderRadius: 130, backgroundColor: C.opp, opacity: 0.16 }} />
-          <View style={{ position: 'absolute', left: -60, bottom: -80, width: 240, height: 240, borderRadius: 120, backgroundColor: C.brand, opacity: 0.18 }} />
-          <View style={{ position: 'absolute', right: 6, top: 10 }}><ClayLoop name="duel" size={118} style={{ borderRadius: 28 }} /></View>
-          <View style={{ padding: 18, paddingBottom: 0 }}>
-            <View>
+      {/* the featured game: Clash */}
+      <Animated.View entering={FadeInDown.duration(320)}>
+        <Pressable onPress={go('/clash')} accessibilityRole="button" accessibilityLabel="Clash: find a rival"
+          style={({ pressed }) => ({ marginTop: 18, borderRadius: 22, padding: 16, backgroundColor: pressed ? C.s1 : C.card })}>
+          <Row style={{ gap: 14 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Row style={{ gap: 6 }}>
-                {waiting ? <><LiveDot /><Txt v="small" color={C.down} style={{ ...FONT.bold, letterSpacing: 0.6 }}>{waiting} WAITING</Txt></> : <Txt v="small" style={{ ...FONT.bold, letterSpacing: 0.6 }}>1 V 1</Txt>}
+                {waiting ? <><LiveDot color={C.up} /><Txt v="small" color={C.up} style={{ ...FONT.medium }}>{waiting} waiting for a rival</Txt></> : <Txt v="small">1 v 1 · real USDC</Txt>}
               </Row>
-              <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 42, letterSpacing: -1.4, color: '#fff', marginTop: 4, lineHeight: 60 }}>Clash</Text>
-              <Txt v="small" color="#C9C3D6" style={{ marginTop: 6, lineHeight: 18, maxWidth: 230 }}>Same coin, two calls. A stock in 1 hour or crypto in 60 seconds. Best call takes the pot.</Txt>
+              <Txt v="title" style={{ marginTop: 4 }}>Clash</Txt>
+              <Txt v="small" style={{ marginTop: 2, lineHeight: 18 }}>Two calls on one price. The better call takes the pot.</Txt>
             </View>
-          </View>
-          <View style={{ margin: 14, marginTop: 14, height: 56, borderRadius: 18, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', shadowColor: C.opp, shadowOpacity: 0.5, shadowRadius: 18 }}>
-            <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: '#fff' }}>Find a rival · from $5</Text>
+            <Row>{(['SOL', 'BTC', 'ETH'] as const).map((c, i) => <View key={c} style={{ marginLeft: i ? -12 : 0, borderRadius: 20, borderWidth: 2, borderColor: C.card }}><CoinToken sym={c} size={34} /></View>)}</Row>
+          </Row>
+          <View style={{ marginTop: 14, height: 48, borderRadius: 24, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ ...FONT.semi, fontSize: 15.5, color: C.onBrand }}>Find a rival · from $5</Text>
           </View>
         </Pressable>
       </Animated.View>
 
-      {/* Royale and the squad war */}
-      <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
-        <GameTile title="Royale" sub="Up to 16 players" line="$2 in · last one standing" loop="royale" tint="#FFC94A" onPress={go('/onchain-royale')} />
-        <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" loop="war" tint={C.brandSoft} onPress={go('/clans')} />
-      </Row>
-      <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
-        <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
-        <GameTile title="Practice clash" sub="vs Clashy Bot · free" line="Practice money, live prices" art={<BotPic size={56} />} tint={C.brandSoft} onPress={go('/practice/clash')} />
-      </Row>
+      <Head title="Games" />
+      <GameRow index={0} title="Perps clash" line="Long or short up to 50× · 60 seconds" onPress={go('/clash?mode=perps')}
+        icon={<Row>{(['SOL', 'ETH'] as const).map((c, i) => <View key={c} style={{ marginLeft: i ? -12 : 0 }}><CoinToken sym={c} size={28} /></View>)}</Row>} />
+      <GameRow index={1} title="Royale" line="Up to 16 players · $2 in · last one standing" onPress={go('/onchain-royale')} icon={<Crown size={20} color={C.ink} />} />
+      <GameRow index={2} title="Squad war" line="Your squad's chest against another's" onPress={go('/clans')} icon={<Shield size={20} color={C.ink} />} />
+      <GameRow index={3} title="Weekly Cup" line="Best profit this week wins" meta={`Ends in ${cupLeft()}`} onPress={go('/cup')} icon={<Image source={ART.cupBig} style={{ width: 30, height: 30 }} contentFit="contain" />} />
 
-      {/* the Weekly Cup */}
-      <Pressable onPress={go('/cup')} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 24, padding: 12, backgroundColor: '#1A1406', borderWidth: 1, borderColor: '#3D3010', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-        <Image source={ART.cupBig} style={{ width: 64, height: 64 }} contentFit="contain" />
-        <View style={{ flex: 1 }}>
-          <Text style={{ ...FONT.semi, fontSize: 21, color: '#FFD66B' }}>Weekly Cup</Text>
-          <Txt v="small" color="#CDBB8A">Best profit this week wins · ends in {cupLeft()}</Txt>
-        </View>
-        <Txt v="label" color="#FFD66B">›</Txt>
-      </Pressable>
+      <Head title="Free practice" />
+      <GameRow index={4} title="Practice clash" line="Clashy Bot · practice money, live prices" onPress={go('/practice/clash')} icon={<BotPic size={44} />} bare />
+      <GameRow index={5} title="Paper trading" line="$10,000 practice money · stocks, perps, memecoins" onPress={go('/practice')} icon={<Bolt size={19} color={C.ink} />} />
 
       {/* live on chain */}
       <Head title="Live now" />
       {feed.status === 'loading' ? <SkeletonRows n={2} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : live.length ? (
         live.slice(0, 4).map((d) => <VersusRow key={d.key.toBase58()} d={d} names={names} live />)
       ) : (
-        <Pressable onPress={go('/clash')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12' }}>
-          <Image source={ART.radar} style={{ width: 44, height: 44 }} contentFit="contain" />
-          <Txt v="small" style={{ flex: 1 }}>No clashes running right now. Start one and the next rival takes you on.</Txt>
-        </Pressable>
+        <Txt v="small" style={{ paddingVertical: 8 }}>No clashes running right now. Start one and the next rival takes you on.</Txt>
       )}
 
       <Head title="Top players" right="Leaderboard" onRight={go('/leaderboard')} />
       {board.status === 'loading' ? <SkeletonRows n={1} /> : top.length ? (
-        <Row style={{ gap: 8 }}>
+        <View>
           {top.map((p, i) => {
             const prof = names.get(p.owner.toBase58());
             return (
-              <Pressable key={p.owner.toBase58()} onPress={() => router.push(`/u/${p.owner.toBase58()}` as Href)} style={({ pressed }) => ({ flex: 1, alignItems: 'center', borderRadius: 22, paddingVertical: 14, backgroundColor: i === 0 ? '#1B1708' : C.s1, borderWidth: 1, borderColor: i === 0 ? '#4A3B10' : 'transparent', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                <Text style={{ ...FONT.semi, fontSize: 15, color: i === 0 ? '#FFD66B' : C.muted }}>#{i + 1}</Text>
-                <View style={{ marginTop: 6 }}><ProfileAvatar p={prof} size={52} /></View>
-                <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '90%' }}>{prof?.name}</Txt>
-                <Txt v="small">{p.wins}W · {p.losses}L</Txt>
+              <Pressable key={p.owner.toBase58()} onPress={() => router.push(`/u/${p.owner.toBase58()}` as Href)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9, opacity: pressed ? 0.6 : 1 })}>
+                <Txt v="label" color={C.muted} style={{ width: 18, fontVariant: ['tabular-nums'] }}>{i + 1}</Txt>
+                <ProfileAvatar p={prof} size={36} />
+                <Txt v="label" lines={1} style={{ flex: 1 }}>{prof?.name}</Txt>
+                <Txt v="small" style={{ fontVariant: ['tabular-nums'] }}>{p.wins}W · {p.losses}L</Txt>
               </Pressable>
             );
           })}
-        </Row>
+        </View>
       ) : <Txt v="small">Win a clash to get on the board.</Txt>}
 
       <Head title="Recent results" />
       {feed.status === 'ready' && settled.length ? settled.map((d) => <VersusRow key={d.key.toBase58()} d={d} names={names} />) : feed.status === 'ready' ? <Txt v="small">No settled clashes yet.</Txt> : null}
 
-      <Row style={{ gap: 8, justifyContent: 'center', marginTop: 18 }}>
-        <Badge text="Real USDC" color={C.up} />
-        <Txt v="small">Every fee paid by Clashy · settled on Solana</Txt>
-      </Row>
+      <Txt v="small" style={{ textAlign: 'center', marginTop: 22, fontSize: 12 }}>Real USDC · settled on Solana · network fees paid by Clashy</Txt>
     </ScrollView>
   );
 }
 
-function GameTile({ title, sub, line, loop, art, tint, onPress }: { title: string; sub: string; line: string; loop?: 'royale' | 'war' | 'line'; art?: React.ReactNode; tint: string; onPress: () => void }) {
+/** One game in the list: an icon tile, the name, its rules in one line, and a chevron (or a live note). */
+function GameRow({ title, line, icon, meta, onPress, index = 0, bare }: { title: string; line: string; icon: React.ReactNode; meta?: string; onPress: () => void; index?: number; bare?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 26, padding: 14, backgroundColor: '#111116', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      {loop ? <ClayLoop name={loop} size={96} style={{ borderRadius: 22, alignSelf: 'center' }} /> : <View style={{ height: 96, alignItems: 'center', justifyContent: 'center' }}>{art}</View>}
-      <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 20, color: tint, marginTop: 10 }}>{title}</Text>
-      <Txt v="small" color={C.ink} style={{ ...FONT.semi, marginTop: 2 }}>{sub}</Txt>
-      <Txt v="small" style={{ marginTop: 2 }}>{line}</Txt>
-    </Pressable>
+    <Animated.View entering={FadeInDown.delay(40 + index * 35).duration(300)}>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bare ? 'transparent' : C.s2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{icon}</View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="label" lines={1}>{title}</Txt>
+          <Txt v="small" lines={1} style={{ marginTop: 1 }}>{line}</Txt>
+        </View>
+        {meta ? <Txt v="small" color={C.ink} style={{ fontSize: 12.5 }}>{meta}</Txt> : <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>}
+      </Pressable>
+    </Animated.View>
   );
 }

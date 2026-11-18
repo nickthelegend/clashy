@@ -6,7 +6,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import Animated, { Easing, FadeIn, FadeInDown, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt } from './kit';
-import { C, F, FONT } from './tokens';
+import { C, FONT } from './tokens';
 
 export function Sheet({ open, onClose, title, sub, children, height }: { open: boolean; onClose: () => void; title?: string; /** A grey line under the title. */ sub?: string; children: ReactNode; height?: number }) {
   const insets = useSafeAreaInsets();
@@ -35,16 +35,16 @@ export function Sheet({ open, onClose, title, sub, children, height }: { open: b
   return (
     <Modal visible={open} transparent animationType="none" onRequestClose={close} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Animated.View style={[{ position: 'absolute', inset: 0, backgroundColor: '#000' }, backStyle]}>
+        <Animated.View style={[{ position: 'absolute', inset: 0, backgroundColor: C.bg }, backStyle]}>
           <Pressable style={{ flex: 1 }} onPress={close} />
         </Animated.View>
         <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }} pointerEvents="box-none">
-          <Animated.View style={[{ width: maxW, maxHeight: height ?? H * 0.88, backgroundColor: '#141418', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingBottom: insets.bottom + 14, borderWidth: 1, borderBottomWidth: 0, borderColor: '#24242B' }, sheetStyle]}>
+          <Animated.View style={[{ width: maxW, maxHeight: height ?? H * 0.88, backgroundColor: C.s1, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: insets.bottom + 14 }, sheetStyle]}>
             <GestureDetector gesture={pan}>
-              <View style={{ paddingTop: 10, paddingBottom: title ? 10 : 12, paddingHorizontal: 20 }}>
-                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#3A3A44', alignSelf: 'center' }} />
-                {title ? <Txt v="title" style={{ fontSize: 28, lineHeight: 33, marginTop: 14 }}>{title}</Txt> : null}
-                {sub ? <Txt v="small" style={{ fontSize: 15, marginTop: 4, lineHeight: 20 }}>{sub}</Txt> : null}
+              <View style={{ paddingTop: 8, paddingBottom: title ? 8 : 12, paddingHorizontal: 18 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: C.s2, alignSelf: 'center' }} />
+                {title ? <Txt v="title" style={{ marginTop: 14 }}>{title}</Txt> : null}
+                {sub ? <Txt v="small" style={{ marginTop: 3, lineHeight: 18 }}>{sub}</Txt> : null}
               </View>
             </GestureDetector>
             <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 6 }} keyboardShouldPersistTaps="handled" bounces={false}>
@@ -57,27 +57,27 @@ export function Sheet({ open, onClose, title, sub, children, height }: { open: b
   );
 }
 
-/** A big tile for a drawer menu: clay art, title, one line. */
-/** A row in a drawer menu: art on a soft tint, a title and one line, an optional live note, on a hairline; rows rise
- *  in one after another (pass each its index). */
-export function SheetTile({ art, title, line, onPress, accent = C.brand, meta, index = 0 }: {
-  art: ReactNode; title: string; line: string; onPress: () => void; accent?: string; /** A live note on the right ("3 waiting"). */ meta?: string; index?: number;
+/** A row in a drawer menu, like Play's game rows: an icon or logo in a 44 px circle, a title over one line, and a
+ *  chevron or a live note on the right. Rows rise in one after another (pass each its index). `bare` drops the circle
+ *  behind art that is already round (a logo, Clashy Bot). `accent` is kept for callers and no longer tints anything. */
+export function SheetTile({ art, title, line, onPress, meta, index = 0, bare }: {
+  art: ReactNode; title: string; line: string; onPress: () => void; accent?: string; /** A live note on the right ("3 waiting"). */ meta?: string; index?: number; bare?: boolean;
 }) {
   return (
-    <Animated.View entering={FadeInDown.delay(70 + index * 55).duration(360).springify().damping(17)}>
+    <Animated.View entering={FadeInDown.delay(40 + index * 35).duration(300)}>
       <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}
-        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 18, marginHorizontal: -18, borderRadius: 18, backgroundColor: pressed ? '#1A1A20' : 'transparent', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-        <View style={{ width: 56, height: 56, borderRadius: 17, backgroundColor: accent + '1C', alignItems: 'center', justifyContent: 'center' }}>{art}</View>
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bare ? 'transparent' : C.s2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{art}</View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Txt v="label" lines={1} style={{ fontSize: 17 }}>{title}</Txt>
-          <Txt v="small" lines={2} style={{ marginTop: 2, lineHeight: 18 }}>{line}</Txt>
+          <Txt v="label" lines={1}>{title}</Txt>
+          <Txt v="small" lines={2} style={{ marginTop: 1, lineHeight: 17 }}>{line}</Txt>
         </View>
         {meta ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.up }} />
             <Txt v="small" color={C.ink} style={{ fontSize: 12.5 }}>{meta}</Txt>
           </View>
-        ) : <Txt v="label" color={C.dim} style={{ fontSize: 20 }}>›</Txt>}
+        ) : <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>}
       </Pressable>
     </Animated.View>
   );
@@ -86,8 +86,8 @@ export function SheetTile({ art, title, line, onPress, accent = C.brand, meta, i
 /** A small grey section label inside a drawer. */
 export function SheetLabel({ children, index = 0 }: { children: string; index?: number }) {
   return (
-    <Animated.View entering={FadeIn.delay(40 + index * 55).duration(300)}>
-      <Txt v="small" style={{ ...FONT.semi, fontSize: 12.5, color: C.dim, letterSpacing: 0.3, marginTop: 14, marginBottom: 4 }}>{children}</Txt>
+    <Animated.View entering={FadeIn.delay(30 + index * 35).duration(300)}>
+      <Txt v="small" style={{ ...FONT.semi, fontSize: 12.5, color: C.dim, marginTop: 14, marginBottom: 2 }}>{children}</Txt>
     </Animated.View>
   );
 }
