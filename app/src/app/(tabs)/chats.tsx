@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import { useChain } from '@/chain/useChain';
 import { ago, usePoll, useProfiles } from '@/chain/social';
 import { CHANNELS, metaOf, readChannelMetas, readMySquads, readSeen, seenOf } from '@/chain/squads';
+import { SheetLabel, SheetTile } from '@/ui/sheet';
 import { useDeskColumn } from '@/ui/layout';
 import { Search } from '@/ui/icons';
 import { ART, Btn, CRESTS, ErrorLine, IconBtn, Pending, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
@@ -96,6 +97,18 @@ export default function Chats() {
           </Pressable>
         );
       })}
+
+      {me && squads.status === 'ready' && squads.data.length > 0 && list.length < 6 ? (
+        <View style={{ marginTop: 22 }}>
+          <SheetLabel index={0}>More people to talk to</SheetLabel>
+          <SheetTile index={1} art={<Image source={ART.clanCity} style={{ width: 48, height: 48 }} contentFit="contain" />} title="Find another squad"
+            line="Each squad you join adds its #general and #trades here" onPress={() => router.push('/squads/discover' as Href)} />
+          <SheetTile index={2} art={<Image source={ART.bellArt} style={{ width: 44, height: 44 }} contentFit="contain" />} title="Inbox"
+            line="Replies, likes and clash challenges on your calls" onPress={() => router.push('/inbox' as Href)} />
+          <SheetTile index={3} art={<Image source={ART.megaphone} style={{ width: 44, height: 44 }} contentFit="contain" />} title="Post a call"
+            line="Say where a price goes next; anyone can reply or clash you" onPress={() => router.push('/' as Href)} />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

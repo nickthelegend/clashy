@@ -15,8 +15,9 @@ import {
 } from '@/chain/practice';
 import { BookMarketPage } from '@/ui/book-market';
 import { Keypad, editAmount, type Key } from '@/ui/keypad';
-import { ART, BackBtn, Bone, ErrorLine, LiveChart, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { ART, BackBtn, Bone, ErrorLine, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
+import { PriceChart } from '@/ui/price-chart';
 import {
   BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
 } from '@/ui/practice-kit';
@@ -93,10 +94,6 @@ function MarketPage({ m }: { m: Market }) {
   }, [px]);
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const h = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(h); }, []);
-  const [chartW, setChartW] = useState(0);
-  const first = samples[0]?.p;
-  const moved = first && price ? price - first : 0;
-  const lineColor = moved >= 0 ? C.up : C.down;
   const ch = px?.change24h ?? m.change24h;
 
   const mine = pr.book?.open.filter((p) => p.marketId === m.id) ?? [];
@@ -139,21 +136,7 @@ function MarketPage({ m }: { m: Market }) {
           {pxErr ? <ErrorLine msg={pxErr} /> : null}
         </Animated.View>
 
-        {/* live chart */}
-        <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ marginTop: 14, marginHorizontal: -4 }}>
-          {chartW > 0 ? (
-            samples.length > 1 ? (
-              <LiveChart data={samples.map((x) => x.p)} w={chartW} h={210} color={lineColor} minSpan={perp || m.kind === 'crypto' ? 0.0006 : 0.001} />
-            ) : (
-              <View style={{ width: chartW, height: 210, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-                <LiveDot color={C.brandSoft} />
-                <Txt v="label" style={{ marginTop: 10, textAlign: 'center' }}>Watching the price</Txt>
-                <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>The chart draws itself from the live price while this page is open. Nothing before that is shown.</Txt>
-              </View>
-            )
-          ) : <View style={{ height: 210 }} />}
-        </View>
-        {samples.length > 1 ? <Txt v="small" style={{ marginTop: 6 }}>Live prices since you opened this page · {span(now - samples[0].t)}</Txt> : null}
+        <PriceChart sym={m.kind === 'stock' ? (m.ticker ?? m.symbol) : m.symbol} samples={samples} price={price} minSpan={perp || m.kind === 'crypto' ? 0.0006 : 0.001} source="Jupiter price" />
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
 
         {/* facts */}

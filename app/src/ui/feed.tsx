@@ -38,22 +38,15 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{stock.name}</Txt>
-        <Txt v="small" lines={1}>{holding && holding.shares > 0 ? stock.symbol : `${stock.symbol} · tokenized stock`}</Txt>
+        <Txt v="small" lines={1}>{holding && holding.shares > 0 ? `${stock.symbol} · ${value === null ? '…' : fmtUsd(value)}` : `${stock.symbol} · tokenized stock`}</Txt>
       </View>
       {holding && holding.shares > 0 ? (
-        <>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Txt v="small" style={{ fontSize: 11 }}>Position</Txt>
-            <Txt v="label">{value === null ? '…' : fmtUsd(value)}</Txt>
-          </View>
-          <View style={{ alignItems: 'flex-end', minWidth: 74 }}>
-            <Txt v="small" style={{ fontSize: 11 }}>Profit</Txt>
-            <Txt v="label" color={profit === null ? C.muted : profit >= 0 ? C.up : C.down}>
-              {profit === null ? '…' : `${profit >= 0 ? '+' : '−'}${fmtUsd(Math.abs(profit))}`}
-            </Txt>
-            {pct !== null ? <Txt v="small" style={{ fontSize: 11 }} color={profit! >= 0 ? C.up : C.down}>{`${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`}</Txt> : null}
-          </View>
-        </>
+        <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
+          <Txt v="label" color={profit === null ? C.muted : profit >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>
+            {profit === null ? '…' : `${profit >= 0 ? '+' : '−'}${fmtUsd(Math.abs(profit))}`}
+          </Txt>
+          <Txt v="small" style={{ fontSize: 11.5, fontVariant: ['tabular-nums'] }} color={pct === null ? C.muted : profit! >= 0 ? C.up : C.down}>{pct !== null ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% profit` : 'profit'}</Txt>
+        </View>
       ) : (
         <View style={{ alignItems: 'flex-end' }}>
           <Txt v="small" style={{ fontSize: 11 }}>{holding ? 'Sold out' : 'No position'}</Txt>
