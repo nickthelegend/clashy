@@ -14,7 +14,7 @@ const idl = JSON.parse(readFileSync(new URL('../target/idl/clashy.json', import.
 export const BASE_URL = process.env.CLASHY_BASE ?? 'http://127.0.0.1:8999';
 export const ER_URL = process.env.CLASHY_ER ?? 'http://127.0.0.1:7799';
 /** Local stack (tests, app development) unless CLASHY_BASE points at devnet or mainnet. */
-export const IS_LOCAL = /127\.0\.0\.1|localhost/.test(BASE_URL);
+export const IS_LOCAL = process.env.CLASHY_LOCAL === '1' || /127\.0\.0\.1|localhost/.test(BASE_URL);
 function setupRequired(name: string, what: string): never {
   throw new Error(`Setup required: set ${name} (${what}) to run against ${BASE_URL}`);
 }

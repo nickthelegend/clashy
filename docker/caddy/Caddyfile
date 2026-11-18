@@ -1,0 +1,14 @@
+# One domain for everything, HTTPS from Let's Encrypt automatically. The app is built with
+# EXPO_PUBLIC_CLASHY_SPONSOR=https://<domain>/relay and EXPO_PUBLIC_CLASHY_SOCIAL=https://<domain>/social.
+{$CLASHY_DOMAIN} {
+	encode zstd gzip
+	handle_path /social/* {
+		reverse_proxy social:8791
+	}
+	handle_path /relay/* {
+		reverse_proxy relay:8790
+	}
+	handle {
+		reverse_proxy web:80
+	}
+}

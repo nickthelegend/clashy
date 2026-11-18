@@ -18,7 +18,7 @@ HERE="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$HERE"
 BASE_PORT=8999
 ER_PORT=7799
-HOST=127.0.0.1
+HOST=${CLASHY_BIND:-127.0.0.1}
 DIR="$HERE/.localnet"
 mkdir -p "$DIR"
 up() { lsof -nP -iTCP:"$1" -sTCP:LISTEN -t >/dev/null 2>&1; }

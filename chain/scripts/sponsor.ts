@@ -361,7 +361,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()!)) {
-  server.listen(PORT, '127.0.0.1', () => {
+  // loopback only unless a container sets CLASHY_RELAY_BIND=0.0.0.0 (its port is then published by docker-compose)
+  server.listen(PORT, process.env.CLASHY_RELAY_BIND ?? '127.0.0.1', () => {
     console.log(`sponsor relay on :${PORT} · sponsor ${sponsor.publicKey.toBase58()} · ${IS_LOCAL ? 'local fork, test-USDC faucet on' : BASE_URL} · Privy ${PRIVY ? 'checks on' : 'off'}${AUTH_REQUIRED ? ' (required)' : ''}`);
   });
 }

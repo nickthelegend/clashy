@@ -34,15 +34,20 @@ mkdirSync(DATA, { recursive: true });
 const secret = loadSecret(DATA, PROD);
 const store = new Store(join(DATA, 'social.db'));
 
-/** Per wallet (or IP before sign-in): 60 writes a minute, 600 reads a minute. */
+/** Signed in: 60 writes and 600 reads a minute per wallet. Before sign-in, per IP: 600 writes (sign-ins) and 1,200 reads
+ *  a minute, since a whole venue or a NAT can share one address. Behind the Caddy proxy (CLASHY_TRUST_PROXY=1) the IP is
+ *  the first X-Forwarded-For entry. */
+const TRUST_PROXY = process.env.CLASHY_TRUST_PROXY === '1';
 const buckets = new Map<string, { t: number; w: number; r: number }>();
-function limit(key: string, write: boolean) {
+function limit(key: string, write: boolean, anon: boolean) {
   const now = Date.now();
   let b = buckets.get(key);
   if (!b || now - b.t > 60_000) { b = { t: now, w: 0, r: 0 }; buckets.set(key, b); }
-  if (write ? ++b.w > 60 : ++b.r > 600) throw new HttpError(429, 'Slow down: too many requests this minute');
+  const [maxW, maxR] = anon ? [600, 1200] : [60, 600];
+  if (write ? ++b.w > maxW : ++b.r > maxR) throw new HttpError(429, 'Slow down: too many requests this minute');
   if (buckets.size > 20_000) for (const [k, v] of buckets) if (now - v.t > 60_000) buckets.delete(k);
 }
+const ipOf = (req: http.IncomingMessage) => (TRUST_PROXY ? String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() : '') || req.socket.remoteAddress || '?';
 
 async function body(req: http.IncomingMessage): Promise<Record<string, unknown>> {
   let raw = '';
@@ -104,7 +109,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', 'http://x');
     const me = readToken(secret, req.headers.authorization);
-    limit(me ?? `ip:${req.socket.remoteAddress}`, req.method !== 'GET');
+    limit(me ?? `ip:${ipOf(req)}`, req.method !== 'GET', !me);
     send(200, await route({ req, parts: url.pathname.split('/').filter(Boolean), q: url.searchParams, me }));
   } catch (e) {
     const err = e as Error & { status?: number };

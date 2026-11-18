@@ -1,0 +1,101 @@
+# Clashy's backend in Docker. See docs/SYSTEM-DESIGN.md for how the pieces fit and docker/README.md for how to run it.
+#
+#   docker compose up -d                       relay + crank + social + web, against a chain on the host (Mac dev:
+#                                              chain/scripts/localnet.sh runs natively; set CHAIN_HOST=chain on Linux)
+#   docker compose --profile chain up -d       + the local chain itself: Solana test validator with MagicBlock's
+#                                              delegation program, the MagicBlock Ephemeral Rollup and VRF oracle
+#                                              (x86_64 Linux hosts: Anza ships no Linux arm64 validator)
+#   docker compose --profile prod up -d        + Caddy with automatic HTTPS in front of everything (one small VM)
+#
+# Keys never go into an image: the relay and crank read chain/.keys (mounted read-only) on the local stack, or the
+# files CLASHY_SPONSOR / CLASHY_AUTHORITY point at elsewhere. Secrets come from chain/.env and .env (both gitignored).
+name: clashy
+
+x-chain-env: &chain-env
+  CLASHY_BASE: ${CLASHY_BASE:-http://${CHAIN_HOST:-host.docker.internal}:8999}
+  CLASHY_ER: ${CLASHY_ER:-http://${CHAIN_HOST:-host.docker.internal}:7799}
+  # the local stack's rules (test-USDC faucet, local keys); 0 for devnet or mainnet
+  CLASHY_LOCAL: ${CLASHY_LOCAL:-1}
+  CLASHY_APP_ORIGIN: ${CLASHY_APP_ORIGIN:-*}
+
+services:
+  social:
+    build: { context: ., dockerfile: server/Dockerfile }
+    environment:
+      CLASHY_ENV: ${CLASHY_ENV:-local}
+      CLASHY_SOCIAL_SECRET: ${CLASHY_SOCIAL_SECRET:-}
+      CLASHY_TRUST_PROXY: ${CLASHY_TRUST_PROXY:-0}
+      CLASHY_APP_ORIGIN: ${CLASHY_APP_ORIGIN:-*}
+    volumes: [social-data:/data]
+    ports: ["8791:8791"]
+    restart: unless-stopped
+    mem_limit: 160m
+
+  relay:
+    build: { context: ., dockerfile: chain/Dockerfile }
+    image: clashy-chain-services
+    command: ["npx", "tsx", "scripts/sponsor.ts"]
+    environment:
+      <<: *chain-env
+      CLASHY_RELAY_BIND: 0.0.0.0
+    env_file: [{ path: chain/.env, required: false }]
+    volumes:
+      - ./chain/.keys:/app/chain/.keys:ro
+      - ./chain/.localnet:/app/chain/.localnet
+    ports: ["8790:8790"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    restart: unless-stopped
+    mem_limit: 320m
+
+  crank:
+    image: clashy-chain-services
+    depends_on: [relay]
+    command: ["npx", "tsx", "scripts/crank.ts"]
+    environment: *chain-env
+    env_file: [{ path: chain/.env, required: false }]
+    volumes:
+      - ./chain/.keys:/app/chain/.keys:ro
+      - ./chain/.localnet:/app/chain/.localnet
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    restart: unless-stopped
+    mem_limit: 320m
+
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./app/dist:/usr/share/nginx/html:ro
+      - ./docker/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports: ["8080:80"]
+    restart: unless-stopped
+    mem_limit: 64m
+
+  chain:
+    profiles: [chain]
+    build: { context: ., dockerfile: docker/localchain/Dockerfile }
+    platform: linux/amd64
+    environment:
+      CLASHY_BIND: 0.0.0.0
+    volumes:
+      - ./chain/.keys:/app/chain/.keys:ro
+      - ./chain/target/deploy:/app/chain/target/deploy:ro
+      - ./chain/.localnet:/app/chain/.localnet
+    ports: ["8999:8999", "9000:9000", "7799:7799", "7800:7800"]
+    restart: unless-stopped
+    mem_limit: 4g
+
+  caddy:
+    profiles: [prod]
+    image: caddy:2-alpine
+    environment:
+      CLASHY_DOMAIN: ${CLASHY_DOMAIN:-localhost}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    ports: ["80:80", "443:443"]
+    depends_on: [web, social, relay]
+    restart: unless-stopped
+    mem_limit: 96m
+
+volumes:
+  social-data:
+  caddy-data:

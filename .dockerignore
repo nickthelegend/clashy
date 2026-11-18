@@ -1,0 +1,19 @@
+# Images get only what they run. Keys, ledgers, env files and other projects never enter a build context.
+.git
+**/node_modules
+**/.env
+**/.env.*
+**/.DS_Store
+chain/.keys
+chain/.localnet
+chain/.forknet
+chain/test-ledger
+chain/target/*
+!chain/target/idl
+!chain/target/types
+server/data
+app
+web
+landing
+assets
+docs
