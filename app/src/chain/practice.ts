@@ -1,11 +1,16 @@
-// Practice: paper trading on real, live markets. Stocks (tokenized xStocks), crypto, Jupiter Perps (SOL/ETH/BTC up to
-// 100x) and pump.fun memecoins. Every price, fee and borrow rate is read live from Jupiter's public APIs; the money is
+// Practice: paper trading on real, live markets. Stocks (tokenized xStocks), crypto, pump.fun memecoins, and perps on
+// three Solana venues: Jupiter Perps (pool, SOL/ETH/BTC up to 100x) and the order books of Phoenix and Pacifica (every
+// market they list: crypto, stocks, commodities, FX). Every price, fee, funding and borrow rate is read live from the
+// venues' public APIs, and order-book trades fill level by level against the real book (./venues.ts); the money is
 // not real. The paper book ($10,000 to start) lives on this device in AsyncStorage, one per wallet (or one per device
 // when signed out). No USDC moves and nothing is sent on chain: that is the point of this mode.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NET } from './client';
 import { STOCKS } from './stocks';
+import {
+  VENUES, isBookVenue, loadPacifica, loadPhoenix, pacificaQuotes, phoenixQuotes, readBook, type BookVenue, type Venue, type VenueMarket,
+} from './venues';
 import { useWallet } from './walletCore';
 
 // Jupiter's public market data, read through the Clashy relay's shared cache (chain/scripts/sponsor.ts /jup/…) so every
@@ -41,6 +46,15 @@ export type Market = {
   /** Jupiter's token-list price and 24h move when the catalog loaded (the live price comes from usePrices). */
   price?: number;
   change24h?: number;
+  /** Where a perp trades (Jupiter for spot markets too: their price is Jupiter's). */
+  venue?: Venue;
+  /** The order-book venue's own symbol (SOL, NVDA, kBONK). */
+  venueSym?: string;
+  assetClass?: string;
+  /** Order-book venues: percent of the notional. */
+  takerPct?: number;
+  makerPct?: number;
+  minUsd?: number;
 };
 
 export const MINT = {
@@ -65,11 +79,40 @@ const CRYPTO: { symbol: string; name: string; mint: string; art?: Market['art'] 
 
 /** Jupiter Perps markets. The price is Jupiter's price of the pool's custody token. */
 export const PERPS: Market[] = [
-  { id: 'SOL-PERP', kind: 'perp', symbol: 'SOL-PERP', name: 'Solana', mint: MINT.SOL, art: 'SOL', maxLev: 100 },
-  { id: 'ETH-PERP', kind: 'perp', symbol: 'ETH-PERP', name: 'Ethereum', mint: MINT.ETH, art: 'ETH', maxLev: 100 },
-  { id: 'BTC-PERP', kind: 'perp', symbol: 'BTC-PERP', name: 'Bitcoin', mint: MINT.WBTC, art: 'BTC', maxLev: 100 },
+  { id: 'SOL-PERP', kind: 'perp', symbol: 'SOL-PERP', name: 'Solana', mint: MINT.SOL, art: 'SOL', maxLev: 100, venue: 'jupiter' },
+  { id: 'ETH-PERP', kind: 'perp', symbol: 'ETH-PERP', name: 'Ethereum', mint: MINT.ETH, art: 'ETH', maxLev: 100, venue: 'jupiter' },
+  { id: 'BTC-PERP', kind: 'perp', symbol: 'BTC-PERP', name: 'Bitcoin', mint: MINT.WBTC, art: 'BTC', maxLev: 100, venue: 'jupiter' },
 ];
 export const LEVERAGE = [2, 5, 10, 25, 50, 100] as const;
+/** The leverage chips for a market: the usual steps up to its cap, and the cap itself. */
+export function levSteps(max: number): number[] {
+  const s: number[] = [2, 3, 5, 10, 20, 25, 50, 100].filter((x) => x < max);
+  const out = [...s.slice(-5), max];
+  return [...new Set(out)].filter((x) => x >= 1);
+}
+
+/* ---------- order-book venues ---------- */
+const PREFIX: Record<BookVenue, string> = { phoenix: 'phx', pacifica: 'pac' };
+/** The price key of an order-book market: "phx:SOL" / "pac:SOL" (Jupiter markets use their mint). */
+export const venueKey = (v: BookVenue, sym: string) => `${PREFIX[v]}:${sym}`;
+const keyVenue = (k: string): BookVenue | undefined => (k.startsWith('phx:') ? 'phoenix' : k.startsWith('pac:') ? 'pacifica' : undefined);
+const ART_OF: Record<string, Market['art']> = { SOL: 'SOL', BTC: 'BTC', ETH: 'ETH' };
+const STOCK_SYMS = new Set(STOCKS.map((s) => s.symbol));
+/** Pacifica's names for markets Phoenix calls something else (for the name and logo only). */
+const ALIAS: Record<string, string> = { XAU: 'GOLD', XAG: 'SILVER', CL: 'WTIOIL', SP500: 'SPY', SKHYNIX: 'SKHY' };
+const PLAIN: Record<string, string> = { XAU: 'Gold', XAG: 'Silver', CL: 'Crude oil (WTI)', SP500: 'S&P 500', NATGAS: 'Natural gas', PAXG: 'PAX Gold', PLATINUM: 'Platinum', COPPER: 'Copper', URNM: 'Uranium miners ETF', EURUSD: 'Euro / US dollar', USDJPY: 'US dollar / yen' };
+/** The most traded symbols first, then A to Z. */
+const POPULAR = ['SOL', 'BTC', 'ETH', 'HYPE', 'PUMP', 'FARTCOIN', 'DOGE', 'XRP', 'NVDA', 'TSLA', 'SPY', 'GOLD', 'XAU', 'AAPL', 'kBONK', 'JUP', 'SUI', 'BNB'];
+const rank = (sym: string) => { const i = POPULAR.indexOf(sym); return i < 0 ? 1000 : i; };
+function venueMarket(v: VenueMarket, phxBySym: Map<string, VenueMarket>): Market {
+  const twin = phxBySym.get(v.sym) ?? phxBySym.get(ALIAS[v.sym] ?? '');
+  const name = PLAIN[v.sym] ?? (v.name !== v.sym ? v.name : twin?.name ?? v.sym);
+  return {
+    id: `${v.venue}-${v.sym}`, kind: 'perp', symbol: `${v.sym}-PERP`, name, mint: venueKey(v.venue, v.sym),
+    icon: v.icon ?? twin?.icon, art: ART_OF[v.sym], stockSym: STOCK_SYMS.has(v.sym) ? v.sym : undefined, assetClass: v.assetClass ?? twin?.assetClass,
+    maxLev: v.maxLev, venue: v.venue, venueSym: v.sym, takerPct: v.takerPct, makerPct: v.makerPct, minUsd: v.minUsd,
+  };
+}
 
 type JupToken = {
   id: string; name: string; symbol: string; icon?: string; usdPrice?: number; mcap?: number; liquidity?: number;
@@ -102,7 +145,11 @@ const stockFrom = (t: JupToken): Market => ({ ...tokenFacts(t), id: t.id, kind: 
 const memeFrom = (t: JupToken): Market => ({ ...tokenFacts(t), id: t.id, kind: 'meme', symbol: t.symbol, name: t.name, mint: t.id, maxLev: 1 });
 const spotFrom = (t: JupToken): Market => ({ ...tokenFacts(t), id: t.id, kind: 'crypto', symbol: t.symbol, name: t.name, mint: t.id, maxLev: 1 });
 
-export type Catalog = { stocks: Market[]; crypto: Market[]; perps: Market[]; memes: Market[]; at: number };
+export type Catalog = {
+  stocks: Market[]; crypto: Market[]; perps: Market[]; memes: Market[]; at: number;
+  /** A venue whose market list couldn't load right now (its markets are missing from perps until it answers). */
+  venueErrors: Partial<Record<Venue, string>>;
+};
 let catCache: { at: number; p: Promise<Catalog> } | null = null;
 
 /** Every practice market: the five Clashy stocks plus every verified xStock trending on Jupiter, majors, the three
@@ -111,11 +158,21 @@ export function loadCatalog(force = false): Promise<Catalog> {
   if (!force && catCache && Date.now() - catCache.at < 60_000) return catCache.p;
   const p = (async () => {
     const curated = [...STOCKS.map((s) => s.mint), ...CRYPTO.map((c) => c.mint), MINT.WBTC];
+    const phxP = loadPhoenix(), pacP = loadPacifica();
+    phxP.catch(() => {}); pacP.catch(() => {});
     const [known, t1, t24] = await Promise.all([
       getJson<JupToken[]>(`${JUP}/tokens/v2/search?query=${curated.join(',')}`, 'Jupiter tokens'),
       getJson<JupToken[]>(`${JUP}/tokens/v2/toptrending/1h?limit=100`, 'Jupiter trending'),
       getJson<JupToken[]>(`${JUP}/tokens/v2/toptrending/24h?limit=100`, 'Jupiter trending'),
     ]);
+    const venueErrors: Catalog['venueErrors'] = {};
+    const [phx, pac] = await Promise.all([
+      phxP.catch((e) => { venueErrors.phoenix = (e as Error).message; return [] as VenueMarket[]; }),
+      pacP.catch((e) => { venueErrors.pacifica = (e as Error).message; return [] as VenueMarket[]; }),
+    ]);
+    const phxBySym = new Map(phx.map((m) => [m.sym, m]));
+    const books = [...phx, ...pac].map((v) => venueMarket(v, phxBySym))
+      .sort((a, b) => rank(a.venueSym!) - rank(b.venueSym!) || a.venueSym!.localeCompare(b.venueSym!) || a.venue!.localeCompare(b.venue!));
     const byId = new Map(known.map((t) => [t.id, t]));
     const stocks: Market[] = STOCKS.map((s) => ({ ...tokenFacts(byId.get(s.mint)), id: s.mint, kind: 'stock', symbol: s.symbol, name: s.name, mint: s.mint, stockSym: s.symbol, maxLev: 1 }));
     const seen = new Set(stocks.map((m) => m.mint));
@@ -125,12 +182,12 @@ export function loadCatalog(force = false): Promise<Catalog> {
       if (isXStock(t)) { stocks.push(stockFrom(t)); seen.add(t.id); } else if (isPump(t) && t.usdPrice && clean(t)) { memes.push(memeFrom(t)); seen.add(t.id); }
     }
     const crypto: Market[] = CRYPTO.map((c) => ({ ...tokenFacts(byId.get(c.mint)), id: c.mint, kind: 'crypto', symbol: c.symbol, name: c.name, mint: c.mint, art: c.art, maxLev: 1 }));
-    const perps: Market[] = PERPS.map((m) => ({ ...tokenFacts(byId.get(m.mint)), ...m }));
+    const perps: Market[] = [...PERPS.map((m) => ({ ...tokenFacts(byId.get(m.mint)), ...m })), ...books];
     // the list's own prices (real, up to a minute old) fill a row until the live price arrives; they are stamped
     // older than FRESH_MS so no trade can open or close on them
     const listedAt = Date.now() - FRESH_MS - 1;
     for (const m of [...stocks, ...crypto, ...memes]) if (m.price && !PX.has(m.mint)) PX.set(m.mint, { usdPrice: m.price, change24h: m.change24h, t: listedAt });
-    return { stocks, crypto, perps, memes, at: Date.now() };
+    return { stocks, crypto, perps, memes, at: Date.now(), venueErrors };
   })();
   catCache = { at: Date.now(), p };
   p.catch(() => { if (catCache?.p === p) catCache = null; });
@@ -141,6 +198,15 @@ export const findIn = (c: Catalog, id: string) => [...c.perps, ...c.stocks, ...c
 
 /** A market by route id: from the catalog, or any Solana token by mint (a pump.fun launch that left the trending list). */
 export async function resolveMarket(id: string): Promise<Market | null> {
+  const vm = /^(phoenix|pacifica)-(.+)$/.exec(id);
+  if (vm) {
+    const c = await loadCatalog();
+    const hit = findIn(c, id);
+    if (hit) return hit;
+    const err = c.venueErrors[vm[1] as BookVenue];
+    if (err) throw new Error(`${err} ${VENUES[vm[1] as BookVenue].name}'s markets couldn't load.`);
+    return null;
+  }
   const perp = PERPS.find((m) => m.id === id.toUpperCase());
   if (perp) {
     const c = await loadCatalog().catch(() => null);
@@ -171,7 +237,8 @@ export function useCatalog() {
 }
 
 /* ---------- live prices ---------- */
-export type Px = { usdPrice: number; change24h?: number; liquidity?: number; t: number };
+/** usdPrice: Jupiter's price, or an order-book venue's mark price (what the venue itself uses for P&L and liquidation). */
+export type Px = { usdPrice: number; change24h?: number; liquidity?: number; t: number; bid?: number; ask?: number; fundingPctHr?: number };
 /** Last price seen for each mint, shared by every practice screen, so a page opens on the price the list just showed. */
 const PX = new Map<string, Px>();
 /** A trade only opens or closes on a price at most this old. */
@@ -194,31 +261,48 @@ export function usePrices(mints: string[], ms = 8000) {
     let alive = true;
     let delay = ms;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const ids = key.split(',');
+    const all = key.split(',');
+    const ids = all.filter((k) => !keyVenue(k));
+    const wantPhx = all.some((k) => keyVenue(k) === 'phoenix'), wantPac = all.some((k) => keyVenue(k) === 'pacifica');
+    const wantJup = ids.length > 0;
     const run = async () => {
-      try {
-        const res = await Promise.all(chunks(ids, 50).map((c) =>
-          getJson<Record<string, { usdPrice?: number; priceChange24h?: number; liquidity?: number } | null>>(`${JUP}/price/v3?ids=${c.join(',')}`, 'Jupiter prices')));
-        if (!alive) return;
-        const t = Date.now();
-        const next: Record<string, Px> = {};
-        for (const r of res) for (const [m, v] of Object.entries(r ?? {})) {
-          if (v && typeof v.usdPrice === 'number' && Number.isFinite(v.usdPrice) && v.usdPrice > 0) {
-            next[m] = { usdPrice: v.usdPrice, change24h: v.priceChange24h, liquidity: v.liquidity, t };
-            PX.set(m, next[m]);
-          }
+      // each source settles on its own: one venue being down never blanks another's prices
+      const fail = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
+      const [res, phx, pac] = await Promise.all([
+        wantJup ? Promise.all(chunks(ids, 50).map((c) =>
+          getJson<Record<string, { usdPrice?: number; priceChange24h?: number; liquidity?: number } | null>>(`${JUP}/price/v3?ids=${c.join(',')}`, 'Jupiter prices'))).catch(fail) : [],
+        wantPhx ? phoenixQuotes().catch(fail) : null,
+        wantPac ? pacificaQuotes().catch(fail) : null,
+      ]);
+      if (!alive) return;
+      const t = Date.now();
+      const next: Record<string, Px> = {};
+      const errs: Error[] = [];
+      for (const [v, q] of [['phoenix', phx], ['pacifica', pac]] as const) {
+        if (q instanceof Error) { errs.push(q); continue; }
+        for (const [sym, x] of Object.entries(q ?? {})) {
+          const k = venueKey(v, sym);
+          if (!all.includes(k)) continue;
+          next[k] = { usdPrice: x.mark, change24h: x.change24h, bid: x.bid, ask: x.ask, fundingPctHr: x.fundingPctHr, t };
+          PX.set(k, next[k]);
         }
-        setPrices((p) => ({ ...p, ...next }));
-        setAt(t);
-        setError(undefined);
-        delay = ms;
-      } catch (e) {
-        if (!alive) return;
-        delay = Math.min(60_000, Math.max(ms * 2, delay * 2));
+      }
+      if (res instanceof Error) errs.push(res);
+      else for (const r of res) for (const [m, v] of Object.entries(r ?? {})) {
+        if (v && typeof v.usdPrice === 'number' && Number.isFinite(v.usdPrice) && v.usdPrice > 0) {
+          next[m] = { usdPrice: v.usdPrice, change24h: v.priceChange24h, liquidity: v.liquidity, t };
+          PX.set(m, next[m]);
+        }
+      }
+      if (Object.keys(next).length) { setPrices((p) => ({ ...p, ...next })); setAt(t); }
+      if (!errs.length) { setError(undefined); delay = ms; } else {
+        // back off only when nothing answered; a partial answer keeps the working sources on their normal pace
+        delay = Object.keys(next).length ? ms : Math.min(60_000, Math.max(ms * 2, delay * 2));
         const s = Math.round(delay / 1000);
-        setError(e instanceof ApiError && e.status === 429
-          ? `Jupiter is rate limiting price reads. Trying again in ${s}s.`
-          : `${(e as Error).message} Trying again in ${s}s.`);
+        const e = errs[0] as Error & { status?: number };
+        setError(e.status === 429
+          ? `${e.message.replace(/ is rate limiting reads\.$/, '')} is rate limiting price reads. Trying again in ${s}s.`
+          : `${e.message} Trying again in ${s}s.`);
       }
       if (alive) timer = setTimeout(run, delay);
     };
@@ -274,24 +358,41 @@ export type Position = {
   id: string; marketId: string; kind: Kind; symbol: string; name: string; mint: string;
   icon?: string; stockSym?: string; art?: Market['art'];
   side: Side; lev: number; margin: number; entry: number; openedAt: number;
-  /** Paid up front out of the paper balance (perps: Jupiter's open fee % of the notional). */
+  /** Paid up front out of the paper balance (Jupiter: its open fee; order books: the taker or maker fee) on the notional. */
   openFee: number;
-  /** Jupiter's hourly borrow rate (percent of notional) when the trade opened; perps only. */
+  /** Percent of the notional per hour while open, when the trade opened. Jupiter: its borrow rate (always paid).
+   *  Order books: the funding rate for this side (negative: this side is paid funding). Perps only. */
   borrowPctHr: number;
+  /** Order-book perps: where it trades, and the taker fee % that closing at the market will cost. */
+  venue?: Venue;
+  closeFeePct?: number;
 };
-export type Closed = Position & { exit: number; closedAt: number; borrow: number; /** Net of the open fee and borrow. */ pnl: number; reason: 'closed' | 'liquidated' };
-export type Book = { v: 1; balance: number; open: Position[]; closed: Closed[]; startedAt: number };
+export type Closed = Position & {
+  exit: number; closedAt: number; borrow: number; closeFee?: number;
+  /** Net of every fee, borrow and funding. */ pnl: number; reason: 'closed' | 'liquidated';
+};
+/** A resting paper limit order on an order-book perp (post-only: it waits on the book and fills as a maker). Its margin
+ *  and maker fee are set aside from the paper balance until it fills or is cancelled. */
+export type Order = {
+  id: string; marketId: string; venue: BookVenue; symbol: string; name: string; mint: string;
+  icon?: string; stockSym?: string; art?: Market['art'];
+  side: Side; lev: number; margin: number; limit: number; fee: number; takerPct: number; fundingPctHr: number; createdAt: number;
+};
+export type Book = { v: 1; balance: number; open: Position[]; closed: Closed[]; startedAt: number; orders?: Order[] };
 
 const fresh = (): Book => ({ v: 1, balance: START, open: [], closed: [], startedAt: Date.now() });
 export const notional = (p: Pick<Position, 'margin' | 'lev'>) => p.margin * p.lev;
 /** The price move on the notional: size × leverage × move. */
 export const movePnl = (p: Pick<Position, 'margin' | 'lev' | 'side' | 'entry'>, price: number) =>
   notional(p) * (p.side === 'long' ? price / p.entry - 1 : 1 - price / p.entry);
-/** Borrow so far: Jupiter's hourly rate on the notional, by the hour (an approximation: the real rate moves). */
+/** Borrow or funding so far: the hourly rate on the notional, by the hour (an approximation: the real rate moves). */
 export const borrowCost = (p: Pick<Position, 'kind' | 'margin' | 'lev' | 'borrowPctHr' | 'openedAt'>, now = Date.now()) =>
   p.kind === 'perp' ? notional(p) * (p.borrowPctHr / 100) * (Math.max(0, now - p.openedAt) / 3_600_000) : 0;
-/** What closing now would hand back: margin + move − borrow (never below zero). */
-export const equityOf = (p: Position, price: number, now = Date.now()) => Math.max(0, p.margin + movePnl(p, price) - borrowCost(p, now));
+/** Order books: the taker fee on the position's value at this price, paid when it closes at the market. */
+export const closeFeeAt = (p: Pick<Position, 'margin' | 'lev' | 'entry' | 'closeFeePct'>, price: number) =>
+  p.closeFeePct ? (notional(p) * (price / p.entry) * p.closeFeePct) / 100 : 0;
+/** What closing now would hand back: margin + move − borrow or funding − the closing fee (never below zero). */
+export const equityOf = (p: Position, price: number, now = Date.now()) => Math.max(0, p.margin + movePnl(p, price) - borrowCost(p, now) - closeFeeAt(p, price));
 /** Live profit, net of the open fee and borrow: exactly what closing now would add to the record. */
 export const pnlOf = (p: Position, price: number, now = Date.now()) => equityOf(p, price, now) - p.margin - p.openFee;
 /** Where the loss eats the whole margin. Spot (1x long) can't be liquidated, so null. */
@@ -338,7 +439,12 @@ function mutate(k: string, fn: (b: Book) => Book): Promise<Book> {
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export type OpenArgs = { side: Side; lev: number; margin: number; price: Px; openFeePct: number; borrowPctHr: number };
+export type OpenArgs = {
+  side: Side; lev: number; margin: number; price: Px; openFeePct: number; borrowPctHr: number;
+  /** Order-book perps: the average price this size fills at, walking the live book. */
+  fillPrice?: number;
+};
+export type PlaceArgs = { side: Side; lev: number; margin: number; limit: number; fundingPctHr: number; bestBid?: number; bestAsk?: number };
 
 /** The player's paper book: per wallet when signed in, per device otherwise. */
 export function usePractice() {
@@ -361,36 +467,95 @@ export function usePractice() {
     return mutate(k, (b) => {
       if (!isFresh(a.price)) throw new Error('Waiting for a fresh live price. Try again in a few seconds.');
       if (a.side === 'short' && m.kind !== 'perp') throw new Error('Only perps can go short');
+      const book = isBookVenue(m.venue);
+      if (book && !(a.fillPrice && a.fillPrice > 0)) throw new Error(`Waiting for ${VENUES[m.venue!].name}'s live order book.`);
       const lev = m.kind === 'perp' ? Math.min(m.maxLev, Math.max(1, Math.round(a.lev))) : 1;
       const margin = round2(a.margin);
       if (!(margin >= 1)) throw new Error('At least $1');
+      if (book && m.minUsd && margin * lev < m.minUsd) throw new Error(`${VENUES[m.venue!].name}'s smallest order is $${m.minUsd} of position size`);
       const openFee = m.kind === 'perp' ? round2(((margin * lev) * a.openFeePct) / 100) : 0;
       if (margin + openFee > b.balance + 1e-9) throw new Error(`You have $${b.balance.toFixed(2)} of paper cash`);
       const p: Position = {
         id: newId(), marketId: m.id, kind: m.kind, symbol: m.symbol, name: m.name, mint: m.mint, icon: m.icon, stockSym: m.stockSym, art: m.art,
-        side: a.side, lev, margin, entry: a.price.usdPrice, openedAt: Date.now(), openFee, borrowPctHr: m.kind === 'perp' ? a.borrowPctHr : 0,
+        side: a.side, lev, margin, entry: book ? a.fillPrice! : a.price.usdPrice, openedAt: Date.now(), openFee, borrowPctHr: m.kind === 'perp' ? a.borrowPctHr : 0,
+        ...(book ? { venue: m.venue, closeFeePct: m.takerPct } : {}),
       };
       return { ...b, balance: round2(b.balance - margin - openFee), open: [p, ...b.open] };
     }).then((b) => b.open[0]);
   }, [k]);
 
-  const close = useCallback((id: string, price: Px, reason: Closed['reason'] = 'closed') => {
+  /** Close at the live price (Jupiter), or at `fillPrice`: the average the size fills at on the order book. A
+   *  liquidation settles at the mark price and hands nothing back. */
+  const close = useCallback((id: string, price: Px, reason: Closed['reason'] = 'closed', fillPrice?: number) => {
     if (!k) return Promise.reject(new Error('Still loading your paper balance'));
     let done: Closed | undefined;
     return mutate(k, (b) => {
       const p = b.open.find((x) => x.id === id);
       if (!p) throw new Error('This trade was already closed');
       if (!isFresh(price)) throw new Error('Waiting for a fresh live price. Try again in a few seconds.');
+      const book = isBookVenue(p.venue);
+      if (book && reason === 'closed' && !(fillPrice && fillPrice > 0)) throw new Error(`Waiting for ${VENUES[p.venue!].name}'s live order book.`);
       const now = Date.now();
-      const back = reason === 'liquidated' ? 0 : equityOf(p, price.usdPrice, now);
-      done = { ...p, exit: price.usdPrice, closedAt: now, borrow: borrowCost(p, now), pnl: back - p.margin - p.openFee, reason };
+      const exit = book && reason === 'closed' ? fillPrice! : price.usdPrice;
+      const back = reason === 'liquidated' ? 0 : equityOf(p, exit, now);
+      const closeFee = book && reason === 'closed' ? closeFeeAt(p, exit) : 0;
+      done = { ...p, exit, closedAt: now, borrow: borrowCost(p, now), closeFee, pnl: back - p.margin - p.openFee, reason };
       return { ...b, balance: round2(b.balance + back), open: b.open.filter((x) => x.id !== id), closed: [done, ...b.closed].slice(0, 200) };
     }).then(() => done!);
   }, [k]);
 
+  /** Rest a post-only limit order on an order-book perp: margin and maker fee are set aside now. */
+  const place = useCallback((m: Market, a: PlaceArgs) => {
+    if (!k) return Promise.reject(new Error('Still loading your paper balance'));
+    return mutate(k, (b) => {
+      if (!isBookVenue(m.venue) || m.takerPct === undefined || m.makerPct === undefined) throw new Error('Limit orders are for order-book markets');
+      const venue = VENUES[m.venue].name;
+      if (!(a.limit > 0)) throw new Error('Set a limit price');
+      if (a.side === 'long' && a.bestAsk !== undefined && a.limit >= a.bestAsk) throw new Error(`That would fill right away: the best ask is ${fmtPrice(a.bestAsk)}. Use Market, or set a price below it.`);
+      if (a.side === 'short' && a.bestBid !== undefined && a.limit <= a.bestBid) throw new Error(`That would fill right away: the best bid is ${fmtPrice(a.bestBid)}. Use Market, or set a price above it.`);
+      if (a.bestAsk === undefined || a.bestBid === undefined) throw new Error(`Waiting for ${venue}'s live order book.`);
+      const lev = Math.min(m.maxLev, Math.max(1, Math.round(a.lev)));
+      const margin = round2(a.margin);
+      if (!(margin >= 1)) throw new Error('At least $1');
+      if (m.minUsd && margin * lev < m.minUsd) throw new Error(`${venue}'s smallest order is $${m.minUsd} of position size`);
+      const fee = round2((margin * lev * m.makerPct) / 100);
+      if (margin + fee > b.balance + 1e-9) throw new Error(`You have $${b.balance.toFixed(2)} of paper cash`);
+      const o: Order = {
+        id: newId(), marketId: m.id, venue: m.venue, symbol: m.symbol, name: m.name, mint: m.mint, icon: m.icon, stockSym: m.stockSym, art: m.art,
+        side: a.side, lev, margin, limit: a.limit, fee, takerPct: m.takerPct, fundingPctHr: a.side === 'long' ? a.fundingPctHr : -a.fundingPctHr, createdAt: Date.now(),
+      };
+      return { ...b, balance: round2(b.balance - margin - fee), orders: [o, ...(b.orders ?? [])] };
+    }).then((b) => b.orders![0]);
+  }, [k]);
+
+  const cancel = useCallback((id: string) => {
+    if (!k) return Promise.reject(new Error('Still loading your paper balance'));
+    return mutate(k, (b) => {
+      const o = (b.orders ?? []).find((x) => x.id === id);
+      if (!o) throw new Error('This order already filled or was cancelled');
+      return { ...b, balance: round2(b.balance + o.margin + o.fee), orders: (b.orders ?? []).filter((x) => x.id !== id) };
+    });
+  }, [k]);
+
+  /** The book traded through a resting order: it becomes a position at its limit price (a maker fill). */
+  const fillOrder = useCallback((id: string) => {
+    if (!k) return Promise.reject(new Error('Still loading your paper balance'));
+    let made: Position | undefined;
+    return mutate(k, (b) => {
+      const o = (b.orders ?? []).find((x) => x.id === id);
+      if (!o) return b;
+      made = {
+        id: newId(), marketId: o.marketId, kind: 'perp', symbol: o.symbol, name: o.name, mint: o.mint, icon: o.icon, stockSym: o.stockSym, art: o.art,
+        side: o.side, lev: o.lev, margin: o.margin, entry: o.limit, openedAt: Date.now(), openFee: o.fee, borrowPctHr: o.fundingPctHr,
+        venue: o.venue, closeFeePct: o.takerPct,
+      };
+      return { ...b, open: [made, ...b.open], orders: (b.orders ?? []).filter((x) => x.id !== id) };
+    }).then(() => made);
+  }, [k]);
+
   const reset = useCallback(() => (k ? mutate(k, () => fresh()) : Promise.reject(new Error('Still loading your paper balance'))), [k]);
 
-  return { book, ready: !!book, signedIn: !!owner, open, close, reset };
+  return { book, ready: !!book, signedIn: !!owner, open, close, place, cancel, fillOrder, reset };
 }
 export type Practice = ReturnType<typeof usePractice>;
 
@@ -411,6 +576,45 @@ export function useLiquidations(pr: Practice, prices: Record<string, Px>) {
   return { last, dismiss: () => setLast(null) };
 }
 
+export type Quote = { bid?: number; ask?: number; t: number };
+/** While Practice is open: a resting limit order fills when the live book trades through its price (the best ask at or
+ *  below a buy, the best bid at or above a sell). `live` passes the best bid and ask of a book already streaming on
+ *  screen; any other market with a resting order is read from a fresh book snapshot every 3 s. Nothing runs while the
+ *  app is closed. Returns the last fill, for a notice. */
+export function useOrderFills(pr: Practice, live?: Record<string, Quote>) {
+  const busy = useRef(new Set<string>());
+  const [last, setLast] = useState<Position | null>(null);
+  const [snap, setSnap] = useState<Record<string, Quote>>({});
+  const orders = pr.book?.orders ?? [];
+  const need = [...new Set(orders.filter((o) => !live?.[o.mint]).map((o) => `${o.venue}|${o.mint}`))].sort().join(',');
+  useEffect(() => {
+    if (!need) return;
+    let alive = true;
+    const run = () => {
+      for (const x of need.split(',')) {
+        const [venue, mint] = x.split('|') as [BookVenue, string];
+        readBook(venue, mint.slice(4)).then((b) => {
+          if (alive && b.bids[0] && b.asks[0]) setSnap((s) => ({ ...s, [mint]: { bid: b.bids[0][0], ask: b.asks[0][0], t: b.t } }));
+        }).catch(() => {});
+      }
+    };
+    run();
+    const h = setInterval(run, 3000);
+    return () => { alive = false; clearInterval(h); };
+  }, [need]);
+  useEffect(() => {
+    for (const o of orders) {
+      const q = live?.[o.mint] ?? snap[o.mint];
+      if (!q || Date.now() - q.t > 6000 || busy.current.has(o.id)) continue;
+      const hit = o.side === 'long' ? q.ask !== undefined && q.ask <= o.limit : q.bid !== undefined && q.bid >= o.limit;
+      if (!hit) continue;
+      busy.current.add(o.id);
+      pr.fillOrder(o.id).then((p) => p && setLast(p)).catch(() => {}).finally(() => busy.current.delete(o.id));
+    }
+  }, [pr.book, live, snap]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { last, dismiss: () => setLast(null) };
+}
+
 /** Account value (cash + what every open trade would hand back now), all-time and closed-today P&L, win rate. */
 export function summary(b: Book, prices: Record<string, Px>, now = Date.now()) {
   let inTrades = 0;
@@ -426,6 +630,8 @@ export function summary(b: Book, prices: Record<string, Px>, now = Date.now()) {
   const today = b.closed.filter((c) => c.closedAt >= midnight.getTime()).reduce((a, c) => a + c.pnl, 0);
   const realized = b.closed.reduce((a, c) => a + c.pnl, 0);
   const wins = b.closed.filter((c) => c.pnl > 0).length;
+  const reserved = (b.orders ?? []).reduce((a, o) => a + o.margin + o.fee, 0);
+  inTrades += reserved;
   const value = b.balance + inTrades;
   return { value, inTrades, priced, openPnl, allTime: value - START, today, realized, wins, trades: b.closed.length, winRate: b.closed.length ? (wins / b.closed.length) * 100 : null };
 }
@@ -454,3 +660,4 @@ export function ago(t?: string | number) {
   return d < 60 ? `${d}d ago` : `${Math.round(d / 30)}mo ago`;
 }
 export const kindLabel: Record<Kind, string> = { stock: 'Tokenized stock', crypto: 'Crypto', perp: 'Perpetual', meme: 'pump.fun' };
+export { VENUES, isBookVenue, type BookVenue, type Venue } from './venues';

@@ -10,9 +10,10 @@ import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { errText } from '@/chain/useChain';
 import {
-  LEVERAGE, ago, fmtPrice, isFresh, liqPrice, resolveMarket, signedPct, signedUsd, useLiquidations, usePoolInfo,
+  LEVERAGE, ago, fmtPrice, isBookVenue, isFresh, liqPrice, resolveMarket, signedPct, signedUsd, useLiquidations, usePoolInfo,
   usePractice, usePrices, type Market, type PoolInfo, type Position, type Practice, type Px, type Side,
 } from '@/chain/practice';
+import { BookMarketPage } from '@/ui/book-market';
 import { ART, BackBtn, Bone, ErrorLine, LiveChart, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
@@ -62,12 +63,12 @@ export default function PracticeMarketRoute() {
   if (m === null) {
     return (
       <Shell>
-        <Pending art={ART.emptySearch} title="No market here" body={`Practice couldn't find "${id}" on Jupiter. Pick a stock, coin, perp or memecoin from the Practice list.`}
+        <Pending art={ART.emptySearch} title="No market here" body={`Practice couldn't find "${id}" on Jupiter, Phoenix or Pacifica. Pick a stock, coin, perp or memecoin from the Practice list.`}
           action="See all markets" onAction={() => router.replace('/practice' as Href)} />
       </Shell>
     );
   }
-  return <MarketPage key={m.id} m={m} />;
+  return isBookVenue(m.venue) ? <BookMarketPage key={m.id} m={m} /> : <MarketPage key={m.id} m={m} />;
 }
 
 function MarketPage({ m }: { m: Market }) {

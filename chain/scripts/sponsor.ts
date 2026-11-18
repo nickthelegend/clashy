@@ -201,33 +201,49 @@ function history(range: string | null) {
  * each browser hitting Jupiter's anonymous rate limit. Only the listed public GET endpoints pass; responses (and
  * Jupiter's own errors, with their status) are cached briefly per URL. Nothing is invented: a failure is passed on.
  */
-const JUP_UPSTREAMS: Record<string, string> = { lite: 'https://lite-api.jup.ag', perps: 'https://perps-api.jup.ag' };
-const JUP_ALLOWED = [/^\/lite\/price\/v3\?/, /^\/lite\/tokens\/v2\/(search|tag|toptrending|toporganicscore|toptraded|recent)\b/, /^\/perps\/v1\/pool-info\?/];
-const jupCache = new Map<string, { at: number; status: number; body: string; pending?: Promise<void> }>();
-const jupTtl = (path: string) => (path.startsWith('/lite/price') ? 10_000 : path.startsWith('/perps') ? 30_000 : 60_000);
+const JUP_UPSTREAMS: Record<string, string> = {
+  lite: 'https://lite-api.jup.ag', perps: 'https://perps-api.jup.ag',
+  // the two on-chain order-book perps venues on Solana with a public market-data API
+  phoenix: 'https://perp-api.phoenix.trade', pacifica: 'https://api.pacifica.fi',
+};
+const SYM = '[A-Za-z0-9-]{1,24}';
+const JUP_ALLOWED = [
+  /^\/lite\/price\/v3\?/, /^\/lite\/tokens\/v2\/(search|tag|toptrending|toporganicscore|toptraded|recent)\b/, /^\/perps\/v1\/pool-info\?/,
+  /^\/phoenix\/exchange\/(markets|prices)$/,
+  new RegExp(`^/phoenix/v1/(candles/${SYM}\\?|funding/${SYM}/rates\\?|view/orderbook/${SYM}$|market/${SYM}/stats\\?|trades/${SYM}/fills\\?)`),
+  /^\/pacifica\/api\/v1\/info(\/prices|\/fees)?$/,
+  /^\/pacifica\/api\/v1\/(kline|book|trades)\?/,
+];
+/** at: last attempt (drives the TTL); okAt: last good answer (a live number older than a minute is never served). */
+const jupCache = new Map<string, { at: number; okAt: number; status: number; body: string; pending?: Promise<void> }>();
+/** Live numbers (prices, books, trades, candles): never persisted, and a copy older than a minute is never served. */
+const isLive = (path: string) => /^\/lite\/price|^\/phoenix\/(exchange\/prices|v1\/(candles|view\/orderbook|trades))|^\/pacifica\/api\/v1\/(info\/prices|kline|book|trades)/.test(path);
+const jupTtl = (path: string) => (path.startsWith('/lite/price') ? 10_000 : /orderbook|\/book\?|\/trades\?|\/fills\?|prices$/.test(path) ? 1_500
+  : /candles|kline/.test(path) ? 15_000 : path.startsWith('/perps') ? 30_000 : 60_000);
 async function jupProxy(path: string): Promise<{ status: number; body: string }> {
   if (!JUP_ALLOWED.some((r) => r.test(path))) return { status: 404, body: JSON.stringify({ error: 'not a proxied market endpoint' }) };
   const hit = jupCache.get(path);
   if (hit && Date.now() - hit.at < jupTtl(path)) return hit;
   if (hit?.pending) { await hit.pending; return jupCache.get(path)!; }
   const [, up, ...rest] = path.split('/');
-  const entry = { at: hit?.at ?? 0, status: hit?.status ?? 502, body: hit?.body ?? '', pending: undefined as Promise<void> | undefined };
+  const entry = { at: hit?.at ?? 0, okAt: hit?.okAt ?? 0, status: hit?.status ?? 502, body: hit?.body ?? '', pending: undefined as Promise<void> | undefined };
   entry.pending = (async () => {
     try {
       const r = await fetch(`${JUP_UPSTREAMS[up]}/${rest.join('/')}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(10_000) });
       const body = await r.text();
       // keep the last good answer through a rate limit for up to a minute, so a 429 burst does not blank every client
       // market lists keep their last good answer through any error; a price older than a minute is dropped instead
-      if (r.ok || !hit?.body || (path.startsWith('/lite/price') && Date.now() - hit.at > 60_000)) { entry.status = r.status; entry.body = body; }
+      if (r.ok || !hit?.body || (isLive(path) && Date.now() - entry.okAt > 60_000)) { entry.status = r.status; entry.body = body; }
+      if (r.ok) entry.okAt = Date.now();
     } catch (e) {
-      if (!hit?.body) { entry.status = 502; entry.body = JSON.stringify({ error: `Jupiter unreachable: ${(e as Error).message}` }); }
+      if (!hit?.body || (isLive(path) && Date.now() - entry.okAt > 60_000)) { entry.status = 502; entry.body = JSON.stringify({ error: `${up} unreachable: ${(e as Error).message}` }); }
     }
     entry.at = Date.now();
   })();
   jupCache.set(path, entry);
   if (jupCache.size > 500) jupCache.delete(jupCache.keys().next().value!);
   await entry.pending; entry.pending = undefined;
-  if (entry.status === 200 && !path.startsWith('/lite/price')) saveJupLists();
+  if (entry.status === 200 && !isLive(path)) saveJupLists();
   return entry;
 }
 
@@ -236,16 +252,16 @@ async function jupProxy(path: string): Promise<{ status: number; body: string }>
 const JUP_DISK = fileURLToPath(new URL('../.localnet/jup-lists.json', import.meta.url));
 function saveJupLists() {
   const keep: Record<string, { at: number; body: string }> = {};
-  for (const [k, v] of jupCache) if (v.status === 200 && !k.startsWith('/lite/price')) keep[k] = { at: v.at, body: v.body };
+  for (const [k, v] of jupCache) if (v.status === 200 && !isLive(k)) keep[k] = { at: v.at, body: v.body };
   try { writeFileSync(JUP_DISK, JSON.stringify(keep)); } catch { /* best effort */ }
 }
 try {
   const saved = JSON.parse(readFileSync(JUP_DISK, 'utf8')) as Record<string, { at: number; body: string }>;
   // loaded as already-expired entries: the first request refreshes them, and a 429 falls back to these bodies
-  for (const [k, v] of Object.entries(saved)) jupCache.set(k, { at: Date.now() - 120_000, status: 200, body: v.body });
+  for (const [k, v] of Object.entries(saved)) jupCache.set(k, { at: Date.now() - 120_000, okAt: v.at, status: 200, body: v.body });
 } catch { /* no saved lists yet */ }
 // keep Practice's market lists warm so no player waits on a cold call
-const WARM = ['/lite/tokens/v2/toptrending/1h?limit=100', '/lite/tokens/v2/toptrending/24h?limit=100'];
+const WARM = ['/lite/tokens/v2/toptrending/1h?limit=100', '/lite/tokens/v2/toptrending/24h?limit=100', '/phoenix/exchange/markets', '/pacifica/api/v1/info', '/pacifica/api/v1/info/fees'];
 setInterval(() => { for (const p of WARM) jupProxy(p).catch(() => {}); }, 55_000).unref();
 
 const server = http.createServer(async (req, res) => {
@@ -261,7 +277,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/history') {
       return send(200, history(new URL(req.url ?? '/', 'http://relay').searchParams.get('range')));
     }
-    if (req.method === 'GET' && (req.url ?? '').startsWith('/jup/')) {
+    if (req.method === 'GET' && /^\/(jup|mkt)\//.test(req.url ?? '')) {
       const r = await jupProxy((req.url ?? '').slice(4));
       res.writeHead(r.status, { 'content-type': 'application/json' }).end(r.body);
       return;

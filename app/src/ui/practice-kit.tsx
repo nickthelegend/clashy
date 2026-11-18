@@ -7,9 +7,10 @@ import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { errText } from '@/chain/useChain';
 import {
-  borrowCost, equityOf, fmtPrice, isFresh, liqPrice, notional, pnlOf, signedPct, signedUsd,
+  VENUES, borrowCost, closeFeeAt, equityOf, fmtPrice, isBookVenue, isFresh, liqPrice, notional, pnlOf, signedPct, signedUsd,
   type Closed, type Market, type Position, type Practice, type Px,
 } from '@/chain/practice';
+import { bookFresh, fillQty, useBookFeed, type BookFeed } from '@/chain/venues';
 import { STOCK_ART } from './feed';
 import { ART, ErrorLine, Row, Txt } from './kit';
 import { Sheet } from './sheet';
@@ -26,14 +27,16 @@ export function MarketLogo({ m, size = 40 }: { m: LogoOf; size?: number }) {
   const local = m.stockSym ? STOCK_ART[m.stockSym] : m.art ? MAJOR[m.art] : undefined;
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [m.icon]);
-  if (!local && (broken || !m.icon) && m.kind !== 'stock') {
+  // stocks (and stock perps) sit on a rounded tile: their logos are wordmarks, not coins
+  const tile = m.kind === 'stock' || !!m.stockSym;
+  if (!local && (broken || !m.icon) && !tile) {
     return (
       <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#24242E', alignItems: 'center', justifyContent: 'center' }}>
         <Txt v="label" color={C.brandSoft} style={{ fontSize: size * 0.42 }}>{(m.symbol ?? '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 1).toUpperCase() || '?'}</Txt>
       </View>
     );
   }
-  if (m.kind === 'stock') {
+  if (tile) {
     return (
       <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {local ? <Image source={local} style={{ width: size * 0.86, height: size * 0.86 }} contentFit="contain" />
@@ -122,8 +125,10 @@ export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; o
   const pct = pnl !== undefined ? (pnl / p.margin) * 100 : undefined;
   const liq = liqPrice(p);
   const color = pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down;
+  // a card that isn't a link is a plain view: a disabled wrapper would mark its Close button disabled for assistive tech
+  const card = { backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 14 } as const;
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => ({ backgroundColor: pressed && onPress ? '#15151B' : CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 14 })}>
+    <Card onPress={onPress} style={card}>
       <Row style={{ gap: 12 }}>
         <MarketLogo m={p} size={40} />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -148,33 +153,56 @@ export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; o
       </Row>
       <Row style={{ gap: 10, marginTop: 12 }}>
         <Txt v="small" lines={2} style={{ flex: 1, fontSize: 11.5, lineHeight: 16 }}>
-          {p.kind === 'perp' ? `Fee ${fmtUsdSmall(p.openFee)} · borrow ${fmtUsdSmall(borrowCost(p))} so far` : 'Practice spot has no fee'}
+          {p.kind !== 'perp' ? 'Practice spot has no fee'
+            : isBookVenue(p.venue) ? `${VENUES[p.venue].name} · fee ${fmtUsdSmall(p.openFee)} · funding ${fundingText(borrowCost(p))}`
+              : `Fee ${fmtUsdSmall(p.openFee)} · borrow ${fmtUsdSmall(borrowCost(p))} so far`}
         </Txt>
         <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={`Close ${p.symbol}`}
           style={({ pressed }) => ({ height: 44, minWidth: 96, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
           <Txt v="label">Close</Txt>
         </Pressable>
       </Row>
-    </Pressable>
+    </Card>
   );
 }
+/** A trade card: tappable when it links somewhere, a plain view otherwise (a disabled wrapper would mark the Close
+ *  button inside it disabled for assistive tech). */
+function Card({ onPress, style, children }: { onPress?: () => void; style: object; children: ReactNode }) {
+  if (!onPress) return <View style={style}>{children}</View>;
+  return <Pressable onPress={onPress} style={({ pressed }) => [style, pressed ? { backgroundColor: '#15151B' } : null]}>{children}</Pressable>;
+}
 const fmtUsdSmall = (n: number) => `$${n < 0.01 && n > 0 ? '<0.01' : n.toFixed(2)}`;
+/** Funding so far: what this position has paid (or been paid). */
+const fundingText = (cost: number) => (Math.abs(cost) < 0.005 ? '$0 so far' : cost > 0 ? `${fmtUsdSmall(cost)} paid` : `${fmtUsdSmall(-cost)} received`);
 
-/** Close a paper trade at the live price: shows what comes back and the P&L first, then a check. */
-export function CloseSheet({ p, px, pr, onClose }: { p: Position | null; px?: Px; pr: Practice; onClose: () => void }) {
+/** Close a paper trade: Jupiter markets at the live price; order-book perps at the market, walking the live book (the
+ *  bids for a long, the asks for a short) at the venue's taker fee. Shows what comes back and the P&L first. */
+export function CloseSheet({ p, px, pr, onClose, feed: given }: { p: Position | null; px?: Px; pr: Practice; onClose: () => void; feed?: BookFeed }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
   const [done, setDone] = useState<Closed | null>(null);
   const [shown, setShown] = useState<Position | null>(p);
   useEffect(() => { if (p) { setShown(p); setErr(undefined); setDone(null); } }, [p]);
   const q = p ?? shown;
-  const price = px?.usdPrice;
+  const onBook = !!q && isBookVenue(q.venue);
+  // a book stream of its own only when the screen doesn't already have one for this market
+  const mine = !!p && isBookVenue(p.venue) && !given;
+  const own = useBookFeed(mine ? (p!.venue as 'phoenix' | 'pacifica') : undefined, mine ? p!.mint.slice(4) : undefined);
+  const feed = given ?? own;
+  const book = onBook && bookFresh(feed.book) ? feed.book : null;
+  const qty = q ? notional(q) / q.entry : 0;
+  const fill = onBook && book && q ? fillQty(q.side === 'long' ? book.bids : book.asks, qty) : undefined;
+  const price = onBook ? (fill?.complete ? fill.vwap : undefined) : px?.usdPrice;
   const pnl = q && price !== undefined ? pnlOf(q, price) : undefined;
   const back = q && price !== undefined ? equityOf(q, price) : undefined;
+  const ready = isFresh(px) && (!onBook || !!fill?.complete);
   const go = async () => {
     if (!q || !px) return;
     setBusy(true); setErr(undefined);
-    try { const c = await pr.close(q.id, px); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); setDone(c); } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
+    try {
+      const c = await pr.close(q.id, px, 'closed', onBook ? fill?.vwap : undefined);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); setDone(c);
+    } catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   };
   return (
     <Sheet open={!!p} onClose={onClose}>
@@ -206,16 +234,20 @@ export function CloseSheet({ p, px, pr, onClose }: { p: Position | null; px?: Px
             <Txt v="hero" color={pnl === undefined ? C.muted : pnl >= 0 ? C.up : C.down} style={{ fontSize: 48, fontVariant: ['tabular-nums'] }}>{pnl === undefined ? '…' : signedUsd(pnl)}</Txt>
           </View>
           <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, borderWidth: 1, borderColor: '#26262E', padding: 14, marginTop: 14, gap: 10 }}>
-            <Line k="Live price" v={fmtPrice(price)} />
+            <Line k={onBook ? `Average fill on ${VENUES[q.venue!].name}` : 'Live price'} v={fmtPrice(price)} />
+            {onBook ? <Line k="Mark price" v={fmtPrice(px?.usdPrice)} /> : null}
             <Line k="Back to your balance" v={back === undefined ? '…' : `$${back.toFixed(2)}`} />
             {q.kind === 'perp' ? <Line k="Open fee paid" v={fmtUsdSmall(q.openFee)} /> : null}
-            {q.kind === 'perp' ? <Line k="Borrow so far (approx.)" v={fmtUsdSmall(borrowCost(q))} /> : null}
+            {onBook && price !== undefined ? <Line k={`Closing fee (taker ${Number(q.closeFeePct!.toFixed(4))}%)`} v={fmtUsdSmall(closeFeeAt(q, price))} /> : null}
+            {q.kind === 'perp' ? <Line k={onBook ? 'Funding so far (approx.)' : 'Borrow so far (approx.)'} v={onBook ? fundingText(borrowCost(q)) : fmtUsdSmall(borrowCost(q))} /> : null}
           </View>
           {!isFresh(px) ? <ErrorLine msg="Waiting for a fresh live price before closing." /> : null}
+          {onBook && !book ? <ErrorLine msg={feed.error ?? `Waiting for ${VENUES[q.venue!].name}'s live order book.`} /> : null}
+          {onBook && fill && !fill.complete ? <ErrorLine msg="The book doesn't show enough size to close all of it at once right now." /> : null}
           {err ? <ErrorLine msg={err} /> : null}
           <View style={{ flexDirection: 'row', marginTop: 14 }}>
-            <BarBtn title={busy ? 'Closing…' : price !== undefined ? `Close at ${fmtPrice(price)}` : 'Waiting for price'} bg={C.ink} fg="#000" h={56}
-              onPress={go} disabled={busy || !isFresh(px)} />
+            <BarBtn title={busy ? 'Closing…' : price !== undefined ? `Close at ${fmtPrice(price)}${onBook ? ' avg' : ''}` : 'Waiting for price'} bg={C.ink} fg="#000" h={56}
+              onPress={go} disabled={busy || !ready} />
           </View>
           <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice · paper money. No real USDC moves.</Txt>
         </View>
