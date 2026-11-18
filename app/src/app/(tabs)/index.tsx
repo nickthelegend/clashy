@@ -2,7 +2,7 @@
 // through the Stash and what they cost, both on chain, marked to the live price), reply in threads and like once.
 // Posts live on the MagicBlock rollup; profiles, positions and prices are read from Solana. Nothing is invented.
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
@@ -15,6 +15,7 @@ import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar, Thread } from '@/ui/feed';
 import { useCreate } from '@/ui/create';
 import { TopCallCard } from '@/ui/top-call';
+import { PullSearchHint, usePullSearch } from '@/ui/pull-search';
 import { Bell, Jar, Plus, Search as SearchI } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
@@ -60,6 +61,9 @@ export default function HomeScreen() {
   const { desk } = useLayout();
   const [tab, setTab] = useState<Tab>('calls');
   const { openCall, openSave, openSearch } = useCreate();
+  // pull down past the top and hold: search opens
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const pullSearch = usePullSearch(openSearch, scrollRef);
   const [liking, setLiking] = useState<number | null>(null);
   const [likeErr, setLikeErr] = useState<string>();
   const chain = useChain();
@@ -124,7 +128,8 @@ export default function HomeScreen() {
   const f = feed.status === 'ready' ? feed.data : null;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <ScrollView ref={scrollRef} {...pullSearch.scrollProps} style={{ flex: 1, backgroundColor: C.bg, transform: [{ translateY: pullSearch.slide }] }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
       <Row style={{ justifyContent: 'space-between', marginBottom: 14 }}>
         {myProfile ? (
           <Pressable onPress={() => router.push('/profile')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -223,5 +228,7 @@ export default function HomeScreen() {
         </>
       )}
     </ScrollView>
+    <PullSearchHint pull={pullSearch.pull} top={insets.top} />
+    </View>
   );
 }

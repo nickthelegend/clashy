@@ -1,6 +1,7 @@
-// Search as a bottom drawer (Home's search button, ⌘K on the web), laid out like pump.fun's: the box on top, then
-// Hot markets / Top players as swipeable cards, what you searched and what you opened recently, and keyboard hints.
-// Typing searches players, squads, stocks and every Practice market (perps and memecoins too). Every number is live:
+// Search as a bottom drawer (Home's search button, pulling Home down and holding, ⌘K on the web), laid out like
+// pump.fun's: the box on top, then Hot markets / Top players / Trades as swipeable cards, what you searched and what you opened recently, and keyboard hints.
+// Typing searches players, squads, stocks, every Practice market (perps and memecoins too) and the trades players
+// posted on them. Every number is live:
 // hot-market sparklines are the prices Clashy's own crank recorded, players and squads are read from chain. Recent
 // searches and views are kept on this device only.
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,14 +11,16 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { readPriceHistory, type PriceHistory } from '@/chain/history-prices';
-import { MINT, fmtPrice, useCatalog, type Market } from '@/chain/practice';
+import { MINT, findIn, fmtPrice, signedPct, useCatalog, usePrices, type Market } from '@/chain/practice';
+import { callTarget, tradeMovePct } from '@/chain/calls';
 import { useClansOnchain, useLeaderboardOnchain, type ClanRow } from '@/chain/reads';
-import { isTestAccount, usePoll, useProfiles, type Profile } from '@/chain/social';
+import { isTestAccount, useBoard, usePoll, useProfiles, type Post, type Profile } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
 import { VENUES } from '@/chain/venues';
 import { ProfileAvatar, STOCK_ART } from './feed';
 import { Search as SearchIcon } from './icons';
 import { ART, CRESTS, Row, Sparkline, Txt, rankFor } from './kit';
+import { useMarket } from './market-call';
 import { MarketLogo } from './practice-kit';
 import { Sheet } from './sheet';
 import { C, F, FONT } from './tokens';
@@ -109,10 +112,40 @@ function ListRow({ pic, names, title, sub, right, rightSub, rightColor, onPress 
       </View>
       {right ? (
         <View style={{ alignItems: 'flex-end', maxWidth: '40%' }}>
-          <Txt v="label" lines={1} style={{ fontVariant: ['tabular-nums'] }}>{right}</Txt>
+          <Txt v="label" lines={1} color={rightSub ? undefined : rightColor} style={{ fontVariant: ['tabular-nums'] }}>{right}</Txt>
           {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ fontVariant: ['tabular-nums'] }}>{rightSub}</Txt> : null}
         </View>
       ) : null}
+    </Pressable>
+  );
+}
+
+/** One trade a player posted with a call: the market, the side, the move on the margin and who made it. */
+function TradeCard({ post, names, onOpen }: { post: Post; names: Map<string, Profile>; onOpen: (m: Market | null | undefined) => void }) {
+  const tr = post.trade!;
+  const target = callTarget(post);
+  const m = useMarket(target?.kind === 'market' ? target.id : null);
+  const { prices } = usePrices(m && !tr.exit ? [m.mint] : [], 20_000);
+  const pct = tradeMovePct(tr, m ? prices[m.mint]?.usdPrice : undefined);
+  const author = names.get(post.author.toBase58());
+  const spot = m && m.kind !== 'perp' && tr.lev === 1;
+  const what = spot ? (tr.exit ? 'Sold' : 'Holding') : `${tr.side === 'long' ? 'Long' : 'Short'} ${tr.lev}x`;
+  return (
+    <Pressable onPress={() => onOpen(m)} accessibilityRole="button" accessibilityLabel={`${author?.name ?? 'A player'}: ${what} ${m?.symbol ?? ''}`}
+      style={({ pressed }) => ({ width: 176, borderRadius: 16, backgroundColor: pressed ? '#202027' : '#1A1A20', padding: 12, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <Row style={{ gap: 9 }}>
+        <View style={{ width: 34, height: 34 }}>
+          {m ? <MarketLogo m={m} size={34} /> : <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.s2 }} />}
+          <View style={{ position: 'absolute', right: -4, bottom: -3, borderRadius: 10, borderWidth: 2, borderColor: '#1A1A20' }}><ProfileAvatar p={author} size={16} /></View>
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="label" lines={1} style={{ fontSize: 14 }}>{m ? (m.kind === 'perp' ? m.symbol : m.name) : '…'}</Txt>
+          <Txt v="small" lines={1} color={spot ? C.muted : tr.side === 'long' ? C.up : C.down} style={{ fontSize: 11.5, ...FONT.semi }}>{what}{tr.exit ? ' · closed' : ''}</Txt>
+        </View>
+      </Row>
+      <Txt v="title" color={pct === undefined ? C.muted : pct >= 0 ? C.up : C.down} style={{ fontSize: 22, marginTop: 10, fontVariant: ['tabular-nums'] }}>{pct === undefined ? '…' : signedPct(pct)}</Txt>
+      <Txt v="small" lines={1} style={{ fontSize: 12 }}>@{author?.name ?? 'player'} · ${tr.margin.toLocaleString('en-US', { maximumFractionDigits: 0 })} in</Txt>
+      <Txt v="small" color={C.dim} style={{ fontSize: 10.5, marginTop: 2 }}>Practice · paper money</Txt>
     </Pressable>
   );
 }
@@ -129,7 +162,7 @@ export function SearchSheet({ open, onClose }: { open: boolean; onClose: () => v
 function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
   const { width } = useWindowDimensions();
   const [q, setQ] = useState('');
-  const [tab, setTab] = useState<'hot' | 'players'>('hot');
+  const [tab, setTab] = useState<'hot' | 'players' | 'trades'>('hot');
   const [recent, setRecent] = useState<string[]>([]);
   const [viewed, setViewed] = useState<Viewed[]>([]);
   const cards = useRef<{ scrollTo: (o: { x: number; animated?: boolean }) => void } | null>(null);
@@ -137,13 +170,16 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
   useEffect(() => { load<string[]>(RECENT, []).then(setRecent); load<Viewed[]>(VIEWED, []).then(setViewed); }, []);
 
   const profiles = useProfiles();
-  const board = useLeaderboardOnchain();
+  const ranks = useLeaderboardOnchain();
   const clans = useClansOnchain();
   const hist = usePoll(() => readPriceHistory('24h'), 60_000);
   const { cat } = useCatalog();
+  const board = useBoard();
   const names = profiles.status === 'ready' ? profiles.data : new Map<string, Profile>();
+  // calls that carry the author's Practice trade, newest first
+  const trades = useMemo(() => (board.status === 'ready' ? board.data : []).filter((p) => p.trade && p.replyTo === null && !isTestAccount(names.get(p.author.toBase58()))).slice(0, 20), [board, names]);
   const hot = useMemo(() => (hist.status === 'ready' ? hotFrom(hist.data) : []), [hist]);
-  const top = (board.status === 'ready' ? board.data : []).filter((r) => names.has(r.owner.toBase58()) && !isTestAccount(names.get(r.owner.toBase58()))).slice(0, 10);
+  const top = (ranks.status === 'ready' ? ranks.data : []).filter((r) => names.has(r.owner.toBase58()) && !isTestAccount(names.get(r.owner.toBase58()))).slice(0, 10);
   const query = q.trim().toLowerCase().replace(/^[@$]/, '');
 
   // results while typing: players, squads, then markets (stocks and every Practice market)
@@ -154,7 +190,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
     for (const p of names.values()) {
       if (isTestAccount(p) || !p.name) continue;
       const s = Math.max(score(p.name, query), p.owner.toBase58().toLowerCase() === query ? 3 : -1);
-      const r = (board.status === 'ready' ? board.data : []).find((x) => x.owner.equals(p.owner));
+      const r = (ranks.status === 'ready' ? ranks.data : []).find((x) => x.owner.equals(p.owner));
       if (s >= 0) out.push({ key: `u:${p.owner.toBase58()}`, href: `/u/${p.owner.toBase58()}`, title: p.name, sub: r ? `Player · ${rankFor(r.rp).label} · ${r.wins}W ${r.losses}L` : 'Player', right: r ? `${r.rp} pts` : undefined, pic: { kind: 'player', owner: p.owner.toBase58() }, s: s + 0.3 });
     }
     for (const c of (clans.status === 'ready' ? clans.data : []) as ClanRow[]) {
@@ -176,8 +212,26 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
         out.push({ key: `p:${m.id}`, href: `/practice/${m.id}`, title: m.kind === 'perp' ? m.symbol : m.name, sub: `${m.kind === 'perp' ? m.name : m.symbol} · ${where}`, right: m.price !== undefined ? fmtPrice(m.price) : undefined, pic: { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } }, s });
       }
     }
+    // trades players posted, by market or by player
+    if (cat) {
+      for (const p of trades) {
+        const t = callTarget(p);
+        const m = t?.kind === 'market' ? findIn(cat, t.id) : undefined;
+        const tr = p.trade!;
+        if (!m) continue;
+        const who = names.get(p.author.toBase58())?.name ?? '';
+        const s = Math.max(score(m.symbol, query), score(m.name, query), m.venueSym ? score(m.venueSym, query) : -1, who ? score(who, query) : -1);
+        if (s < 0) continue;
+        const spot = m.kind !== 'perp' && tr.lev === 1;
+        const what = spot ? (tr.exit ? 'sold' : 'holding') : `${tr.side} ${tr.lev}x`;
+        const pct = tradeMovePct(tr);
+        out.push({ key: `t:${p.seq}`, href: `/post/${p.seq}`, title: `${who || 'A player'}: ${what} ${m.kind === 'perp' ? m.symbol : m.name}`, sub: `Trade · ${tr.exit ? 'closed' : `entry ${fmtPrice(tr.entry)}`} · Practice, paper money`,
+          right: pct !== undefined ? signedPct(pct) : undefined, rightColor: pct !== undefined ? (pct >= 0 ? C.up : C.down) : undefined,
+          pic: { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } }, s: s - 0.05 });
+      }
+    }
     return out.sort((a, b) => b.s - a.s).slice(0, 30);
-  }, [query, q, names, board, clans, cat]);
+  }, [query, q, names, ranks, clans, cat, trades]);
 
   const remember = (h: Omit<Viewed, 't'>) => {
     const v = [{ ...h, t: Date.now() }, ...viewed.filter((x) => x.key !== h.key)].slice(0, 8);
@@ -194,7 +248,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
       {/* the box */}
       <Row style={{ gap: 10, height: 52, marginHorizontal: -18, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: HAIR }}>
         <SearchIcon size={18} color={C.muted} />
-        <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Search players, squads, stocks and coins…" placeholderTextColor={C.dim}
+        <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Search players, coins, perps, trades…" placeholderTextColor={C.dim}
           autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search"
           onSubmitEditing={() => { if (hits[0]) open(hits[0]); }}
           style={{ flex: 1, minWidth: 0, height: 50, color: C.ink, ...FONT.medium, fontSize: 16.5 }} />
@@ -223,6 +277,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
           <Row style={{ gap: 8, marginTop: 14 }}>
             <Chip label="Hot markets" on={tab === 'hot'} onPress={() => { setTab('hot'); cardX.current = 0; }} />
             <Chip label="Top players" on={tab === 'players'} onPress={() => { setTab('players'); cardX.current = 0; }} />
+            <Chip label="Trades" on={tab === 'trades'} onPress={() => { setTab('trades'); cardX.current = 0; }} />
             <View style={{ flex: 1 }} />
             {web ? (
               <>
@@ -254,8 +309,17 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
                       <Txt v="small" style={{ fontSize: 10.5, marginTop: 2 }}>{h.spanH >= 23 ? 'last 24h' : `last ${Math.max(1, Math.round(h.spanH))}h recorded`}</Txt>
                     </Pressable>
                   ))
+            ) : tab === 'trades' ? (
+              board.status === 'error' ? <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{board.error}</Txt></View>
+                : !trades.length ? (
+                  <View style={{ height: 150, justifyContent: 'center', maxWidth: 300 }}>
+                    <Txt v="small">{board.status === 'loading' ? 'Reading the calls…' : 'No trades posted yet. Open one in Practice and tap Share to post it with your call.'}</Txt>
+                  </View>
+                ) : trades.map((p) => (
+                  <TradeCard key={p.seq} post={p} names={names} onOpen={(m) => open({ key: `t:${p.seq}`, href: `/post/${p.seq}`, title: `${names.get(p.author.toBase58())?.name ?? 'A player'}'s trade`, sub: m ? m.symbol : 'Trade', pic: m ? { kind: 'market', m: { kind: m.kind, icon: m.icon, stockSym: m.stockSym, art: m.art, symbol: m.venueSym ?? m.symbol } } : { kind: 'player', owner: p.author.toBase58() } })} />
+                ))
             ) : !top.length ? (
-              <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{board.status === 'loading' || profiles.status === 'loading' ? 'Reading the leaderboard…' : 'Win a clash to get on the board.'}</Txt></View>
+              <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{ranks.status === 'loading' || profiles.status === 'loading' ? 'Reading the leaderboard…' : 'Win a clash to get on the board.'}</Txt></View>
             ) : top.map((r, i) => {
               const p = names.get(r.owner.toBase58());
               const owner = r.owner.toBase58();

@@ -1,5 +1,5 @@
 // Custom tab bar: flat black, icons only (Clashy's own clay icons, ui/tab-icons.tsx), the raised Play square in the middle.
-// CreateProvider wraps the tabs so any screen can open the "What's your call?" drawer (Home and Reply use it).
+// The drawers (call, arena, search) come from CreateProvider in the root layout.
 import * as Haptics from 'expo-haptics';
 import { usePathname } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
@@ -10,7 +10,7 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { TabIcon, tabArt, type TabName } from '@/ui/tab-icons';
-import { CreateProvider, useCreate } from '@/ui/create';
+import { useCreate } from '@/ui/create';
 import { C } from '@/ui/tokens';
 import { RightRail, Sidebar } from '@/ui/desk';
 import { pref, useLayout } from '@/ui/layout';
@@ -73,18 +73,18 @@ export default function TabsLayout() {
   // Desktop: D1 sidebar (collapses to the D2 icon rail) + main column + right rail on wide screens.
   if (desk)
     return (
-      <CreateProvider>
+      <>
         <Tabs style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
           <Sidebar collapsed={collapsed} onToggle={toggle} />
           <View style={{ flex: 1 }}><TabFade><TabSlot style={{ flex: 1 }} /></TabFade></View>
           {wide && !path.startsWith('/arena') ? <RightRail /> : null}
           {routes}
         </Tabs>
-      </CreateProvider>
+      </>
     );
 
   return (
-    <CreateProvider>
+    <>
       <Tabs style={{ flex: 1, backgroundColor: C.bg }}>
         <TabFade><TabSlot style={{ flex: 1 }} /></TabFade>
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: Math.max(insets.bottom, 10), backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line }}>
@@ -96,6 +96,6 @@ export default function TabsLayout() {
         </View>
         {routes}
       </Tabs>
-    </CreateProvider>
+    </>
   );
 }

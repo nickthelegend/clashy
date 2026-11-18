@@ -473,7 +473,7 @@ function CallCard({ post, positions, prices, duels, owner }: { post: Post; posit
         <PositionCard stock={stock} price={prices[stock.symbol]}
           holding={pos ? { owner, stock, shares: pos.shares, cost: pos.cost, realized: pos.realized, soldUsdc: 0 } : undefined} />
       ) : null}
-      {target?.kind === 'market' ? <MarketCallCard id={target.id} /> : null}
+      {target?.kind === 'market' ? <MarketCallCard id={target.id} trade={post.trade} /> : null}
       {duel ? (
         <Row style={{ marginTop: 10, gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, padding: 12 }}>
           <Image source={ART.tileDuel} style={{ width: 40, height: 40 }} contentFit="contain" />

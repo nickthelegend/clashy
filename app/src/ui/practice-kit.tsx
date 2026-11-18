@@ -11,7 +11,10 @@ import {
   type Closed, type Market, type Position, type Practice, type Px,
 } from '@/chain/practice';
 import { bookFresh, fillQty, useBookFeed, type BookFeed } from '@/chain/venues';
+import type { TradeTag } from '@/chain/calls';
+import { useCreate } from './create';
 import { STOCK_ART } from './feed';
+import { Share as ShareIcon } from './icons';
 import { ART, ErrorLine, Row, Txt } from './kit';
 import { Sheet } from './sheet';
 import { C } from './tokens';
@@ -129,7 +132,30 @@ export function EmptyCard({ art, title, body, action }: { art: number; title: st
   );
 }
 
-/** One open paper trade: live P&L (net of the open fee and borrow), entry, live price, liquidation price, Close. */
+/** A Practice trade as it rides on a call (chain/calls.ts): side, leverage, entry, exit once closed, margin. */
+export const tradeOf = (p: Position | Closed): TradeTag => ({ side: p.side, lev: p.lev, entry: p.entry, margin: p.margin, ...('exit' in p ? { exit: p.exit } : {}) });
+
+/** Post this trade as a call: the call drawer opens on its market with the trade on it (marked as paper money). */
+export function ShareTrade({ p, pill }: { p: Position | Closed; pill?: boolean }) {
+  const { openCall } = useCreate();
+  const go = () => openCall(null, { marketId: p.marketId, trade: tradeOf(p) });
+  if (pill)
+    return (
+      <Pressable onPress={go} accessibilityRole="button" accessibilityLabel={`Share your ${p.symbol} trade as a call`}
+        style={({ pressed }) => ({ height: 44, paddingHorizontal: 16, borderRadius: 22, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', gap: 6, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+        <ShareIcon size={15} color={C.onBrand} />
+        <Txt v="label" color={C.onBrand}>Share</Txt>
+      </Pressable>
+    );
+  return (
+    <Pressable onPress={go} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Share your ${p.symbol} trade as a call`}
+      style={({ pressed }) => ({ width: 34, height: 34, borderRadius: 17, backgroundColor: pressed ? '#2A2A33' : '#1F1F26', alignItems: 'center', justifyContent: 'center' })}>
+      <ShareIcon size={15} color={C.ink} />
+    </Pressable>
+  );
+}
+
+/** One open paper trade: live P&L (net of the open fee and borrow), entry, live price, liquidation price, Share, Close. */
 export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; onClose: () => void; onPress?: () => void }) {
   const [, tick] = useState(0);
   useEffect(() => { if (p.kind !== 'perp') return; const h = setInterval(() => tick((x) => x + 1), 5000); return () => clearInterval(h); }, [p.kind]);
@@ -170,8 +196,9 @@ export function OpenTrade({ p, px, onClose, onPress }: { p: Position; px?: Px; o
             : isBookVenue(p.venue) ? `${VENUES[p.venue].name} · fee ${fmtUsdSmall(p.openFee)} · funding ${fundingText(borrowCost(p))}`
               : `Fee ${fmtUsdSmall(p.openFee)} · borrow ${fmtUsdSmall(borrowCost(p))} so far`}
         </Txt>
+        <ShareTrade p={p} pill />
         <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={`Close ${p.symbol}`}
-          style={({ pressed }) => ({ height: 44, minWidth: 96, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+          style={({ pressed }) => ({ height: 44, minWidth: 84, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
           <Txt v="label">Close</Txt>
         </Pressable>
       </Row>

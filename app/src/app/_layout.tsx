@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClashyWallet } from '@/chain/wallet';
+import { CreateProvider } from '@/ui/create';
 import { C } from '@/ui/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -49,6 +50,7 @@ export default function Root() {
       <ClashyWallet>
       <ThemeProvider value={theme}>
         <StatusBar style="light" />
+        <CreateProvider>
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'slide_from_right' }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
@@ -76,6 +78,7 @@ export default function Root() {
           <Stack.Screen name="practice/clash" />
           <Stack.Screen name="practice/[market]" />
         </Stack>
+        </CreateProvider>
       </ThemeProvider>
       </ClashyWallet>
     </GestureHandlerRootView>
