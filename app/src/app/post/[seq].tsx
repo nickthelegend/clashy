@@ -15,6 +15,8 @@ import { stockByMint } from '@/chain/stocks';
 import { CoinToken, coinName } from '@/ui/clash';
 import { useCreate } from '@/ui/create';
 import { PositionCard, PostItem, ProfileAvatar, STOCK_ART } from '@/ui/feed';
+import { MarketCallCard } from '@/ui/market-call';
+import { callTarget } from '@/chain/calls';
 import { Heart, Reply, Share } from '@/ui/icons';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -112,6 +114,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
           <PositionCard stock={stock} holding={holding} price={price} />
         </Pressable>
       ) : null}
+      {(() => { const t = callTarget(post); return t?.kind === 'market' ? <MarketCallCard id={t.id} /> : null; })()}
       {post.kind === 2 ? <ClashLink duel={post.refkey} author={post.author} /> : null}
 
       {stock ? (

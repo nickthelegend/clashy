@@ -217,10 +217,10 @@ export default function HomeScreen() {
           <ProfileAvatar p={myProfile} size={40} />
           <View style={{ flex: 1 }}>
             <Txt v="title" style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
-            <Txt v="small" style={{ marginTop: 1 }}>Post it with your real position</Txt>
+            <Txt v="small" style={{ marginTop: 1 }}>Stocks, coins, perps or memecoins</Txt>
           </View>
-          <Row style={{ gap: -8 }}>
-            {['NVDA', 'TSLA', 'AAPL'].map((k) => <Image key={k} source={STOCK_ART[k]} style={{ width: 30, height: 30 }} contentFit="contain" />)}
+          <Row>
+            {[STOCK_ART.NVDA, ART.logoSOL, ART.logoBTC].map((src, i) => <Image key={i} source={src} style={{ width: 30, height: 30, borderRadius: 15, marginLeft: i ? -9 : 0, borderWidth: 2, borderColor: C.s1 }} contentFit="cover" />)}
           </Row>
         </Pressable>
       ) : null}
