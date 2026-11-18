@@ -1,4 +1,4 @@
-// Custom tab bar: flat black like pump.fun, icons only, raised indigo Arena square in the middle.
+// Custom tab bar: flat black, icons only (Clashy's own clay icons, ui/tab-icons.tsx), the raised Play square in the middle.
 // CreateProvider wraps the tabs so any screen can open the "What's your call?" drawer (Home and Reply use it).
 import * as Haptics from 'expo-haptics';
 import { usePathname } from 'expo-router';
@@ -8,23 +8,18 @@ import { useEffect, useState } from 'react';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Chat, Home, Shield, Swords, User } from '@/ui/icons';
+import { Image } from 'expo-image';
+import { TabIcon, tabArt, type TabName } from '@/ui/tab-icons';
 import { CreateProvider, useCreate } from '@/ui/create';
 import { C } from '@/ui/tokens';
 import { RightRail, Sidebar } from '@/ui/desk';
 import { pref, useLayout } from '@/ui/layout';
 
-type TB = Omit<TabTriggerSlotProps, 'ref'> & { icon: (c: string) => React.ReactNode; center?: boolean };
-function TabBtn({ icon, isFocused, center, ref: _r, ...props }: TB & { ref?: unknown }) {
-  if (center)
-    return (
-      <Pressable {...props} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 42, borderRadius: 14, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', opacity: isFocused ? 1 : 0.92 }}>
-        {icon(C.onBrand)}
-      </Pressable>
-    );
+type TB = Omit<TabTriggerSlotProps, 'ref'> & { name: TabName; label: string };
+function TabBtn({ name, label, isFocused, ref: _r, ...props }: TB & { ref?: unknown }) {
   return (
-    <Pressable {...props} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-      {icon(isFocused ? C.ink : C.dim)}
+    <Pressable {...props} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: !!isFocused }} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 50, alignItems: 'center', justifyContent: 'center' }}>
+      <TabIcon name={name} on={!!isFocused} size={31} dot />
     </Pressable>
   );
 }
@@ -43,7 +38,7 @@ function ArenaBtn({ on }: { on: boolean }) {
       onPressOut={() => { press.value = withSpring(1, { damping: 10, stiffness: 260 }); }}
       onPress={openArena}>
       <Animated.View style={[{ width: 58, height: 44, borderRadius: 15, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center', opacity: on || arenaOpen ? 1 : 0.94, shadowColor: C.brand, shadowOpacity: arenaOpen ? 0.55 : 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 4 } }, box]}>
-        <Animated.View style={icon}><Swords size={22} color={C.onBrand} /></Animated.View>
+        <Animated.View style={icon}><Image source={tabArt('play')} style={{ width: 34, height: 34 }} contentFit="contain" /></Animated.View>
       </Animated.View>
     </Pressable>
   );
@@ -93,11 +88,11 @@ export default function TabsLayout() {
       <Tabs style={{ flex: 1, backgroundColor: C.bg }}>
         <TabFade><TabSlot style={{ flex: 1 }} /></TabFade>
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: Math.max(insets.bottom, 10), backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line }}>
-          <TabTrigger name="index" asChild><TabBtn icon={(c) => <Home size={24} color={c} />} /></TabTrigger>
-          <TabTrigger name="chats" asChild><TabBtn icon={(c) => <Chat size={24} color={c} />} /></TabTrigger>
+          <TabTrigger name="index" asChild><TabBtn name="home" label="Home" /></TabTrigger>
+          <TabTrigger name="chats" asChild><TabBtn name="chats" label="Chats" /></TabTrigger>
           <ArenaBtn on={path.startsWith('/arena')} />
-          <TabTrigger name="clans" asChild><TabBtn icon={(c) => <Shield size={24} color={c} />} /></TabTrigger>
-          <TabTrigger name="profile" asChild><TabBtn icon={(c) => <User size={24} color={c} />} /></TabTrigger>
+          <TabTrigger name="clans" asChild><TabBtn name="squads" label="Squads" /></TabTrigger>
+          <TabTrigger name="profile" asChild><TabBtn name="you" label="You" /></TabTrigger>
         </View>
         {routes}
       </Tabs>

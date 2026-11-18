@@ -6,11 +6,12 @@ import type { TabTriggerSlotProps } from 'expo-router/ui';
 import { ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useFeed, useLiveCounts } from '@/chain/reads';
-import { Chat, Collapse, Home, Shield, Swords, User, WalletI } from './icons';
+import { Collapse, Swords } from './icons';
+import { TabIcon } from './tab-icons';
 import { ART, Art, Btn, LiveDot, Row, Txt, Wordmark } from './kit';
 import { C, F, FONT, R } from './tokens';
 
-type NavProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: (c: string) => ReactNode; collapsed: boolean };
+type NavProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: (on: boolean) => ReactNode; collapsed: boolean };
 function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavProps & { ref?: unknown }) {
   return (
     <Pressable {...props} style={({ hovered }: { hovered?: boolean }) => ({
@@ -18,18 +19,18 @@ function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavPr
       paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start',
       backgroundColor: isFocused ? C.s2 : hovered ? '#0E0E10' : 'transparent',
     })}>
-      {icon(isFocused ? C.ink : C.muted)}
+      {icon(!!isFocused)}
       {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: isFocused ? C.ink : C.muted }}>{label}</Text>}
     </Pressable>
   );
 }
 
-const NAV: { name: string; label: string; icon: (c: string) => ReactNode }[] = [
-  { name: 'index', label: 'Home', icon: (c) => <Home size={21} color={c} /> },
-  { name: 'chats', label: 'Chats', icon: (c) => <Chat size={21} color={c} /> },
-  { name: 'arena', label: 'Arena', icon: (c) => <Swords size={21} color={c} /> },
-  { name: 'clans', label: 'Squads', icon: (c) => <Shield size={21} color={c} /> },
-  { name: 'profile', label: 'Profile', icon: (c) => <User size={21} color={c} /> },
+const NAV: { name: string; label: string; icon: (on: boolean) => ReactNode }[] = [
+  { name: 'index', label: 'Home', icon: (on) => <TabIcon name="home" on={on} size={26} /> },
+  { name: 'chats', label: 'Chats', icon: (on) => <TabIcon name="chats" on={on} size={26} /> },
+  { name: 'arena', label: 'Arena', icon: (on) => <TabIcon name="play" on={on} size={26} /> },
+  { name: 'clans', label: 'Squads', icon: (on) => <TabIcon name="squads" on={on} size={26} /> },
+  { name: 'profile', label: 'Profile', icon: (on) => <TabIcon name="you" on={on} size={26} /> },
 ];
 
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -48,7 +49,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           </TabTrigger>
         ))}
         <Pressable onPress={() => router.push('/wallet')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md, paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start', marginTop: 10 }}>
-          <WalletI size={21} color={C.muted} />
+          <TabIcon name="wallet" on={false} size={26} />
           {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: C.muted }}>Wallet</Text>}
         </Pressable>
       </View>
