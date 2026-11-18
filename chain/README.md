@@ -117,8 +117,13 @@ accepts.
   with the app secret. A real Privy sign-in needs a person (email code or Google), so automated runs use device keys.
 - **VRF: proven locally with MagicBlock's own oracle.** MagicBlock's validator CLI ships `vrf-oracle` and their test
   queue; the local stack runs it, and duels and Royales get their coin from a real VRF callback (about 1.3 s). A forged
-  callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 12.5 devnet SOL;
-  the devnet faucet rate-limited the airdrop twice, and the web faucet needs a sign-in and a CAPTCHA.
+  callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 18.5 devnet SOL
+  now that the program is 1.29 MB (9.0 SOL rent, held twice during the deploy, plus fees) on the deployer
+  `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe`. The devnet faucet refused the CLI airdrop again on Nov 18 (rate
+  limit), and the web faucet needs a sign-in and a CAPTCHA, which only Nick can do.
+- **Practice clash against Clashy Bot (works now, no testnet needed):** the real 60-second clash with Practice money,
+  played on the same live rollup price feeds real clashes settle on (read only, nothing is sent). Clashy Bot takes the
+  other side of every call. When devnet is funded, practice clashes can move on chain there unchanged in rules.
 - **Mainnet: not deployed.** The 1.05 MB program needs 5.33 SOL rent-exempt (`solana rent 1049296`); a deploy briefly
   holds about twice that (buffer plus program data) and returns the buffer. The sponsor also needs SOL for fees and rent. It needs real SOL and Nick's go-ahead.
   Real money stays off until then.

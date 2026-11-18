@@ -1,7 +1,7 @@
 // Clash: the look of a real on-chain duel. Big faces, a slot-machine coin roll, giant UP / DOWN calls, a live
 // tug-of-war, and the result. The chain plumbing stays in app/onchain.tsx; this file is only how it looks.
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import type { Profile } from '@/chain/social';
@@ -110,8 +110,8 @@ export function CallButtons({ onUp, onDown, disabled, upLabel = 'UP', downLabel 
 }
 
 /** Live tug-of-war: both scores, a bar that leans to whoever is ahead, the clock. */
-export function LiveBoard({ me, rival, myPnl, theirPnl, myCall, theirCall, sym, price, entry, left, onRollup, perps }: {
-  me?: Profile; rival?: Profile; myPnl: number; theirPnl: number; myCall: number; theirCall: number; sym: string; price: number | null; entry: number; left: number | null; onRollup: boolean;
+export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirCall, sym, price, entry, left, onRollup, perps }: {
+  me?: Profile; rival?: Profile; /** A picture for the rival instead of a player avatar (Clashy Bot). */ rivalPic?: ReactNode; myPnl: number; theirPnl: number; myCall: number; theirCall: number; sym: string; price: number | null; entry: number; left: number | null; onRollup: boolean;
   /** A perps clash: each side's leverage and whether the chain knocked it out. */
   perps?: { myLev: number; theirLev: number; myKo: boolean; theirKo: boolean };
 }) {
@@ -135,7 +135,7 @@ export function LiveBoard({ me, rival, myPnl, theirPnl, myCall, theirCall, sym, 
           <View style={{ width: `${pct}%`, height: 22, backgroundColor: C.brand }} />
           <View style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(255,255,255,0.7)' }} />
         </View>
-        <ProfileAvatar p={rival} size={46} />
+        {rivalPic ?? <ProfileAvatar p={rival} size={46} />}
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
         {perps ? (

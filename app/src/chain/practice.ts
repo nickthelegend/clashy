@@ -11,6 +11,7 @@ import { STOCKS } from './stocks';
 import {
   VENUES, isBookVenue, loadPacifica, loadPhoenix, pacificaQuotes, phoenixQuotes, readBook, type BookVenue, type Venue, type VenueMarket,
 } from './venues';
+import { settle, type PaperClash } from './clash-rules';
 import { useWallet } from './walletCore';
 
 // Jupiter's public market data, read through the Clashy relay's shared cache (chain/scripts/sponsor.ts /jup/…) so every
@@ -301,7 +302,7 @@ export function usePrices(mints: string[], ms = 8000) {
         const s = Math.round(delay / 1000);
         const e = errs[0] as Error & { status?: number };
         setError(e.status === 429
-          ? `${e.message.replace(/ is rate limiting reads\.$/, '')} is rate limiting price reads. Trying again in ${s}s.`
+          ? `${e.message.split(' ')[0]} is rate limiting price reads. Trying again in ${s}s.`
           : `${e.message} Trying again in ${s}s.`);
       }
       if (alive) timer = setTimeout(run, delay);
@@ -378,7 +379,11 @@ export type Order = {
   icon?: string; stockSym?: string; art?: Market['art'];
   side: Side; lev: number; margin: number; limit: number; fee: number; takerPct: number; fundingPctHr: number; createdAt: number;
 };
-export type Book = { v: 1; balance: number; open: Position[]; closed: Closed[]; startedAt: number; orders?: Order[] };
+export type Book = {
+  v: 1; balance: number; open: Position[]; closed: Closed[]; startedAt: number; orders?: Order[];
+  /** Practice clashes against Clashy Bot (./paper-clash.ts): the one in play, and the finished ones (newest first). */
+  liveClash?: PaperClash | null; clashes?: PaperClash[];
+};
 
 const fresh = (): Book => ({ v: 1, balance: START, open: [], closed: [], startedAt: Date.now() });
 export const notional = (p: Pick<Position, 'margin' | 'lev'>) => p.margin * p.lev;
@@ -553,9 +558,44 @@ export function usePractice() {
     }).then(() => made);
   }, [k]);
 
+  /** Start a practice clash: the stake leaves the paper balance until the bell. */
+  const startClash = useCallback((c: Omit<PaperClash, 'id'>) => {
+    if (!k) return Promise.reject(new Error('Still loading your paper balance'));
+    return mutate(k, (b) => {
+      if (b.liveClash) throw new Error('Finish the clash in play first');
+      if (!(c.stake >= 1)) throw new Error('At least $1');
+      if (c.stake > b.balance + 1e-9) throw new Error(`You have $${b.balance.toFixed(2)} of practice money`);
+      return { ...b, balance: round2(b.balance - c.stake), liveClash: { ...c, id: newId() } };
+    }).then((b) => b.liveClash!);
+  }, [k]);
+
+  /** The bell (or a knockout): settle at this live price; the stake comes back with what it won, or less what it lost. */
+  const finishClash = useCallback((id: string, exit: number, ko?: 'you' | 'bot') => {
+    if (!k) return Promise.reject(new Error('Still loading your paper balance'));
+    let done: PaperClash | undefined;
+    return mutate(k, (b) => {
+      const c = b.liveClash;
+      if (!c || c.id !== id) { done = b.clashes?.find((x) => x.id === id); return b; }
+      const r = settle(c, exit);
+      done = { ...c, exit, endedAt: Date.now(), ...r, ko };
+      return { ...b, balance: round2(b.balance + c.stake + r.pnl), liveClash: null, clashes: [done, ...(b.clashes ?? [])].slice(0, 100) };
+    }).then(() => done!);
+  }, [k]);
+
+  /** The app was closed through the bell, so there is no price at the bell to settle on: the stake comes back. */
+  const abandonClash = useCallback((id: string) => {
+    if (!k) return Promise.reject(new Error('Still loading your paper balance'));
+    return mutate(k, (b) => {
+      const c = b.liveClash;
+      if (!c || c.id !== id) return b;
+      const done: PaperClash = { ...c, endedAt: Date.now(), result: 'abandoned', pnl: 0 };
+      return { ...b, balance: round2(b.balance + c.stake), liveClash: null, clashes: [done, ...(b.clashes ?? [])].slice(0, 100) };
+    });
+  }, [k]);
+
   const reset = useCallback(() => (k ? mutate(k, () => fresh()) : Promise.reject(new Error('Still loading your paper balance'))), [k]);
 
-  return { book, ready: !!book, signedIn: !!owner, open, close, place, cancel, fillOrder, reset };
+  return { book, ready: !!book, signedIn: !!owner, open, close, place, cancel, fillOrder, startClash, finishClash, abandonClash, reset };
 }
 export type Practice = ReturnType<typeof usePractice>;
 
@@ -630,7 +670,7 @@ export function summary(b: Book, prices: Record<string, Px>, now = Date.now()) {
   const today = b.closed.filter((c) => c.closedAt >= midnight.getTime()).reduce((a, c) => a + c.pnl, 0);
   const realized = b.closed.reduce((a, c) => a + c.pnl, 0);
   const wins = b.closed.filter((c) => c.pnl > 0).length;
-  const reserved = (b.orders ?? []).reduce((a, o) => a + o.margin + o.fee, 0);
+  const reserved = (b.orders ?? []).reduce((a, o) => a + o.margin + o.fee, 0) + (b.liveClash?.stake ?? 0);
   inTrades += reserved;
   const value = b.balance + inTrades;
   return { value, inTrades, priced, openPnl, allTime: value - START, today, realized, wins, trades: b.closed.length, winRate: b.closed.length ? (wins / b.closed.length) * 100 : null };
