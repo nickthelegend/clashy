@@ -7,6 +7,7 @@ import Svg, { G, Line as SLine, Rect } from 'react-native-svg';
 import { CHART_TF_MS, type TradeCandles } from '@/chain/trade-chart';
 import { decimalsFor, fmtP } from './orderbook';
 import { Txt } from './kit';
+import { Scrub, fmtWhen } from './scrub';
 import { C, FONT } from './tokens';
 
 export type ChartTrade = {
@@ -106,6 +107,8 @@ export function TradeChart({ data, w, h = 250, t }: { data: TradeCandles; w: num
       {t.liq && !t.exit ? (liqIn ? pill(Y(t.liq), fmtP(t.liq, d), C.downBg, C.down)
         : pill(t.liq < lo ? h - BOT - 10 : TOP - 6, `${t.liq < lo ? '↓' : '↑'} ${fmtP(t.liq, d)}`, C.downBg, C.down)) : null}
 
+      <Scrub w={plotW} h={h} n={ks.length} xAt={(i) => X(ks[i].t + step / 2)} yAt={(i) => Y(ks[i].c)}
+        label={(i) => { const k = ks[i]; const mv = ((k.c / t.entry - 1) * (t.side === 'long' ? 1 : -1)) * 100; return { value: fmtP(k.c, d), color: k.c >= k.o ? C.up : C.down, sub: `${mv >= 0 ? '+' : '−'}${Math.abs(mv).toFixed(2)}% vs entry · ${fmtWhen(k.t)}` }; }} />
       {ticks.map((x, i) => (
         <Txt key={i} v="small" color={C.dim} style={{ position: 'absolute', bottom: 0, left: Math.max(0, Math.min(plotW - 60, X(x) - 30)), width: 60, textAlign: 'center', fontSize: 10, fontVariant: ['tabular-nums'] }}>
           {multiDay ? day(x) : clock(x)}

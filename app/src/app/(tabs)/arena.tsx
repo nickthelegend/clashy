@@ -11,6 +11,7 @@ import { useChain } from '@/chain/useChain';
 import { useFeed, useLeaderboardOnchain, useLiveCounts, type FeedDuel } from '@/chain/reads';
 import { ago, isTestAccount, useProfiles, type Profile } from '@/chain/social';
 import { ClayLoop } from '@/ui/clay';
+import { WarScene } from '@/ui/lottie';
 import { Badge, CoinToken } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
 import { BotPic } from '@/ui/practice-kit';
@@ -114,7 +115,7 @@ export default function Play() {
       {/* Royale and the squad war */}
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
         <GameTile title="Royale" sub="Up to 16 players" line="$2 in · last one standing" loop="royale" tint="#FFC94A" onPress={go('/onchain-royale')} />
-        <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" loop="war" tint={C.brandSoft} onPress={go('/clans')} />
+        <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" art={<WarScene width={150} height={96} />} tint={C.brandSoft} onPress={go('/clans')} />
       </Row>
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
         <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
