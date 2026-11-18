@@ -9,6 +9,10 @@ import { BN, COIN_SYMBOLS, NO_REPLY, P, USDC, readDuel, usdcAta, FEED_BOARD } fr
 import { errText, type useChain } from '@/chain/useChain';
 import { ago, holdingKey, likedBy, reader, usePoll, type Holding, type Post, type Profile } from '@/chain/social';
 import { STOCKS, createStockAtaIx, minSharesFor, stockByMint, swapAccounts, type Stock } from '@/chain/stocks';
+import { CALL_PERP, CALL_TOKEN, callTarget, perpRefkey } from '@/chain/calls';
+import { useCatalog, type Market } from '@/chain/practice';
+import { MarketCallCard } from './market-call';
+import { MarketLogo } from './practice-kit';
 import { ART, AVATARS, Btn, ErrorLine, Row, Txt } from './kit';
 import { Heart, More, Reply, Share } from './icons';
 import { Lottie } from './lottie';
@@ -92,7 +96,8 @@ type ItemProps = {
 
 export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike, liking, threadBelow, reply }: ItemProps) {
   const author = profiles.get(post.author.toBase58());
-  const stock = post.kind === 1 ? stockByMint(post.refkey.toBase58()) : undefined;
+  const target = callTarget(post);
+  const stock = target?.kind === 'stock' ? stockByMint(target.mint) : undefined;
   const liked = me ? likedBy(post, me.number) : false;
   const [pop, setPop] = useState(false);
   const share = () => RNShare.share({ message: `${nameOf(author, post.author)} on Clashy: "${post.text}"${stock ? ` · ${stock.symbol}` : ''}` }).catch(() => {});
@@ -112,6 +117,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
         </Row>
         <Pressable onPress={() => router.push(`/post/${post.seq}` as Href)}><Txt v="body" style={{ marginTop: 3, fontSize: 15, lineHeight: 21 }}>{post.text}</Txt></Pressable>
         {stock ? <PositionCard stock={stock} holding={holdings.get(holdingKey(post.author, post.refkey))} price={prices[stock.symbol]} /> : null}
+        {target?.kind === 'market' ? <MarketCallCard id={target.id} /> : null}
         {post.kind === 2 ? <DuelCard duel={post.refkey} author={post.author} /> : null}
         <Row style={{ marginTop: 10, gap: 22 }}>
           <Pressable onPress={share} hitSlop={8}><Share size={17} color={C.muted} /></Pressable>
@@ -151,8 +157,23 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
 }) {
   const [text, setText] = useState('');
   const [sym, setSym] = useState<string | null>(null);
-  /** Once the person picks or clears a stock chip, typing stops choosing one for them. */
+  /** Any other market: a token, a memecoin or a perp from Practice's catalog. */
+  const [mkt, setMkt] = useState<Market | null>(null);
+  const [browse, setBrowse] = useState(false);
+  const [q, setQ] = useState('');
+  const { cat } = useCatalog();
+  /** Once the person picks or clears a chip, typing stops choosing one for them. */
   const [picked, setPicked] = useState(false);
+  const allMarkets = useMemo(() => (cat ? [...cat.crypto, ...cat.perps, ...cat.memes, ...cat.stocks.filter((m) => !m.stockSym)] : []), [cat]);
+  const majors = useMemo(() => (cat ? cat.crypto.filter((m) => m.art) : []), [cat]);
+  const found = useMemo(() => {
+    const t = q.trim().toLowerCase().replace(/^\$/, '');
+    if (!t) return allMarkets.slice(0, 8);
+    const sc = (h: string) => { const x = h.toLowerCase(); return x === t ? 3 : x.startsWith(t) ? 2 : x.includes(t) ? 1 : 0; };
+    return allMarkets.map((m) => ({ m, s: Math.max(sc(m.symbol), sc(m.name), m.venueSym ? sc(m.venueSym) : 0) })).filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s).slice(0, 8).map((x) => x.m);
+  }, [allMarkets, q]);
+  const pickMarket = (m: Market | null) => { setPicked(true); setMkt(m); setSym(null); setBack(0); setBrowse(false); setQ(''); };
   const [back, setBack] = useState(0);
   const [err, setErr] = useState<string>();
   const [step, setStep] = useState<string | null>(null);
@@ -179,9 +200,13 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
           .preInstructions(pre).rpc());
       }
       setStep(replyTo ? 'Replying…' : 'Posting…');
-      await onEr(replyTo ? 'Reply' : stock ? `Call ${stock.symbol}` : 'Post', progs.er.methods.post(body, stock ? 1 : 0, stock ? new PublicKey(stock.mint) : PublicKey.default, replyTo ? new BN(replyTo.seq) : NO_REPLY)
+      // a Stash stock (kind 1), any token by mint (3), a perp by its market id (4), or a plain post
+      const [kind, refkey, label] = stock ? [1, new PublicKey(stock.mint), stock.symbol]
+        : mkt?.kind === 'perp' ? [CALL_PERP, perpRefkey(mkt.id), mkt.symbol]
+          : mkt ? [CALL_TOKEN, new PublicKey(mkt.mint), mkt.symbol] : [0, PublicKey.default, ''];
+      await onEr(replyTo ? 'Reply' : label ? `Call ${label}` : 'Post', progs.er.methods.post(body, replyTo ? 0 : kind, replyTo ? PublicKey.default : refkey, replyTo ? new BN(replyTo.seq) : NO_REPLY)
         .accountsPartial({ author: owner, board: P.board(FEED_BOARD) }));
-      setText(''); setSym(null); setBack(0); setPicked(false); onCancelReply(); onPosted();
+      setText(''); setSym(null); setMkt(null); setBack(0); setPicked(false); onCancelReply(); onPosted();
     } catch (e) { setErr(errText(e)); } finally { setStep(null); }
   };
   if (!me) return null;
@@ -197,20 +222,63 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
         <ProfileAvatar p={me} size={36} />
         <TextInput value={text} onChangeText={(t) => {
           setText(t);
-          if (!picked && !replyTo) { const hit = STOCKS.find((s) => new RegExp(`\\b(${s.symbol}|${s.name.split(' ')[0]})\\b`, 'i').test(t)); setSym(hit ? hit.symbol : null); }
+          if (!picked && !replyTo) {
+            // a Stash stock by ticker or name, else a $TICKER or a major coin from the catalog
+            const hit = STOCKS.find((s) => new RegExp(`\\b(${s.symbol}|${s.name.split(' ')[0]})\\b`, 'i').test(t));
+            setSym(hit ? hit.symbol : null);
+            const tag = /\$([A-Za-z][A-Za-z0-9]{1,11})\b/.exec(t)?.[1]?.toLowerCase();
+            const coin = !hit ? (tag ? allMarkets.find((m) => m.kind !== 'perp' && m.symbol.toLowerCase() === tag) : majors.find((m) => new RegExp(`\\b(${m.symbol}|${m.name})\\b`, 'i').test(t))) : undefined;
+            setMkt(coin ?? null);
+          }
         }} placeholder={replyTo ? 'Your reply' : "What's your call?"} placeholderTextColor={C.muted} multiline maxLength={140}
           style={{ flex: 1, color: C.ink, ...FONT.medium, fontSize: 16, minHeight: 40, paddingTop: 8 }} />
       </Row>
       {!replyTo ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           {STOCKS.map((s) => (
-            <Pressable key={s.symbol} onPress={() => { setPicked(true); setSym(sym === s.symbol ? null : s.symbol); setBack(0); }}
+            <Pressable key={s.symbol} onPress={() => { setPicked(true); setMkt(null); setSym(sym === s.symbol ? null : s.symbol); setBack(0); }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: sym === s.symbol ? C.brand : C.s2 }}>
               <Image source={STOCK_ART[s.symbol]} style={{ width: 18, height: 18 }} contentFit="contain" />
               <Txt v="small" color={sym === s.symbol ? C.onBrand : C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{s.symbol}</Txt>
             </Pressable>
           ))}
+          {[...majors, ...(mkt && !majors.some((m) => m.id === mkt.id) ? [mkt] : [])].map((m) => {
+            const on = mkt?.id === m.id;
+            return (
+              <Pressable key={m.id} onPress={() => pickMarket(on ? null : m)} accessibilityRole="button" accessibilityState={{ selected: on }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: on ? C.brand : C.s2, maxWidth: 170 }}>
+                <MarketLogo m={m} size={18} />
+                <Txt v="small" lines={1} color={on ? C.onBrand : C.ink} style={{ ...FONT.semi, fontSize: 12, flexShrink: 1 }}>{m.symbol}</Txt>
+              </Pressable>
+            );
+          })}
+          <Pressable onPress={() => setBrowse((b) => !b)} accessibilityRole="button" accessibilityLabel="Call another market"
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, height: 30, borderRadius: 15, backgroundColor: browse ? C.ink : C.s2 }}>
+            <Txt v="small" color={browse ? '#000' : C.brandSoft} style={{ ...FONT.semi, fontSize: 12 }}>{browse ? 'Close' : '+ Perps, memecoins…'}</Txt>
+          </Pressable>
         </View>
+      ) : null}
+      {browse && !replyTo ? (
+        <View style={{ marginTop: 10 }}>
+          <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Search perps, coins, memecoins" placeholderTextColor={C.dim} autoCapitalize="none" autoCorrect={false}
+            style={{ height: 42, borderRadius: 12, backgroundColor: C.s2, paddingHorizontal: 12, color: C.ink, ...FONT.medium, fontSize: 14.5 }} />
+          {!cat ? <Txt v="small" style={{ marginTop: 8 }}>Loading markets…</Txt> : found.length === 0 ? <Txt v="small" style={{ marginTop: 8 }}>Nothing called "{q.trim()}"</Txt> : (
+            <View style={{ marginTop: 6 }}>
+              {found.map((m) => (
+                <Pressable key={m.id} onPress={() => pickMarket(m)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 6, borderRadius: 12, backgroundColor: pressed ? C.s2 : 'transparent' })}>
+                  <MarketLogo m={m} size={30} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Txt v="label" lines={1} style={{ fontSize: 14 }}>{m.kind === 'perp' ? m.symbol : m.name}</Txt>
+                    <Txt v="small" lines={1} style={{ fontSize: 12 }}>{m.kind === 'perp' ? `${m.name} · ${m.venue === 'jupiter' ? 'Jupiter' : m.venue === 'phoenix' ? 'Phoenix' : 'Pacifica'} perp` : m.kind === 'meme' ? `${m.symbol} · pump.fun` : m.symbol}</Txt>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+      ) : null}
+      {mkt && !replyTo && !browse ? (
+        <Txt v="small" style={{ marginTop: 10 }}>Calling {mkt.kind === 'perp' ? mkt.symbol : mkt.name}: the post shows its live price, and anyone can tap through to trade it in Practice.</Txt>
       ) : null}
       {stock ? (
         <View style={{ marginTop: 10 }}>

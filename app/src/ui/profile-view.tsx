@@ -18,6 +18,8 @@ import { ago, readPortfolio, readProfile, readStash, usePoll, usePrices, useProf
 import { errText, useChain } from '@/chain/useChain';
 import { ClayLoop } from './clay';
 import { ProfileAvatar, PositionCard, STOCK_ART } from './feed';
+import { MarketCallCard } from './market-call';
+import { callTarget } from '@/chain/calls';
 import { Back, Gear, Heart, Reply, Share, Swords, WalletI } from './icons';
 import { ART, AVATARS, BADGES, Bone, Btn, ChangePill, Chips, ErrorLine, Money, Pending, RANKS, Row, SkeletonRows, Txt, rankFor } from './kit';
 import { Sheet } from './sheet';
@@ -453,7 +455,8 @@ function CallCard({ post, positions, prices, duels, owner }: { post: Post; posit
   const pos = post.kind === 1 ? positions.find((x) => x.stock.mint === post.refkey.toBase58()) : undefined;
   const stock = post.kind === 1 ? (pos?.stock ?? undefined) : undefined;
   const duel = post.kind === 2 ? duels.find((d) => d.key.equals(post.refkey)) : undefined;
-  const tag = post.replyTo !== null ? { t: 'Reply', c: C.muted } : post.kind === 1 ? { t: 'Call', c: C.brandSoft } : post.kind === 2 ? { t: 'Clash', c: C.opp } : { t: 'Post', c: C.muted };
+  const target = callTarget(post);
+  const tag = post.replyTo !== null ? { t: 'Reply', c: C.muted } : target ? { t: 'Call', c: C.brandSoft } : post.kind === 2 ? { t: 'Clash', c: C.opp } : { t: 'Post', c: C.muted };
   return (
     <View style={{ backgroundColor: CARD, borderRadius: 20, padding: 14, marginBottom: 10 }}>
       <Row style={{ gap: 8 }}>
@@ -470,6 +473,7 @@ function CallCard({ post, positions, prices, duels, owner }: { post: Post; posit
         <PositionCard stock={stock} price={prices[stock.symbol]}
           holding={pos ? { owner, stock, shares: pos.shares, cost: pos.cost, realized: pos.realized, soldUsdc: 0 } : undefined} />
       ) : null}
+      {target?.kind === 'market' ? <MarketCallCard id={target.id} /> : null}
       {duel ? (
         <Row style={{ marginTop: 10, gap: 12, backgroundColor: '#0D0D10', borderRadius: 14, padding: 12 }}>
           <Image source={ART.tileDuel} style={{ width: 40, height: 40 }} contentFit="contain" />
