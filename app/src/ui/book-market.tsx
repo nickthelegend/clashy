@@ -19,10 +19,10 @@ import { useDeskColumn } from './layout';
 import { Keypad, editAmount, type Key } from './keypad';
 import { CandleChart, OrderBookView, TapeView, VenueChip, decimalsFor, fmtP, fmtUsdC } from './orderbook';
 import {
-  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag,
+  BarBtn, CloseSheet, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag,
 } from './practice-kit';
 import { Sheet } from './sheet';
-import { C, F, FONT, S } from './tokens';
+import { C, FONT, S } from './tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/practice' as Href));
 const usd2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -30,15 +30,17 @@ const pct = (n: number, d = 4) => `${n.toLocaleString('en-US', { maximumFraction
 const CLASS: Record<string, string> = { crypto: 'crypto', equity: 'stock', etf: 'ETF', commodity: 'commodity', fx: 'FX', 'pre-ipo': 'pre-IPO', index: 'index' };
 const TFS: Timeframe[] = ['1m', '5m', '1h', '1d'];
 
+/** A segmented control: the track is the card surface, the selected item white with black text (or its own colour:
+ *  Long and Short keep green and red, they are the trade buttons). */
 function Seg<T extends string>({ value, options, onChange, small }: { value: T; options: { k: T; label: string; color?: string; fg?: string }[]; onChange: (k: T) => void; small?: boolean }) {
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: '#1B1B21', borderRadius: small ? 12 : 16, padding: 3, gap: 3 }}>
+    <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 16, padding: 3, gap: 3 }}>
       {options.map((o) => {
         const on = o.k === value;
         return (
           <Pressable key={o.k} onPress={() => { Haptics.selectionAsync(); onChange(o.k); }} accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={{ flex: 1, height: small ? 36 : 44, borderRadius: small ? 9 : 13, backgroundColor: on ? (o.color ?? C.s2) : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-            <Txt v={small ? 'small' : 'label'} color={on ? (o.fg ?? C.ink) : C.muted} style={small ? { fontSize: 13 } : undefined}>{o.label}</Txt>
+            style={{ flex: 1, height: small ? 36 : 40, borderRadius: 13, backgroundColor: on ? (o.color ?? C.ink) : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            <Txt v="label" color={on ? (o.fg ?? '#000') : C.muted} style={{ fontSize: small ? 13.5 : 14.5 }}>{o.label}</Txt>
           </Pressable>
         );
       })}
@@ -46,15 +48,16 @@ function Seg<T extends string>({ value, options, onChange, small }: { value: T; 
   );
 }
 
+/** Text tabs with a white underline (Order book / Trades), like the kit's UnderTabs. */
 function UnderTabs<T extends string>({ value, options, onChange }: { value: T; options: { k: T; label: string }[]; onChange: (k: T) => void }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 22, borderBottomWidth: 1, borderBottomColor: '#1C1C22', marginBottom: 6 }}>
+    <View style={{ flexDirection: 'row', gap: 18, marginBottom: 4 }}>
       {options.map((o) => {
         const on = o.k === value;
         return (
           <Pressable key={o.k} onPress={() => { Haptics.selectionAsync(); onChange(o.k); }} accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={{ height: 42, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: on ? C.brandSoft : 'transparent', marginBottom: -1 }}>
-            <Txt v="label" color={on ? C.ink : C.dim} style={{ fontSize: 15 }}>{o.label}</Txt>
+            style={{ height: 40, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: on ? C.ink : 'transparent' }}>
+            <Txt v="label" color={on ? C.ink : C.dim} style={{ fontSize: 14.5 }}>{o.label}</Txt>
           </Pressable>
         );
       })}
@@ -65,11 +68,14 @@ function UnderTabs<T extends string>({ value, options, onChange }: { value: T; o
 function StatCell({ k, v, color }: { k: string; v: string; color?: string }) {
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
-      <Txt v="small" style={{ fontSize: 11 }} lines={1}>{k}</Txt>
-      <Txt v="label" color={color} lines={1} style={{ marginTop: 2, fontSize: 14, fontVariant: ['tabular-nums'] }}>{v}</Txt>
+      <Txt v="small" style={{ fontSize: 12 }} lines={1}>{k}</Txt>
+      <Txt v="num" color={color} lines={1} style={{ marginTop: 2, fontSize: 14.5 }}>{v}</Txt>
     </View>
   );
 }
+
+/** A flat row on black for a resting order or a closed trade here. */
+const rowStyle = { gap: 10, paddingVertical: 10 } as const;
 
 export function BookMarketPage({ m }: { m: Market }) {
   const insets = useSafeAreaInsets();
@@ -100,7 +106,7 @@ export function BookMarketPage({ m }: { m: Market }) {
   const mine = pr.book?.open.filter((p) => p.marketId === m.id) ?? [];
   const orders = pr.book?.orders?.filter((o) => o.marketId === m.id) ?? [];
   const past = pr.book?.closed.filter((c) => c.marketId === m.id).slice(0, 5) ?? [];
-  const barH = 54 + 12 + insets.bottom + 10;
+  const barH = 50 + 10 + insets.bottom + 10;
   const d = decimalsFor(mark);
 
   const cancel = async (o: Order) => {
@@ -111,11 +117,11 @@ export function BookMarketPage({ m }: { m: Market }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
-        <Row style={{ gap: 12 }}>
+        <Row style={{ gap: 10 }}>
           <BackBtn onPress={back} />
-          <MarketLogo m={m} size={44} />
+          <MarketLogo m={m} size={38} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Txt v="h2" lines={1}>{m.symbol}</Txt>
+            <Txt v="label" lines={1}>{m.symbol}</Txt>
             <Row style={{ gap: 6, marginTop: 2 }}>
               <VenueChip venue={venue} small />
               <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{m.name}{m.assetClass && CLASS[m.assetClass] ? ` · ${CLASS[m.assetClass]}` : ''}</Txt>
@@ -124,20 +130,16 @@ export function BookMarketPage({ m }: { m: Market }) {
           <PaperBadge />
         </Row>
 
-        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 20 }}>
-          {mark === undefined ? (pxErr ? <Txt v="title" color={C.muted}>No price yet</Txt> : <Bone w={190} h={50} r={12} />)
-            : mark >= 1 ? <Money value={mark} size={48} />
-              : <Txt v="hero" style={{ fontSize: 42, fontVariant: ['tabular-nums'] }} lines={1}>{fmtPrice(mark)}</Txt>}
-          <Row style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-            {ch !== undefined ? (
-              <View style={{ backgroundColor: ch >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt>
-              </View>
-            ) : null}
-            <Row style={{ gap: 6 }}>
-              <LiveDot color={px && isFresh(px) ? C.up : C.dim} />
-              <Txt v="small">{px && isFresh(px) ? `Mark price · live from ${VENUES[venue].name}` : px ? 'Mark price is stale' : 'Reading the mark price'}</Txt>
-            </Row>
+        {/* the mark price: the one big number */}
+        <Animated.View entering={FadeInDown.duration(300)} style={{ marginTop: 20 }}>
+          {mark === undefined ? (pxErr ? <Txt v="h2" color={C.muted}>No price yet</Txt> : <Bone w={180} h={36} r={10} />)
+            : mark >= 1 ? <Money value={mark} size={34} />
+              : <Txt v="num" style={{ fontSize: 34, letterSpacing: -1.2 }} lines={1}>{fmtPrice(mark)}</Txt>}
+          <Row style={{ gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+            {ch !== undefined ? <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ ...FONT.medium, fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt> : null}
+            {ch !== undefined ? <Txt v="small" color={C.dim}>·</Txt> : null}
+            <LiveDot color={px && isFresh(px) ? C.up : C.dim} />
+            <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{px && isFresh(px) ? `Mark price · live from ${VENUES[venue].name}` : px ? 'Mark price is stale' : 'Reading the mark price'}</Txt>
           </Row>
           {pxErr && !(px && isFresh(px)) ? <ErrorLine msg={pxErr} /> : null}
         </Animated.View>
@@ -149,28 +151,28 @@ export function BookMarketPage({ m }: { m: Market }) {
           <StatCell k="Max" v={`${m.maxLev}x`} />
         </Row>
 
-        {/* chart */}
-        <View style={{ marginTop: 14 }}>
-          <Row style={{ gap: 2, marginLeft: -8 }}>
+        {/* chart, full width, with Robinhood-style range tabs under it */}
+        <View style={{ marginTop: 16 }}>
+          <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ marginHorizontal: -4 }}>
+            {chartW > 0 && candles && candles.length > 1 ? <CandleChart candles={candles} w={chartW} h={220} last={mark} />
+              : cErr ? <View style={{ height: 200, justifyContent: 'center', paddingHorizontal: 8 }}><ErrorLine msg={cErr} onRetry={cReload} /></View>
+                : candles && candles.length <= 1 ? <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">{VENUES[venue].name} has no {tf} candles for {sym} yet</Txt></View>
+                  : <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}><Bone w={'94%'} h={160} r={18} /></View>}
+          </View>
+          <Row style={{ gap: 2, marginTop: 6, marginLeft: -8 }}>
             {TFS.map((t) => {
               const on = t === tf;
               return (
                 <Pressable key={t} onPress={() => { Haptics.selectionAsync(); setTf(t); }} accessibilityRole="button" accessibilityState={{ selected: on }}
-                  style={{ height: 36, minWidth: 40, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}>
+                  style={{ height: 36, minWidth: 44, paddingHorizontal: 10, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.s2 : 'transparent' }}>
                   <Txt v="small" color={on ? C.ink : C.dim} style={{ ...(on ? FONT.semi : FONT.medium), fontSize: 14 }}>{t}</Txt>
                 </Pressable>
               );
             })}
-            <View style={{ flex: 1 }} />
-            <Txt v="small" style={{ fontSize: 11 }}>{VENUES[venue].name} candles</Txt>
           </Row>
-          <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ paddingTop: 4 }}>
-            {chartW > 0 && candles && candles.length > 1 ? <CandleChart candles={candles} w={chartW} h={220} last={mark} />
-              : cErr ? <View style={{ height: 200, justifyContent: 'center', paddingHorizontal: 8 }}><ErrorLine msg={cErr} onRetry={cReload} /></View>
-                : candles && candles.length <= 1 ? <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">{VENUES[venue].name} has no {tf} candles for {sym} yet</Txt></View>
-                  : <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}><Bone w={'92%'} h={160} r={14} /></View>}
-          </View>
-          {candles && candles.length > 1 ? <Txt v="small" style={{ fontSize: 11, marginTop: 4 }}>Last {Math.min(60, candles.length)} {tf} candles · {span(Math.min(60, candles.length) * TF_MS[tf])}</Txt> : null}
+          <Txt v="small" color={C.dim} lines={1} style={{ fontSize: 11.5, marginTop: 2 }}>
+            {VENUES[venue].name} candles{candles && candles.length > 1 ? ` · last ${Math.min(60, candles.length)} ${tf} · ${span(Math.min(60, candles.length) * TF_MS[tf])}` : ''}
+          </Txt>
         </View>
 
         {/* book + trades */}
@@ -179,8 +181,8 @@ export function BookMarketPage({ m }: { m: Market }) {
           {panel === 'book' ? <OrderBookView feed={feed} base={sym} onPick={(p) => setTrade({ side: mark !== undefined && p > mark ? 'short' : 'long', limit: p })} />
             : <TapeView trades={feed.trades} base={sym} />}
           <Row style={{ gap: 6, paddingTop: 8 }}>
-            <LiveDot color={feed.mode === 'stream' ? C.up : feed.mode === 'snapshot' ? '#FFB020' : C.dim} />
-            <Txt v="small" style={{ flex: 1, fontSize: 11.5 }} lines={2}>
+            <LiveDot color={feed.mode === 'stream' ? C.up : feed.mode === 'snapshot' ? C.muted : C.dim} />
+            <Txt v="small" color={C.dim} style={{ flex: 1, fontSize: 11.5 }} lines={2}>
               {feed.mode === 'stream' ? `Live stream from ${VENUES[venue].name}` : feed.mode === 'snapshot' ? `The stream is down: a fresh ${VENUES[venue].name} snapshot every 2 s` : 'Connecting'}
               {panel === 'book' ? ' · tap a price for a limit order' : ''}
             </Txt>
@@ -190,7 +192,8 @@ export function BookMarketPage({ m }: { m: Market }) {
 
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
         {fills.last ? (
-          <Animated.View entering={FadeIn.duration(220)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.upBg, borderRadius: 18, padding: 12, marginTop: 14 }}>
+          <Animated.View entering={FadeIn.duration(220)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 12, marginTop: 14 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.up }} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="label" color={C.up}>Limit order filled</Txt>
               <Txt v="small" style={{ marginTop: 2 }}>{fills.last.symbol} {fills.last.side} {fills.last.lev}x at {fmtPrice(fills.last.entry)}, as a maker.</Txt>
@@ -201,14 +204,14 @@ export function BookMarketPage({ m }: { m: Market }) {
 
         <Head title="Your positions" right={mine.length ? `${mine.length} open` : undefined} />
         {!pr.book ? <SkeletonRows n={1} square /> : mine.length === 0 ? (
-          <Pressable onPress={() => setTrade({ side: 'long' })} accessibilityRole="button"
-            style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-            <MarketLogo m={m} size={48} />
+          <Pressable onPress={() => setTrade({ side: 'long' })} accessibilityRole="button" accessibilityLabel={`Open a paper position on ${m.symbol}`}
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+            <MarketLogo m={m} size={38} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="label">No paper position on {m.symbol}</Txt>
-              <Txt v="small" style={{ marginTop: 3, lineHeight: 18 }}>Long or short up to {m.maxLev}x. Your order fills against {VENUES[venue].name}'s real book, at its real fee.</Txt>
+              <Txt v="label" lines={1}>No paper position on {m.symbol}</Txt>
+              <Txt v="small" lines={1} style={{ marginTop: 1 }}>Up to {m.maxLev}x · fills on {VENUES[venue].name}'s real book</Txt>
             </View>
-            <Txt v="label" color={C.dim}>›</Txt>
+            <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt>
           </Pressable>
         ) : (
           <View style={{ gap: 10 }}>{mine.map((p) => <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} />)}</View>
@@ -217,21 +220,19 @@ export function BookMarketPage({ m }: { m: Market }) {
         {orders.length ? (
           <>
             <Head title="Open orders" right={`${orders.length} resting`} />
-            <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
-              {orders.map((o, i) => (
-                <Row key={o.id} style={{ gap: 10, minHeight: 60, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
-                  <SideTag p={{ kind: 'perp', side: o.side, lev: o.lev }} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Txt v="label" lines={1} style={{ fontVariant: ['tabular-nums'] }}>Limit {fmtP(o.limit, d)}</Txt>
-                    <Txt v="small" lines={1}>{usd2(o.margin)} margin · {usd2(o.margin * o.lev)} size</Txt>
-                  </View>
-                  <Pressable onPress={() => cancel(o)} accessibilityRole="button" accessibilityLabel="Cancel order"
-                    style={({ pressed }) => ({ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                    <Txt v="small" color={C.ink}>Cancel</Txt>
-                  </Pressable>
-                </Row>
-              ))}
-            </View>
+            {orders.map((o) => (
+              <Row key={o.id} style={rowStyle}>
+                <SideTag p={{ kind: 'perp', side: o.side, lev: o.lev }} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Txt v="num" lines={1}>Limit {fmtP(o.limit, d)}</Txt>
+                  <Txt v="small" lines={1} style={{ marginTop: 1 }}>{usd2(o.margin)} margin · {usd2(o.margin * o.lev)} size</Txt>
+                </View>
+                <Pressable onPress={() => cancel(o)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Cancel order"
+                  style={({ pressed }) => ({ height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                  <Txt v="small" color={C.ink} style={{ ...FONT.medium }}>Cancel</Txt>
+                </Pressable>
+              </Row>
+            ))}
             {cancelErr ? <ErrorLine msg={cancelErr} /> : null}
           </>
         ) : null}
@@ -239,24 +240,22 @@ export function BookMarketPage({ m }: { m: Market }) {
         {past.length ? (
           <>
             <Head title="Closed here" />
-            <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
-              {past.map((c, i) => (
-                <Row key={c.id} style={{ gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
-                  <SideTag p={c} />
-                  <Txt v="small" lines={1} style={{ flex: 1 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)}{c.reason === 'liquidated' ? ' · liquidated' : ''}</Txt>
-                  <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
-                </Row>
-              ))}
-            </View>
+            {past.map((c) => (
+              <Row key={c.id} style={rowStyle}>
+                <SideTag p={c} />
+                <Txt v="small" lines={1} style={{ flex: 1, fontVariant: ['tabular-nums'] }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)}{c.reason === 'liquidated' ? ' · liquidated' : ''}</Txt>
+                <Txt v="num" color={c.pnl >= 0 ? C.up : C.down}>{signedUsd(c.pnl)}</Txt>
+              </Row>
+            ))}
           </>
         ) : null}
 
-        <Txt v="small" style={{ marginTop: 22, lineHeight: 18, textAlign: 'center' }}>
-          Practice · paper money. The book, trades, candles, fees and funding are {VENUES[venue].name}'s own, live. Market orders walk the real book; limit orders are post-only and fill when the book trades through them. P&L and liquidation use the mark price. Nothing is sent to {VENUES[venue].name}.
+        <Txt v="small" color={C.dim} style={{ marginTop: 22, fontSize: 12, lineHeight: 16, textAlign: 'center' }}>
+          Paper money · {VENUES[venue].name}'s live book, fees and funding · orders never reach {VENUES[venue].name}
         </Txt>
       </ScrollView>
 
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 12, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', paddingTop: 10, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
         <View style={[{ flexDirection: 'row', gap: 8 }, col]}>
           <BarBtn title="Long" bg={C.up} fg="#04120A" onPress={() => setTrade({ side: 'long' })} disabled={!pr.ready} />
           <BarBtn title="Short" bg={C.down} fg="#fff" onPress={() => setTrade({ side: 'short' })} disabled={!pr.ready} />
@@ -351,9 +350,9 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
     const on = field === k;
     return (
       <Pressable onPress={() => { Haptics.selectionAsync(); setField(k); }} accessibilityRole="button" accessibilityState={{ selected: on }}
-        style={{ flex: 1, minWidth: 0, borderRadius: 16, borderWidth: 1.5, borderColor: on ? C.brandSoft : 'transparent', backgroundColor: '#15151A', paddingHorizontal: 12, paddingVertical: 9 }}>
-        <Txt v="small" style={{ fontSize: 11.5 }}>{title}</Txt>
-        <Txt v="title" color={val ? C.ink : C.dim} lines={1} style={{ fontSize: 22, marginTop: 1, fontVariant: ['tabular-nums'] }}>{val ? `$${typed(val)}` : hint}</Txt>
+        style={{ flex: 1, minWidth: 0, borderRadius: 16, backgroundColor: on ? C.s2 : C.card, paddingHorizontal: 12, paddingVertical: 9 }}>
+        <Txt v="small" color={on ? C.ink : C.muted} style={{ fontSize: 12 }}>{title}</Txt>
+        <Txt v="num" color={val ? C.ink : C.dim} lines={1} style={{ fontSize: 20, letterSpacing: -0.5, marginTop: 1 }}>{val ? `$${typed(val)}` : hint}</Txt>
       </Pressable>
     );
   };
@@ -362,13 +361,13 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
     <Sheet open={open} onClose={onClose}>
       {done ? (
         <View style={{ alignItems: 'center', paddingVertical: 14 }}>
-          <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 92, height: 92, borderRadius: 46, backgroundColor: actColor, alignItems: 'center', justifyContent: 'center' }}>
-            <Txt v="title" color={side === 'long' ? '#04120A' : '#fff'} style={{ fontSize: 38 }}>✓</Txt>
+          <Animated.View entering={ZoomIn.springify().damping(10)} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: actColor, alignItems: 'center', justifyContent: 'center' }}>
+            <Txt v="title" color={side === 'long' ? '#04120A' : '#fff'} style={{ fontSize: 28 }}>✓</Txt>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(150)} style={{ alignItems: 'center' }}>
-            <Txt v="h2" style={{ marginTop: 16 }}>{done.p ? 'Filled on the book' : 'Limit order resting'}</Txt>
-            <Txt v="hero" style={{ fontSize: 46, marginTop: 2, fontVariant: ['tabular-nums'] }}>{usd2((done.p ?? done.o)!.margin)}</Txt>
-            <Row style={{ gap: 6, marginTop: 2 }}>
+            <Txt v="h2" style={{ marginTop: 14 }}>{done.p ? 'Filled on the book' : 'Limit order resting'}</Txt>
+            <Txt v="num" style={{ fontSize: 34, letterSpacing: -1.2, marginTop: 4 }}>{usd2((done.p ?? done.o)!.margin)}</Txt>
+            <Row style={{ gap: 6, marginTop: 4 }}>
               <SideTag p={{ kind: 'perp', side, lev: (done.p ?? done.o)!.lev }} />
               <Txt v="small">{m.symbol} {done.p ? `at ${fmtPrice(done.p.entry)} avg` : `at ${fmtPrice(done.o!.limit)}`}</Txt>
             </Row>
@@ -378,16 +377,16 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
             </Txt>
           </Animated.View>
           <View style={{ alignSelf: 'stretch', flexDirection: 'row', marginTop: 22 }}>
-            <BarBtn title="Done" bg={C.ink} fg="#000" onPress={onClose} h={56} />
+            <BarBtn title="Done" bg={C.brand} fg={C.onBrand} onPress={onClose} h={52} />
           </View>
         </View>
       ) : (
         <View>
           <Row style={{ gap: 12, marginTop: 2 }}>
-            <MarketLogo m={m} size={40} />
+            <MarketLogo m={m} size={38} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="title" lines={1} style={{ fontSize: 22 }}>{side === 'long' ? 'Long' : 'Short'} {m.symbol}</Txt>
-              <Txt v="small" lines={1} style={{ fontVariant: ['tabular-nums'] }}>
+              <Txt v="h2" lines={1}>{side === 'long' ? 'Long' : 'Short'} {m.symbol}</Txt>
+              <Txt v="small" lines={1} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>
                 {bestBid && bestAsk ? `Bid ${fmtP(bestBid, d)} · Ask ${fmtP(bestAsk, d)}` : 'Reading the book'} · cash {usd2(cash)}
               </Txt>
             </View>
@@ -400,12 +399,12 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
               <Seg value={type} onChange={(k) => { setType(k); setErr(undefined); setField(k === 'limit' && !lim ? 'price' : 'margin'); }} options={[{ k: 'market', label: 'Market' }, { k: 'limit', label: 'Limit' }]} />
             </View>
           </View>
-          <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+          <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 16, padding: 3, gap: 3, marginTop: 8 }}>
             {steps.map((x) => {
               const on = lev === x;
               return (
-                <Pressable key={x} onPress={() => { Haptics.selectionAsync(); setLev(x); setErr(undefined); }} accessibilityRole="button" accessibilityLabel={`${x}x leverage`}
-                  style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 12, backgroundColor: on ? C.ink : '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                <Pressable key={x} onPress={() => { Haptics.selectionAsync(); setLev(x); setErr(undefined); }} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={`${x}x leverage`}
+                  style={({ pressed }) => ({ flex: 1, height: 36, borderRadius: 13, backgroundColor: on ? C.ink : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
                   <Txt v="label" color={on ? '#000' : C.ink} style={{ fontSize: 13.5 }}>{x}x</Txt>
                 </Pressable>
               );
@@ -419,22 +418,22 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             {type === 'limit' && field === 'price' ? (
               ([['Best bid', bestBid], ['Mid', m0], ['Best ask', bestAsk]] as [string, number | undefined][]).map(([k, p]) => (
-                <Pressable key={k} onPress={() => { if (p) { Haptics.selectionAsync(); setLim(fmtP(p, d).replace(/,/g, '')); setErr(undefined); } }} disabled={!p}
-                  style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 20, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', opacity: p ? 1 : 0.4, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                  <Txt v="small" color={C.ink}>{k}</Txt>
+                <Pressable key={k} onPress={() => { if (p) { Haptics.selectionAsync(); setLim(fmtP(p, d).replace(/,/g, '')); setErr(undefined); } }} disabled={!p} hitSlop={4}
+                  style={({ pressed }) => ({ flex: 1, height: 36, borderRadius: 18, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', opacity: p ? 1 : 0.4, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                  <Txt v="small" color={C.ink} style={{ ...FONT.medium }}>{k}</Txt>
                 </Pressable>
               ))
             ) : (
               <>
                 {PRESETS.map((p) => (
-                  <Pressable key={p} onPress={() => { Haptics.selectionAsync(); setV(String(p)); setErr(undefined); }}
-                    style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 20, backgroundColor: Number(v) === p ? C.ink : '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                    <Txt v="small" color={Number(v) === p ? '#000' : C.ink}>${p.toLocaleString('en-US')}</Txt>
+                  <Pressable key={p} onPress={() => { Haptics.selectionAsync(); setV(String(p)); setErr(undefined); }} hitSlop={4}
+                    style={({ pressed }) => ({ flex: 1, height: 36, borderRadius: 18, backgroundColor: Number(v) === p ? C.ink : C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                    <Txt v="small" color={Number(v) === p ? '#000' : C.ink} style={{ ...FONT.medium }}>${p.toLocaleString('en-US')}</Txt>
                   </Pressable>
                 ))}
-                <Pressable onPress={() => { Haptics.selectionAsync(); setV(String(Math.max(0, max))); setErr(undefined); }}
-                  style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 20, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                  <Txt v="small" color={C.ink}>Max</Txt>
+                <Pressable onPress={() => { Haptics.selectionAsync(); setV(String(Math.max(0, max))); setErr(undefined); }} hitSlop={4}
+                  style={({ pressed }) => ({ flex: 1, height: 36, borderRadius: 18, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                  <Txt v="small" color={C.ink} style={{ ...FONT.medium }}>Max</Txt>
                 </Pressable>
               </>
             )}
@@ -444,14 +443,14 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
             <Keypad compact onKey={tap} onClear={() => (field === 'price' ? setLim('') : setV(''))} onEnter={() => { if (v && !busy) go(); }} active={open && !done} />
           </View>
 
-          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, marginTop: 12, gap: 7 }}>
+          <View style={{ backgroundColor: C.card, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, marginTop: 12, gap: 7 }}>
             <Line k="Position size" v={usd2(size)} />
             {type === 'market'
               ? <Line k={`Average fill${slip !== undefined ? ` · ${slip.toFixed(slip < 0.1 ? 3 : 2)}% slippage` : ''}`} v={fill?.vwap ? fmtP(fill.vwap, d) : '–'} color={slip !== undefined && slip > 0.5 ? C.down : undefined} />
               : <Line k="Fills at (post-only)" v={limit > 0 ? fmtP(limit, d) : '–'} />}
             <Line k={`${type === 'market' ? 'Taker' : 'Maker'} fee · ${pct(feePct, 4)}`} v={usd2(fee)} />
             <Line k="Liquidation (approx.)" v={liq !== null ? fmtPrice(liq) : '–'} color={liq !== null ? C.down : undefined} />
-            <Txt v="small" style={{ fontSize: 11.5 }} lines={1}>
+            <Txt v="small" color={C.dim} style={{ fontSize: 11.5 }} lines={1}>
               {sideFunding === undefined ? 'Reading the funding rate…' : `Funding: ${sideFunding >= 0 ? 'you pay' : 'you get'} ${pct(Math.abs(sideFunding))}/hr · ${usd2((size * Math.abs(sideFunding)) / 100)}/hr at this size`}
             </Txt>
           </View>
@@ -460,10 +459,10 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
           {err ? <ErrorLine msg={err} /> : null}
 
           <View style={{ flexDirection: 'row', marginTop: 12 }}>
-            <BarBtn title={label} bg={v && (type === 'market' || limit > 0) ? actColor : '#2A2A31'} fg={v && (type === 'market' || limit > 0) ? (side === 'short' ? '#fff' : '#04120A') : C.muted}
-              onPress={go} disabled={busy || !v || (type === 'limit' && !(limit > 0))} h={56} />
+            <BarBtn title={label} bg={v && (type === 'market' || limit > 0) ? actColor : C.s2} fg={v && (type === 'market' || limit > 0) ? (side === 'short' ? '#fff' : '#04120A') : C.muted}
+              onPress={go} disabled={busy || !v || (type === 'limit' && !(limit > 0))} h={52} />
           </View>
-          <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Practice · paper money. Priced from {VENUES[venue].name}'s live book; nothing is sent.</Txt>
+          <Txt v="small" color={C.dim} style={{ textAlign: 'center', marginTop: 8, fontSize: 12 }}>Practice · paper money. Priced from {VENUES[venue].name}'s live book; nothing is sent.</Txt>
         </View>
       )}
     </Sheet>

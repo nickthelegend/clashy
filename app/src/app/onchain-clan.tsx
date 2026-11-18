@@ -6,9 +6,8 @@
 // Opened from the Squads tab with ?clan=<pubkey>. Creating and joining squads lives in /squads/discover.
 import { Buffer } from 'buffer';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,14 +19,15 @@ import { clanLevel, readClanServer, usePoll, useProfiles, type Profile } from '@
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
 import { AmountSheet } from '@/ui/amount';
 import {
-  ArtCard, BigGo, CoinTile, DirPick, HeadAction, MemberRow, PastWar, Pills, PnlPill, PositionCard, RivalRow, SectionHead, SquadVersus, Stat, TradeCard, fmtLeft,
+  CoinTile, DirPick, HeadAction, PastWar, Pills, PnlPill, PositionCard, RivalRow, SquadVersus, TradeCard, fmtLeft,
 } from '@/ui/chest';
-import { ClayLoop } from '@/ui/clay';
-import { ART, BackBtn, Btn, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Bone, Txt } from '@/ui/kit';
+import { ProfileAvatar } from '@/ui/feed';
+import { Crown, Jar } from '@/ui/icons';
+import { ART, BackBtn, Btn, ErrorLine, LiveDot, Money, Pending, Row, SearchBar, SkeletonRows, Bone, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
-import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
-import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
+import { crestSrc } from '@/ui/squads/parts';
+import { C, FONT, S, fmtUsd } from '@/ui/tokens';
 
 type ClanView = { key: PublicKey; name: string; captain: PublicKey; crest: number; members: number; chest: number; shares: number; openVotes: number; positionsOpen: number; score: number; proposals: number; war: PublicKey; wins: number; losses: number };
 type PropView = { key: PublicKey; id: number; proposer: PublicKey; coin: number; side: number; lev: number; sizeBps: number; yes: number; no: number; deadline: number; status: number; myVote: boolean };
@@ -226,23 +226,21 @@ export default function OnchainClan() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }} keyboardShouldPersistTaps="handled">
         {/* header: back, crest + name + level, wallet pill */}
-        <Row style={{ gap: 10, marginBottom: 14, minHeight: 44 }}>
+        <Row style={{ gap: 10, marginBottom: 16, minHeight: 44 }}>
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/clans' as Href))} />
           {mine ? (
             <Row style={{ flex: 1, minWidth: 0, gap: 10 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <Image source={crestSrc(mine.crest)} style={{ width: 36, height: 36 }} contentFit="contain" />
+              <View style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <Image source={crestSrc(mine.crest)} style={{ width: 34, height: 34 }} contentFit="contain" />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 19, color: C.ink, letterSpacing: -0.3 }}>{mine.name}</Text>
-                <Row style={{ gap: 6 }}>
-                  <Txt v="small" color={GOLD} style={{ ...FONT.displayB, fontSize: 11.5 }}>LV {level?.level ?? 1}</Txt>
-                  <Txt v="small" lines={1} style={{ fontSize: 11.5, flexShrink: 1 }}>{mine.members} member{mine.members === 1 ? '' : 's'}{captain ? ' · you lead' : ''}</Txt>
-                </Row>
+                <Txt v="label" lines={1} style={{ fontSize: 16 }}>{mine.name}</Txt>
+                <Txt v="small" lines={1} style={{ fontSize: 12 }}>LV {level?.level ?? 1} · {mine.members} member{mine.members === 1 ? '' : 's'}{captain ? ' · you lead' : ''}</Txt>
               </View>
             </Row>
           ) : <View style={{ flex: 1 }} />}
-          <Pressable onPress={() => setProof(true)} hitSlop={6} accessibilityLabel="Wallet and transactions" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pressed ? '#22222A' : CARD, borderRadius: 17, paddingHorizontal: 12, height: 36 })}>
+          <Pressable onPress={() => setProof(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Wallet and transactions"
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pressed ? C.s1 : C.s2, borderRadius: 18, paddingHorizontal: 12, height: 36 })}>
             <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : fmtUsd(bal)}</Txt>
           </Pressable>
         </Row>
@@ -251,64 +249,61 @@ export default function OnchainClan() {
 
         {loading ? (
           <View>
-            <Bone w="100%" h={280} r={28} />
+            <Bone w="100%" h={230} r={18} />
             <View style={{ height: 18 }} />
-            <SkeletonRows n={3} square />
+            <SkeletonRows n={3} />
           </View>
         ) : status === 'setup' || status === 'error' ? (
-          <ArtCard art={<ClayLoop name="stash" size={110} style={{ borderRadius: 24 }} />} title="Setup required" body={chain.wallet.error ?? 'The wallet could not start on this device.'} />
+          <Pending art={ART.stash} title="Setup required" body={chain.wallet.error ?? 'The wallet could not start on this device.'} />
         ) : status === 'out' ? (
-          <ArtCard art={<ClayLoop name="clubhouse" size={150} style={{ borderRadius: 28 }} />} title="Sign in to see your squad" body="Your squad's chest, its trade votes and its wars live on Solana. Sign in with email or Google; every fee is on Clashy.">
-            <Btn title="Sign in" kind="white" h={52} onPress={() => chain.wallet.login?.()} />
-          </ArtCard>
+          <View>
+            <Pending art={ART.clubhouse} title="Sign in to see your squad" body="Your squad's chest, its trade votes and its wars live on Solana. Sign in with email or Google; every fee is on Clashy." />
+            <Btn title="Sign in" h={50} onPress={() => chain.wallet.login?.()} />
+          </View>
         ) : !mine ? (
-          <ArtCard art={<ClayLoop name="clubhouse" size={150} style={{ borderRadius: 28 }} />}
-            title={wantClan ? "You're not in this squad" : 'No squad yet'}
-            body={wantClan ? 'Only members see the chest and vote on its trades. Find it in Discover and join to get a share.' : 'Join a squad to pool a chest with friends, vote on trades together and fight other squads.'}>
-            <Btn title="Discover squads" h={52} onPress={() => router.push('/squads/discover' as Href)} />
-          </ArtCard>
+          <View>
+            <Pending art={ART.clubhouse}
+              title={wantClan ? "You're not in this squad" : 'No squad yet'}
+              body={wantClan ? 'Only members see the chest and vote on its trades. Find it in Discover and join to get a share.' : 'Join a squad to pool a chest with friends, vote on trades together and fight other squads.'} />
+            <Btn title="Discover squads" h={50} onPress={() => router.push('/squads/discover' as Href)} />
+          </View>
         ) : (
           <>
-            {/* chest hero */}
-            <Animated.View entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: CARD, overflow: 'hidden' }}>
-              <LinearGradient colors={['rgba(171,159,242,0.24)', 'rgba(21,21,27,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 200 }} />
-              <View style={{ padding: 16 }}>
-                <Row style={{ alignItems: 'flex-start', gap: 10 }}>
-                  <View style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                    <Txt v="small" color="#B9B9C3" style={{ ...FONT.bold, fontSize: 11, letterSpacing: 1.1 }}>Squad chest</Txt>
-                    <View style={{ marginTop: 10 }}><PnlPill label="Trades" usd={usd(mine.score)} /></View>
-                    {warLocked ? <View style={{ marginTop: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(240,70,140,0.18)', borderRadius: 10, paddingHorizontal: 9, height: 26, justifyContent: 'center' }}><Txt v="small" color={C.opp} style={{ ...FONT.bold, fontSize: 11 }}>At war</Txt></View> : null}
-                  </View>
-                  <ClayLoop name="stash" size={92} style={{ borderRadius: 22 }} />
-                </Row>
-                <View style={{ marginTop: 2 }}><Money value={usd(mine.chest)} size={50} /></View>
-                <Row style={{ gap: 8, marginTop: 12 }}>
-                  <Stat k="Your share" v={`${sharePct.toFixed(sharePct > 0 && sharePct < 1 ? 1 : 0)}%`} color={C.brandSoft} />
-                  <Stat k="Worth now" v={fmtUsd(usd(myWorth))} />
-                  <Stat k="You put in" v={fmtUsd(usd(myDeposit))} />
-                </Row>
-                <Row style={{ gap: 10, marginTop: 14 }}>
-                  <Btn title="Add to chest" kind="white" h={52} style={{ flex: 1, borderRadius: 26 }} disabled={!!busy || warLocked} onPress={() => { setErr(undefined); setAmt('add'); }} />
-                  <Btn title="Take out" kind="ghost" h={52} style={{ flex: 1, borderRadius: 26 }} disabled={!!busy || warLocked || mine.openVotes > 0 || myShares === 0} onPress={() => { setErr(undefined); setAmt('out'); }} />
-                </Row>
-                <Txt v="small" style={{ marginTop: 10, lineHeight: 17 }}>
-                  {warLocked ? 'At war: the chest is locked until the war settles.'
-                    : myShares === 0 ? 'Add to the chest to get a share and a vote. Shares pay out pro rata, so wins and losses are shared.'
-                    : mine.openVotes > 0 ? 'Take-outs wait until the open votes close. Your vote counts by your share.'
-                    : 'Your vote counts by your share. Take out any time no vote is open.'}
-                </Txt>
-                {errHere('chest')}
-              </View>
+            {/* the chest: one card, one big number */}
+            <Animated.View entering={FadeInDown.duration(300)} style={{ borderRadius: 18, backgroundColor: C.card, padding: 16 }}>
+              <Row style={{ gap: 8 }}>
+                <Txt v="small" style={{ flex: 1 }}>Squad chest</Txt>
+                {warLocked ? <View style={{ backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 7, height: 24, justifyContent: 'center' }}><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12 }}>At war</Txt></View> : null}
+                <PnlPill label="Trades" usd={usd(mine.score)} />
+              </Row>
+              <View style={{ marginTop: 6 }}><Money value={usd(mine.chest)} size={34} /></View>
+              <Row style={{ gap: 8, marginTop: 14 }}>
+                <Stat k="Your share" v={`${sharePct.toFixed(sharePct > 0 && sharePct < 1 ? 1 : 0)}%`} />
+                <Stat k="Worth now" v={fmtUsd(usd(myWorth))} />
+                <Stat k="You put in" v={fmtUsd(usd(myDeposit))} />
+              </Row>
+              <Row style={{ gap: 10, marginTop: 16 }}>
+                <Btn title="Add to chest" h={48} style={{ flex: 1 }} disabled={!!busy || warLocked} onPress={() => { setErr(undefined); setAmt('add'); }} />
+                <Btn title="Take out" kind="ghost" h={48} style={{ flex: 1 }} disabled={!!busy || warLocked || mine.openVotes > 0 || myShares === 0} onPress={() => { setErr(undefined); setAmt('out'); }} />
+              </Row>
+              <Txt v="small" style={{ marginTop: 10, lineHeight: 17, fontSize: 12.5 }}>
+                {warLocked ? 'At war: the chest is locked until the war settles.'
+                  : myShares === 0 ? 'Add to the chest to get a share and a vote. Shares pay out pro rata, so wins and losses are shared.'
+                  : mine.openVotes > 0 ? 'Take-outs wait until the open votes close. Your vote counts by your share.'
+                  : 'Your vote counts by your share. Take out any time no vote is open.'}
+              </Txt>
+              {errHere('chest')}
             </Animated.View>
 
             {/* trades */}
-            <SectionHead title="Trades" sub={openProps.length ? `${openProps.length} vote${openProps.length === 1 ? '' : 's'} open` : 'Proposed and voted by the squad'}
-              right={<HeadAction label="Propose" disabled={!!busy} onPress={() => { setErr(undefined); setProposing(true); }} />} />
+            <Head title="Trades" sub={openProps.length ? `${openProps.length} vote${openProps.length === 1 ? '' : 's'} open` : 'Proposed and voted by the squad'}
+              right={<HeadAction label="Propose" color={C.ink} disabled={!!busy} onPress={() => { setErr(undefined); setProposing(true); }} />} />
             {errHere('trades')}
             {openProps.length === 0 ? (
-              <ArtCard art={<Image source={ART.coinsPile} style={{ width: 84, height: 84 }} contentFit="contain" />} title="No open votes" body={mine.chest === 0 ? 'Add to the chest first: an empty chest has nothing to trade.' : 'Call a move on SOL, BTC or ETH and the squad votes on it for 60 seconds.'}>
-                <Btn title="Propose a trade" h={48} disabled={!!busy || mine.chest === 0} onPress={() => { setErr(undefined); setProposing(true); }} />
-              </ArtCard>
+              <View>
+                <Pending art={ART.coinsPile} title="No open votes" body={mine.chest === 0 ? 'Add to the chest first: an empty chest has nothing to trade.' : 'Call a move on SOL, BTC or ETH and the squad votes on it for 60 seconds.'} />
+                <Btn title="Propose a trade" kind="ghost" h={44} style={{ alignSelf: 'center', marginTop: -14 }} disabled={!!busy || mine.chest === 0} onPress={() => { setErr(undefined); setProposing(true); }} />
+              </View>
             ) : openProps.map((p) => {
               const left = Math.max(0, Math.ceil(p.deadline - now));
               const passed = p.yes > p.no && (left === 0 || p.yes * 2 > mine.shares);
@@ -320,46 +315,46 @@ export default function OnchainClan() {
                   yes={mine.shares ? p.yes / mine.shares : 0} no={mine.shares ? p.no / mine.shares : 0} left={left}>
                   {!p.myVote && left > 0 ? (
                     <Row style={{ gap: 8 }}>
-                      <Btn title={busy === `vote-${p.id}` ? 'Voting…' : 'Vote yes'} kind="long" h={46} style={{ flex: 1, borderRadius: 23 }} disabled={!!busy || myShares === 0} onPress={() => at('trades', () => vote(p, true))} />
-                      <Btn title="Vote no" kind="short" h={46} style={{ flex: 1, borderRadius: 23 }} disabled={!!busy || myShares === 0} onPress={() => at('trades', () => vote(p, false))} />
+                      <Btn title={busy === `vote-${p.id}` ? 'Voting…' : 'Vote yes'} kind="long" h={46} style={{ flex: 1 }} disabled={!!busy || myShares === 0} onPress={() => at('trades', () => vote(p, true))} />
+                      <Btn title="Vote no" kind="short" h={46} style={{ flex: 1 }} disabled={!!busy || myShares === 0} onPress={() => at('trades', () => vote(p, false))} />
                     </Row>
                   ) : null}
                   {myShares === 0 && !p.myVote && left > 0 ? <Txt v="small" style={{ textAlign: 'center' }}>Add to the chest to get a vote.</Txt> : null}
                   {p.myVote ? <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>✓ You voted</Txt> : null}
-                  {passed && captain && !failed ? <Btn title={busy === `exec-${p.id}` ? 'Placing…' : 'Passed · place the trade'} h={46} style={{ borderRadius: 23 }} disabled={!!busy} onPress={() => at('trades', () => execute(p))} /> : null}
+                  {passed && captain && !failed ? <Btn title={busy === `exec-${p.id}` ? 'Placing…' : 'Passed · place the trade'} h={46} disabled={!!busy} onPress={() => at('trades', () => execute(p))} /> : null}
                   {passed && !captain && !failed ? <Txt v="small" color={C.up} style={{ ...FONT.semi }}>Passed · waiting for the captain to place it</Txt> : null}
-                  {failed ? <Btn title={p.yes > p.no ? 'Close expired vote' : 'Close failed vote'} kind="ghost" h={44} style={{ borderRadius: 22 }} disabled={!!busy} onPress={() => at('trades', () => reject(p))} /> : null}
+                  {failed ? <Btn title={p.yes > p.no ? 'Close expired vote' : 'Close failed vote'} kind="ghost" h={44} disabled={!!busy} onPress={() => at('trades', () => reject(p))} /> : null}
                 </TradeCard>
               );
             })}
 
             {positions.length ? (
               <>
-                <SectionHead title="In play" sub="Live P&L at the current price; booked to the squad score at close" />
+                <Head title="In play" sub="Live P&L at the current price; booked to the squad score at close" />
                 {positions.slice(0, 8).map((p) => {
                   const px = prices[p.coin] ?? null;
                   const live = p.open && px ? (p.notional * pnlBps(p.entry, px, p.side, p.lev)) / 10_000 : p.pnl;
                   return (
                     <PositionCard key={p.key.toBase58()} sym={COIN_SYMBOLS[p.coin] ?? '…'} side={p.side} notional={usd(p.notional)} entry={p.entry} now={p.open ? px : p.exit} open={p.open} pnl={usd(Math.round(live))}
-                      action={p.open && (captain || warOver) ? <Btn title={busy === `close-${p.id}` ? 'Closing…' : 'Close at the current price'} kind="white" h={44} style={{ borderRadius: 22 }} disabled={!!busy} onPress={() => at('trades', () => closePos(p))} /> : undefined} />
+                      action={p.open && (captain || warOver) ? <Btn title={busy === `close-${p.id}` ? 'Closing…' : 'Close at the current price'} kind="ghost" h={44} disabled={!!busy} onPress={() => at('trades', () => closePos(p))} /> : undefined} />
                   );
                 })}
               </>
             ) : null}
             {pastProps.length ? (
               <Row style={{ gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                <Txt v="small" style={{ fontSize: 11.5 }}>Past votes</Txt>
+                <Txt v="small" style={{ fontSize: 12 }}>Past votes</Txt>
                 {pastProps.map((p) => (
-                  <View key={p.key.toBase58()} style={{ borderRadius: 9, paddingHorizontal: 8, height: 24, justifyContent: 'center', backgroundColor: p.status === 1 ? C.upBg : C.s2 }}>
-                    <Txt v="small" color={p.status === 1 ? C.up : C.muted} style={{ fontSize: 11, ...FONT.semi }}>{p.side === 1 ? '▲' : '▼'} {COIN_SYMBOLS[p.coin] ?? '…'} {p.status === 1 ? 'placed' : 'failed'}</Txt>
+                  <View key={p.key.toBase58()} style={{ borderRadius: 8, paddingHorizontal: 8, height: 24, justifyContent: 'center', backgroundColor: p.status === 1 ? C.upBg : C.s2 }}>
+                    <Txt v="small" color={p.status === 1 ? C.up : C.muted} style={{ fontSize: 11.5, ...FONT.semi }}>{p.side === 1 ? '▲' : '▼'} {COIN_SYMBOLS[p.coin] ?? '…'} {p.status === 1 ? 'placed' : 'failed'}</Txt>
                   </View>
                 ))}
               </Row>
             ) : null}
 
             {/* squad war */}
-            <SectionHead title="Squad war" sub={activeWars.length ? undefined : `Stake ${fmtUsd(WAR_STAKE_USDC)} from the chest · best return takes the pot`}
-              right={captain && activeWars.length === 0 ? <HeadAction label="Challenge" color={C.opp} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : undefined} />
+            <Head title="Squad war" sub={activeWars.length ? undefined : `Stake ${fmtUsd(WAR_STAKE_USDC)} from the chest · best return takes the pot`}
+              right={captain && activeWars.length === 0 ? <HeadAction label="Challenge" color={C.ink} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : undefined} />
             {errHere('war')}
             {activeWars.map((w) => {
               const weA = w.a.equals(mine.key);
@@ -375,15 +370,14 @@ export default function OnchainClan() {
               const themName = them?.name ?? short((weA ? w.b : w.a).toBase58());
               const live = w.status === 1;
               return (
-                <Animated.View key={w.key.toBase58()} entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: '#0E0E13', borderWidth: 1, borderColor: live ? 'rgba(240,70,140,0.45)' : HAIR, padding: 16, marginBottom: 10, overflow: 'hidden' }}>
-                  <LinearGradient colors={['rgba(240,70,140,0.18)', 'rgba(14,14,19,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 160 }} />
+                <Animated.View key={w.key.toBase58()} entering={FadeInDown.duration(300)} style={{ borderRadius: 18, backgroundColor: C.card, padding: 16, marginBottom: 10 }}>
                   <View style={{ alignItems: 'center', marginBottom: 14 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: live ? 'rgba(240,70,140,0.18)' : '#1A1A20', borderRadius: 14, paddingHorizontal: 12, height: 28 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: live && left ? C.opp : GOLD }} />
-                      <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{!live ? (weA ? `Waiting for ${themName}` : 'Challenge received') : left ? 'War is live' : 'Final bell'}</Txt>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.s2, borderRadius: 14, paddingHorizontal: 12, height: 28 }}>
+                      {live && left ? <LiveDot color={C.opp} /> : <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.muted }} />}
+                      <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{!live ? (weA ? `Waiting for ${themName}` : 'Challenge received') : left ? 'War is live' : 'Final bell'}</Txt>
                     </View>
                     {live ? <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 6, fontVariant: ['tabular-nums'] }}>{left ? fmtLeft(left) : '0:00'}</Text> : null}
-                    <Txt v="small">Pot {fmtUsd(usd(w.stake * 2))} · {fmtUsd(usd(w.stake))} from each chest</Txt>
+                    <Txt v="small" style={{ marginTop: live ? 0 : 6 }}>Pot {fmtUsd(usd(w.stake * 2))} · {fmtUsd(usd(w.stake))} from each chest</Txt>
                   </View>
                   <SquadVersus us={us?.crest ?? null} them={them?.crest ?? null} usName={us?.name ?? 'Us'} themName={themName}
                     usScore={live ? pctTxt(rUs) : undefined} themScore={live ? pctTxt(rThem) : undefined}
@@ -394,24 +388,25 @@ export default function OnchainClan() {
                       <>
                         <Txt v="small" style={{ textAlign: 'center' }}>{weA ? `${fmtUsd(usd(w.stake))} is staked from your chest. The war starts when ${themName} accepts.` : `${themName} challenged your squad. Accepting stakes ${fmtUsd(usd(w.stake))} from your chest.`}</Txt>
                         {captain ? (weA
-                          ? <Btn title={busy === `cancelwar-${w.nonce}` ? 'Withdrawing…' : 'Withdraw the challenge'} kind="ghost" h={46} style={{ marginTop: 12, borderRadius: 23 }} disabled={!!busy} onPress={() => at('war', () => cancelWar(w))} />
-                          : <View style={{ marginTop: 12 }}><BigGo title={busy === `accept-${w.nonce}` ? 'Accepting…' : `Accept · stake ${fmtUsd(usd(w.stake))}`} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => at('war', () => acceptWar(w))} /></View>)
+                          ? <Btn title={busy === `cancelwar-${w.nonce}` ? 'Withdrawing…' : 'Withdraw the challenge'} kind="ghost" h={46} style={{ marginTop: 12 }} disabled={!!busy} onPress={() => at('war', () => cancelWar(w))} />
+                          : <Btn title={busy === `accept-${w.nonce}` ? 'Accepting…' : `Accept · stake ${fmtUsd(usd(w.stake))}`} h={52} style={{ marginTop: 12 }} disabled={!!busy || mine.chest < 2 * w.stake || warLocked} onPress={() => at('war', () => acceptWar(w))} />)
                           : <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>Your captain decides.</Txt>}
                         {captain && !weA && mine.chest < 2 * w.stake ? <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>The chest needs at least {fmtUsd(usd(2 * w.stake))} to accept.</Txt> : null}
                       </>
                     ) : left === 0 ? (A && B && (A.positionsOpen > 0 || B.positionsOpen > 0)
-                      ? <Txt v="small" color={C.opp} style={{ textAlign: 'center' }}>Time is up. Every open trade must be closed (anyone can now) before the war settles.</Txt>
-                      : <BigGo title={busy === `settlewar-${w.nonce}` ? 'Settling…' : 'Settle the war'} color={C.ink} fg="#000" disabled={!!busy} onPress={() => at('war', () => settleWar(w))} />)
+                      ? <Txt v="small" color={C.ink} style={{ textAlign: 'center' }}>Time is up. Every open trade must be closed (anyone can now) before the war settles.</Txt>
+                      : <Btn title={busy === `settlewar-${w.nonce}` ? 'Settling…' : 'Settle the war'} kind="white" h={52} disabled={!!busy} onPress={() => at('war', () => settleWar(w))} />)
                       : <Txt v="small" style={{ textAlign: 'center' }}>Return on each starting chest from closed trades. Best return when the clock hits zero takes the pot.</Txt>}
                   </View>
                 </Animated.View>
               );
             })}
             {activeWars.length === 0 ? (
-              <ArtCard art={<ClayLoop name="war" width={220} height={124} style={{ borderRadius: 20 }} cover />} title={captain ? 'Pick a fight' : 'No war right now'}
-                body={captain ? `Stake ${fmtUsd(WAR_STAKE_USDC)} of the chest against a rival squad. Whoever trades the better return over the window takes both stakes.` : 'Your captain can challenge a rival squad. Whoever trades the better return takes both stakes.'}>
-                {captain ? <Btn title="Challenge a squad" kind="short" h={50} style={{ borderRadius: 25 }} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : null}
-              </ArtCard>
+              <View>
+                <Pending art={ART.tileWar} title={captain ? 'Pick a fight' : 'No war right now'}
+                  body={captain ? `Stake ${fmtUsd(WAR_STAKE_USDC)} of the chest against a rival squad. Whoever trades the better return over the window takes both stakes.` : 'Your captain can challenge a rival squad. Whoever trades the better return takes both stakes.'} />
+                {captain ? <Btn title="Challenge a squad" kind="ghost" h={44} style={{ alignSelf: 'center', marginTop: -14 }} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : null}
+              </View>
             ) : null}
             {pastWars.length ? (
               <View style={{ marginTop: 8 }}>
@@ -425,21 +420,37 @@ export default function OnchainClan() {
             ) : null}
 
             {/* members */}
-            <SectionHead title="Members" sub={`${mine.members} in the squad · ${mine.wins}W ${mine.losses}L in wars`} />
+            <Head title="Members" sub={`${mine.members} in the squad · ${mine.wins}W ${mine.losses}L in wars`} />
             {memberKeys ? (
-              <MemberRow members={[...memberKeys].sort((a, b) => Number(mine.captain.equals(b)) - Number(mine.captain.equals(a))).map((k) => ({
-                key: k.toBase58(), p: names.get(k.toBase58()), name: names.get(k.toBase58())?.name ?? short(k.toBase58()), captain: mine.captain.equals(k), me: !!wallet && k.equals(wallet),
-              }))} />
+              [...memberKeys].sort((a, b) => Number(mine.captain.equals(b)) - Number(mine.captain.equals(a))).map((k) => {
+                const p = names.get(k.toBase58());
+                const isCapt = mine.captain.equals(k);
+                const isMe = !!wallet && k.equals(wallet);
+                return (
+                  <Row key={k.toBase58()} style={{ gap: 12, paddingVertical: 8, minHeight: 52 }}>
+                    <ProfileAvatar p={p} size={36} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Row style={{ gap: 6 }}>
+                        <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{p?.name ?? short(k.toBase58())}</Txt>
+                        {isCapt ? <Crown size={14} color={C.brandSoft} /> : null}
+                        {isMe ? <Txt v="small" color={C.dim} style={{ fontSize: 12 }}>you</Txt> : null}
+                      </Row>
+                      <Txt v="small" lines={1} style={{ marginTop: 1 }}>{isCapt ? 'Captain' : 'Member'}</Txt>
+                    </View>
+                  </Row>
+                );
+              })
             ) : server.status === 'error' ? <ErrorLine msg={server.error} onRetry={server.reload} /> : (
-              <Row style={{ gap: 12 }}>{[0, 1, 2, 3].map((i) => <Bone key={i} w={54} h={54} r={27} />)}</Row>
+              <View style={{ gap: 12, paddingVertical: 8 }}>{[0, 1, 2].map((i) => <Row key={i} style={{ gap: 12 }}><Bone w={36} h={36} r={18} /><Bone w="40%" h={12} /></Row>)}</View>
             )}
 
             {/* quiet destructive row */}
             {!captain ? (
-              <View style={{ marginTop: 30, borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 6 }}>
-                <Pressable onPress={() => at('leave', leave)} disabled={!!busy || myShares > 0} style={({ pressed }) => ({ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, opacity: myShares > 0 ? 0.5 : pressed ? 0.7 : 1 })}>
-                  <Txt v="label" color={C.down}>{busy === 'leave' ? 'Leaving…' : `Leave ${mine.name}`}</Txt>
-                  <Txt v="small" style={{ fontSize: 11.5 }}>{myShares > 0 ? 'Take out your share first' : ''}</Txt>
+              <View style={{ marginTop: 26 }}>
+                <Pressable onPress={() => at('leave', leave)} disabled={!!busy || myShares > 0} accessibilityRole="button"
+                  style={({ pressed }) => ({ minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, opacity: myShares > 0 ? 0.5 : pressed ? 0.7 : 1 })}>
+                  <Txt v="label" color={C.down} lines={1} style={{ flexShrink: 1 }}>{busy === 'leave' ? 'Leaving…' : `Leave ${mine.name}`}</Txt>
+                  <Txt v="small" style={{ fontSize: 12 }}>{myShares > 0 ? 'Take out your share first' : ''}</Txt>
                 </Pressable>
                 {errHere('leave')}
               </View>
@@ -460,7 +471,7 @@ export default function OnchainClan() {
 
       {/* chest number pads */}
       <AmountSheet open={amt === 'add'} onClose={() => setAmt(null)} title="Add to the chest" sub={`From your wallet · ${(bal ?? 0).toFixed(2)} USDC`} max={bal ?? 0} presets={[5, 10, 25]}
-        art={<ClayLoop name="stash" size={84} style={{ borderRadius: 20 }} />}
+        art={<View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Jar size={21} color={C.ink} /></View>}
         confirm={(n) => `Add $${n.toFixed(2)}`} success="Added to the chest" successSub="You got chest shares: your vote and your cut of every win."
         onConfirm={addToChest} />
       <AmountSheet open={amt === 'out'} onClose={() => setAmt(null)} title="Take out" sub={`To your wallet · your share is worth ${fmtUsd(usd(myWorth))}`} max={usd(myWorth)} presets={[5, 10]}
@@ -478,7 +489,7 @@ export default function OnchainClan() {
         {mine ? <Pills items={SIZES.map((s) => ({ key: s.key, label: s.label, sub: fmtUsd(usd((mine.chest * +s.key) / 10_000)) }))} value={size} onChange={setSize} /> : null}
         {err && spot === 'trades' ? <ErrorLine msg={err} /> : null}
         <View style={{ marginTop: 16 }}>
-          <BigGo title={busy === 'propose' ? 'Proposing…' : `Propose ${dir === 1 ? '▲ UP' : '▼ DOWN'} on ${COIN_SYMBOLS[+coin]}`} color={dir === 1 ? C.up : C.down} fg={dir === 1 ? '#03140A' : '#fff'}
+          <Btn title={busy === 'propose' ? 'Proposing…' : `Propose ${dir === 1 ? '▲ UP' : '▼ DOWN'} on ${COIN_SYMBOLS[+coin]}`} kind={dir === 1 ? 'long' : 'short'} h={54}
             disabled={!!busy || !mine || mine.chest === 0} onPress={() => at('trades', propose)} />
         </View>
         {mine && mine.chest === 0 ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Add to the chest first: an empty chest has nothing to trade.</Txt> : null}
@@ -498,10 +509,33 @@ export default function OnchainClan() {
         <Pills items={WAR_LENGTHS.map((l) => ({ key: l.key, label: l.label }))} value={warLen} onChange={setWarLen} />
         {err && spot === 'war' ? <ErrorLine msg={err} /> : null}
         <View style={{ marginTop: 16 }}>
-          <BigGo title={busy === 'declare' ? 'Sending…' : rival ? `Challenge ${rival}` : 'Pick a rival'} disabled={!!busy || !rival || !mine || mine.chest < 2 * WAR_STAKE_USDC * USDC} onPress={() => at('war', declare)} />
+          <Btn title={busy === 'declare' ? 'Sending…' : rival ? `Challenge ${rival}` : 'Pick a rival'} h={54} disabled={!!busy || !rival || !mine || mine.chest < 2 * WAR_STAKE_USDC * USDC} onPress={() => at('war', declare)} />
         </View>
         {mine && mine.chest < 2 * WAR_STAKE_USDC * USDC ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>The chest needs at least {fmtUsd(2 * WAR_STAKE_USDC)} to stake {fmtUsd(WAR_STAKE_USDC)}.</Txt> : null}
       </Sheet>
+    </View>
+  );
+}
+
+/** Section head: an h2 with one grey line under it and an optional action on the right. */
+function Head({ title, sub, right }: { title: string; sub?: string; right?: ReactNode }) {
+  return (
+    <Row style={{ marginTop: 28, marginBottom: 10, gap: 10 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Txt v="h2" lines={1}>{title}</Txt>
+        {sub ? <Txt v="small" lines={1} style={{ marginTop: 1 }}>{sub}</Txt> : null}
+      </View>
+      {right}
+    </Row>
+  );
+}
+
+/** A number in the chest card: a small label over the value (no tile: the card is the one surface). */
+function Stat({ k, v }: { k: string; v: string }) {
+  return (
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <Txt v="small" lines={1} style={{ fontSize: 12 }}>{k}</Txt>
+      <Txt v="num" lines={1} style={{ marginTop: 1 }}>{v}</Txt>
     </View>
   );
 }

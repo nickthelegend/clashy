@@ -29,8 +29,8 @@ export function MarketCallCard({ id }: { id: string }) {
   if (m === null) return null;
   return (
     <Pressable onPress={() => m && router.push(`/practice/${m.id}` as Href)} disabled={!m} accessibilityRole="button" accessibilityLabel={m ? `Open ${m.name}` : 'Market'}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10, padding: 12, borderRadius: 18, backgroundColor: pressed ? '#1A1A20' : '#121216' })}>
-      {m ? <MarketLogo m={m} size={40} /> : <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2 }} />}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10, padding: 12, borderRadius: 16, backgroundColor: pressed ? C.s1 : C.card })}>
+      {m ? <MarketLogo m={m} size={38} /> : <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: C.s2 }} />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{m ? (m.kind === 'perp' ? m.symbol : m.name) : '…'}</Txt>
         <Txt v="small" lines={1} style={{ marginTop: 1 }}>
@@ -39,7 +39,7 @@ export function MarketCallCard({ id }: { id: string }) {
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Txt v="num" lines={1}>{px ? fmtPrice(px.usdPrice) : m?.price !== undefined ? fmtPrice(m.price) : '…'}</Txt>
-        {ch !== undefined ? <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt> : null}
+        {ch !== undefined ? <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt> : null}
       </View>
       <Row><Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt></Row>
     </Pressable>

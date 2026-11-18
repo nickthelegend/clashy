@@ -5,20 +5,20 @@
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  START, VENUES, ago, fmtPrice, isBookVenue, signedUsd, summary, useCatalog, useLiquidations, useOrderFills, usePractice, usePrices,
+  VENUES, ago, fmtPrice, signedUsd, summary, useCatalog, useLiquidations, useOrderFills, usePractice, usePrices,
   type Kind, type Market, type Position, type Px, type Venue,
 } from '@/chain/practice';
 import { VenueChip } from '@/ui/orderbook';
-import { ART, BackBtn, Bone, ChangePill, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
+import { ART, BackBtn, Bone, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
-  BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
+  BarBtn, BotPic, BotTag, CloseSheet, EmptyCard, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
-import { C, S, fmtUsd } from '@/ui/tokens';
+import { C, FONT, S, fmtPct, fmtUsd } from '@/ui/tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 const TABS: { key: Kind; label: string }[] = [
@@ -26,19 +26,34 @@ const TABS: { key: Kind; label: string }[] = [
 ];
 const count = (n: number) => n.toLocaleString('en-US');
 const usd2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** A flat list row on black, the way MarketRow in ui/watchlist.tsx reads. */
+const flatRow = (pressed: boolean) => ({ flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 });
 
+/** Stocks / Crypto / Perps / Memecoins: a segmented control on the card surface, the selected item raised. */
 function Tabs({ value, onChange }: { value: Kind; onChange: (k: Kind) => void }) {
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: C.s1, borderRadius: 14, padding: 3, gap: 3 }}>
+    <View style={{ flexDirection: 'row', backgroundColor: C.card, borderRadius: 14, padding: 3, gap: 3 }}>
       {TABS.map((t) => {
         const on = t.key === value;
         return (
           <Pressable key={t.key} onPress={() => onChange(t.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={{ flex: 1, height: 44, borderRadius: 11, backgroundColor: on ? C.s2 : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-            <Txt v="small" color={on ? C.ink : C.muted} lines={1} style={{ fontSize: 13 }}>{t.label}</Txt>
+            style={{ flex: 1, height: 38, borderRadius: 11, backgroundColor: on ? C.s2 : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            <Txt v="small" color={on ? C.ink : C.muted} lines={1} style={{ ...(on ? FONT.semi : FONT.medium), fontSize: 13 }}>{t.label}</Txt>
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+/** One compact stat under the balance: a small label over the value. */
+function Mini({ label, value, color, extra }: { label: string; value: string; color?: string; extra?: string }) {
+  return (
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <Txt v="small" lines={1} style={{ fontSize: 12 }}>{label}</Txt>
+      <Txt v="num" color={color} lines={1} style={{ marginTop: 2 }}>
+        {value}{extra ? <Txt v="small" color={C.dim} style={{ fontSize: 12 }}>{`  ${extra}`}</Txt> : null}
+      </Txt>
     </View>
   );
 }
@@ -50,59 +65,53 @@ function sub(m: Market) {
   return m.symbol;
 }
 
-function MarketRow({ m, px, first }: { m: Market; px?: Px; first: boolean }) {
+function MarketRow({ m, px, index }: { m: Market; px?: Px; index: number }) {
   const ch = px?.change24h ?? m.change24h;
   const mcap = m.kind === 'meme' ? (m.circSupply && px ? m.circSupply * px.usdPrice : m.mcap) : undefined;
+  const chColor = ch === undefined ? C.dim : ch >= 0 ? C.up : C.down;
   return (
-    <Pressable onPress={() => router.push(`/practice/${m.id}` as Href)} accessibilityRole="button" accessibilityLabel={`Practice ${m.name}`}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 10, paddingHorizontal: 14, borderTopWidth: first ? 0 : 1, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
-      <MarketLogo m={m} size={40} />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Row style={{ gap: 6 }}>
-          <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{m.name}</Txt>
-          {m.kind === 'perp' ? (
-            <View style={{ backgroundColor: 'rgba(171,159,242,0.16)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
-              <Txt v="small" color={C.brandSoft} style={{ fontSize: 11 }}>Up to {m.maxLev}x</Txt>
-            </View>
-          ) : null}
-        </Row>
-        {m.kind === 'perp' && m.venue ? (
-          <Row style={{ gap: 6, marginTop: 3 }}>
-            <VenueChip venue={m.venue} small />
-            <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{sub(m)}</Txt>
-          </Row>
-        ) : <Txt v="small" lines={1} style={{ marginTop: 2 }}>{sub(m)}</Txt>}
-      </View>
-      <View style={{ alignItems: 'flex-end', maxWidth: '42%' }}>
-        {px ? <Txt v="num" lines={1}>{fmtPrice(px.usdPrice)}</Txt> : <Bone w={64} h={13} />}
-        {m.kind === 'meme' && mcap !== undefined ? (
-          <Row style={{ gap: 6, marginTop: 3 }}>
-            <Txt v="small" style={{ fontSize: 11.5 }}>{fmtUsd(mcap, { compact: true })}</Txt>
-            {ch !== undefined ? <ChangePillInline pct={ch} /> : null}
-          </Row>
-        ) : ch !== undefined ? <ChangePill pct={ch} /> : null}
-      </View>
-    </Pressable>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 30).duration(300)}>
+      <Pressable onPress={() => router.push(`/practice/${m.id}` as Href)} accessibilityRole="button" accessibilityLabel={`Practice ${m.name}`}
+        style={({ pressed }) => flatRow(pressed)}>
+        <MarketLogo m={m} size={38} />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Txt v="label" lines={1}>{m.name}</Txt>
+          {m.kind === 'perp' && m.venue ? (
+            <Row style={{ gap: 6, marginTop: 2 }}>
+              <VenueChip venue={m.venue} small />
+              <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{sub(m)} · up to {m.maxLev}x</Txt>
+            </Row>
+          ) : <Txt v="small" lines={1} style={{ marginTop: 1 }}>{sub(m)}</Txt>}
+        </View>
+        <View style={{ alignItems: 'flex-end', maxWidth: '42%' }}>
+          {px ? <Txt v="num" lines={1}>{fmtPrice(px.usdPrice)}</Txt> : <Bone w={64} h={13} />}
+          {m.kind === 'meme' && mcap !== undefined ? (
+            <Txt v="small" lines={1} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>
+              <Txt v="small" color={C.dim}>{fmtUsd(mcap, { compact: true })}</Txt>
+              {ch !== undefined ? <Txt v="small" color={chColor}>{`  ${fmtPct(ch)}`}</Txt> : null}
+            </Txt>
+          ) : ch !== undefined ? <Txt v="small" lines={1} color={chColor} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{fmtPct(ch)}</Txt> : null}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
-/** ChangePill without its own top margin, for sitting next to the market cap. */
-const ChangePillInline = ({ pct }: { pct: number }) => <View style={{ marginTop: -3 }}><ChangePill pct={pct} /></View>;
 
-function HistoryRow({ c, first }: { c: import('@/chain/practice').Closed; first: boolean }) {
+function HistoryRow({ c }: { c: import('@/chain/practice').Closed }) {
   const liq = c.reason === 'liquidated';
   return (
-    <Pressable onPress={() => router.push(`/practice/${c.marketId}` as Href)}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14, borderTopWidth: first ? 0 : 1, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
-      <MarketLogo m={c} size={34} />
+    <Pressable onPress={() => router.push(`/practice/${c.marketId}` as Href)} accessibilityRole="button" accessibilityLabel={`${c.symbol}, ${signedUsd(c.pnl)}`}
+      style={({ pressed }) => flatRow(pressed)}>
+      <MarketLogo m={c} size={38} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Row style={{ gap: 6 }}>
           <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{c.symbol}</Txt>
           <SideTag p={c} />
-          {liq ? <View style={{ backgroundColor: C.downBg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}><Txt v="small" color={C.down} style={{ fontSize: 11 }}>Liquidated</Txt></View> : null}
+          {liq ? <Txt v="small" color={C.down} style={{ ...FONT.medium, fontSize: 12 }}>Liquidated</Txt> : null}
         </Row>
-        <Txt v="small" lines={1} style={{ marginTop: 2 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {ago(c.closedAt)}</Txt>
+        <Txt v="small" lines={1} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {ago(c.closedAt)}</Txt>
       </View>
-      <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
+      <Txt v="num" color={c.pnl >= 0 ? C.up : C.down}>{signedUsd(c.pnl)}</Txt>
     </Pressable>
   );
 }
@@ -150,70 +159,68 @@ export default function PracticeHome() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
         {/* header */}
-        <Row style={{ gap: 12 }}>
+        <Row style={{ gap: 10 }}>
           <BackBtn onPress={back} />
-          <Row style={{ flex: 1, gap: 10, minWidth: 0 }}>
-            <Txt v="title" lines={1}>Practice</Txt>
-            <PaperBadge />
-          </Row>
+          <Txt v="title" lines={1} style={{ flex: 1 }}>Practice</Txt>
+          <PaperBadge />
         </Row>
 
-        {/* paper balance */}
-        <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, padding: 16, marginTop: 18 }}>
+        {/* paper balance: the one big number */}
+        <Animated.View entering={FadeIn.duration(260)} style={{ marginTop: 16 }}>
           <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <View style={{ flexShrink: 1, minWidth: 0 }}>
               <Txt v="small">Paper balance</Txt>
-              {s ? <Money value={s.value} size={40} /> : <Bone w={180} h={40} r={10} style={{ marginTop: 4 }} />}
+              <View style={{ marginTop: 2 }}>{s ? <Money value={s.value} size={40} /> : <Bone w={180} h={40} r={10} style={{ marginTop: 4 }} />}</View>
               {s ? (
-                <Txt v="small" style={{ marginTop: 2 }} lines={1}>
+                <Txt v="small" style={{ marginTop: 2, fontVariant: ['tabular-nums'] }} lines={1}>
                   {`${usd2(pr.book!.balance)} cash`}
                   {pr.book!.open.length ? ` · ${usd2(s.inTrades)} in trades` : ''}
                   {s.priced ? '' : ' · waiting for prices'}
                 </Txt>
               ) : null}
             </View>
-            <Pressable onPress={() => { setResetErr(undefined); setResetting(true); }} disabled={!pr.ready} accessibilityRole="button" accessibilityLabel="Reset to $10,000"
-              style={({ pressed }) => ({ height: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', opacity: pr.ready ? 1 : 0.5, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-              <Txt v="small" color={C.ink}>Reset</Txt>
+            <Pressable onPress={() => { setResetErr(undefined); setResetting(true); }} disabled={!pr.ready} hitSlop={8} accessibilityRole="button" accessibilityLabel="Reset to $10,000"
+              style={({ pressed }) => ({ height: 32, paddingHorizontal: 13, borderRadius: 16, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', marginTop: 2, opacity: pr.ready ? 1 : 0.5, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+              <Txt v="small" color={C.ink} style={{ ...FONT.medium }}>Reset</Txt>
             </Pressable>
           </Row>
-          <Row style={{ gap: 8, marginTop: 14 }}>
-            <Stat label="All time" value={s ? signedUsd(s.allTime) : '…'} color={s ? (s.allTime >= 0 ? C.up : C.down) : undefined} sub={`from $${count(START)}`} />
-            <Stat label="Closed today" value={s ? signedUsd(s.today) : '…'} color={s && s.today !== 0 ? (s.today > 0 ? C.up : C.down) : undefined} sub="realized" />
-            <Stat label="Win rate" value={s && s.winRate !== null ? `${Math.round(s.winRate)}%` : '–'} sub={s ? `${s.wins} of ${s.trades} trades` : ' '} />
+          <Row style={{ gap: 10, marginTop: 16 }}>
+            <Mini label="All time" value={s ? signedUsd(s.allTime) : '…'} color={s ? (s.allTime >= 0 ? C.up : C.down) : undefined} />
+            <Mini label="Closed today" value={s ? signedUsd(s.today) : '…'} color={s && s.today !== 0 ? (s.today > 0 ? C.up : C.down) : undefined} />
+            <Mini label="Win rate" value={s && s.winRate !== null ? `${Math.round(s.winRate)}%` : '–'} extra={s && s.trades ? `${s.wins} of ${s.trades}` : undefined} />
           </Row>
         </Animated.View>
-        <Row style={{ gap: 8, marginTop: 10, paddingHorizontal: 2 }}>
+        <Row style={{ gap: 8, marginTop: 14 }}>
           <LiveDot color={at ? C.up : C.dim} />
-          <Txt v="small" style={{ flex: 1, lineHeight: 17 }}>Practice · paper money. Real live prices from Jupiter, Phoenix and Pacifica; no real USDC moves.</Txt>
+          <Txt v="small" color={C.dim} lines={1} style={{ flex: 1, fontSize: 12 }}>Practice · paper money · live prices, no real USDC</Txt>
         </Row>
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
 
         {/* the practice clash against the bot */}
         <Pressable onPress={() => router.push('/practice/clash' as Href)} accessibilityRole="button" accessibilityLabel="Practice clash against Clashy Bot"
-          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 16, padding: 14, borderRadius: 22, backgroundColor: pressed ? '#17171F' : '#121219', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-          <BotPic size={52} />
+          style={({ pressed }) => ({ ...flatRow(pressed), marginTop: 14 })}>
+          <BotPic size={44} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Row style={{ gap: 6 }}><Txt v="label">Clash Clashy Bot</Txt><BotTag /></Row>
-            <Txt v="small" lines={2} style={{ marginTop: 2, lineHeight: 17 }}>
+            <Row style={{ gap: 6 }}><Txt v="label" lines={1} style={{ flexShrink: 1 }}>Clash Clashy Bot</Txt><BotTag /></Row>
+            <Txt v="small" lines={1} style={{ marginTop: 1 }}>
               {(() => {
                 const done = (pr.book?.clashes ?? []).filter((c) => c.result === 'won' || c.result === 'lost');
                 const won = done.filter((c) => c.result === 'won').length;
-                return done.length ? `You ${won}–${done.length - won} vs the bot · practice money` : '60-second rounds with practice money, live prices.';
+                return done.length ? `You ${won}–${done.length - won} vs the bot` : '60-second rounds · live prices';
               })()}
             </Txt>
           </View>
-          <View style={{ height: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: C.brand, justifyContent: 'center' }}>
-            <Txt v="label" color={C.onBrand}>{pr.book?.liveClash ? 'Resume' : 'Play'}</Txt>
+          <View style={{ height: 34, paddingHorizontal: 16, borderRadius: 17, backgroundColor: C.brand, justifyContent: 'center' }}>
+            <Txt v="label" color={C.onBrand} style={{ fontSize: 14 }}>{pr.book?.liveClash ? 'Resume' : 'Play'}</Txt>
           </View>
         </Pressable>
 
         {/* open trades */}
         <Head title="Open trades" right={pr.book?.open.length ? `${pr.book.open.length} open` : undefined} />
         {!pr.book ? <SkeletonRows n={1} square /> : pr.book.open.length === 0 ? (
-          <EmptyCard art={ART.coinsPile} title="No open trades" body="Pick a market below and open a paper trade. Long or short perps up to 100x, or buy stocks, crypto and memecoins." />
+          <EmptyCard art={ART.coinsPile} title="No open trades" body="Pick a market below: long or short perps up to 100x, or buy stocks, crypto and memecoins." />
         ) : (
-          <View style={{ gap: 10 }}>
+          <View style={{ gap: 10, marginTop: 4 }}>
             {pr.book.open.map((p) => (
               <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} onPress={() => router.push(`/practice/${p.marketId}` as Href)} />
             ))}
@@ -221,7 +228,8 @@ export default function PracticeHome() {
         )}
 
         {fills.last ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.upBg, borderRadius: 18, padding: 12, marginTop: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 12, marginTop: 14 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.up }} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="label" color={C.up}>Limit order filled</Txt>
               <Txt v="small" style={{ marginTop: 2 }}>{fills.last.symbol} {fills.last.side} {fills.last.lev}x at {fmtPrice(fills.last.entry)}, as a maker.</Txt>
@@ -233,42 +241,42 @@ export default function PracticeHome() {
         {orders.length ? (
           <>
             <Head title="Open orders" right={`${orders.length} resting`} />
-            <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
-              {orders.map((o, i) => (
-                <Pressable key={o.id} onPress={() => router.push(`/practice/${o.marketId}` as Href)}
-                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
-                  <MarketLogo m={o as unknown as Market} size={34} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Row style={{ gap: 6 }}><Txt v="label" lines={1} style={{ flexShrink: 1 }}>{o.symbol}</Txt><SideTag p={{ kind: 'perp', side: o.side, lev: o.lev }} /></Row>
-                    <Txt v="small" lines={1} style={{ marginTop: 2 }}>Limit {fmtPrice(o.limit)} · {usd2(o.margin)} margin · {VENUES[o.venue].name}</Txt>
-                  </View>
-                  <Pressable onPress={() => { setCancelErr(undefined); pr.cancel(o.id).catch((e) => setCancelErr((e as Error).message)); }} accessibilityRole="button" accessibilityLabel="Cancel order"
-                    style={({ pressed }) => ({ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                    <Txt v="small" color={C.ink}>Cancel</Txt>
-                  </Pressable>
+            {orders.map((o) => (
+              <Pressable key={o.id} onPress={() => router.push(`/practice/${o.marketId}` as Href)} accessibilityRole="button" accessibilityLabel={`${o.symbol} limit order`}
+                style={({ pressed }) => flatRow(pressed)}>
+                <MarketLogo m={o as unknown as Market} size={38} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Row style={{ gap: 6 }}><Txt v="label" lines={1} style={{ flexShrink: 1 }}>{o.symbol}</Txt><SideTag p={{ kind: 'perp', side: o.side, lev: o.lev }} /></Row>
+                  <Txt v="small" lines={1} style={{ marginTop: 1 }}>Limit {fmtPrice(o.limit)} · {usd2(o.margin)} margin · {VENUES[o.venue].name}</Txt>
+                </View>
+                <Pressable onPress={() => { setCancelErr(undefined); pr.cancel(o.id).catch((e) => setCancelErr((e as Error).message)); }} hitSlop={6} accessibilityRole="button" accessibilityLabel="Cancel order"
+                  style={({ pressed }) => ({ height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                  <Txt v="small" color={C.ink} style={{ ...FONT.medium }}>Cancel</Txt>
                 </Pressable>
-              ))}
-            </View>
+              </Pressable>
+            ))}
             {cancelErr ? <ErrorLine msg={cancelErr} /> : null}
           </>
         ) : null}
 
         {/* markets */}
         <Head title="Markets" right={!cat ? undefined : query ? `${list.length} across all markets` : 'Live prices'} />
-        <Tabs value={tab} onChange={(k) => { setTab(k); setQ(''); }} />
+        <View style={{ marginTop: 4 }}>
+          <Tabs value={tab} onChange={(k) => { setTab(k); setQ(''); }} />
+        </View>
         <View style={{ marginTop: 10 }}>
           <SearchBar value={q} onChange={setQ} placeholder="Search stocks, coins, perps, memecoins" />
         </View>
         {tab === 'perp' && !query && cat ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 6 }}>
             {(['all', 'phoenix', 'pacifica', 'jupiter'] as const).map((v) => {
               const on = venue === v;
               const n = v === 'all' ? cat.perps.length : cat.perps.filter((m) => m.venue === v).length;
               return (
-                <Pressable key={v} onPress={() => setVenue(v)} accessibilityRole="button" accessibilityState={{ selected: on }}
-                  style={{ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: on ? C.ink : C.s1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Txt v="small" color={on ? '#000' : C.ink}>{v === 'all' ? 'All venues' : VENUES[v].name}</Txt>
-                  <Txt v="small" color={on ? '#444' : C.muted}>{n}</Txt>
+                <Pressable key={v} onPress={() => setVenue(v)} hitSlop={5} accessibilityRole="button" accessibilityState={{ selected: on }}
+                  style={{ height: 34, paddingHorizontal: 13, borderRadius: 17, backgroundColor: on ? C.ink : C.s2, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Txt v="small" color={on ? '#000' : C.ink} style={{ ...FONT.medium }}>{v === 'all' ? 'All venues' : VENUES[v].name}</Txt>
+                  <Txt v="small" color={on ? '#444' : C.muted} style={{ fontVariant: ['tabular-nums'] }}>{n}</Txt>
                 </Pressable>
               );
             })}
@@ -278,13 +286,11 @@ export default function PracticeHome() {
           <ErrorLine msg={Object.entries(cat.venueErrors).map(([v, e]) => `${VENUES[v as Venue].name}: ${e}`).join(' ')} onRetry={reload} />
         ) : null}
         {pxErr ? <ErrorLine msg={pxErr} /> : null}
-        <View style={{ marginTop: 10 }}>
+        <View style={{ marginTop: 6 }}>
           {catErr && !cat ? (
-            <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}>
-              <ErrorLine msg={catErr} onRetry={reload} />
-            </View>
+            <ErrorLine msg={catErr} onRetry={reload} />
           ) : !cat ? (
-            <View style={{ backgroundColor: CARD, borderRadius: 24, paddingHorizontal: 14 }}><SkeletonRows n={6} /></View>
+            <SkeletonRows n={6} />
           ) : list.length === 0 ? (
             query ? (
               <EmptyCard art={ART.emptySearch} title={`Nothing called "${q.trim()}"`} body="Try a ticker like NVDA, SOL or a memecoin's name. Practice lists the markets live on Jupiter right now." />
@@ -292,16 +298,14 @@ export default function PracticeHome() {
               <EmptyCard art={ART.emptySearch} title="No markets here right now" body={tab === 'meme' ? 'No pump.fun launch is trending on Jupiter at the moment. Check back in a minute.' : 'Jupiter returned no markets for this list.'} />
             )
           ) : (
-            <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
-              {list.map((m, i) => <MarketRow key={m.id} m={m} px={prices[m.mint]} first={i === 0} />)}
-            </View>
+            list.map((m, i) => <MarketRow key={m.id} m={m} px={prices[m.mint]} index={i} />)
           )}
         </View>
-        {cat && !query && tab === 'meme' ? <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>pump.fun launches trending on Jupiter in the last hour and day. Spot only, no leverage. Memecoins can go to zero.</Txt> : null}
+        {cat && !query && tab === 'meme' ? <Txt v="small" color={C.dim} style={{ marginTop: 6, fontSize: 12, lineHeight: 16 }}>pump.fun launches trending on Jupiter in the last hour and day · spot only, no leverage · memecoins can go to zero</Txt> : null}
         {cat && !query && tab === 'perp' ? (
-          <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>
+          <Txt v="small" color={C.dim} style={{ marginTop: 6, fontSize: 12, lineHeight: 16 }}>
             {perpTotal > list.length ? `Showing ${list.length} of ${perpTotal}; search to find any of them. ` : ''}
-            Phoenix and Pacifica are order books: your paper order fills against their real, live book at their real fees and funding. Jupiter Perps is a pool priced by oracle, up to 100x.
+            Phoenix and Pacifica are order books: paper orders fill against their real, live book at their real fees and funding. Jupiter Perps is an oracle-priced pool, up to 100x.
           </Txt>
         ) : null}
 
@@ -310,17 +314,17 @@ export default function PracticeHome() {
         {!pr.book ? <SkeletonRows n={2} /> : closed.length === 0 ? (
           <EmptyCard art={ART.emptyLeaderboard} title="No closed trades yet" body="Every trade you close lands here with its profit or loss, and counts towards your win rate." />
         ) : (
-          <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
-            {shownHistory.map((c, i) => <HistoryRow key={c.id} c={c} first={i === 0} />)}
+          <View>
+            {shownHistory.map((c) => <HistoryRow key={c.id} c={c} />)}
             {closed.length > 10 ? (
-              <Pressable onPress={() => setAllHistory((x) => !x)} style={{ height: 48, alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: '#18181E' }}>
-                <Txt v="small" color={C.brandSoft}>{allHistory ? 'Show fewer' : `Show all ${closed.length}`}</Txt>
+              <Pressable onPress={() => setAllHistory((x) => !x)} accessibilityRole="button" style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>{allHistory ? 'Show fewer' : `Show all ${closed.length}`}</Txt>
               </Pressable>
             ) : null}
           </View>
         )}
 
-        <Txt v="small" style={{ marginTop: 22, lineHeight: 18, textAlign: 'center' }}>
+        <Txt v="small" color={C.dim} style={{ marginTop: 22, fontSize: 12, lineHeight: 16, textAlign: 'center' }}>
           Prices come live from Jupiter, Phoenix and Pacifica. Order-book perps fill against the venue's real book at its taker or maker fee and pay or earn its funding; Jupiter perps use Jupiter's open fee and hourly borrow (both approximated by the hour).
           Liquidations are checked only while Practice is open, against the live price. Your paper book is saved on this device{pr.signedIn ? ' for this wallet' : ''}.
         </Txt>
@@ -330,15 +334,15 @@ export default function PracticeHome() {
 
       <Sheet open={resetting} onClose={() => setResetting(false)}>
         <View style={{ alignItems: 'center', paddingTop: 4 }}>
-          <Txt v="title" style={{ fontSize: 22, textAlign: 'center' }}>Reset to $10,000?</Txt>
+          <Txt v="h2" style={{ textAlign: 'center' }}>Reset to $10,000?</Txt>
           <Txt v="small" style={{ textAlign: 'center', marginTop: 6, lineHeight: 18 }}>
             Every open paper trade and your history are wiped, and the balance goes back to $10,000. Paper money only; nothing real changes.
           </Txt>
         </View>
         {resetErr ? <ErrorLine msg={resetErr} /> : null}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>
-          <BarBtn title="Keep my trades" bg="#1F1F26" fg={C.ink} onPress={() => setResetting(false)} h={52} />
-          <BarBtn title="Reset" bg={C.down} fg="#fff" onPress={doReset} h={52} />
+          <BarBtn title="Keep my trades" bg={C.s2} fg={C.ink} onPress={() => setResetting(false)} />
+          <BarBtn title="Reset" bg={C.brand} fg={C.onBrand} onPress={doReset} />
         </View>
       </Sheet>
     </View>

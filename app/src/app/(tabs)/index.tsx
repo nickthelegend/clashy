@@ -12,10 +12,10 @@ import { useFeed, type FeedDuel } from '@/chain/reads';
 import { errText, useChain } from '@/chain/useChain';
 import { readHoldings, readPortfolio, readStash, useBoard, usePoll, usePrices, useProfiles, type Post } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
-import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar, STOCK_ART, Thread } from '@/ui/feed';
 import { useCreate } from '@/ui/create';
-import { Bell, Jar, Search as SearchI } from '@/ui/icons';
+import { ArrowUp, Bell, Bolt, Jar, Plus, Search as SearchI, Swords } from '@/ui/icons';
+import { ActionRow, RoundAction, Watchlist } from '@/ui/watchlist';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
@@ -134,21 +134,18 @@ export default function HomeScreen() {
         ) : desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         {wallet.status === 'out' ? (
           <Row style={{ gap: 8 }}>
-            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
             <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} />
           </Row>
         ) : (
           <Row style={{ gap: 8 }}>
-            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
-            <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={() => router.push('/inbox' as Href)} accessibilityRole="button" accessibilityLabel="Inbox" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
               <Bell size={18} color={C.ink} />
-            </Pressable>
-            <Pressable onPress={openSave} style={({ pressed }) => ({ height: 40, paddingHorizontal: 18, borderRadius: 20, backgroundColor: C.up, justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-              <Txt v="label" color="#04120A">Add</Txt>
             </Pressable>
           </Row>
         )}
@@ -156,38 +153,44 @@ export default function HomeScreen() {
 
       {me ? (
         // net worth, the way the best trading apps lead: one big number, cents dimmed, what moved it
-        <Pressable onPress={() => router.push('/portfolio' as Href)} style={{ marginBottom: 16 }}>
-          <Txt v="small">Net worth ›</Txt>
-          <Money value={worth} size={46} />
-          <Row style={{ gap: 8, marginTop: 4 }}>
-            <View style={{ backgroundColor: stockPnl >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-              <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{stockPnl >= 0 ? '+' : '−'}${Math.abs(stockPnl).toFixed(2)}</Txt>
-            </View>
-            <Txt v="small">on your stocks</Txt>
-          </Row>
-          <Txt v="small" style={{ marginTop: 4 }}>Wallet ${(bal ?? 0).toFixed(2)} · Stash ${stashBal.toFixed(2)} · Stocks ${stockVal.toFixed(2)}</Txt>
-        </Pressable>
+        <View style={{ marginBottom: 8 }}>
+          <Pressable onPress={() => router.push('/portfolio' as Href)} accessibilityRole="button" accessibilityLabel="Net worth, open portfolio">
+            <Txt v="small">Net worth</Txt>
+            <View style={{ marginTop: 2 }}><Money value={worth} size={40} /></View>
+            <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ ...FONT.medium, marginTop: 2, fontVariant: ['tabular-nums'] }}>
+              {stockPnl >= 0 ? '+' : '−'}${Math.abs(stockPnl).toFixed(2)} <Txt v="small">on your stocks</Txt>
+            </Txt>
+          </Pressable>
+          <ActionRow>
+            <RoundAction primary label="Add" icon={<Plus size={22} color={C.onBrand} />} onPress={openSave} />
+            <RoundAction label="Send" icon={<ArrowUp size={21} color={C.ink} />} onPress={() => router.push('/wallet' as Href)} />
+            <RoundAction label="Clash" icon={<Swords size={20} color={C.ink} />} onPress={() => router.push('/onchain' as Href)} />
+            <RoundAction label="Practice" icon={<Bolt size={19} color={C.ink} />} onPress={() => router.push('/practice' as Href)} />
+          </ActionRow>
+        </View>
       ) : null}
 
+      {desk ? null : <Watchlist n={5} more={{ label: 'All markets', href: '/practice' }} />}
+
       {topCalls.length ? (
-        <View style={{ marginBottom: 14 }}>
-          <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-            <Txt v="label">Top calls right now</Txt>
-            <Pressable onPress={() => router.push('/cup' as Href)}><Txt v="small" color={C.brandSoft}>Weekly Cup ›</Txt></Pressable>
+        <View style={{ marginTop: 26, marginBottom: 6 }}>
+          <Row style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+            <Txt v="h2">Top calls</Txt>
+            <Pressable onPress={() => router.push('/cup' as Href)} hitSlop={8}><Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>Weekly Cup</Txt></Pressable>
           </Row>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
             {topCalls.map((t) => (
-              <Pressable key={t.key} onPress={() => router.push(`/u/${t.owner}` as Href)} style={{ width: 150, backgroundColor: '#15151B', borderRadius: 20, padding: 12 }}>
+              <Pressable key={t.key} onPress={() => router.push(`/u/${t.owner}` as Href)} style={({ pressed }) => ({ width: 136, backgroundColor: pressed ? C.s1 : C.card, borderRadius: 18, padding: 12 })}>
                 <Row style={{ gap: 8 }}>
-                  <ProfileAvatar p={profMap.get(t.owner)} size={28} />
-                  <Txt v="label" lines={1} style={{ flex: 1, fontSize: 13 }}>{profMap.get(t.owner)?.name ?? 'player'}</Txt>
+                  <ProfileAvatar p={profMap.get(t.owner)} size={24} />
+                  <Txt v="small" color={C.ink} lines={1} style={{ flex: 1, ...FONT.medium }}>{profMap.get(t.owner)?.name ?? 'player'}</Txt>
                 </Row>
-                <Row style={{ gap: 6, marginTop: 10 }}>
-                  <Image source={STOCK_ART[t.sym]} style={{ width: 26, height: 26 }} contentFit="contain" />
-                  <Txt v="small">{t.sym}</Txt>
+                <Row style={{ gap: 6, marginTop: 12 }}>
+                  <Image source={STOCK_ART[t.sym]} style={{ width: 20, height: 20, borderRadius: 10 }} contentFit="cover" />
+                  <Txt v="small" color={C.ink}>{t.sym}</Txt>
                 </Row>
-                <Txt v="title" color={t.pnl >= 0 ? C.up : C.down} style={{ fontSize: 20, marginTop: 4 }}>{t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toFixed(2)}</Txt>
-                <Txt v="small" style={{ fontSize: 11 }}>on ${t.cost.toFixed(2)}</Txt>
+                <Txt v="num" color={t.pnl >= 0 ? C.up : C.down} style={{ fontSize: 17, marginTop: 6 }}>{t.pnl >= 0 ? '+' : '−'}${Math.abs(t.pnl).toFixed(2)}</Txt>
+                <Txt v="small" style={{ fontSize: 11.5 }}>on ${t.cost.toFixed(2)}</Txt>
               </Pressable>
             ))}
           </ScrollView>
@@ -201,26 +204,21 @@ export default function HomeScreen() {
       ) : null}
 
       {wallet.status === 'out' ? (
-        <View style={{ borderRadius: 22, backgroundColor: C.s1, padding: 16, marginBottom: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-          <ClayLoop name="stocks" size={84} style={{ borderRadius: 16 }} />
-          <View style={{ flex: 1 }}>
-            <Txt v="h2">Calls with skin in the game</Txt>
-            <Txt v="small" style={{ marginTop: 4 }}>Every position here is real: shares of real stocks, bought on chain, at the price they paid.</Txt>
-            <Btn title="Sign in to post" h={36} style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => wallet.login?.()} />
-          </View>
+        <View style={{ marginTop: 6, marginBottom: 18 }}>
+          <Txt v="title">Call the market. Back it with real money.</Txt>
+          <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }}>Stocks, coins and perps on Solana. Clash a friend on where a price goes next.</Txt>
+          <Btn title="Sign in" h={48} style={{ marginTop: 14 }} onPress={() => wallet.login?.()} />
         </View>
       ) : null}
 
       {myProfile ? (
         // tap to open the call drawer
-        <Pressable onPress={() => openCall(null)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#1B1B21' : C.s1, borderRadius: 22, padding: 12, marginBottom: 6, borderWidth: 1, borderColor: '#1F1F26' })}>
-          <ProfileAvatar p={myProfile} size={40} />
-          <View style={{ flex: 1 }}>
-            <Txt v="title" style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.2 }}>What's your call?</Txt>
-            <Txt v="small" style={{ marginTop: 1 }}>Stocks, coins, perps or memecoins</Txt>
-          </View>
+        <Pressable onPress={() => openCall(null)} accessibilityRole="button" accessibilityLabel="Post a call"
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? C.s1 : C.card, borderRadius: 18, paddingVertical: 10, paddingHorizontal: 12, marginTop: 22, marginBottom: 4 })}>
+          <ProfileAvatar p={myProfile} size={34} />
+          <Txt v="body" color={C.muted} style={{ flex: 1 }}>What's your call?</Txt>
           <Row>
-            {[STOCK_ART.NVDA, ART.logoSOL, ART.logoBTC].map((src, i) => <Image key={i} source={src} style={{ width: 30, height: 30, borderRadius: 15, marginLeft: i ? -9 : 0, borderWidth: 2, borderColor: C.s1 }} contentFit="cover" />)}
+            {[STOCK_ART.NVDA, ART.logoSOL, ART.logoBTC].map((src, i) => <Image key={i} source={src} style={{ width: 24, height: 24, borderRadius: 12, marginLeft: i ? -7 : 0, borderWidth: 2, borderColor: C.card }} contentFit="cover" />)}
           </Row>
         </Pressable>
       ) : null}

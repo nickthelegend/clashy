@@ -3,21 +3,21 @@
 import { router, type Href } from 'expo-router';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, View } from 'react-native';
-import { Image } from 'expo-image';
 import { PublicKey } from '@solana/web3.js';
 import { BN, USDC, usdcAta } from '@/chain/client';
 import { errText, useChain } from '@/chain/useChain';
 import { readHoldings, readProfile, readStash, usePoll, type Post } from '@/chain/social';
 import { STOCKS } from '@/chain/stocks';
 import { useLiveCounts } from '@/chain/reads';
+import { CoinToken } from './clash';
 import { Composer } from './feed';
-import { ART, Btn, ErrorLine, Row, Txt } from './kit';
-import { Lottie } from './lottie';
+import { Bolt, Chat, Crown, Jar, Shield, Swords } from './icons';
+import { Btn, Txt } from './kit';
 import { Sheet, SheetLabel, SheetTile } from './sheet';
 import { AmountSheet } from './amount';
 import { BotPic } from './practice-kit';
 import { SearchSheet } from './search-sheet';
-import { C, F, FONT, fmtUsd } from './tokens';
+import { C, FONT } from './tokens';
 
 type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void; openSearch: () => void; arenaOpen: boolean };
 const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {}, openSearch: () => {}, arenaOpen: false });
@@ -50,7 +50,7 @@ function SaveDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { me, progs, bal, onBase } = chain;
   return (
     <AmountSheet open={open} onClose={onClose} title="Add to your Stash" sub={`From your wallet · ${(bal ?? 0).toFixed(2)} USDC available`}
-      art={<Image source={ART.stash} style={{ width: 84, height: 84 }} contentFit="contain" />} max={bal ?? 0} presets={[5, 10, 25]}
+      art={<View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Jar size={20} color={C.ink} /></View>} max={bal ?? 0} presets={[5, 10, 25]}
       confirm={(n) => `Save $${n.toFixed(2)}`} success="Saved to your Stash" successSub="It can't be staked. Take it out any time, or buy real stocks with it."
       onConfirm={async (n) => {
         if (!me || !progs) throw new Error('Sign in first');
@@ -64,19 +64,19 @@ function ArenaDrawer({ open, onClose }: { open: boolean; onClose: () => void }) 
   const counts = useLiveCounts();
   const c = counts.status === 'ready' ? counts.data : null;
   const go = (to: string) => () => { onClose(); setTimeout(() => router.push(to as Href), 260); };
-  const art = (src: number) => <Image source={src} style={{ width: 46, height: 46 }} contentFit="contain" />;
+  const ic = C.ink;
   return (
     <Sheet open={open} onClose={onClose} title="Pick a game" sub="Clash real players for USDC, or practice free against the bot.">
       <SheetLabel index={0}>Play for real</SheetLabel>
-      <SheetTile index={1} art={art(ART.tileDuel)} title="Clash" line="1 v 1 from $5 · crypto in 60 s or a stock in 1 hour" accent={C.opp} meta={c?.openDuels ? `${c.openDuels} waiting` : undefined} onPress={go('/clash?mode=crypto')} />
-      <SheetTile index={2} art={<View style={{ flexDirection: 'row' }}><Image source={ART.logoSOL} style={{ width: 28, height: 28 }} /><Image source={ART.logoBTC} style={{ width: 28, height: 28, marginLeft: -9 }} /></View>} title="Perps clash" line="Long or short up to 50x · 60 s · liquidated means out" accent="#9B6BFF" onPress={go('/clash?mode=perps')} />
-      <SheetTile index={3} art={art(ART.tileRoyale)} title="Battle royale" line="Up to 16 players · $2 in · last one standing" accent="#FFC94A" meta={c?.openRoyales ? `${c.openRoyales} open` : undefined} onPress={go('/onchain-royale')} />
-      <SheetTile index={4} art={art(ART.tileWar)} title="Squad war" line="Your squad's chest against another squad" accent={C.brand} onPress={go('/clans')} />
+      <SheetTile index={1} art={<Swords size={20} color={ic} />} title="Clash" line="1 v 1 from $5 · crypto in 60 s or a stock in 1 hour" meta={c?.openDuels ? `${c.openDuels} waiting` : undefined} onPress={go('/clash?mode=crypto')} />
+      <SheetTile index={2} art={<View style={{ flexDirection: 'row' }}>{(['SOL', 'ETH'] as const).map((k, i) => <View key={k} style={{ marginLeft: i ? -12 : 0 }}><CoinToken sym={k} size={28} /></View>)}</View>} title="Perps clash" line="Long or short up to 50x · 60 s · liquidated means out" onPress={go('/clash?mode=perps')} />
+      <SheetTile index={3} art={<Crown size={20} color={ic} />} title="Battle royale" line="Up to 16 players · $2 in · last one standing" meta={c?.openRoyales ? `${c.openRoyales} open` : undefined} onPress={go('/onchain-royale')} />
+      <SheetTile index={4} art={<Shield size={20} color={ic} />} title="Squad war" line="Your squad's chest against another squad" onPress={go('/clans')} />
       <SheetLabel index={5}>Free practice</SheetLabel>
-      <SheetTile index={6} art={<BotPic size={44} />} title="Practice clash" line="Clash Clashy Bot with practice money, live prices" accent={C.brandSoft} onPress={go('/practice/clash')} />
-      <SheetTile index={7} art={art(ART.tileLine)} title="Paper trading" line="$10,000 practice money · stocks, 190 perps, memecoins" accent={C.up} onPress={go('/practice')} />
-      <Pressable onPress={go('/arena')} style={{ alignItems: 'center', paddingVertical: 16 }}>
-        <Txt v="label" color={C.brandSoft}>Live games, top players and results</Txt>
+      <SheetTile index={6} art={<BotPic size={44} />} bare title="Practice clash" line="Clash Clashy Bot with practice money, live prices" onPress={go('/practice/clash')} />
+      <SheetTile index={7} art={<Bolt size={19} color={ic} />} title="Paper trading" line="$10,000 practice money · stocks, 190 perps, memecoins" onPress={go('/practice')} />
+      <Pressable onPress={go('/arena')} accessibilityRole="button" style={{ alignItems: 'center', justifyContent: 'center', minHeight: 44, marginTop: 8 }}>
+        <Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>Live games, top players and results</Txt>
       </Pressable>
     </Sheet>
   );
@@ -109,10 +109,10 @@ export function CreateProvider({ children }: { children: ReactNode }) {
     <CreateCtx.Provider value={ctx}>
       {children}
       <Sheet open={menu} onClose={() => setMenu(false)} title="Start something">
-        <SheetTile art={<Image source={ART.megaphone} style={{ width: 50, height: 50 }} contentFit="contain" />} title="What's your call?" line="Post a call with your real position" accent={C.opp} onPress={go(() => ctx.openCall(null))} />
-        <SheetTile art={<Image source={ART.tileDuel} style={{ width: 52, height: 52 }} contentFit="contain" />} title="Clash someone" line="From $5 · a stock in 1 hour or crypto in 60 s" onPress={go(() => router.push('/clash' as Href))} />
-        <SheetTile art={<Image source={ART.stash} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Save to your Stash" line="Put money aside, then into real stocks" accent={C.up} onPress={go(() => setSave(true))} />
-        <SheetTile art={<Image source={ART.clubhouse} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Start or join a squad" line="Chat, chest, wars and the Weekly Cup" accent="#FFC94A" onPress={go(() => router.push('/squads/discover' as Href))} />
+        <SheetTile index={0} art={<Chat size={20} color={C.ink} />} title="What's your call?" line="Post a call with your real position" onPress={go(() => ctx.openCall(null))} />
+        <SheetTile index={1} art={<Swords size={20} color={C.ink} />} title="Clash someone" line="From $5 · a stock in 1 hour or crypto in 60 s" onPress={go(() => router.push('/clash' as Href))} />
+        <SheetTile index={2} art={<Jar size={20} color={C.ink} />} title="Save to your Stash" line="Put money aside, then into real stocks" onPress={go(() => setSave(true))} />
+        <SheetTile index={3} art={<Shield size={20} color={C.ink} />} title="Start or join a squad" line="Chat, chest, wars and the Weekly Cup" onPress={go(() => router.push('/squads/discover' as Href))} />
       </Sheet>
       <CallDrawer open={call} onClose={() => setCall(false)} replyTo={replyTo} />
       <SaveDrawer open={save} onClose={() => setSave(false)} />
