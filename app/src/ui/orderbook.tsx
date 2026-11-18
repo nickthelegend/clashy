@@ -10,7 +10,7 @@ import { C } from './tokens';
 export function VenueChip({ venue, small }: { venue: Venue; small?: boolean }) {
   const book = venue !== 'jupiter';
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: book ? 'rgba(91,108,255,0.14)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: small ? 1 : 3 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: book ? 'rgba(171,159,242,0.15)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: small ? 1 : 3 }}>
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: venue === 'phoenix' ? '#FF7A45' : venue === 'pacifica' ? '#3EC7E0' : '#C7F284' }} />
       <Txt v="small" color={book ? C.brandSoft : C.muted} style={{ fontSize: small ? 11 : 11.5 }} lines={1}>{VENUES[venue].name}</Txt>
     </View>

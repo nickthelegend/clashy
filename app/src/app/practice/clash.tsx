@@ -21,7 +21,7 @@ import { ProfileAvatar } from '@/ui/feed';
 import { BackBtn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { BarBtn, BotPic, BotTag, PaperBadge } from '@/ui/practice-kit';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/practice' as Href));
 const usd2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -159,7 +159,7 @@ export default function PracticeClash() {
           /* ---------- the result ---------- */
           <Animated.View entering={FadeInDown.duration(260)} style={{ alignItems: 'center', marginTop: 28 }}>
             <Animated.View entering={ZoomIn.springify().damping(11)} style={{ width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center', backgroundColor: result.result === 'won' ? C.up : result.result === 'lost' ? C.down : C.s2 }}>
-              <Text style={{ fontFamily: F.bold, fontSize: 42, color: result.result === 'won' ? '#04120A' : '#fff' }}>{result.result === 'won' ? '✓' : result.result === 'lost' ? '✕' : '='}</Text>
+              <Text style={{ ...FONT.bold, fontSize: 42, color: result.result === 'won' ? '#04120A' : '#fff' }}>{result.result === 'won' ? '✓' : result.result === 'lost' ? '✕' : '='}</Text>
             </Animated.View>
             <Txt v="title" style={{ marginTop: 16, fontSize: 28 }}>
               {result.result === 'won' ? (result.ko === 'bot' ? 'Knocked the bot out' : 'You beat the bot') : result.result === 'lost' ? (result.ko === 'you' ? 'Knocked out' : 'The bot won this one') : result.result === 'abandoned' ? 'Clash abandoned' : 'Dead heat'}
@@ -172,7 +172,7 @@ export default function PracticeClash() {
             <Txt v="small" style={{ marginTop: 6 }}>Practice money · nothing real moved</Txt>
             <View style={{ alignSelf: 'stretch', gap: 10, marginTop: 24 }}>
               <View style={{ flexDirection: 'row' }}><BarBtn title="Clash the bot again" bg={C.ink} fg="#000" onPress={() => setResult(null)} h={56} /></View>
-              <View style={{ flexDirection: 'row' }}><BarBtn title={rec.won >= 3 ? "You're ready: clash a real player" : 'Clash a real player'} bg={C.brand} fg="#fff" onPress={() => router.push(`/clash?mode=${result.lev > 1 ? 'perps' : 'crypto'}` as Href)} h={56} /></View>
+              <View style={{ flexDirection: 'row' }}><BarBtn title={rec.won >= 3 ? "You're ready: clash a real player" : 'Clash a real player'} bg={C.brand} fg={C.onBrand} onPress={() => router.push(`/clash?mode=${result.lev > 1 ? 'perps' : 'crypto'}` as Href)} h={56} /></View>
             </View>
           </Animated.View>
         ) : (
@@ -184,7 +184,7 @@ export default function PracticeClash() {
                 <Txt v="label" lines={1} style={{ marginTop: 8 }}>{me?.name ? `@${me.name}` : 'You'}</Txt>
                 <Txt v="small">{rec.won} won</Txt>
               </View>
-              <Text style={{ fontFamily: F.display, fontSize: 26, color: C.dim, marginTop: 18 }}>vs</Text>
+              <Text style={{ ...FONT.display, fontSize: 26, color: C.dim, marginTop: 18 }}>vs</Text>
               <View style={{ alignItems: 'center', width: 110 }}>
                 <BotPic size={64} />
                 <Row style={{ gap: 5, marginTop: 8 }}><Txt v="label">{BOT_NAME}</Txt></Row>

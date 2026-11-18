@@ -18,9 +18,9 @@ import { ART, BackBtn, Btn, Card, ErrorLine, Money, Row, Txt } from '@/ui/kit';
 import { AmountSheet } from '@/ui/amount';
 import { Sheet, SheetTile } from '@/ui/sheet';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
-const field = { color: C.ink, fontFamily: F.medium, fontSize: 16, backgroundColor: C.s2, borderRadius: 16, paddingHorizontal: 14, height: 52 } as const;
+const field = { color: C.ink, ...FONT.medium, fontSize: 16, backgroundColor: C.s2, borderRadius: 16, paddingHorizontal: 14, height: 52 } as const;
 
 /** One row of a settings group: art, title, the current value, a chevron; opens that setting's drawer. */
 const SetRow = ({ art, title, value, onPress }: { art: number; title: string; value: string; onPress: () => void }) => (
@@ -33,13 +33,13 @@ const SetRow = ({ art, title, value, onPress }: { art: number; title: string; va
 );
 /** A selectable option row inside a drawer, with a check on the current choice. */
 const Choice = ({ title, line, on, busy, onPress }: { title: string; line: string; on: boolean; busy?: boolean; onPress: () => void }) => (
-  <Pressable onPress={onPress} disabled={busy} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, marginBottom: 8, backgroundColor: on ? 'rgba(48,209,88,0.12)' : pressed ? '#22222A' : '#1B1B21', borderWidth: 1.5, borderColor: on ? C.up : '#26262E', opacity: busy ? 0.6 : 1 })}>
+  <Pressable onPress={onPress} disabled={busy} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, marginBottom: 8, backgroundColor: on ? 'rgba(48,209,88,0.12)' : pressed ? '#22222A' : '#1B1B21', borderWidth: 1.5, borderColor: on ? C.up : 'transparent', opacity: busy ? 0.6 : 1 })}>
     <View style={{ flex: 1 }}><Txt v="label">{title}</Txt><Txt v="small">{line}</Txt></View>
-    <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: on ? C.up : '#3A3A44', backgroundColor: on ? C.up : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Text style={{ color: '#04120A', fontFamily: F.bold, fontSize: 13 }}>✓</Text> : null}</View>
+    <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: on ? C.up : '#3A3A44', backgroundColor: on ? C.up : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on ? <Text style={{ color: '#04120A', ...FONT.bold, fontSize: 13 }}>✓</Text> : null}</View>
   </Pressable>
 );
 const Opt = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => (
-  <Pressable onPress={onPress} style={{ flex: 1, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : C.s2 }}><Txt v="small" color={on ? '#000' : C.ink} style={{ fontFamily: F.semi }}>{label}</Txt></Pressable>
+  <Pressable onPress={onPress} style={{ flex: 1, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : C.s2 }}><Txt v="small" color={on ? '#000' : C.ink} style={{ ...FONT.semi }}>{label}</Txt></Pressable>
 );
 
 export default function StashScreen() {
@@ -158,7 +158,7 @@ export default function StashScreen() {
               <Money value={(s?.balance ?? 0) + invested} size={46} />
               <Row style={{ gap: 8, marginTop: 2 }}>
                 <View style={{ backgroundColor: stockProfit >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-                  <Txt v="small" color={stockProfit >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{stockProfit >= 0 ? '+' : '−'}${Math.abs(stockProfit).toFixed(2)}</Txt>
+                  <Txt v="small" color={stockProfit >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{stockProfit >= 0 ? '+' : '−'}${Math.abs(stockProfit).toFixed(2)}</Txt>
                 </View>
                 <Txt v="small">on stocks · ${(s?.balance ?? 0).toFixed(2)} cash</Txt>
               </Row>
@@ -190,8 +190,8 @@ export default function StashScreen() {
           <Pressable onPress={() => setPanel('goal')} style={({ pressed }) => ({ marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 24, padding: 14, backgroundColor: '#0F1A12', borderWidth: 1, borderColor: '#1F3A26', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <Image source={ART.goal} style={{ width: 64, height: 64 }} contentFit="contain" />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Txt v="small" color="#8FD8A4" style={{ fontFamily: F.bold, letterSpacing: 0.6, fontSize: 11 }}>{goal > 0 ? 'Your goal' : 'Save for something'}</Txt>
-              <Text style={{ fontFamily: F.semi, fontSize: 20, color: C.ink, marginTop: 2 }} numberOfLines={1}>{goal > 0 ? (s?.goalName || 'My goal') : 'Set a goal'}</Text>
+              <Txt v="small" color="#8FD8A4" style={{ ...FONT.bold, letterSpacing: 0.6, fontSize: 11 }}>{goal > 0 ? 'Your goal' : 'Save for something'}</Txt>
+              <Text style={{ ...FONT.semi, fontSize: 20, color: C.ink, marginTop: 2 }} numberOfLines={1}>{goal > 0 ? (s?.goalName || 'My goal') : 'Set a goal'}</Text>
               {goal > 0 ? (
                 <>
                   <View style={{ height: 8, borderRadius: 4, backgroundColor: '#1D2B21', overflow: 'hidden', marginTop: 8 }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: C.up, borderRadius: 4 }} /></View>
@@ -204,7 +204,7 @@ export default function StashScreen() {
 
           {/* stocks */}
           <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 4 }}>
-            <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>Stocks</Text>
+            <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>Stocks</Text>
             <Txt v="small">Real shares · via Orca</Txt>
           </Row>
           {STOCKS.map((st) => {
@@ -225,24 +225,24 @@ export default function StashScreen() {
                 {held ? (
                   <Pressable onPress={() => setSell(st)} style={{ alignItems: 'flex-end', marginRight: 4 }}>
                     <Txt v="label">{fmtUsd(value)}</Txt>
-                    <Txt v="small" color={profit >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{profit >= 0 ? '+' : '−'}{fmtUsd(Math.abs(profit))}</Txt>
+                    <Txt v="small" color={profit >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{profit >= 0 ? '+' : '−'}{fmtUsd(Math.abs(profit))}</Txt>
                   </Pressable>
                 ) : null}
                 <Pressable onPress={() => setAmt({ kind: 'buy', st })} disabled={!!busy} style={({ pressed }) => ({ paddingHorizontal: 16, height: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: held ? C.s2 : C.ink, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                  <Txt v="small" color={held ? C.ink : '#000'} style={{ fontFamily: F.bold }}>Buy</Txt>
+                  <Txt v="small" color={held ? C.ink : '#000'} style={{ ...FONT.bold }}>Buy</Txt>
                 </Pressable>
               </Row>
             );
           })}
 
           {/* automatic saving and your limits */}
-          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 10 }}>On autopilot</Text>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 10 }}>On autopilot</Text>
           <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
             <SetRow art={ART.roundup} title="Round-ups" value={(prof?.roundupStep ?? 0) > 0 ? `To next $${prof!.roundupStep}` : 'Off'} onPress={() => setPanel('roundup')} />
             <SetRow art={ART.spend} title="Pay someone" value="Rounds up" onPress={() => setPanel('pay')} />
             <SetRow art={ART.gift} title="Save from wins" value={(prof?.saveBps ?? 0) > 0 ? `${prof!.saveBps / 100}% of each win` : 'Off'} onPress={() => setPanel('wins')} />
           </View>
-          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>Your limits</Text>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>Your limits</Text>
           <Txt v="small" style={{ marginBottom: 10 }}>Set by you, enforced by the Clashy program on every stake. No app can go past them, ours included.</Txt>
           <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
             <SetRow art={ART.limits} title="Daily stake limit" value={prof ? `${fmtUsd(prof.dailyLimit)} · ${fmtUsd(stakedToday)} used` : '…'} onPress={() => setPanel('limit')} />

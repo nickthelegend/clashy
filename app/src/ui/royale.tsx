@@ -10,7 +10,7 @@ import { CoinToken, coinName } from './clash';
 import { ProfileAvatar } from './feed';
 import { FX } from './fx';
 import { Txt } from './kit';
-import { C, F, fmtUsd } from './tokens';
+import { C, F, FONT, fmtUsd } from './tokens';
 
 /** The Royale's own accent: gold, the crown and the pot. */
 export const GOLD = '#FFC94A';
@@ -44,15 +44,15 @@ export function SeatDots({ taken, max }: { taken: number; max: number }) {
 export function Segmented<K extends string>({ label, items, value, onChange }: { label: string; items: { key: K; label: ReactNode }[]; value: K; onChange: (k: K) => void }) {
   return (
     <View style={{ marginTop: 14 }}>
-      <Txt v="small" style={{ fontFamily: F.bold, fontSize: 11, letterSpacing: 1, marginBottom: 6 }} color={C.muted}>{label}</Txt>
-      <View style={{ flexDirection: 'row', backgroundColor: SURFACE, borderRadius: 24, padding: 4, borderWidth: 1, borderColor: EDGE }}>
+      <Txt v="small" style={{ ...FONT.bold, fontSize: 11, letterSpacing: 1, marginBottom: 6 }} color={C.muted}>{label}</Txt>
+      <View style={{ flexDirection: 'row', backgroundColor: SURFACE, borderRadius: 24, padding: 4 }}>
         {items.map((it) => {
           const on = it.key === value;
           return (
             <Pressable key={it.key} onPress={() => onChange(it.key)} accessibilityRole="button" accessibilityState={{ selected: on }}
               style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 20, backgroundColor: on ? C.ink : 'transparent', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
               {typeof it.label === 'string'
-                ? <Text style={{ fontFamily: F.semi, fontSize: 18, color: on ? '#000' : C.ink }}>{it.label}</Text>
+                ? <Text style={{ ...FONT.semi, fontSize: 18, color: on ? '#000' : C.ink }}>{it.label}</Text>
                 : it.label}
             </Pressable>
           );
@@ -65,16 +65,16 @@ export function Segmented<K extends string>({ label, items, value, onChange }: {
 /** Three tiny steps: how a Royale plays. */
 export function HowItWorks({ secs }: { secs: number }) {
   const step = (n: number, art: ReactNode, line: string) => (
-    <View style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', borderWidth: 1, borderColor: EDGE }}>
+    <View style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center' }}>
       <View style={{ height: 40, alignItems: 'center', justifyContent: 'center' }}>{art}</View>
-      <Txt v="small" color={C.ink} style={{ textAlign: 'center', marginTop: 6, fontFamily: F.semi, fontSize: 12, lineHeight: 15 }}>{line}</Txt>
-      <Text style={{ position: 'absolute', top: 6, left: 9, fontFamily: F.semi, fontSize: 12, color: '#3A3A44' }}>{n}</Text>
+      <Txt v="small" color={C.ink} style={{ textAlign: 'center', marginTop: 6, ...FONT.semi, fontSize: 12, lineHeight: 15 }}>{line}</Txt>
+      <Text style={{ position: 'absolute', top: 6, left: 9, ...FONT.semi, fontSize: 12, color: '#3A3A44' }}>{n}</Text>
     </View>
   );
   return (
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>
       {step(1, <CoinToken sym="BTC" size={38} />, 'One coin for the whole table')}
-      {step(2, <Text style={{ fontFamily: F.display, fontSize: 24 }}><Text style={{ color: C.up }}>▲</Text><Text style={{ color: C.down }}>▼</Text></Text>, `Call up or down every ${secs} s`)}
+      {step(2, <Text style={{ ...FONT.display, fontSize: 24 }}><Text style={{ color: C.up }}>▲</Text><Text style={{ color: C.down }}>▼</Text></Text>, `Call up or down every ${secs} s`)}
       {step(3, <Image source={FX.heartBroken} style={{ width: 34, height: 34 }} contentFit="contain" />, 'Wrong call costs a heart')}
     </View>
   );
@@ -110,12 +110,12 @@ export function TableRoll({ pool, landed, size = 120 }: { pool: string[]; landed
   const sym = landed ?? pool[i] ?? '…';
   return (
     <View style={{ alignItems: 'center' }}>
-      <View style={{ width: size + 36, height: size + 36, borderRadius: 34, backgroundColor: '#101015', borderWidth: 2, borderColor: landed ? GOLD : '#26262E', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <View style={{ width: size + 36, height: size + 36, borderRadius: 34, backgroundColor: '#101015', borderWidth: 2, borderColor: landed ? GOLD : 'transparent', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         <Animated.View key={landed ? `l-${sym}` : `s-${i}`} entering={landed ? ZoomIn.springify().damping(9) : FadeIn.duration(80)}>
           <CoinToken sym={sym} size={size} />
         </Animated.View>
       </View>
-      <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink, marginTop: 10, letterSpacing: -0.5 }}>{landed ? coinName(sym) : 'Rolling…'}</Text>
+      <Text style={{ ...FONT.display, fontSize: 30, color: C.ink, marginTop: 10, letterSpacing: -0.5 }}>{landed ? coinName(sym) : 'Rolling…'}</Text>
       <Txt v="small" color={landed ? GOLD : C.muted}>{landed ? 'The coin for this table' : 'Picking one coin for everyone'}</Txt>
     </View>
   );
@@ -135,24 +135,24 @@ export function Table({ seats, startLives, empty = 0, showCalls }: { seats: Seat
           <Animated.View key={s.key} entering={FadeInDown.delay(i * 40).springify()} style={{ width: W, alignItems: 'center', opacity: out ? 0.38 : 1 }}>
             <View>
               <View style={{ borderRadius: 40, borderWidth: 3, borderColor: ring, padding: 2 }}><ProfileAvatar p={s.profile} size={46} /></View>
-              {s.host ? <View style={{ position: 'absolute', top: -6, right: -4, backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1 }}><Text style={{ fontFamily: F.bold, fontSize: 8, color: '#000' }}>Host</Text></View> : null}
+              {s.host ? <View style={{ position: 'absolute', top: -6, right: -4, backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1 }}><Text style={{ ...FONT.bold, fontSize: 8, color: '#000' }}>Host</Text></View> : null}
               {showCalls && !out ? (
                 <View style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: s.called ? C.up : '#2A2A33', borderWidth: 2, borderColor: '#07070A', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: F.bold, fontSize: 9, color: s.called ? '#03140A' : C.muted }}>{s.called ? '✓' : '…'}</Text>
+                  <Text style={{ ...FONT.bold, fontSize: 9, color: s.called ? '#03140A' : C.muted }}>{s.called ? '✓' : '…'}</Text>
                 </View>
               ) : null}
             </View>
-            <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 11.5, color: s.you ? C.brandSoft : C.ink, marginTop: 5, maxWidth: W }}>{s.name}</Text>
-            <View style={{ marginTop: 3 }}>{out ? <Text style={{ fontFamily: F.bold, fontSize: 10, color: C.down, letterSpacing: 0.5 }}>Out</Text> : <Hearts lives={s.lives} max={startLives} size={startLives > 2 ? 12 : 14} gap={1} />}</View>
+            <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 11.5, color: s.you ? C.brandSoft : C.ink, marginTop: 5, maxWidth: W }}>{s.name}</Text>
+            <View style={{ marginTop: 3 }}>{out ? <Text style={{ ...FONT.bold, fontSize: 10, color: C.down, letterSpacing: 0.5 }}>Out</Text> : <Hearts lives={s.lives} max={startLives} size={startLives > 2 ? 12 : 14} gap={1} />}</View>
           </Animated.View>
         );
       })}
       {Array.from({ length: empty }, (_, i) => (
         <View key={`e-${i}`} style={{ width: W, alignItems: 'center' }}>
-          <View style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderStyle: 'dashed', borderColor: '#33333D', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: F.semi, fontSize: 18, color: '#3A3A44' }}>+</Text>
+          <View style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#33333D', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ ...FONT.semi, fontSize: 18, color: '#3A3A44' }}>+</Text>
           </View>
-          <Text style={{ fontFamily: F.semi, fontSize: 11.5, color: C.dim, marginTop: 5 }}>Open</Text>
+          <Text style={{ ...FONT.semi, fontSize: 11.5, color: C.dim, marginTop: 5 }}>Open</Text>
         </View>
       ))}
     </View>
@@ -167,7 +167,7 @@ export function OpenRoyale({ host, hostName, taken, max, lives, pot, age, mine, 
   const full = taken >= max;
   const label = mine ? 'Open' : full ? 'Full' : 'Join';
   return (
-    <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: SURFACE, borderRadius: 22, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: mine ? 'rgba(91,108,255,0.5)' : EDGE, opacity: stale ? 0.7 : 1 }}>
+    <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: SURFACE, borderRadius: 22, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: mine ? 'rgba(171,159,242,0.5)' : EDGE, opacity: stale ? 0.7 : 1 }}>
       <ProfileAvatar p={host} size={46} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{mine ? 'Your Royale' : `${hostName}'s Royale`}</Txt>
@@ -179,10 +179,10 @@ export function OpenRoyale({ host, hostName, taken, max, lives, pot, age, mine, 
         <Txt v="small" style={{ fontSize: 11, marginTop: 3 }} color={C.dim}>{age}</Txt>
       </View>
       <View style={{ alignItems: 'flex-end', gap: 6 }}>
-        <Text style={{ fontFamily: F.semi, fontSize: 16, color: GOLD }}>{fmtUsd(pot)}</Text>
+        <Text style={{ ...FONT.semi, fontSize: 16, color: GOLD }}>{fmtUsd(pot)}</Text>
         <Pressable onPress={mine ? onOpen : onJoin} disabled={!mine && (disabled || full)} accessibilityRole="button"
           style={({ pressed }) => ({ backgroundColor: mine ? C.s2 : GOLD, borderRadius: 16, paddingHorizontal: 16, height: 44, minWidth: 76, alignItems: 'center', justifyContent: 'center', opacity: !mine && (disabled || full) ? 0.45 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-          <Text style={{ fontFamily: F.semi, fontSize: 16, color: mine ? C.ink : '#000' }}>{label}</Text>
+          <Text style={{ ...FONT.semi, fontSize: 16, color: mine ? C.ink : '#000' }}>{label}</Text>
         </Pressable>
       </View>
     </Animated.View>
@@ -194,7 +194,7 @@ export function BigCta({ title, onPress, disabled, color = GOLD, ink = '#000' }:
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button"
       style={({ pressed }) => ({ marginTop: 18, height: 70, borderRadius: 24, backgroundColor: color, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: color, shadowOpacity: disabled ? 0 : 0.55, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } })}>
-      <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: F.display, fontSize: 23, color: ink }}>{title}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...FONT.display, fontSize: 23, color: ink }}>{title}</Text>
     </Pressable>
   );
 }
@@ -204,7 +204,7 @@ export function StatusPill({ text, color = C.opp, dot = true }: { text: string; 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: color + '26', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5 }}>
       {dot ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} /> : null}
-      <Text style={{ fontFamily: F.bold, fontSize: 12, color: C.ink, letterSpacing: 0.5 }}>{text}</Text>
+      <Text style={{ ...FONT.bold, fontSize: 12, color: C.ink, letterSpacing: 0.5 }}>{text}</Text>
     </View>
   );
 }

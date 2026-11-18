@@ -12,7 +12,7 @@ import { useChain } from '@/chain/useChain';
 import { ClayLoop, type ClayName } from '@/ui/clay';
 import { AVATARS, Btn, ErrorLine, Row, Txt, Wordmark } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 export const ONBOARDED_KEY = 'clashy:onboarded';
 
@@ -48,7 +48,7 @@ function NameStep({ onDone }: { onDone: () => void }) {
       <View style={{ marginTop: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: C.s1, borderRadius: 14, paddingHorizontal: 14, height: 52 }}>
         <Txt v="label" color={C.muted} style={{ fontSize: 18 }}>@</Txt>
         <TextInput value={name} onChangeText={(t) => setName(t.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16))} placeholder="your_name" placeholderTextColor={C.dim}
-          autoCapitalize="none" autoCorrect={false} autoFocus style={{ flex: 1, color: C.ink, fontFamily: F.semi, fontSize: 18, marginLeft: 4 }} />
+          autoCapitalize="none" autoCorrect={false} autoFocus style={{ flex: 1, color: C.ink, ...FONT.semi, fontSize: 18, marginLeft: 4 }} />
         <Txt v="small" style={{ fontSize: 12 }}>{name.length}/16</Txt>
       </View>
       <Txt v="small" style={{ marginTop: 14, marginBottom: 8 }}>Pick your look</Txt>

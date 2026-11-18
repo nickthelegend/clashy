@@ -8,7 +8,7 @@ import { PublicKey, type Transaction } from '@solana/web3.js';
 import { BN, IS_LOCAL_NET, NET, P, PROGRAM_ID, USDC_MINT, base, faucetUsdc, getSponsor, programs, sendSponsored, sendUsdc, usdcBalance } from './client';
 import { useWallet } from './wallet';
 import { Btn, Card, Row, Txt } from '@/ui/kit';
-import { C, F } from '@/ui/tokens';
+import { C, F, FONT } from '@/ui/tokens';
 
 export type Tx = { sig: string; layer: 'Solana' | 'Rollup'; label: string; ms: number; n?: number };
 export const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
@@ -133,7 +133,7 @@ export function useChain(foldLabels: string[] = []) {
   };
 }
 
-const field = { color: C.ink, fontFamily: F.medium, fontSize: 15, backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 44 } as const;
+const field = { color: C.ink, ...FONT.medium, fontSize: 15, backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 44 } as const;
 
 /** Withdraw USDC to any Solana address (the sponsor pays the fee and the receiver's account rent). */
 export function SendUsdc({ chain, onDone }: { chain: ReturnType<typeof useChain>; onDone: () => void }) {
@@ -216,7 +216,7 @@ export function TxStrip({ txs }: { txs: Tx[] }) {
       <Txt v="h2" style={{ marginTop: 22, marginBottom: 8 }}>Transactions</Txt>
       {txs.length === 0 ? <Txt v="small">Every action here is a real transaction, paid for by Clashy's sponsor. They show up here with their layer, latency and an explorer link.</Txt> : txs.map((t) => (
         <Pressable key={t.sig} onPress={() => Linking.openURL(explorer(t.sig, t.layer))} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.line }}>
-          <View style={{ backgroundColor: t.layer === 'Rollup' ? 'rgba(91,108,255,0.18)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={t.layer === 'Rollup' ? C.brandSoft : C.ink} style={{ fontSize: 11 }}>{t.layer}</Txt></View>
+          <View style={{ backgroundColor: t.layer === 'Rollup' ? 'rgba(171,159,242,0.18)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={t.layer === 'Rollup' ? C.brandSoft : C.ink} style={{ fontSize: 11 }}>{t.layer}</Txt></View>
           <View style={{ flex: 1 }}><Txt v="small" color={C.ink}>{t.label}{t.n ? ` ×${t.n}` : ''}</Txt><Txt v="small" style={{ fontSize: 11 }}>{short(t.sig)}</Txt></View>
           <Txt v="small" color={t.ms < 200 ? C.up : C.muted}>{t.n ? 'avg ' : ''}{t.ms} ms</Txt>
         </Pressable>

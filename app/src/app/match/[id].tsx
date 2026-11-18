@@ -19,7 +19,7 @@ import { Copy, Share, Shield } from '@/ui/icons';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const CARD = '#111116';
 const EDGE = '#1F1F27';
@@ -68,13 +68,13 @@ function Bar({ title, onShare }: { title: string; onShare?: () => void }) {
 }
 
 const Panel = ({ children, style }: { children: ReactNode; style?: object }) => (
-  <View style={[{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: EDGE, padding: 16, marginTop: 12 }, style]}>{children}</View>
+  <View style={[{ backgroundColor: CARD, borderRadius: 24, padding: 16, marginTop: 12 }, style]}>{children}</View>
 );
-const Label = ({ children }: { children: ReactNode }) => <Txt v="small" style={{ fontFamily: F.semi, fontSize: 12.5 }}>{children}</Txt>;
+const Label = ({ children }: { children: ReactNode }) => <Txt v="small" style={{ ...FONT.semi, fontSize: 12.5 }}>{children}</Txt>;
 const Line = ({ k, v, color, strong }: { k: string; v: string; color?: string; strong?: boolean }) => (
   <Row style={{ justifyContent: 'space-between', paddingVertical: 9, gap: 12 }}>
     <Txt v="small" style={{ fontSize: 13.5 }}>{k}</Txt>
-    <Txt v="label" color={color} style={{ fontSize: strong ? 16 : 14, fontFamily: strong ? F.bold : F.semi }}>{v}</Txt>
+    <Txt v="label" color={color} style={{ fontSize: strong ? 16 : 14, ...(strong ? FONT.bold : FONT.semi) }}>{v}</Txt>
   </Row>
 );
 
@@ -108,24 +108,24 @@ function Side({ owner, p, side, lev, bps, tag }: { owner: PublicKey; p?: Profile
   const tint = up ? C.up : C.down;
   return (
     <Pressable onPress={() => go(`/u/${owner.toBase58()}`)} accessibilityLabel={`Open ${nameOf(p, owner)}'s profile`}
-      style={({ pressed }) => ({ flex: 1, minWidth: 0, borderRadius: 18, padding: 12, backgroundColor: '#0B0B0E', borderWidth: 1.5, borderColor: tag === 'win' ? C.up + '88' : EDGE, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+      style={({ pressed }) => ({ flex: 1, minWidth: 0, borderRadius: 18, padding: 12, backgroundColor: '#0B0B0E', borderWidth: 1.5, borderColor: tag === 'win' ? C.up + '88' : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
       <Row style={{ gap: 6 }}>
         <View style={{ height: 26, paddingHorizontal: 9, borderRadius: 13, justifyContent: 'center', backgroundColor: call ? (up ? C.upBg : C.downBg) : C.s2 }}>
-          <Text style={{ fontFamily: F.bold, fontSize: 13, color: call ? tint : C.muted }}>{call ? (up ? '▲ Up' : '▼ Down') : 'Sealed'}</Text>
+          <Text style={{ ...FONT.bold, fontSize: 13, color: call ? tint : C.muted }}>{call ? (up ? '▲ Up' : '▼ Down') : 'Sealed'}</Text>
         </View>
-        {call && lev > 1 ? <Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>×{lev}</Txt> : null}
+        {call && lev > 1 ? <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>×{lev}</Txt> : null}
       </Row>
-      <Text style={{ fontFamily: F.bold, fontSize: 26, fontVariant: ['tabular-nums'], marginTop: 10, color: bps === null ? C.muted : bps >= 0 ? C.up : C.down, letterSpacing: -0.5 }} numberOfLines={1}>{bps === null ? '…' : pct(bps)}</Text>
+      <Text style={{ ...FONT.bold, fontSize: 26, fontVariant: ['tabular-nums'], marginTop: 10, color: bps === null ? C.muted : bps >= 0 ? C.up : C.down, letterSpacing: -0.5 }} numberOfLines={1}>{bps === null ? '…' : pct(bps)}</Text>
       <Txt v="small" lines={1}>{tag === 'ko' ? 'Knocked out' : 'Return on the stake'}</Txt>
       <Row style={{ marginTop: 10, justifyContent: 'space-between' }}>
         {tag === 'win' ? <Badge text="Winner" color={C.up} /> : tag === 'ko' ? <Badge text="KO" color={C.down} /> : tag === 'tie' ? <Badge text="Tie" color={GOLD} /> : <View />}
-        <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>Profile ›</Txt>
+        <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>Profile ›</Txt>
       </Row>
     </Pressable>
   );
 }
 const Badge = ({ text, color }: { text: string; color: string }) => (
-  <View style={{ borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: color + '26' }}><Txt v="small" color={color} style={{ fontFamily: F.bold, fontSize: 10 }}>{text}</Txt></View>
+  <View style={{ borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: color + '26' }}><Txt v="small" color={color} style={{ ...FONT.bold, fontSize: 10 }}>{text}</Txt></View>
 );
 
 /** The coin: what it was, where it opened and where it closed. */
@@ -149,12 +149,12 @@ function CoinPanel({ m, sym }: { m: Match; sym: string }) {
       <Row style={{ marginTop: 16, gap: 10 }}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Label>Opened at</Label>
-          <Text style={{ fontFamily: F.semi, fontSize: 21, letterSpacing: -0.5, fontVariant: ['tabular-nums'], color: C.ink, marginTop: 2 }} numberOfLines={1}>{m.entryPrice ? price(m.entryPrice) : '—'}</Text>
+          <Text style={{ ...FONT.semi, fontSize: 21, letterSpacing: -0.5, fontVariant: ['tabular-nums'], color: C.ink, marginTop: 2 }} numberOfLines={1}>{m.entryPrice ? price(m.entryPrice) : '—'}</Text>
         </View>
         <Txt v="label" color={C.dim} style={{ fontSize: 18 }}>→</Txt>
         <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-end' }}>
           <Label>Closed at</Label>
-          <Text style={{ fontFamily: F.semi, fontSize: 21, letterSpacing: -0.5, fontVariant: ['tabular-nums'], color: move === null ? C.muted : move >= 0 ? C.up : C.down, marginTop: 2 }} numberOfLines={1}>{settled ? price(m.exitPrice) : '…'}</Text>
+          <Text style={{ ...FONT.semi, fontSize: 21, letterSpacing: -0.5, fontVariant: ['tabular-nums'], color: move === null ? C.muted : move >= 0 ? C.up : C.down, marginTop: 2 }} numberOfLines={1}>{settled ? price(m.exitPrice) : '…'}</Text>
         </View>
       </Row>
     </Panel>
@@ -173,12 +173,12 @@ function Proof({ open, onClose, m }: { open: boolean; onClose: () => void; m: Ma
   return (
     <Sheet open={open} onClose={onClose} title="Proof">
       <Txt v="small" style={{ lineHeight: 18 }}>This clash is an account of the Clashy program. The stakes sat in its escrow, and the result and the payout were written by the program, not by us.</Txt>
-      <View style={{ marginTop: 14, backgroundColor: '#0D0D10', borderRadius: 16, borderWidth: 1, borderColor: EDGE, padding: 12 }}>
+      <View style={{ marginTop: 14, backgroundColor: '#0D0D10', borderRadius: 16, padding: 12 }}>
         <Label>Clash address</Label>
-        <Text selectable style={{ fontFamily: F.medium, fontSize: 13.5, color: C.ink, marginTop: 4, lineHeight: 19 }}>{key}</Text>
+        <Text selectable style={{ ...FONT.medium, fontSize: 13.5, color: C.ink, marginTop: 4, lineHeight: 19 }}>{key}</Text>
         {Platform.OS === 'web' ? (
           <Pressable onPress={copy} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, height: 32, alignSelf: 'flex-start' }}>
-            <Copy size={15} color={C.brandSoft} /><Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>{copied ? 'Copied' : 'Copy address'}</Txt>
+            <Copy size={15} color={C.brandSoft} /><Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>{copied ? 'Copied' : 'Copy address'}</Txt>
           </Pressable>
         ) : null}
       </View>
@@ -206,7 +206,7 @@ function Gone({ title, body, top }: { title: string; body: string; top: number }
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: top + 6, paddingHorizontal: S.gutter, paddingBottom: 40 }}>
       <Bar title="Clash" />
-      <View style={{ alignItems: 'center', marginTop: 36, backgroundColor: CARD, borderRadius: 26, borderWidth: 1, borderColor: EDGE, paddingHorizontal: 20, paddingVertical: 26 }}>
+      <View style={{ alignItems: 'center', marginTop: 36, backgroundColor: CARD, borderRadius: 26, paddingHorizontal: 20, paddingVertical: 26 }}>
         <Image source={ART.duels} style={{ width: 150, height: 150 }} contentFit="contain" />
         <Txt v="title" style={{ textAlign: 'center', marginTop: 8, fontSize: 24, lineHeight: 30 }}>{title}</Txt>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 8, lineHeight: 19, fontSize: 13.5 }}>{body}</Txt>
@@ -306,11 +306,11 @@ export default function MatchReplay() {
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: m.status === 0 ? '#1A1A20' : 'rgba(240,70,140,0.16)', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 }}>
                   <LiveDot color={m.status === 0 ? GOLD : C.opp} />
-                  <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{m.status === 0 ? (expired ? 'Nobody took it' : 'Waiting for a rival') : 'Still running'}</Txt>
+                  <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{m.status === 0 ? (expired ? 'Nobody took it' : 'Waiting for a rival') : 'Still running'}</Txt>
                 </View>
               )}
 
-              <Text numberOfLines={2} style={{ fontFamily: F.semi, fontSize: settled && !tie ? heroSize : 34, lineHeight: (settled && !tie ? heroSize : 34) * 1.15, color: C.ink, textAlign: 'center', marginTop: 14, letterSpacing: -1 }}>
+              <Text numberOfLines={2} style={{ ...FONT.semi, fontSize: settled && !tie ? heroSize : 34, lineHeight: (settled && !tie ? heroSize : 34) * 1.15, color: C.ink, textAlign: 'center', marginTop: 14, letterSpacing: -1 }}>
                 {settled && !tie ? <>@{winnerName} <Text style={{ color: C.up }}>won</Text></>
                   : tie ? 'Tie'
                   : m.status === 6 ? 'Cancelled · refunded'
@@ -329,7 +329,7 @@ export default function MatchReplay() {
               </Txt>
               {settled ? (
                 <View style={{ marginTop: 14, alignItems: 'center', backgroundColor: tie ? C.s1 : C.upBg, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 8 }}>
-                  <Text style={{ fontFamily: F.semi, fontSize: 30, color: tie ? C.ink : C.up, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{tie ? `${fmtUsd(cash.stake)} back` : `+${fmtUsd(cash.payout - cash.stake)}`}</Text>
+                  <Text style={{ ...FONT.semi, fontSize: 30, color: tie ? C.ink : C.up, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{tie ? `${fmtUsd(cash.stake)} back` : `+${fmtUsd(cash.payout - cash.stake)}`}</Text>
                   <Txt v="small" color={tie ? C.muted : C.up}>{tie ? 'to each player' : `took home ${fmtUsd(cash.payout)}`}</Txt>
                 </View>
               ) : null}
@@ -348,7 +348,7 @@ export default function MatchReplay() {
                 </Row>
               ) : (
                 <Pressable onPress={() => go(`/u/${m.creator.toBase58()}`)} style={{ alignSelf: 'center', marginTop: 12, height: 44, justifyContent: 'center' }}>
-                  <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>@{names2[0]}'s profile ›</Txt>
+                  <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>@{names2[0]}'s profile ›</Txt>
                 </Pressable>
               )}
             </Panel>
@@ -385,7 +385,7 @@ export default function MatchReplay() {
             </Panel>
 
             {/* proof */}
-            <Pressable onPress={() => setProof(true)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, minHeight: 56, borderRadius: 20, paddingHorizontal: 14, backgroundColor: pressed ? '#17171D' : CARD, borderWidth: 1, borderColor: EDGE })}>
+            <Pressable onPress={() => setProof(true)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, minHeight: 56, borderRadius: 20, paddingHorizontal: 14, backgroundColor: pressed ? '#17171D' : CARD })}>
               <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: C.upBg, alignItems: 'center', justifyContent: 'center' }}><Shield size={17} color={C.up} /></View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Txt v="label">Proof</Txt>

@@ -15,7 +15,7 @@ import { useWallet } from '@/chain/wallet';
 import { ClayLoop, type ClayName } from '@/ui/clay';
 import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const CARD = '#111116';
 const HAIR = '#1F1F27';
@@ -72,12 +72,12 @@ function Faq({ q, children, open, onToggle, last }: { q: string; children: React
   );
 }
 const A = ({ children }: { children: ReactNode }) => <Txt v="body" color="#B9B9C3" style={{ fontSize: 14.5, lineHeight: 21 }}>{children}</Txt>;
-const B = ({ children, color = C.ink }: { children: ReactNode; color?: string }) => <Text style={{ fontFamily: F.semi, color }}>{children}</Text>;
+const B = ({ children, color = C.ink }: { children: ReactNode; color?: string }) => <Text style={{ ...FONT.semi, color }}>{children}</Text>;
 
 function Fact({ text, color = C.ink, bg = '#1C1C23' }: { text: string; color?: string; bg?: string }) {
   return (
     <View style={{ backgroundColor: bg, borderRadius: 10, paddingHorizontal: 10, height: 30, justifyContent: 'center' }}>
-      <Txt v="small" color={color} style={{ fontFamily: F.bold, fontSize: 12 }}>{text}</Txt>
+      <Txt v="small" color={color} style={{ ...FONT.bold, fontSize: 12 }}>{text}</Txt>
     </View>
   );
 }
@@ -91,7 +91,7 @@ function Section({ id, title, lead, loop, still, tint, facts, faqs, focus, extra
   useEffect(() => { if (focus) setOpen((o) => (o === null ? 0 : o)); }, [focus]);
   return (
     <View onLayout={(e) => onLayout(id, e)} style={{ marginTop: 14 }}>
-      <Animated.View entering={FadeInDown.duration(320)} style={{ backgroundColor: CARD, borderRadius: 26, borderWidth: focus ? 1.5 : 1, borderColor: focus ? tint + 'AA' : HAIR }}>
+      <Animated.View entering={FadeInDown.duration(320)} style={{ backgroundColor: CARD, borderRadius: 26, borderWidth: focus ? 1.5 : 1, borderColor: focus ? tint + 'AA' : 'transparent' }}>
         <Row style={{ gap: 14, padding: 16, alignItems: 'center' }}>
           <View style={{ width: 84, height: 84, borderRadius: 22, backgroundColor: tint + '1F', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
             {focus ? <ClayLoop name={loop} size={84} style={{ backgroundColor: 'transparent' }} /> : <Image source={still} style={{ width: 76, height: 76 }} contentFit="contain" />}
@@ -118,10 +118,10 @@ function PotTable({ bps }: { bps: number }) {
   const rows = [5, 10, 25].map((s) => ({ s, ...split(s * 2, bps) }));
   const cell = { flex: 1, textAlign: 'right' as const, fontVariant: ['tabular-nums' as const] };
   return (
-    <View style={{ backgroundColor: '#17171D', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: HAIR }}>
+    <View style={{ backgroundColor: '#17171D', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 }}>
       <Row style={{ height: 32 }}>
         {['Stake', 'Pot', 'Fee', 'Winner gets'].map((h, i) => (
-          <Txt key={h} v="small" color={C.dim} style={[{ fontSize: 11.5, fontFamily: F.semi }, i ? cell : { flex: 0.8 }]}>{h}</Txt>
+          <Txt key={h} v="small" color={C.dim} style={[{ fontSize: 11.5, ...FONT.semi }, i ? cell : { flex: 0.8 }]}>{h}</Txt>
         ))}
       </Row>
       {rows.map((r) => (
@@ -180,7 +180,7 @@ export default function Help() {
       <Row style={{ gap: 10 }}><BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/' as Href))} /></Row>
 
       {/* hero */}
-      <View style={{ marginTop: 12, borderRadius: 28, overflow: 'hidden', backgroundColor: CARD, borderWidth: 1, borderColor: HAIR }}>
+      <View style={{ marginTop: 12, borderRadius: 28, overflow: 'hidden', backgroundColor: CARD }}>
         <ClayLoop name="journey" width="100%" height={180} cover />
         <View style={{ padding: 18, paddingTop: 14 }}>
           <Txt v="title" style={{ fontSize: 30, lineHeight: 35, letterSpacing: -1 }}>How Clashy works</Txt>
@@ -272,7 +272,7 @@ export default function Help() {
         lead="Stakes are real money. Set your own limits, and the rules make sure they hold, even against you."
         facts={[{ text: 'Daily limit, enforced on chain' }, { text: 'Lowering is instant', color: C.up }, { text: 'Raising waits 24 h', color: '#FFC94A' }]}
         extra={me ? (
-          <View style={{ backgroundColor: '#17171D', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: HAIR }}>
+          <View style={{ backgroundColor: '#17171D', borderRadius: 18, padding: 14 }}>
             <Txt v="label" color={C.muted} style={{ fontSize: 13 }}>Your limits</Txt>
             {prof.status === 'loading' ? <Txt v="small" style={{ marginTop: 6 }}>Reading your limits…</Txt>
               : prof.status === 'error' ? <ErrorLine msg={prof.error} onRetry={prof.reload} />
@@ -311,7 +311,7 @@ export default function Help() {
           { q: 'Can I check all this myself?', a: <A>Yes. Every stake, payout and fee is a public Solana transaction. Your wallet page links each one to Solana Explorer.</A> },
         ]} />
 
-      <Pressable onPress={explorer} style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12', borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', opacity: pressed ? 0.7 : 1 })}>
+      <Pressable onPress={explorer} style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12', opacity: pressed ? 0.7 : 1 })}>
         <Image source={ART.levelStar} style={{ width: 40, height: 40 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Txt v="label">Every rule here runs on chain</Txt>

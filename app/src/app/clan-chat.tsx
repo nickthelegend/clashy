@@ -19,7 +19,7 @@ import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { Swords } from '@/ui/icons';
 import { useDeskColumn } from '@/ui/layout';
 import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
-import { C, F } from '@/ui/tokens';
+import { C, F, FONT } from '@/ui/tokens';
 
 const STAKE = 5;
 const time = (ts: number) => new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -40,11 +40,11 @@ function ChallengeCard({ m, mine, onAccept }: { m: ChatMsg; mine: boolean; onAcc
     <View style={{ marginTop: 6, backgroundColor: CARD, borderRadius: 16, borderWidth: 1, borderColor: open ? 'rgba(240,70,140,0.45)' : HAIR, padding: 12, flexDirection: 'row', gap: 10, alignItems: 'center', maxWidth: 420 }}>
       <Image source={ART.tileDuel} style={{ width: 46, height: 46 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Txt v="label" style={{ fontFamily: F.semi, fontSize: 15 }}>Clash me</Txt>
+        <Txt v="label" style={{ ...FONT.semi, fontSize: 15 }}>Clash me</Txt>
         <Txt v="small" lines={1}>{STAKE} USDC each · one coin · 60 s</Txt>
         <Row style={{ gap: 5, marginTop: 3 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: open ? C.opp : C.dim }} />
-          <Txt v="small" color={open ? C.opp : C.muted} style={{ fontSize: 11.5, fontFamily: F.semi }}>{state}</Txt>
+          <Txt v="small" color={open ? C.opp : C.muted} style={{ fontSize: 11.5, ...FONT.semi }}>{state}</Txt>
         </Row>
       </View>
       {open && !mine ? <Btn title="Accept" h={38} onPress={onAccept} /> : null}
@@ -124,7 +124,7 @@ export default function ClanChat() {
   const Empty = ({ title, body, action, onAction, disabled }: { title: string; body: string; action?: string; onAction?: () => void; disabled?: boolean }) => (
     <View style={{ alignItems: 'center', marginTop: 36, paddingHorizontal: 20 }}>
       <ClayLoop name="chat" size={140} style={{ borderRadius: 28 }} />
-      <Txt v="title" style={{ marginTop: 10, fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, textAlign: 'center' }}>{title}</Txt>
+      <Txt v="title" style={{ marginTop: 10, ...FONT.semi, fontSize: 19, letterSpacing: -0.3, textAlign: 'center' }}>{title}</Txt>
       <Txt v="small" style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>{body}</Txt>
       {action ? <Btn title={action} h={50} style={{ marginTop: 14, alignSelf: 'stretch' }} disabled={disabled} onPress={onAction} /> : null}
     </View>
@@ -139,8 +139,8 @@ export default function ClanChat() {
           {s ? <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center' }}><Image source={crestSrc(s.crest)} style={{ width: 32, height: 32 }} contentFit="contain" /></View> : null}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Row style={{ gap: 4 }}>
-              <Txt v="label" color={C.muted} style={{ fontSize: 17, fontFamily: F.bold }}>#</Txt>
-              <Txt v="label" lines={1} style={{ fontSize: 16.5, fontFamily: F.bold, flexShrink: 1 }}>{chName}</Txt>
+              <Txt v="label" color={C.muted} style={{ fontSize: 17, ...FONT.bold }}>#</Txt>
+              <Txt v="label" lines={1} style={{ fontSize: 16.5, ...FONT.bold, flexShrink: 1 }}>{chName}</Txt>
             </Row>
             <Txt v="small" style={{ fontSize: 12 }} lines={1}>{s ? `${s.name} · ${s.members.length} member${s.members.length === 1 ? '' : 's'}` : myClan.status === 'ready' && !clan ? 'No squad' : 'Loading…'}</Txt>
           </View>
@@ -151,8 +151,8 @@ export default function ClanChat() {
           <Row style={{ gap: 6, paddingHorizontal: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#16161C' }}>
             {CHANNELS.map((c) => (
               <Pressable key={c.id} onPress={() => switchTo(c.id)} style={{ height: 32, paddingHorizontal: 12, borderRadius: 10, backgroundColor: c.id === ch ? '#22222B' : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ fontFamily: F.bold, fontSize: 13 }}>#</Txt>
-                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ fontFamily: F.semi, fontSize: 13 }}>{c.name}</Txt>
+                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.bold, fontSize: 13 }}>#</Txt>
+                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.semi, fontSize: 13 }}>{c.name}</Txt>
               </Pressable>
             ))}
           </Row>
@@ -172,9 +172,9 @@ export default function ClanChat() {
             <>
               <View style={{ paddingTop: 8, paddingBottom: 16, borderBottomWidth: msgs.length ? 1 : 0, borderBottomColor: '#16161C', marginBottom: 8 }}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#1C1C23', alignItems: 'center', justifyContent: 'center' }}>
-                  <Txt v="title" color={C.ink} style={{ fontSize: 30, fontFamily: F.bold }}>#</Txt>
+                  <Txt v="title" color={C.ink} style={{ fontSize: 30, ...FONT.bold }}>#</Txt>
                 </View>
-                <Txt v="title" style={{ fontFamily: F.display, fontSize: 24, marginTop: 10 }}>Welcome to #{chName}</Txt>
+                <Txt v="title" style={{ ...FONT.display, fontSize: 24, marginTop: 10 }}>Welcome to #{chName}</Txt>
                 <Txt v="small" style={{ marginTop: 4, lineHeight: 18 }}>The start of {s?.name ?? 'the squad'}'s #{chName}. {CHANNELS.find((c) => c.id === ch)?.blurb ?? ''}. {count > msgs.length ? `Showing the latest ${msgs.length} of ${count}.` : ''}</Txt>
               </View>
               {msgs.length === 0 ? <Txt v="small" style={{ marginTop: 8 }}>No messages yet. Say gm, or tap Clash to challenge the squad.</Txt> : msgs.map((m, i) => {
@@ -188,14 +188,14 @@ export default function ClanChat() {
                     {newDay ? (
                       <Row style={{ gap: 10, marginVertical: 12 }}>
                         <View style={{ flex: 1, height: 1, backgroundColor: '#1C1C23' }} />
-                        <Txt v="small" color={C.dim} style={{ fontSize: 11, fontFamily: F.semi }}>{dayLabel(m.ts)}</Txt>
+                        <Txt v="small" color={C.dim} style={{ fontSize: 11, ...FONT.semi }}>{dayLabel(m.ts)}</Txt>
                         <View style={{ flex: 1, height: 1, backgroundColor: '#1C1C23' }} />
                       </Row>
                     ) : null}
                     {m.kind === 1 ? (
                       <Row style={{ gap: 8, marginTop: 10, paddingLeft: 6 }}>
                         <Swords size={13} color={C.opp} />
-                        <Txt v="small" style={{ flex: 1, fontSize: 12.5 }}><Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 12.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt> posted a clash challenge · {time(m.ts)}</Txt>
+                        <Txt v="small" style={{ flex: 1, fontSize: 12.5 }}><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt> posted a clash challenge · {time(m.ts)}</Txt>
                       </Row>
                     ) : null}
                     <Row style={{ gap: 12, alignItems: 'flex-start', marginTop: grouped ? 2 : m.kind === 1 ? 4 : 14 }}>
@@ -225,14 +225,14 @@ export default function ClanChat() {
             <Pressable onPress={challenge} disabled={!!busy} accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
               style={({ pressed }) => ({ height: 46, paddingHorizontal: 12, borderRadius: 23, backgroundColor: pressed ? '#2A2A33' : '#1C1C23', flexDirection: 'row', alignItems: 'center', gap: 6, opacity: busy && busy !== 'challenge' ? 0.5 : 1 })}>
               <Swords size={15} color={C.opp} />
-              <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, fontSize: 13 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
+              <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 13 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
             </Pressable>
             <View style={{ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#1C1C23', flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 4 }}>
               <TextInput value={text} onChangeText={setText} onSubmitEditing={send} placeholder={`Message #${chName}`} placeholderTextColor={C.dim} maxLength={120} returnKeyType="send"
-                style={{ flex: 1, height: 44, color: C.ink, fontFamily: F.medium, fontSize: 15, minWidth: 0 }} />
+                style={{ flex: 1, height: 44, color: C.ink, ...FONT.medium, fontSize: 15, minWidth: 0 }} />
               <Pressable onPress={send} disabled={!!busy || !text.trim()} accessibilityLabel="Send"
                 style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: text.trim() ? C.brand : '#2A2A33', alignItems: 'center', justifyContent: 'center' }}>
-                <Txt v="label" color="#fff" style={{ fontSize: 18, marginTop: -2 }}>{busy === 'send' ? '…' : '↑'}</Txt>
+                <Txt v="label" color={text.trim() ? C.onBrand : C.muted} style={{ fontSize: 18, marginTop: -2 }}>{busy === 'send' ? '…' : '↑'}</Txt>
               </Pressable>
             </View>
           </Row>

@@ -14,7 +14,7 @@ import { ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { Search as SearchIcon } from '@/ui/icons';
 import { ART, BackBtn, CRESTS, ErrorLine, Row, SkeletonRows, Txt, rankFor } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 type Tab = 'all' | 'players' | 'squads' | 'stocks';
 const TABS: { key: Tab; label: string }[] = [
@@ -41,7 +41,7 @@ function Head({ title, right, onRight }: { title: string; right?: string; onRigh
       <Txt v="h2" lines={1} style={{ flexShrink: 1 }}>{title}</Txt>
       {right ? (
         <Pressable onPress={onRight} hitSlop={12} style={{ minHeight: 32, justifyContent: 'center' }}>
-          <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>{right} ›</Txt>
+          <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>{right} ›</Txt>
         </Pressable>
       ) : null}
     </Row>
@@ -50,7 +50,7 @@ function Head({ title, right, onRight }: { title: string; right?: string; onRigh
 
 /** A list group: rows inside one card with hairlines between them. */
 function Group({ children }: { children: ReactNode }) {
-  return <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>{children}</View>;
+  return <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>{children}</View>;
 }
 
 function ResultRow({ first, onPress, left, title, sub, right, rightSub, rightColor }: {
@@ -67,7 +67,7 @@ function ResultRow({ first, onPress, left, title, sub, right, rightSub, rightCol
       {right ? (
         <View style={{ alignItems: 'flex-end', maxWidth: '38%' }}>
           <Txt v="label" lines={1} style={{ fontVariant: ['tabular-nums'] }}>{right}</Txt>
-          {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ fontFamily: F.semi }}>{rightSub}</Txt> : null}
+          {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ ...FONT.semi }}>{rightSub}</Txt> : null}
         </View>
       ) : <Txt v="label" color={C.dim}>›</Txt>}
     </Pressable>
@@ -171,25 +171,25 @@ export default function SearchScreen() {
       <View style={{ backgroundColor: C.bg, paddingTop: 2, paddingBottom: 6 }}>
         <Row style={{ gap: 10 }}>
           <BackBtn onPress={back} />
-          <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: query ? '#33334A' : HAIR, paddingLeft: 14, paddingRight: 6 }}>
+          <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: query ? '#33334A' : 'transparent', paddingLeft: 14, paddingRight: 6 }}>
             <SearchIcon size={17} color={C.muted} />
             <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Players, squads, stocks" placeholderTextColor={C.dim}
               autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search"
-              style={{ flex: 1, minWidth: 0, height: 46, color: C.ink, fontFamily: F.medium, fontSize: 16 }} />
+              style={{ flex: 1, minWidth: 0, height: 46, color: C.ink, ...FONT.medium, fontSize: 16 }} />
             {q ? (
               <Pressable onPress={() => setQ('')} accessibilityLabel="Clear search" hitSlop={8} style={({ pressed }) => ({ width: 36, height: 36, borderRadius: 18, backgroundColor: pressed ? '#2A2A33' : C.s2, alignItems: 'center', justifyContent: 'center' })}>
-                <Text style={{ color: C.ink, fontFamily: F.bold, fontSize: 13 }}>✕</Text>
+                <Text style={{ color: C.ink, ...FONT.bold, fontSize: 13 }}>✕</Text>
               </Pressable>
             ) : null}
           </View>
         </Row>
-        <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 3 }}>
+        <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: CARD, borderRadius: 22, padding: 3 }}>
           {TABS.map((t) => {
             const on = t.key === tab;
             return (
               <Pressable key={t.key} onPress={() => setTab(t.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
                 style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-                <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 13.5, color: on ? '#000' : C.muted }}>{t.label}</Text>
+                <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 13.5, color: on ? '#000' : C.muted }}>{t.label}</Text>
               </Pressable>
             );
           })}
@@ -219,7 +219,7 @@ export default function SearchScreen() {
                   const p = names.get(r.owner.toBase58());
                   return (
                     <Pressable key={r.owner.toBase58()} onPress={go(`/u/${r.owner.toBase58()}`)}
-                      style={({ pressed }) => ({ width: 104, alignItems: 'center', borderRadius: 22, paddingVertical: 14, paddingHorizontal: 6, backgroundColor: i === 0 ? '#1B1708' : CARD, borderWidth: 1, borderColor: i === 0 ? '#4A3B10' : HAIR, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+                      style={({ pressed }) => ({ width: 104, alignItems: 'center', borderRadius: 22, paddingVertical: 14, paddingHorizontal: 6, backgroundColor: i === 0 ? '#1B1708' : CARD, borderWidth: 1, borderColor: i === 0 ? '#4A3B10' : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
                       <Txt v="label" color={i === 0 ? '#FFD66B' : C.muted} style={{ fontSize: 13 }}>#{i + 1}</Txt>
                       <View style={{ marginTop: 6 }}><ProfileAvatar p={p} size={50} /></View>
                       <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '100%' }}>{p?.name}</Txt>

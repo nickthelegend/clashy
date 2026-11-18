@@ -15,7 +15,7 @@ import { Badge, CoinToken } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
 import { BotPic } from '@/ui/practice-kit';
 import { ART, ErrorLine, LiveDot, Row, SkeletonRows, Txt } from '@/ui/kit';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
 const cupLeft = () => {
@@ -32,8 +32,8 @@ const go = (to: string) => () => router.push(to as Href);
 function Head({ title, right, onRight }: { title: string; right?: string; onRight?: () => void }) {
   return (
     <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 12 }}>
-      <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>{title}</Text>
-      {right ? <Pressable onPress={onRight} hitSlop={10}><Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>{right} ›</Txt></Pressable> : null}
+      <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink }}>{title}</Text>
+      {right ? <Pressable onPress={onRight} hitSlop={10}><Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>{right} ›</Txt></Pressable> : null}
     </Row>
   );
 }
@@ -46,7 +46,7 @@ function VersusRow({ d, names, live }: { d: FeedDuel; names: Map<string, Profile
   const pot = d.stake * 2 * 0.97;
   return (
     <Pressable onPress={() => router.push(`/match/${d.key.toBase58()}` as Href)}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#111116', borderRadius: 20, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#1F1F27', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#111116', borderRadius: 20, padding: 12, marginBottom: 8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <View style={{ width: 74, height: 46 }}>
         <View style={{ position: 'absolute', left: 0, top: 0, borderRadius: 24, borderWidth: 2, borderColor: d.winner === 1 ? C.up : '#111116' }}><ProfileAvatar p={a} size={42} /></View>
         <View style={{ position: 'absolute', left: 30, top: 0, borderRadius: 24, borderWidth: 2, borderColor: d.winner === 2 ? C.up : '#111116' }}><ProfileAvatar p={b} size={42} /></View>
@@ -54,13 +54,13 @@ function VersusRow({ d, names, live }: { d: FeedDuel; names: Map<string, Profile
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}><Txt v="label" color={d.winner === 1 ? C.up : C.ink}>{a?.name ?? 'someone'}</Txt> <Txt v="small" color={C.dim}>vs</Txt> <Txt v="label" color={d.winner === 2 ? C.up : C.ink}>{b?.name ?? 'someone'}</Txt></Txt>
         <Row style={{ gap: 6, marginTop: 3 }}>
-          {live ? <><LiveDot /><Txt v="small" color={C.down} style={{ fontFamily: F.semi }}>LIVE</Txt></> : <Txt v="small">{ago(d.ts)}</Txt>}
+          {live ? <><LiveDot /><Txt v="small" color={C.down} style={{ ...FONT.semi }}>LIVE</Txt></> : <Txt v="small">{ago(d.ts)}</Txt>}
           <Txt v="small">· {fmtUsd(d.stake)} each</Txt>
         </Row>
       </View>
       <View style={{ alignItems: 'flex-end', gap: 4 }}>
         <CoinToken sym={sym} size={30} />
-        {live ? null : won ? <Txt v="small" color={C.up} style={{ fontFamily: F.bold }}>+{fmtUsd(pot - d.stake)}</Txt> : <Txt v="small">Tie</Txt>}
+        {live ? null : won ? <Txt v="small" color={C.up} style={{ ...FONT.bold }}>+{fmtUsd(pot - d.stake)}</Txt> : <Txt v="small">Tie</Txt>}
       </View>
     </Pressable>
   );
@@ -99,14 +99,14 @@ export default function Play() {
           <View style={{ padding: 18, paddingBottom: 0 }}>
             <View>
               <Row style={{ gap: 6 }}>
-                {waiting ? <><LiveDot /><Txt v="small" color={C.down} style={{ fontFamily: F.bold, letterSpacing: 0.6 }}>{waiting} WAITING</Txt></> : <Txt v="small" style={{ fontFamily: F.bold, letterSpacing: 0.6 }}>1 V 1</Txt>}
+                {waiting ? <><LiveDot /><Txt v="small" color={C.down} style={{ ...FONT.bold, letterSpacing: 0.6 }}>{waiting} WAITING</Txt></> : <Txt v="small" style={{ ...FONT.bold, letterSpacing: 0.6 }}>1 V 1</Txt>}
               </Row>
-              <Text numberOfLines={1} style={{ fontFamily: F.bold, fontSize: 42, letterSpacing: -1.4, color: '#fff', marginTop: 4, lineHeight: 60 }}>Clash</Text>
+              <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 42, letterSpacing: -1.4, color: '#fff', marginTop: 4, lineHeight: 60 }}>Clash</Text>
               <Txt v="small" color="#C9C3D6" style={{ marginTop: 6, lineHeight: 18, maxWidth: 230 }}>Same coin, two calls. A stock in 1 hour or crypto in 60 seconds. Best call takes the pot.</Txt>
             </View>
           </View>
           <View style={{ margin: 14, marginTop: 14, height: 56, borderRadius: 18, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', shadowColor: C.opp, shadowOpacity: 0.5, shadowRadius: 18 }}>
-            <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: '#fff' }}>Find a rival · from $5</Text>
+            <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: '#fff' }}>Find a rival · from $5</Text>
           </View>
         </Pressable>
       </Animated.View>
@@ -125,7 +125,7 @@ export default function Play() {
       <Pressable onPress={go('/cup')} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 24, padding: 12, backgroundColor: '#1A1406', borderWidth: 1, borderColor: '#3D3010', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
         <Image source={ART.cupBig} style={{ width: 64, height: 64 }} contentFit="contain" />
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: F.semi, fontSize: 21, color: '#FFD66B' }}>Weekly Cup</Text>
+          <Text style={{ ...FONT.semi, fontSize: 21, color: '#FFD66B' }}>Weekly Cup</Text>
           <Txt v="small" color="#CDBB8A">Best profit this week wins · ends in {cupLeft()}</Txt>
         </View>
         <Txt v="label" color="#FFD66B">›</Txt>
@@ -136,7 +136,7 @@ export default function Play() {
       {feed.status === 'loading' ? <SkeletonRows n={2} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : live.length ? (
         live.slice(0, 4).map((d) => <VersusRow key={d.key.toBase58()} d={d} names={names} live />)
       ) : (
-        <Pressable onPress={go('/clash')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12', borderWidth: 1, borderColor: '#1F1F27', borderStyle: 'dashed' }}>
+        <Pressable onPress={go('/clash')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12' }}>
           <Image source={ART.radar} style={{ width: 44, height: 44 }} contentFit="contain" />
           <Txt v="small" style={{ flex: 1 }}>No clashes running right now. Start one and the next rival takes you on.</Txt>
         </Pressable>
@@ -148,8 +148,8 @@ export default function Play() {
           {top.map((p, i) => {
             const prof = names.get(p.owner.toBase58());
             return (
-              <Pressable key={p.owner.toBase58()} onPress={() => router.push(`/u/${p.owner.toBase58()}` as Href)} style={({ pressed }) => ({ flex: 1, alignItems: 'center', borderRadius: 22, paddingVertical: 14, backgroundColor: i === 0 ? '#1B1708' : C.s1, borderWidth: 1, borderColor: i === 0 ? '#4A3B10' : '#1F1F27', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                <Text style={{ fontFamily: F.semi, fontSize: 15, color: i === 0 ? '#FFD66B' : C.muted }}>#{i + 1}</Text>
+              <Pressable key={p.owner.toBase58()} onPress={() => router.push(`/u/${p.owner.toBase58()}` as Href)} style={({ pressed }) => ({ flex: 1, alignItems: 'center', borderRadius: 22, paddingVertical: 14, backgroundColor: i === 0 ? '#1B1708' : C.s1, borderWidth: 1, borderColor: i === 0 ? '#4A3B10' : 'transparent', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                <Text style={{ ...FONT.semi, fontSize: 15, color: i === 0 ? '#FFD66B' : C.muted }}>#{i + 1}</Text>
                 <View style={{ marginTop: 6 }}><ProfileAvatar p={prof} size={52} /></View>
                 <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '90%' }}>{prof?.name}</Txt>
                 <Txt v="small">{p.wins}W · {p.losses}L</Txt>
@@ -172,10 +172,10 @@ export default function Play() {
 
 function GameTile({ title, sub, line, loop, art, tint, onPress }: { title: string; sub: string; line: string; loop?: 'royale' | 'war' | 'line'; art?: React.ReactNode; tint: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 26, padding: 14, backgroundColor: '#111116', borderWidth: 1, borderColor: '#23232B', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 26, padding: 14, backgroundColor: '#111116', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
       {loop ? <ClayLoop name={loop} size={96} style={{ borderRadius: 22, alignSelf: 'center' }} /> : <View style={{ height: 96, alignItems: 'center', justifyContent: 'center' }}>{art}</View>}
-      <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 20, color: tint, marginTop: 10 }}>{title}</Text>
-      <Txt v="small" color={C.ink} style={{ fontFamily: F.semi, marginTop: 2 }}>{sub}</Txt>
+      <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 20, color: tint, marginTop: 10 }}>{title}</Text>
+      <Txt v="small" color={C.ink} style={{ ...FONT.semi, marginTop: 2 }}>{sub}</Txt>
       <Txt v="small" style={{ marginTop: 2 }}>{line}</Txt>
     </Pressable>
   );

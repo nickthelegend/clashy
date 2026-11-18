@@ -11,7 +11,7 @@ import { useWallet } from '@/chain/wallet';
 import { ProfileAvatar } from '@/ui/feed';
 import { RankStrip } from '@/ui/lobby';
 import { ART, BackBtn, Btn, ErrorLine, Row, SkeletonRows, Txt, rankFor } from '@/ui/kit';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 const winRate = (p: PlayerRow) => (p.wins + p.losses ? Math.round((p.wins / (p.wins + p.losses)) * 100) : 0);
 const open = (p: PlayerRow) => () => router.push(`/u/${p.owner.toBase58()}` as Href);
@@ -56,9 +56,9 @@ export default function Leaderboard() {
                     <ProfileAvatar p={p} size={place === 1 ? 66 : 52} />
                   </View>
                   <Txt v="label" lines={1} style={{ marginTop: 6, maxWidth: '95%' }}>{r.owner.toBase58() === me ? 'You' : p?.name}</Txt>
-                  <Txt v="small" color={place === 1 ? '#FFD66B' : C.muted} style={{ fontFamily: F.semi }}>{r.rp} pts</Txt>
+                  <Txt v="small" color={place === 1 ? '#FFD66B' : C.muted} style={{ ...FONT.semi }}>{r.rp} pts</Txt>
                   <View style={{ width: '100%', height: place === 1 ? 74 : place === 2 ? 54 : 40, marginTop: 6, borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: place === 1 ? '#FFC94A' : C.s1, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontFamily: F.display, fontSize: 24, color: place === 1 ? '#2A1E00' : C.ink }}>{place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}</Text>
+                    <Text style={{ ...FONT.display, fontSize: 24, color: place === 1 ? '#2A1E00' : C.ink }}>{place === 1 ? '1st' : place === 2 ? '2nd' : '3rd'}</Text>
                   </View>
                 </Pressable>
               );
@@ -69,7 +69,7 @@ export default function Leaderboard() {
               const p = names.get(r.owner.toBase58());
               const isMe = r.owner.toBase58() === me;
               return (
-                <Pressable key={r.owner.toBase58()} onPress={open(r)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: isMe ? 'rgba(91,108,255,0.14)' : 'transparent' }}>
+                <Pressable key={r.owner.toBase58()} onPress={open(r)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: isMe ? 'rgba(171,159,242,0.15)' : 'transparent' }}>
                   <Txt v="label" color={C.muted} style={{ width: 22 }}>{i + 4}</Txt>
                   <ProfileAvatar p={p} size={38} />
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -83,8 +83,8 @@ export default function Leaderboard() {
             {rows.length <= 3 ? <Txt v="small" style={{ padding: 14, textAlign: 'center' }}>Only {rows.length} ranked so far. Win a clash to join them.</Txt> : null}
           </View>
 
-          <View style={{ marginTop: 12, backgroundColor: C.s1, borderRadius: 20, padding: 12, borderWidth: 1.5, borderColor: mine ? C.brand : C.s2, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontFamily: F.semi, fontSize: 20, color: mine ? C.brandSoft : C.muted, width: 40 }}>{mine ? `#${myIdx + 1}` : '–'}</Text>
+          <View style={{ marginTop: 12, backgroundColor: C.s1, borderRadius: 20, padding: 12, borderWidth: 1.5, borderColor: mine ? C.brand : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Text style={{ ...FONT.semi, fontSize: 20, color: mine ? C.brandSoft : C.muted, width: 40 }}>{mine ? `#${myIdx + 1}` : '–'}</Text>
             <View style={{ flex: 1 }}>
               <Txt v="label">{mine ? 'Your rank' : 'Not ranked yet'}</Txt>
               <Txt v="small">{mine ? `${rankFor(mine.rp).label} · ${mine.wins}W ${mine.losses}L` : 'Win one clash to get on the board'}</Txt>
@@ -94,7 +94,7 @@ export default function Leaderboard() {
         </>
       )}
 
-      <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>The ladder</Text>
+      <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>The ladder</Text>
       <Txt v="small" style={{ marginBottom: 12 }}>Ten ranks from Rookie to Legend. Points come only from settled clashes.</Txt>
       <RankStrip current={mine ? rankFor(mine.rp).n : 1} />
     </ScrollView>

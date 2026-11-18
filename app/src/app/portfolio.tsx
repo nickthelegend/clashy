@@ -16,7 +16,7 @@ import { readPriceHistory, type PriceHistory, type PriceRange } from '@/chain/hi
 import { STOCK_ART } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, CRESTS, ErrorLine, LiveChart, LiveDot, Money, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const CARD = '#111116';
 const HAIR = '#1F1F27';
@@ -63,7 +63,7 @@ function Head({ title, right }: { title: string; right?: string }) {
 
 function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, borderWidth: 1, borderColor: HAIR, paddingVertical: 12, paddingHorizontal: 12 }}>
+    <View style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 12 }}>
       <Txt v="small" style={{ fontSize: 11.5 }} lines={1}>{label}</Txt>
       <Txt v="h2" color={color} lines={1} style={{ marginTop: 3, fontVariant: ['tabular-nums'] }}>{value}</Txt>
     </View>
@@ -84,7 +84,7 @@ function HoldRow({ art, name, line, value, sub, subColor, onPress, round }: {
       </View>
       <View style={{ alignItems: 'flex-end', flexShrink: 0, maxWidth: '45%' }}>
         <Txt v="label" lines={1} style={{ fontVariant: ['tabular-nums'] }}>{value}</Txt>
-        {sub ? <Txt v="small" color={subColor} lines={1} style={{ marginTop: 2, fontFamily: F.semi, fontVariant: ['tabular-nums'] }}>{sub}</Txt> : null}
+        {sub ? <Txt v="small" color={subColor} lines={1} style={{ marginTop: 2, ...FONT.semi, fontVariant: ['tabular-nums'] }}>{sub}</Txt> : null}
       </View>
       <Txt v="label" color={C.dim}>›</Txt>
     </Pressable>
@@ -94,7 +94,7 @@ function HoldRow({ art, name, line, value, sub, subColor, onPress, round }: {
 /** Range picker: three 44 px segments. */
 function RangePicker({ value, onChange }: { value: PriceRange; onChange: (r: PriceRange) => void }) {
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: CARD, borderRadius: 14, borderWidth: 1, borderColor: HAIR, padding: 3, gap: 3 }}>
+    <View style={{ flexDirection: 'row', backgroundColor: CARD, borderRadius: 14, padding: 3, gap: 3 }}>
       {RANGES.map((r) => {
         const on = r.key === value;
         return (
@@ -110,7 +110,7 @@ function RangePicker({ value, onChange }: { value: PriceRange; onChange: (r: Pri
 
 function SignedOut({ onSignIn, status, error }: { onSignIn?: () => void; status: string; error?: string }) {
   return (
-    <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 18, alignItems: 'center' }}>
+    <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 24, padding: 18, alignItems: 'center' }}>
       <Image source={ART.coinsPile} style={{ width: 96, height: 96 }} contentFit="contain" />
       <Txt v="h2" style={{ marginTop: 6, textAlign: 'center' }}>{status === 'out' ? 'Sign in to see your portfolio' : 'Your wallet is not ready'}</Txt>
       <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
@@ -231,7 +231,7 @@ export default function PortfolioScreen() {
       {!me ? (
         wallet.status === 'loading' || wallet.status === 'creating' ? <Loading /> : <SignedOut onSignIn={wallet.login} status={wallet.status} error={wallet.error} />
       ) : balErr ? (
-        <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 16 }}>
+        <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 22, padding: 16 }}>
           <Txt v="label">Cannot read your wallet</Txt>
           <ErrorLine msg={balErr} onRetry={chain.refresh} />
         </View>
@@ -244,20 +244,20 @@ export default function PortfolioScreen() {
             <Row style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
               {!recording ? (
                 <View style={{ backgroundColor: up ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Txt v="small" color={up ? C.up : C.down} style={{ fontFamily: F.semi, fontVariant: ['tabular-nums'] }}>{signed(change)} ({pctText(changePct)})</Txt>
+                  <Txt v="small" color={up ? C.up : C.down} style={{ ...FONT.semi, fontVariant: ['tabular-nums'] }}>{signed(change)} ({pctText(changePct)})</Txt>
                 </View>
               ) : null}
               <Txt v="small">{recording ? 'Change shows once prices are recorded' : changeLabel}</Txt>
             </Row>
             {held.length && !shown ? (
               <Txt v="small" style={{ marginTop: 4 }}>
-                <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ fontFamily: F.semi }}>{signed(stockPnl)}</Txt> on your stocks since you bought
+                <Txt v="small" color={stockPnl >= 0 ? C.up : C.down} style={{ ...FONT.semi }}>{signed(stockPnl)}</Txt> on your stocks since you bought
               </Txt>
             ) : null}
           </Animated.View>
 
           {nothing ? (
-            <View style={{ marginTop: 22, backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 18, alignItems: 'center' }}>
+            <View style={{ marginTop: 22, backgroundColor: CARD, borderRadius: 24, padding: 18, alignItems: 'center' }}>
               <Image source={ART.coinsPile} style={{ width: 96, height: 96 }} contentFit="contain" />
               <Txt v="h2" style={{ marginTop: 6, textAlign: 'center' }}>Nothing here yet</Txt>
               <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>Add USDC to your wallet, save some in your Stash or buy a real stock. Everything you own shows up here.</Txt>
@@ -271,12 +271,12 @@ export default function PortfolioScreen() {
               {/* chart */}
               <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ marginTop: 16, marginHorizontal: -4 }}>
                 {chartW <= 0 ? <View style={{ height: CHART_H }} /> : hist.error && !hist.data ? (
-                  <View style={{ width: chartW, height: CHART_H, borderRadius: 22, borderWidth: 1, borderColor: HAIR, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+                  <View style={{ width: chartW, height: CHART_H, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
                     <Txt v="label" style={{ textAlign: 'center' }}>Price history is not available</Txt>
                     <View style={{ alignSelf: 'stretch', marginTop: 6 }}><ErrorLine msg={hist.error} onRetry={hist.reload} /></View>
                   </View>
                 ) : !hist.data ? <Bone w={chartW} h={CHART_H} r={22} /> : recording ? (
-                  <View style={{ width: chartW, height: CHART_H, borderRadius: 22, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+                  <View style={{ width: chartW, height: CHART_H, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
                     <LiveDot color={C.brandSoft} />
                     <Txt v="label" style={{ marginTop: 10, textAlign: 'center' }}>Recording prices…</Txt>
                     <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
@@ -320,7 +320,7 @@ export default function PortfolioScreen() {
               {slices.length ? (
                 <>
                   <Head title="Allocation" />
-                  <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, padding: 14 }}>
+                  <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 14 }}>
                     <View style={{ flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', gap: 2 }}>
                       {slices.map((s) => <View key={s.key} style={{ flexGrow: s.value, flexBasis: 0, minWidth: 4, backgroundColor: s.color }} />)}
                     </View>
@@ -341,7 +341,7 @@ export default function PortfolioScreen() {
               {/* stocks */}
               <Head title="Stocks" right={held.length ? `${held.length} held · ${fmtUsd(stockCost)} paid` : undefined} />
               {port.status === 'error' ? <ErrorLine msg={port.error} onRetry={port.reload} /> : held.length === 0 ? (
-                <Pressable onPress={() => router.push('/stash' as Href)} style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 22, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', padding: 14, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+                <Pressable onPress={() => router.push('/stash' as Href)} style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 22, padding: 14, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
                   <Row style={{ gap: -10 }}>
                     {['NVDA', 'TSLA', 'AAPL'].map((k) => <Image key={k} source={STOCK_ART[k]} style={{ width: 32, height: 32 }} contentFit="contain" />)}
                   </Row>
@@ -352,7 +352,7 @@ export default function PortfolioScreen() {
                   <Txt v="label" color={C.dim}>›</Txt>
                 </Pressable>
               ) : (
-                <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+                <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
                   {held.map((h) => (
                     <HoldRow key={h.stock.symbol} art={STOCK_ART[h.stock.symbol]} name={h.stock.name}
                       line={`${h.shares.toFixed(4)} ${h.stock.symbol}${h.price ? ` · ${fmtUsd(h.price)}` : ''}`}
@@ -366,7 +366,7 @@ export default function PortfolioScreen() {
 
               {/* cash */}
               <Head title="Cash" right="USDC" />
-              <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+              <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
                 <HoldRow art={ART.logoUSDC} round name="Wallet" line="Ready to play, send or save" value={fmtUsd(walletCash)} onPress={() => router.push('/wallet' as Href)} />
                 <HoldRow art={ART.stash} name="Stash" line={stash.status === 'ready' && !stash.data ? 'Not opened yet' : 'Savings only you can open'} value={fmtUsd(stashCash)} onPress={() => router.push('/stash' as Href)} />
               </View>
@@ -376,7 +376,7 @@ export default function PortfolioScreen() {
               {chestList.length ? (
                 <>
                   <Head title="Squad chests" right="Your share" />
-                  <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+                  <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
                     {chestList.map((c) => {
                       const pnl = c.value - c.deposit;
                       return (

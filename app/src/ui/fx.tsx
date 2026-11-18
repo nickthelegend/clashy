@@ -8,7 +8,7 @@ import Animated, {
   Easing, FadeIn, FadeOut, ZoomIn, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming,
 } from 'react-native-reanimated';
 import { ART } from './kit';
-import { C, F } from './tokens';
+import { C, F, FONT } from './tokens';
 
 /** Clay game FX art (assets/mobile/fx, same filenames). */
 export const FX = {
@@ -60,11 +60,11 @@ export function VsIntro({ left, right, leftLabel, rightLabel, onDone }: { left: 
   const S = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
   return (
     <Animated.View exiting={FadeOut.duration(250)} style={[{ position: 'absolute', inset: 0, zIndex: 60, backgroundColor: '#05050A', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, S]}>
-      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%', backgroundColor: 'rgba(91,108,255,0.22)' }} />
+      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%', backgroundColor: 'rgba(171,159,242,0.22)' }} />
       <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%', backgroundColor: 'rgba(240,70,140,0.2)' }} />
       <View style={{ flexDirection: 'row', width: '100%', maxWidth: 560, justifyContent: 'space-between', paddingHorizontal: 22 }}>
-        <Animated.View style={[{ alignItems: 'center', gap: 10 }, L]}>{left}<Text style={{ color: C.ink, fontFamily: F.bold, fontSize: 18 }}>{leftLabel}</Text></Animated.View>
-        <Animated.View style={[{ alignItems: 'center', gap: 10 }, R]}>{right}<Text style={{ color: C.ink, fontFamily: F.bold, fontSize: 18 }}>{rightLabel}</Text></Animated.View>
+        <Animated.View style={[{ alignItems: 'center', gap: 10 }, L]}>{left}<Text style={{ color: C.ink, ...FONT.bold, fontSize: 18 }}>{leftLabel}</Text></Animated.View>
+        <Animated.View style={[{ alignItems: 'center', gap: 10 }, R]}>{right}<Text style={{ color: C.ink, ...FONT.bold, fontSize: 18 }}>{rightLabel}</Text></Animated.View>
       </View>
       <Animated.View style={[{ position: 'absolute' }, V]}><Image source={ART.vs} style={{ width: 170, height: 170 }} contentFit="contain" /></Animated.View>
     </Animated.View>
@@ -141,7 +141,7 @@ export function Hit({ k, text = '', color = C.ink, src }: { k: number; text?: st
     <Animated.View key={k} pointerEvents="none" entering={ZoomIn.springify().damping(8).stiffness(240)} exiting={FadeOut.duration(250)} style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', zIndex: 45 }}>
       <AutoHide ms={900}>
         {src ? <Image source={src} style={{ width: text ? 150 : 240, height: text ? 150 : 240 }} contentFit="contain" /> : null}
-        {text ? <Text style={{ fontFamily: F.bold, fontSize: 64, color, letterSpacing: -2, textShadowColor: color, textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 }, textAlign: 'center' }}>{text}</Text> : null}
+        {text ? <Text style={{ ...FONT.bold, fontSize: 64, color, letterSpacing: -2, textShadowColor: color, textShadowRadius: 24, textShadowOffset: { width: 0, height: 0 }, textAlign: 'center' }}>{text}</Text> : null}
       </AutoHide>
     </Animated.View>
   );
@@ -207,7 +207,7 @@ export function RoundBanner({ round }: { round: number }) {
       <AutoHide ms={1100}>
         <View style={{ width: 320, height: 120, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={FX.round} style={{ position: 'absolute', width: 320, height: 120 }} contentFit="contain" />
-          <Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 26, letterSpacing: -0.5, marginTop: -4 }}>Round {round}</Text>
+          <Text style={{ color: '#fff', ...FONT.bold, fontSize: 26, letterSpacing: -0.5, marginTop: -4 }}>Round {round}</Text>
         </View>
       </AutoHide>
     </Animated.View>

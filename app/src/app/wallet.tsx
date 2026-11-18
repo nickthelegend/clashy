@@ -12,7 +12,7 @@ import { useDeskColumn } from '@/ui/layout';
 import { ART, BackBtn, Btn, ErrorLine, Money, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { ArrowDown, ArrowUp, Copy, Plus } from '@/ui/icons';
 import { Sheet } from '@/ui/sheet';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Move = { sig: string; at: number; delta: number; game: boolean; what: string | null };
 const explorerTx = (sig: string) => `https://explorer.solana.com/tx/${sig}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`;
@@ -40,7 +40,7 @@ function Action({ label, icon, onPress, disabled, tint = C.s2 }: { label: string
   return (
     <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 8, opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] })}>
       <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: tint, alignItems: 'center', justifyContent: 'center' }}>{icon}</View>
-      <Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{label}</Txt>
+      <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{label}</Txt>
     </Pressable>
   );
 }
@@ -105,7 +105,7 @@ export default function Wallet() {
           </Row>
           {err ? <ErrorLine msg={err} /> : null}
 
-          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 6 }}>Activity</Text>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 6 }}>Activity</Text>
           {moves === null ? <SkeletonRows n={3} /> : moves.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 24 }}>
               <Image source={ART.coinsPile} style={{ width: 90, height: 90 }} contentFit="contain" />
@@ -124,7 +124,7 @@ export default function Wallet() {
             </Pressable>
           ))}
 
-          <Text style={{ fontFamily: F.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 8 }}>Account</Text>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 8 }}>Account</Text>
           <View style={{ backgroundColor: C.s1, borderRadius: 20, overflow: 'hidden' }}>
             <SettingRow label="View on Solana Explorer" onPress={explorer} />
             {wallet.exportKey ? <SettingRow label="Export your key" onPress={wallet.exportKey} /> : null}

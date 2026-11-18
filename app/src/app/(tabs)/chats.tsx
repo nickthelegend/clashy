@@ -12,7 +12,7 @@ import { CHANNELS, metaOf, readChannelMetas, readMySquads, readSeen, seenOf } fr
 import { useDeskColumn } from '@/ui/layout';
 import { Search } from '@/ui/icons';
 import { ART, Btn, CRESTS, ErrorLine, IconBtn, Pending, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Filter = 'all' | 'unread' | 'general' | 'trades';
 const FILTERS: { key: Filter; label: string }[] = [{ key: 'all', label: 'All' }, { key: 'unread', label: 'Unread' }, { key: 'general', label: '#general' }, { key: 'trades', label: '#trades' }];
@@ -59,7 +59,7 @@ export default function Chats() {
       <Row style={{ gap: 6, marginBottom: 14 }}>
         {FILTERS.map((x) => (
           <Pressable key={x.key} onPress={() => setF(x.key)} style={{ flex: 1, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: f === x.key ? C.white : C.s2 }}>
-            <Text style={{ fontFamily: F.semi, fontSize: 13, color: f === x.key ? '#000' : C.ink }}>{x.label}</Text>
+            <Text style={{ ...FONT.semi, fontSize: 13, color: f === x.key ? '#000' : C.ink }}>{x.label}</Text>
           </Pressable>
         ))}
       </Row>
@@ -78,7 +78,7 @@ export default function Chats() {
             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, opacity: pressed ? 0.6 : 1 })}>
             <View>
               <Image source={CRESTS[sq.crest % CRESTS.length]} style={{ width: 50, height: 50 }} contentFit="contain" />
-              <View style={{ position: 'absolute', right: -4, bottom: -2, backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 4, borderWidth: 2, borderColor: C.bg }}><Txt v="small" color={C.ink} style={{ fontSize: 10, fontFamily: F.bold }}>#</Txt></View>
+              <View style={{ position: 'absolute', right: -4, bottom: -2, backgroundColor: C.s2, borderRadius: 8, paddingHorizontal: 4, borderWidth: 2, borderColor: C.bg }}><Txt v="small" color={C.ink} style={{ fontSize: 10, ...FONT.bold }}>#</Txt></View>
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Row style={{ gap: 6 }}>
@@ -91,7 +91,7 @@ export default function Chats() {
             </View>
             <View style={{ alignItems: 'flex-end', gap: 5 }}>
               <Txt v="small" style={{ fontSize: 12 }}>{last ? ago(last.ts) : ''}</Txt>
-              {unread ? <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}><Txt v="small" color="#fff" style={{ fontSize: 11.5, fontFamily: F.bold }}>{unread > 99 ? '99+' : unread}</Txt></View> : null}
+              {unread ? <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}><Txt v="small" color={C.onBrand} style={{ fontSize: 11.5, ...FONT.bold }}>{unread > 99 ? '99+' : unread}</Txt></View> : null}
             </View>
           </Pressable>
         );

@@ -22,7 +22,7 @@ import {
   BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag,
 } from './practice-kit';
 import { Sheet } from './sheet';
-import { C, F, S } from './tokens';
+import { C, F, FONT, S } from './tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/practice' as Href));
 const usd2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -157,7 +157,7 @@ export function BookMarketPage({ m }: { m: Market }) {
               return (
                 <Pressable key={t} onPress={() => { Haptics.selectionAsync(); setTf(t); }} accessibilityRole="button" accessibilityState={{ selected: on }}
                   style={{ height: 36, minWidth: 40, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}>
-                  <Txt v="small" color={on ? C.ink : C.dim} style={{ fontFamily: on ? F.semi : F.medium, fontSize: 14 }}>{t}</Txt>
+                  <Txt v="small" color={on ? C.ink : C.dim} style={{ ...(on ? FONT.semi : FONT.medium), fontSize: 14 }}>{t}</Txt>
                 </Pressable>
               );
             })}
@@ -351,7 +351,7 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
     const on = field === k;
     return (
       <Pressable onPress={() => { Haptics.selectionAsync(); setField(k); }} accessibilityRole="button" accessibilityState={{ selected: on }}
-        style={{ flex: 1, minWidth: 0, borderRadius: 16, borderWidth: 1.5, borderColor: on ? C.brandSoft : '#26262E', backgroundColor: '#15151A', paddingHorizontal: 12, paddingVertical: 9 }}>
+        style={{ flex: 1, minWidth: 0, borderRadius: 16, borderWidth: 1.5, borderColor: on ? C.brandSoft : 'transparent', backgroundColor: '#15151A', paddingHorizontal: 12, paddingVertical: 9 }}>
         <Txt v="small" style={{ fontSize: 11.5 }}>{title}</Txt>
         <Txt v="title" color={val ? C.ink : C.dim} lines={1} style={{ fontSize: 22, marginTop: 1, fontVariant: ['tabular-nums'] }}>{val ? `$${typed(val)}` : hint}</Txt>
       </Pressable>

@@ -23,7 +23,7 @@ import { CallButtons, CoinRoll, CoinToken, FaceOff, LiveBoard, ModeCard, OpenCla
 import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
 /** The program's DUEL_SETUP_SECS: after this a matched duel that never reached the rollup can be aborted. */
@@ -267,7 +267,7 @@ export default function OnChainDuel() {
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <View style={{ flex: 1 }} />
           <Pressable onPress={() => setProof(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#15151B', borderRadius: 14, paddingHorizontal: 12, height: 34 }}>
-            <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ fontFamily: F.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
+            <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
           </Pressable>
         </Row>
         {err ? <ErrorLine msg={err} /> : null}
@@ -280,9 +280,9 @@ export default function OnChainDuel() {
                   <ClayLoop name={won ? 'win' : tie ? 'duel' : 'ko'} size={170} loop={!!won} style={{ borderRadius: 36 }} />
                   {won ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
                 </View>
-                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : koMe && !koThem ? 'Liquidated' : tie ? 'Dead heat' : 'You lost'}</Text>
+                <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : koMe && !koThem ? 'Liquidated' : tie ? 'Dead heat' : 'You lost'}</Text>
                 {duel.ko ? <Txt v="label" color={koMe && !koThem ? C.down : koThem && !koMe ? C.up : C.ink} style={{ textAlign: 'center' }}>{koMe && koThem ? 'Both sides liquidated' : koMe ? `Liquidated · your ${duel.lev[me]}× position lost its whole stake` : `Liquidated · ${rivalProf?.name ?? 'your rival'} lost it all at ${duel.lev[1 - me]}×`}</Txt> : null}
-                <Text style={{ fontFamily: F.display, fontSize: 30, color: C.ink }}>{won ? `+${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : tie ? `${fmtUsdc(duel.stake)} back` : `−${fmtUsdc(duel.stake)}`}</Text>
+                <Text style={{ ...FONT.display, fontSize: 30, color: C.ink }}>{won ? `+${fmtUsdc(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000))}` : tie ? `${fmtUsdc(duel.stake)} back` : `−${fmtUsdc(duel.stake)}`}</Text>
                 <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{coinName(sym2)} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {koMe ? 'liquidated' : `${myPnl >= 0 ? '+' : ''}${myPnl.toFixed(2)}%`}{duel.lev[me] > 1 ? ` at ${duel.lev[me]}×` : ''} · {rivalProf?.name ?? 'rival'} {koThem ? 'liquidated' : `${theirPnl >= 0 ? '+' : ''}${theirPnl.toFixed(2)}%`}{duel.lev[1 - me] > 1 ? ` at ${duel.lev[1 - me]}×` : ''}</Txt>
                 {won && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
                 <Btn title="Clash again" kind="white" h={56} style={{ marginTop: 14, alignSelf: 'stretch', borderRadius: 20 }} onPress={() => setActiveDuel(null)} />
@@ -290,7 +290,7 @@ export default function OnChainDuel() {
             ) : duel && duel.status === 6 ? (
               <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 26, padding: 18, marginBottom: 6 }}>
                 <Image source={ART.stash} style={{ width: 90, height: 90 }} contentFit="contain" />
-                <Text style={{ fontFamily: F.display, fontSize: 26, color: C.ink, marginTop: 6 }}>{fmtUsdc(duel.stake)} IS BACK</Text>
+                <Text style={{ ...FONT.display, fontSize: 26, color: C.ink, marginTop: 6 }}>{fmtUsdc(duel.stake)} IS BACK</Text>
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>{duel.joiner.equals(PublicKey.default) ? 'Nobody took your clash in time, so your stake went straight back to your wallet.' : 'The clash never got going, so both stakes went back. No one lost a cent.'}</Txt>
                 <Btn title="Find another rival" kind="white" style={{ marginTop: 12, alignSelf: 'stretch' }} onPress={() => setActiveDuel(null)} />
               </Animated.View>
@@ -300,7 +300,7 @@ export default function OnChainDuel() {
               <>
                 <View style={{ alignItems: 'center', marginTop: 4 }}>
                   <ClayLoop name="duel" size={150} style={{ borderRadius: 34 }} />
-                  <Text style={{ fontFamily: F.bold, fontSize: 42, letterSpacing: -1.4, color: C.ink, marginTop: -4 }}>Clash</Text>
+                  <Text style={{ ...FONT.bold, fontSize: 42, letterSpacing: -1.4, color: C.ink, marginTop: -4 }}>Clash</Text>
                   <Txt v="small" style={{ textAlign: 'center' }}>One coin, two calls, winner takes {pot} USDC.</Txt>
                 </View>
                 <Row style={{ gap: 10, marginTop: 18 }}>
@@ -312,7 +312,7 @@ export default function OnChainDuel() {
                     <Row style={{ gap: 10 }}>
                       <Row style={{ gap: -10 }}><CoinToken sym="SOL" size={44} /><CoinToken sym="BTC" size={44} /><CoinToken sym="ETH" size={44} /></Row>
                       <View style={{ borderRadius: 12, paddingHorizontal: 10, height: 30, justifyContent: 'center', backgroundColor: mode === 'perps' ? 'rgba(255,255,255,0.18)' : 'rgba(240,70,140,0.16)' }}>
-                        <Txt v="label" color={mode === 'perps' ? '#fff' : C.opp} style={{ fontFamily: F.bold }}>Up to 50×</Txt>
+                        <Txt v="label" color={mode === 'perps' ? '#fff' : C.opp} style={{ ...FONT.bold }}>Up to 50×</Txt>
                       </View>
                     </Row>
                   )} />
@@ -322,8 +322,8 @@ export default function OnChainDuel() {
                     <Txt v="small" style={{ marginBottom: 6 }}>Leverage · a {(100 / lev).toFixed(lev >= 25 ? 1 : 0)}% move against you liquidates you</Txt>
                     <Row style={{ gap: 6 }}>
                       {PERPS_LEVERAGE.map((n) => (
-                        <Pressable key={n} onPress={() => setLev(n)} accessibilityRole="button" accessibilityState={{ selected: lev === n }} style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 20, backgroundColor: lev === n ? C.opp : '#15151B', borderWidth: 1, borderColor: lev === n ? C.opp : '#23232B', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                          <Txt v="label" color={lev === n ? '#fff' : C.ink} style={{ fontFamily: F.semi, fontSize: 15 }}>{`${n}×`}</Txt>
+                        <Pressable key={n} onPress={() => setLev(n)} accessibilityRole="button" accessibilityState={{ selected: lev === n }} style={({ pressed }) => ({ flex: 1, height: 40, borderRadius: 20, backgroundColor: lev === n ? C.opp : '#15151B', borderWidth: 1, borderColor: lev === n ? C.opp : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                          <Txt v="label" color={lev === n ? '#fff' : C.ink} style={{ ...FONT.semi, fontSize: 15 }}>{`${n}×`}</Txt>
                         </Pressable>
                       ))}
                     </Row>
@@ -331,18 +331,18 @@ export default function OnChainDuel() {
                 ) : null}
                 <Row style={{ gap: 8, marginTop: 12 }}>
                   {[5, 10, 25].map((n) => (
-                    <Pressable key={n} onPress={() => setStake(n)} style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: stake === n ? C.ink : '#15151B', borderWidth: 1, borderColor: stake === n ? C.ink : '#23232B', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-                      <Text style={{ fontFamily: F.semi, fontSize: 18, color: stake === n ? '#000' : C.ink }}>${n}</Text>
+                    <Pressable key={n} onPress={() => setStake(n)} style={({ pressed }) => ({ flex: 1, height: 44, borderRadius: 22, backgroundColor: stake === n ? C.ink : '#15151B', borderWidth: 1, borderColor: stake === n ? C.ink : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                      <Text style={{ ...FONT.semi, fontSize: 18, color: stake === n ? '#000' : C.ink }}>${n}</Text>
                     </Pressable>
                   ))}
                 </Row>
                 <Pressable onPress={ready ? open : () => setProof(true)} disabled={!!busy} style={({ pressed }) => ({ marginTop: 14, height: 70, borderRadius: 24, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: C.opp, shadowOpacity: 0.6, shadowRadius: 20, shadowOffset: { width: 0, height: 6 } })}>
-                  <Text style={{ fontFamily: F.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'Opening…' : ready ? (mode === 'perps' ? `Find a rival · $${stake} at ${lev}×` : `Find a rival · $${stake}`) : 'Set up your wallet'}</Text>
+                  <Text style={{ ...FONT.display, fontSize: 26, color: '#fff' }}>{busy === 'open' ? 'Opening…' : ready ? (mode === 'perps' ? `Find a rival · $${stake} at ${lev}×` : `Find a rival · $${stake}`) : 'Set up your wallet'}</Text>
                 </Pressable>
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{mode === 'perps' ? `You both go long or short at ${lev}×, sealed until you both lock. Best return wins, and whoever gets liquidated loses on the spot.` : 'Your call is sealed until both of you lock. No leverage: best call wins.'}</Txt>
 
                 <Row style={{ justifyContent: 'space-between', marginTop: 26, marginBottom: 10 }}>
-                  <Text style={{ fontFamily: F.display, fontSize: 24, color: C.ink }}>Open clashes</Text>
+                  <Text style={{ ...FONT.display, fontSize: 24, color: C.ink }}>Open clashes</Text>
                   <Txt v="small">{others.length} waiting</Txt>
                 </Row>
                 {boardErr ? <ErrorLine msg={boardErr} /> : null}
@@ -362,7 +362,7 @@ export default function OnChainDuel() {
             {duel.status === 0 ? (
               <View style={{ alignItems: 'center' }}>
                 <Searching><View style={{ borderRadius: 70, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={meProf} size={110} /></View></Searching>
-                <Text style={{ fontFamily: F.display, fontSize: 36, color: C.ink, marginTop: 34 }}>Finding a rival</Text>
+                <Text style={{ ...FONT.display, fontSize: 36, color: C.ink, marginTop: 34 }}>Finding a rival</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>Your {fmtUsdc(duel.stake)} is in escrow on Solana. The first player to join takes you on.</Txt>
                 {me === 0 ? <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 18 }}><Txt v="label" color={C.muted}>{busy === 'cancel' ? 'Cancelling…' : 'Cancel and get it back'}</Txt></Pressable> : null}
               </View>
@@ -375,12 +375,12 @@ export default function OnChainDuel() {
             ) : duel.status === 2 ? (
               <View style={{ alignItems: 'center' }}>
                 <CoinToken sym={sym2} size={130} />
-                <Text style={{ fontFamily: F.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2)}</Text>
+                <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2)}</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>{perps ? `Long or short at ${duelLev}× for ${duel.lenSecs} seconds. A ${(100 / duelLev).toFixed(duelLev >= 25 ? 1 : 0)}% move against you and you're liquidated.` : duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
                 <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
                   {me >= 0 && !(duel.picksCommitted & (1 << me)) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : (
                     <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
-                      <Text style={{ fontFamily: F.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>
+                      <Text style={{ ...FONT.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>
                       <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
                     </View>
                   )}

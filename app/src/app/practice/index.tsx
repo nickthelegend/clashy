@@ -61,7 +61,7 @@ function MarketRow({ m, px, first }: { m: Market; px?: Px; first: boolean }) {
         <Row style={{ gap: 6 }}>
           <Txt v="label" lines={1} style={{ flexShrink: 1 }}>{m.name}</Txt>
           {m.kind === 'perp' ? (
-            <View style={{ backgroundColor: 'rgba(91,108,255,0.16)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
+            <View style={{ backgroundColor: 'rgba(171,159,242,0.16)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
               <Txt v="small" color={C.brandSoft} style={{ fontSize: 11 }}>Up to {m.maxLev}x</Txt>
             </View>
           ) : null}
@@ -204,7 +204,7 @@ export default function PracticeHome() {
             </Txt>
           </View>
           <View style={{ height: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: C.brand, justifyContent: 'center' }}>
-            <Txt v="label" color="#fff">{pr.book?.liveClash ? 'Resume' : 'Play'}</Txt>
+            <Txt v="label" color={C.onBrand}>{pr.book?.liveClash ? 'Resume' : 'Play'}</Txt>
           </View>
         </Pressable>
 

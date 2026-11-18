@@ -17,7 +17,7 @@ import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const CARD = '#111116';
 const HAIR = '#1F1F27';
@@ -31,7 +31,7 @@ function Group({ title, children, foot }: { title: string; children: ReactNode; 
   return (
     <View style={{ marginTop: 24 }}>
       <Txt v="h2" style={{ marginBottom: 8, marginLeft: 4 }}>{title}</Txt>
-      <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>{children}</View>
+      <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>{children}</View>
       {foot ? <Txt v="small" style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17, fontSize: 12 }}>{foot}</Txt> : null}
     </View>
   );
@@ -97,12 +97,12 @@ export default function Settings() {
       </Row>
 
       {wallet.status === 'setup' || wallet.status === 'error' ? (
-        <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: HAIR }}>
+        <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 22, padding: 16 }}>
           <Txt v="h2">Setup required</Txt>
           <Txt v="small" style={{ marginTop: 6, lineHeight: 18 }}>{wallet.error ?? 'The wallet could not start.'}</Txt>
         </View>
       ) : wallet.status === 'out' ? (
-        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 18, borderRadius: 26, overflow: 'hidden', backgroundColor: CARD, borderWidth: 1, borderColor: HAIR }}>
+        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 18, borderRadius: 26, overflow: 'hidden', backgroundColor: CARD }}>
           <ClayLoop name="onSquad" width="100%" height={170} cover />
           <View style={{ padding: 18, paddingTop: 14 }}>
             <Txt v="title" style={{ fontSize: 24 }}>Sign in to Clashy</Txt>
@@ -111,7 +111,7 @@ export default function Settings() {
           </View>
         </Animated.View>
       ) : !me ? (
-        <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 22, padding: 16, borderWidth: 1, borderColor: HAIR, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <View style={{ marginTop: 18, backgroundColor: CARD, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <Bone w={64} h={64} r={32} />
           <View style={{ flex: 1, gap: 8 }}><Bone w="55%" h={14} /><Bone w="35%" h={11} /></View>
           <Txt v="small">{wallet.status === 'creating' ? 'Making your wallet…' : 'Loading…'}</Txt>
@@ -121,7 +121,7 @@ export default function Settings() {
           {/* profile */}
           <Animated.View entering={FadeInDown.duration(300)}>
             <Pressable onPress={go('/profile')} accessibilityRole="button" accessibilityLabel="Edit profile"
-              style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: HAIR, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+              style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 24, backgroundColor: CARD, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
               {prof.status === 'loading' ? <Bone w={64} h={64} r={32} /> : (
                 <View style={{ borderRadius: 40, borderWidth: 2.5, borderColor: C.brand, padding: 2 }}><ProfileAvatar p={p ?? undefined} size={60} /></View>
               )}
@@ -180,7 +180,7 @@ export default function Settings() {
       )}
 
       <View style={{ alignItems: 'center', marginTop: 30, gap: 4 }}>
-        <Txt v="label" color={C.dim} style={{ fontFamily: F.semi, fontSize: 13 }}>Clashy {VERSION}</Txt>
+        <Txt v="label" color={C.dim} style={{ ...FONT.semi, fontSize: 13 }}>Clashy {VERSION}</Txt>
         <Txt v="small" color={C.dim} style={{ fontSize: 11.5 }}>{IS_LOCAL_NET ? 'Test network · test USDC' : 'Solana · USDC'} · network fees paid by Clashy</Txt>
       </View>
     </ScrollView>

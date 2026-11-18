@@ -8,7 +8,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useFeed, useLiveCounts } from '@/chain/reads';
 import { Chat, Collapse, Home, Shield, Swords, User, WalletI } from './icons';
 import { ART, Art, Btn, LiveDot, Row, Txt, Wordmark } from './kit';
-import { C, F, R } from './tokens';
+import { C, F, FONT, R } from './tokens';
 
 type NavProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: (c: string) => ReactNode; collapsed: boolean };
 function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavProps & { ref?: unknown }) {
@@ -19,7 +19,7 @@ function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavPr
       backgroundColor: isFocused ? C.s2 : hovered ? '#0E0E10' : 'transparent',
     })}>
       {icon(isFocused ? C.ink : C.muted)}
-      {collapsed ? null : <Text style={{ fontFamily: F.semi, fontSize: 15, color: isFocused ? C.ink : C.muted }}>{label}</Text>}
+      {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: isFocused ? C.ink : C.muted }}>{label}</Text>}
     </Pressable>
   );
 }
@@ -49,7 +49,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         ))}
         <Pressable onPress={() => router.push('/wallet')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md, paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start', marginTop: 10 }}>
           <WalletI size={21} color={C.muted} />
-          {collapsed ? null : <Text style={{ fontFamily: F.semi, fontSize: 15, color: C.muted }}>Wallet</Text>}
+          {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: C.muted }}>Wallet</Text>}
         </Pressable>
       </View>
       <View style={{ flex: 1 }} />

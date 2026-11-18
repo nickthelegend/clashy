@@ -12,7 +12,7 @@ import { STOCKS, createStockAtaIx, minSharesFor, stockByMint, swapAccounts, type
 import { ART, AVATARS, Btn, ErrorLine, Row, Txt } from './kit';
 import { Heart, More, Reply, Share } from './icons';
 import { Lottie } from './lottie';
-import { C, F, fmtUsd } from './tokens';
+import { C, F, FONT, fmtUsd } from './tokens';
 
 export const STOCK_ART: Record<string, number> = { NVDA: ART.stockNVDA, TSLA: ART.stockTSLA, AAPL: ART.stockAAPL, SPY: ART.stockSPY, GOOGL: ART.stockGOOGL };
 type Chain = ReturnType<typeof useChain>;
@@ -28,7 +28,7 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
   const profit = value !== null && holding ? value - holding.cost : null;
   const pct = profit !== null && holding && holding.cost > 0 ? (profit / holding.cost) * 100 : null;
   return (
-    <Pressable onPress={() => router.push(`/stock/${stock.symbol}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 })}>
+    <Pressable onPress={() => router.push(`/stock/${stock.symbol}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, padding: 12 })}>
       <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
         <Image source={STOCK_ART[stock.symbol]} style={{ width: 40, height: 40 }} contentFit="contain" />
       </View>
@@ -71,7 +71,7 @@ function DuelCard({ duel, author }: { duel: PublicKey; author: PublicKey }) {
   const pot = (v.stake * 2 - Math.floor((v.stake * 2 * 300) / 10_000)) / USDC;
   const sym = COIN_SYMBOLS[v.coin] ?? '?';
   return (
-    <Pressable onPress={() => router.push(`/match/${duel.toBase58()}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, borderWidth: 1, borderColor: C.s2, padding: 12 })}>
+    <Pressable onPress={() => router.push(`/match/${duel.toBase58()}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, padding: 12 })}>
       <Image source={ART.tileDuel} style={{ width: 44, height: 44 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>Clash on {sym}</Txt>
@@ -123,7 +123,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
             <Heart size={17} color={liked ? C.opp : C.muted} filled={liked} /><Txt v="small" color={liked ? C.opp : C.muted}>{post.likes || ''}</Txt>
           </Pressable>
           <View style={{ flex: 1 }} />
-          {stock && prices[stock.symbol] ? <Txt v="small" style={{ fontFamily: F.semi }} color={C.ink}>{stock.symbol} {fmtUsd(prices[stock.symbol])}</Txt> : null}
+          {stock && prices[stock.symbol] ? <Txt v="small" style={{ ...FONT.semi }} color={C.ink}>{stock.symbol} {fmtUsd(prices[stock.symbol])}</Txt> : null}
         </Row>
       </View>
     </View>
@@ -139,7 +139,7 @@ export function Thread(props: Omit<ItemProps, 'threadBelow' | 'reply'> & { repli
       <PostItem {...props} threadBelow={shown.length > 0} />
       {shown.map((r, i) => <PostItem key={r.seq} {...props} post={r} reply threadBelow={i < shown.length - 1} />)}
       {props.replies.length > 2 && !all ? (
-        <Pressable onPress={() => setAll(true)} style={{ paddingLeft: 54, paddingBottom: 12 }}><Txt v="small" color={C.up} style={{ fontFamily: F.semi }}>Show {props.replies.length - 2} more replies</Txt></Pressable>
+        <Pressable onPress={() => setAll(true)} style={{ paddingLeft: 54, paddingBottom: 12 }}><Txt v="small" color={C.up} style={{ ...FONT.semi }}>Show {props.replies.length - 2} more replies</Txt></Pressable>
       ) : <View style={{ height: 4 }} />}
     </View>
   );
@@ -199,7 +199,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
           setText(t);
           if (!picked && !replyTo) { const hit = STOCKS.find((s) => new RegExp(`\\b(${s.symbol}|${s.name.split(' ')[0]})\\b`, 'i').test(t)); setSym(hit ? hit.symbol : null); }
         }} placeholder={replyTo ? 'Your reply' : "What's your call?"} placeholderTextColor={C.muted} multiline maxLength={140}
-          style={{ flex: 1, color: C.ink, fontFamily: F.medium, fontSize: 16, minHeight: 40, paddingTop: 8 }} />
+          style={{ flex: 1, color: C.ink, ...FONT.medium, fontSize: 16, minHeight: 40, paddingTop: 8 }} />
       </Row>
       {!replyTo ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
@@ -207,7 +207,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
             <Pressable key={s.symbol} onPress={() => { setPicked(true); setSym(sym === s.symbol ? null : s.symbol); setBack(0); }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: sym === s.symbol ? C.brand : C.s2 }}>
               <Image source={STOCK_ART[s.symbol]} style={{ width: 18, height: 18 }} contentFit="contain" />
-              <Txt v="small" color={sym === s.symbol ? '#fff' : C.ink} style={{ fontFamily: F.semi, fontSize: 12 }}>{s.symbol}</Txt>
+              <Txt v="small" color={sym === s.symbol ? C.onBrand : C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{s.symbol}</Txt>
             </Pressable>
           ))}
         </View>
@@ -218,7 +218,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
           <Row style={{ gap: 6, marginTop: 8 }}>
             {[0, 5, 10, 25].map((n) => (
               <Pressable key={n} onPress={() => setBack(n)} style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: back === n ? C.ink : C.s2 }}>
-                <Txt v="small" color={back === n ? '#000' : C.ink} style={{ fontFamily: F.semi }}>{n === 0 ? 'Just post' : `$${n}`}</Txt>
+                <Txt v="small" color={back === n ? '#000' : C.ink} style={{ ...FONT.semi }}>{n === 0 ? 'Just post' : `$${n}`}</Txt>
               </Pressable>
             ))}
           </Row>
@@ -248,7 +248,7 @@ export function JoinCard({ chain }: { chain: Chain }) {
         </View>
       </Row>
       <TextInput value={name} onChangeText={(t) => setName(t.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16))} placeholder="your_name" placeholderTextColor={C.muted}
-        autoCapitalize="none" autoCorrect={false} style={{ marginTop: 14, color: C.ink, fontFamily: F.semi, fontSize: 17, backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 46 }} />
+        autoCapitalize="none" autoCorrect={false} style={{ marginTop: 14, color: C.ink, ...FONT.semi, fontSize: 17, backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 46 }} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         {AVATARS.map((src, i) => (
           <Pressable key={i} onPress={() => setAvatar(i)} style={{ borderRadius: 24, borderWidth: 2.5, borderColor: avatar === i ? C.brand : 'transparent' }}>

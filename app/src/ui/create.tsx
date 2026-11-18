@@ -13,14 +13,14 @@ import { useLiveCounts } from '@/chain/reads';
 import { Composer } from './feed';
 import { ART, Btn, ErrorLine, Row, Txt } from './kit';
 import { Lottie } from './lottie';
-import { Sheet, SheetTile } from './sheet';
+import { Sheet, SheetLabel, SheetTile } from './sheet';
 import { AmountSheet } from './amount';
 import { BotPic } from './practice-kit';
 import { SearchSheet } from './search-sheet';
-import { C, F, fmtUsd } from './tokens';
+import { C, F, FONT, fmtUsd } from './tokens';
 
-type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void; openSearch: () => void };
-const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {}, openSearch: () => {} });
+type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void; openSearch: () => void; arenaOpen: boolean };
+const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {}, openSearch: () => {}, arenaOpen: false });
 export const useCreate = () => useContext(CreateCtx);
 
 function CallDrawer({ open, onClose, replyTo }: { open: boolean; onClose: () => void; replyTo: Post | null }) {
@@ -59,22 +59,24 @@ function SaveDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-/** The Arena button in the tab bar: pick a game in a drawer. Real-money games first, then free practice. */
+/** The Arena button in the tab bar opens this: every game in one drawer, real money first, then free practice. */
 function ArenaDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const counts = useLiveCounts();
-  const waiting = counts.status === 'ready' ? counts.data.openDuels : 0;
+  const c = counts.status === 'ready' ? counts.data : null;
   const go = (to: string) => () => { onClose(); setTimeout(() => router.push(to as Href), 260); };
-  const art = (src: number) => <Image source={src} style={{ width: 52, height: 52 }} contentFit="contain" />;
+  const art = (src: number) => <Image source={src} style={{ width: 46, height: 46 }} contentFit="contain" />;
   return (
-    <Sheet open={open} onClose={onClose} title="Pick your game">
-      <SheetTile art={art(ART.tileDuel)} title="Clash" line={waiting ? `1 v 1 · from $5 · ${waiting} waiting for a rival` : '1 v 1 · from $5 · a stock in 1 hour or crypto in 60 s'} accent={C.opp} onPress={go('/clash?mode=crypto')} />
-      <SheetTile art={<View style={{ flexDirection: 'row' }}><Image source={ART.logoSOL} style={{ width: 30, height: 30 }} /><Image source={ART.logoBTC} style={{ width: 30, height: 30, marginLeft: -10 }} /></View>} title="Perps clash" line="Long or short with leverage · 60 s · liquidated means out" accent="#9B6BFF" onPress={go('/clash?mode=perps')} />
-      <SheetTile art={art(ART.tileRoyale)} title="Battle royale" line="Up to 16 players · $2 in · last one standing" accent="#FFC94A" onPress={go('/onchain-royale')} />
-      <SheetTile art={art(ART.tileWar)} title="Squad war" line="Your squad's chest against another squad" accent={C.brand} onPress={go('/clans')} />
-      <SheetTile art={<BotPic size={50} />} title="Practice clash" line="Free · clash Clashy Bot with practice money, live prices" accent={C.brandSoft} onPress={go('/practice/clash')} />
-      <SheetTile art={art(ART.tileLine)} title="Paper trading" line="$10,000 practice money · stocks, 190 perps, memecoins" accent={C.up} onPress={go('/practice')} />
-      <Pressable onPress={go('/arena')} style={{ alignItems: 'center', paddingVertical: 12 }}>
-        <Txt v="small" color={C.brandSoft} style={{ fontFamily: F.semi }}>Live games, top players and results ›</Txt>
+    <Sheet open={open} onClose={onClose} title="Pick a game" sub="Clash real players for USDC, or practice free against the bot.">
+      <SheetLabel index={0}>Play for real</SheetLabel>
+      <SheetTile index={1} art={art(ART.tileDuel)} title="Clash" line="1 v 1 from $5 · crypto in 60 s or a stock in 1 hour" accent={C.opp} meta={c?.openDuels ? `${c.openDuels} waiting` : undefined} onPress={go('/clash?mode=crypto')} />
+      <SheetTile index={2} art={<View style={{ flexDirection: 'row' }}><Image source={ART.logoSOL} style={{ width: 28, height: 28 }} /><Image source={ART.logoBTC} style={{ width: 28, height: 28, marginLeft: -9 }} /></View>} title="Perps clash" line="Long or short up to 50x · 60 s · liquidated means out" accent="#9B6BFF" onPress={go('/clash?mode=perps')} />
+      <SheetTile index={3} art={art(ART.tileRoyale)} title="Battle royale" line="Up to 16 players · $2 in · last one standing" accent="#FFC94A" meta={c?.openRoyales ? `${c.openRoyales} open` : undefined} onPress={go('/onchain-royale')} />
+      <SheetTile index={4} art={art(ART.tileWar)} title="Squad war" line="Your squad's chest against another squad" accent={C.brand} onPress={go('/clans')} />
+      <SheetLabel index={5}>Free practice</SheetLabel>
+      <SheetTile index={6} art={<BotPic size={44} />} title="Practice clash" line="Clash Clashy Bot with practice money, live prices" accent={C.brandSoft} onPress={go('/practice/clash')} />
+      <SheetTile index={7} art={art(ART.tileLine)} title="Paper trading" line="$10,000 practice money · stocks, 190 perps, memecoins" accent={C.up} onPress={go('/practice')} />
+      <Pressable onPress={go('/arena')} style={{ alignItems: 'center', paddingVertical: 16 }}>
+        <Txt v="label" color={C.brandSoft}>Live games, top players and results</Txt>
       </Pressable>
     </Sheet>
   );
@@ -93,6 +95,7 @@ export function CreateProvider({ children }: { children: ReactNode }) {
     openSave: () => setSave(true),
     openArena: () => setArena(true),
     openSearch: () => setSearch(true),
+    arenaOpen: arena,
   };
   // ⌘K / Ctrl+K opens search from anywhere in the tabs (web)
   useEffect(() => {
