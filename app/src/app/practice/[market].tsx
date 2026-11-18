@@ -19,7 +19,7 @@ import { ART, BackBtn, Bone, ErrorLine, LiveDot, Money, Pending, Row, SkeletonRo
 import { useDeskColumn } from '@/ui/layout';
 import { PriceChart } from '@/ui/price-chart';
 import {
-  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
+  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -185,6 +185,7 @@ function MarketPage({ m }: { m: Market }) {
                   <SideTag p={c} />
                   <Txt v="small" lines={1} style={{ flex: 1 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {c.reason === 'liquidated' ? 'liquidated' : ago(c.closedAt)}</Txt>
                   <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
+                  <ShareTrade p={c} />
                 </Row>
               ))}
             </View>

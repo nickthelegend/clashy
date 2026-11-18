@@ -19,7 +19,7 @@ import { useDeskColumn } from './layout';
 import { Keypad, editAmount, type Key } from './keypad';
 import { CandleChart, OrderBookView, TapeView, VenueChip, decimalsFor, fmtP, fmtUsdC } from './orderbook';
 import {
-  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag,
+  BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag,
 } from './practice-kit';
 import { Sheet } from './sheet';
 import { C, F, FONT, S } from './tokens';
@@ -245,6 +245,7 @@ export function BookMarketPage({ m }: { m: Market }) {
                   <SideTag p={c} />
                   <Txt v="small" lines={1} style={{ flex: 1 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)}{c.reason === 'liquidated' ? ' · liquidated' : ''}</Txt>
                   <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
+                  <ShareTrade p={c} />
                 </Row>
               ))}
             </View>

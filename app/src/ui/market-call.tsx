@@ -3,10 +3,11 @@
 import { router, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { tradeMovePct, type TradeTag } from '@/chain/calls';
 import { VENUES, fmtPrice, kindLabel, resolveMarket, signedPct, usePrices, type Market } from '@/chain/practice';
 import { Row, Txt } from './kit';
 import { MarketLogo } from './practice-kit';
-import { C } from './tokens';
+import { C, FONT } from './tokens';
 
 const cache = new Map<string, Market | null>();
 export function useMarket(id: string | null) {
@@ -21,7 +22,31 @@ export function useMarket(id: string | null) {
   return m;
 }
 
-export function MarketCallCard({ id }: { id: string }) {
+/** The trade a call carries: side and leverage, entry and exit (or the live price), and its move on the margin. */
+export function TradeStrip({ t, m, now }: { t: TradeTag; m?: Market; now?: number }) {
+  const pct = tradeMovePct(t, now);
+  const spot = m && m.kind !== 'perp' && t.lev === 1;
+  const color = pct === undefined ? C.muted : pct >= 0 ? C.up : C.down;
+  const what = spot ? (t.exit ? 'Sold' : 'Holding') : `${t.side === 'long' ? 'Long' : 'Short'} ${t.lev}x`;
+  return (
+    <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1F1F26' }}>
+      <Row style={{ gap: 8 }}>
+        <View style={{ backgroundColor: spot ? C.s2 : t.side === 'long' ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+          <Txt v="small" color={spot ? C.ink : t.side === 'long' ? C.up : C.down} style={{ ...FONT.semi, fontSize: 12 }}>{what}</Txt>
+        </View>
+        <Txt v="small" color={C.ink} style={{ fontSize: 12.5 }}>${t.margin.toLocaleString('en-US', { maximumFractionDigits: 2 })} in</Txt>
+        <View style={{ flex: 1 }} />
+        <Txt v="label" color={color} style={{ fontSize: 15, fontVariant: ['tabular-nums'] }}>{pct === undefined ? '…' : signedPct(pct)}</Txt>
+      </Row>
+      <Txt v="small" lines={1} style={{ fontSize: 12, marginTop: 5, fontVariant: ['tabular-nums'] }}>
+        {t.exit ? `Entry ${fmtPrice(t.entry)} → exit ${fmtPrice(t.exit)}` : `Entry ${fmtPrice(t.entry)} · now ${now ? fmtPrice(now) : '…'}`} · before fees
+      </Txt>
+      <Txt v="small" color={C.dim} style={{ fontSize: 11, marginTop: 2 }}>Practice trade · paper money</Txt>
+    </View>
+  );
+}
+
+export function MarketCallCard({ id, trade }: { id: string; trade?: TradeTag | null }) {
   const m = useMarket(id);
   const { prices } = usePrices(m ? [m.mint] : [], 15_000);
   const px = m ? prices[m.mint] : undefined;
@@ -29,7 +54,8 @@ export function MarketCallCard({ id }: { id: string }) {
   if (m === null) return null;
   return (
     <Pressable onPress={() => m && router.push(`/practice/${m.id}` as Href)} disabled={!m} accessibilityRole="button" accessibilityLabel={m ? `Open ${m.name}` : 'Market'}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10, padding: 12, borderRadius: 18, backgroundColor: pressed ? '#1A1A20' : '#121216' })}>
+      style={({ pressed }) => ({ marginTop: 10, padding: 12, borderRadius: 18, backgroundColor: pressed ? '#1A1A20' : '#121216' })}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       {m ? <MarketLogo m={m} size={40} /> : <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2 }} />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{m ? (m.kind === 'perp' ? m.symbol : m.name) : '…'}</Txt>
@@ -42,6 +68,8 @@ export function MarketCallCard({ id }: { id: string }) {
         {ch !== undefined ? <Txt v="small" color={ch >= 0 ? C.up : C.down} style={{ fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{signedPct(ch)} 24h</Txt> : null}
       </View>
       <Row><Txt v="label" color={C.dim} style={{ fontSize: 18 }}>›</Txt></Row>
+      </View>
+      {trade ? <TradeStrip t={trade} m={m} now={px?.usdPrice} /> : null}
     </Pressable>
   );
 }

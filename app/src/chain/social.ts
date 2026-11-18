@@ -9,6 +9,7 @@ import idl from './idl.json';
 import type { Clashy } from './idl-types';
 import { NET, P, base, er, COIN_SYMBOLS, FEED_BOARD } from './client';
 import { SHARE, STOCKS, stockAta, stockByMint, type Stock } from './stocks';
+import { CALL_PERP, CALL_TOKEN, splitTrade, type TradeTag } from './calls';
 
 export const reader = new Program<Clashy>(idl as Clashy, { connection: base } as unknown as anchor.Provider);
 export const erReader = new Program<Clashy>(idl as Clashy, { connection: er } as unknown as anchor.Provider);
@@ -51,14 +52,19 @@ export async function readProfile(owner: PublicKey): Promise<Profile | null> {
   return p ? toProfile(p) : null;
 }
 
-export type Post = { seq: number; author: PublicKey; ts: number; kind: number; refkey: PublicKey; replyTo: number | null; likes: number; replies: number; text: string; liked: number[] };
+/** `text` is the words only: a Practice trade attached to a market call is split out into `trade` (chain/calls.ts). */
+export type Post = { seq: number; author: PublicKey; ts: number; kind: number; refkey: PublicKey; replyTo: number | null; likes: number; replies: number; text: string; trade: TradeTag | null; liked: number[] };
+const bodyOf = (t: string, kind: number) => {
+  const { body, trade } = kind === CALL_TOKEN || kind === CALL_PERP ? splitTrade(t) : { body: t, trade: null };
+  return { text: body, trade };
+};
 /** The public calls feed (live on the rollup), newest first. */
 export async function readBoard(): Promise<Post[]> {
   const b = await erReader.account.board.fetch(P.board(FEED_BOARD));
   return b.posts.filter((p) => !p.author.equals(PublicKey.default)).map((p) => ({
     seq: Number(p.seq), author: p.author, ts: Number(p.ts), kind: p.kind, refkey: p.refkey,
     replyTo: p.replyTo.toString() === '18446744073709551615' ? null : Number(p.replyTo),
-    likes: p.likes, replies: p.replies, text: text(p.text, p.len), liked: p.liked,
+    likes: p.likes, replies: p.replies, ...bodyOf(text(p.text, p.len), p.kind), liked: p.liked,
   })).sort((a, b) => b.seq - a.seq);
 }
 export const useBoard = () => usePoll(readBoard, 2500);

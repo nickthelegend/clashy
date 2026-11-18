@@ -37,3 +37,32 @@ export function callTarget(post: { kind: number; refkey: PublicKey }): CallTarge
   if (post.kind === CALL_PERP) { const id = perpIdOf(post.refkey); return id ? { kind: 'market', id } : null; }
   return null;
 }
+
+/* ---------- trade posts: a Practice trade attached to a call ----------
+ * A call on a market (kind 3 or 4) can carry the author's Practice trade: side, leverage, entry, the exit once it is
+ * closed, and the margin. It rides at the end of the post text after an invisible separator (U+2063), so it needs no
+ * program change and costs about 25 of the 140 bytes. Practice is paper money kept on the author's device, so the app
+ * always labels these "Practice trade · paper money": they are what the author traded, not verified on chain. Real
+ * positions stay the Stash-stock calls (kind 1), read from the author's Holding account. */
+export type TradeTag = { side: 'long' | 'short'; lev: number; entry: number; exit?: number; margin: number };
+const SEP = '⁣';
+const n6 = (n: number) => String(Number(n.toPrecision(6)));
+const TAG = /⁣([LS])(\d{1,3})x@([0-9.e+-]+)(?:>([0-9.e+-]+))?\$([0-9.e+-]+)$/;
+
+export function tradeTag(t: TradeTag): string {
+  return `${SEP}${t.side === 'long' ? 'L' : 'S'}${Math.round(t.lev)}x@${n6(t.entry)}${t.exit ? `>${n6(t.exit)}` : ''}$${n6(t.margin)}`;
+}
+/** The words of a post and the trade it carries, if any (a malformed tag stays part of the text). */
+export function splitTrade(text: string): { body: string; trade: TradeTag | null } {
+  const m = TAG.exec(text);
+  if (!m) return { body: text, trade: null };
+  const lev = Number(m[2]), entry = Number(m[3]), exit = m[4] ? Number(m[4]) : undefined, margin = Number(m[5]);
+  const ok = lev >= 1 && lev <= 100 && entry > 0 && Number.isFinite(entry) && margin > 0 && Number.isFinite(margin)
+    && (exit === undefined || (exit > 0 && Number.isFinite(exit)));
+  return ok ? { body: text.slice(0, m.index).trimEnd(), trade: { side: m[1] === 'L' ? 'long' : 'short', lev, entry, exit, margin } } : { body: text, trade: null };
+}
+/** The trade's move on its margin, before fees: at its exit once closed, else at `now`. */
+export const tradeMovePct = (t: TradeTag, now?: number) => {
+  const px = t.exit ?? now;
+  return px === undefined ? undefined : (px / t.entry - 1) * (t.side === 'long' ? 1 : -1) * t.lev * 100;
+};

@@ -1,5 +1,6 @@
 // The "+" in the tab bar: a bottom drawer with the four things you can start (a call, a clash, a save, a squad),
-// and the call composer as its own drawer. Any screen can open them through useCreate() (Reply on a post does).
+// and the call composer as its own drawer. The root layout provides them, so any screen can open them through
+// useCreate(): Reply on a post, the "+ Call" pill on Home, and Share on a Practice trade (a call with the trade on it).
 import { router, type Href } from 'expo-router';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, View } from 'react-native';
@@ -8,6 +9,7 @@ import { PublicKey } from '@solana/web3.js';
 import { BN, USDC, usdcAta } from '@/chain/client';
 import { errText, useChain } from '@/chain/useChain';
 import { readHoldings, readProfile, readStash, usePoll, type Post } from '@/chain/social';
+import type { TradeTag } from '@/chain/calls';
 import { STOCKS } from '@/chain/stocks';
 import { useLiveCounts } from '@/chain/reads';
 import { Composer } from './feed';
@@ -19,11 +21,13 @@ import { BotPic } from './practice-kit';
 import { SearchSheet } from './search-sheet';
 import { C, F, FONT, fmtUsd } from './tokens';
 
-type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null) => void; openSave: () => void; openArena: () => void; openSearch: () => void; arenaOpen: boolean };
+/** A call to start on a market, optionally with the author's Practice trade on it. */
+export type CallShare = { marketId: string; trade?: TradeTag };
+type Ctx = { openMenu: () => void; openCall: (replyTo?: Post | null, share?: CallShare) => void; openSave: () => void; openArena: () => void; openSearch: () => void; arenaOpen: boolean };
 const CreateCtx = createContext<Ctx>({ openMenu: () => {}, openCall: () => {}, openSave: () => {}, openArena: () => {}, openSearch: () => {}, arenaOpen: false });
 export const useCreate = () => useContext(CreateCtx);
 
-function CallDrawer({ open, onClose, replyTo }: { open: boolean; onClose: () => void; replyTo: Post | null }) {
+function CallDrawer({ open, onClose, replyTo, share }: { open: boolean; onClose: () => void; replyTo: Post | null; share: CallShare | null }) {
   const chain = useChain();
   const me = chain.me;
   const prof = usePoll(() => (me ? readProfile(me) : Promise.resolve(null)), 10000, [me?.toBase58(), open]);
@@ -38,7 +42,7 @@ function CallDrawer({ open, onClose, replyTo }: { open: boolean; onClose: () => 
           <Btn title="Sign in" style={{ marginTop: 12, alignSelf: 'stretch' }} onPress={() => chain.wallet.login?.()} />
         </View>
       ) : !p ? <Txt v="small">Loading your profile…</Txt> : (
-        <Composer chain={chain} me={p} replyTo={replyTo} onCancelReply={onClose} onPosted={onClose}
+        <Composer key={share ? `${share.marketId}:${share.trade?.entry ?? ''}` : 'call'} chain={chain} me={p} replyTo={replyTo} start={share} onCancelReply={onClose} onPosted={onClose}
           stashBalance={stash.status === 'ready' ? stash.data?.balance ?? 0 : null} myHoldings={hold.status === 'ready' ? hold.data : new Map()} />
       )}
     </Sheet>
@@ -86,18 +90,19 @@ export function CreateProvider({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState(false);
   const [call, setCall] = useState(false);
   const [replyTo, setReplyTo] = useState<Post | null>(null);
+  const [share, setShare] = useState<CallShare | null>(null);
   const [save, setSave] = useState(false);
   const [arena, setArena] = useState(false);
   const [search, setSearch] = useState(false);
   const ctx: Ctx = {
     openMenu: () => setMenu(true),
-    openCall: (r) => { setReplyTo(r ?? null); setCall(true); },
+    openCall: (r, s) => { setReplyTo(r ?? null); setShare(r ? null : s ?? null); setCall(true); },
     openSave: () => setSave(true),
     openArena: () => setArena(true),
     openSearch: () => setSearch(true),
     arenaOpen: arena,
   };
-  // ⌘K / Ctrl+K opens search from anywhere in the tabs (web)
+  // ⌘K / Ctrl+K opens search from anywhere (web)
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const down = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearch(true); } };
@@ -114,7 +119,7 @@ export function CreateProvider({ children }: { children: ReactNode }) {
         <SheetTile art={<Image source={ART.stash} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Save to your Stash" line="Put money aside, then into real stocks" accent={C.up} onPress={go(() => setSave(true))} />
         <SheetTile art={<Image source={ART.clubhouse} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Start or join a squad" line="Chat, chest, wars and the Weekly Cup" accent="#FFC94A" onPress={go(() => router.push('/squads/discover' as Href))} />
       </Sheet>
-      <CallDrawer open={call} onClose={() => setCall(false)} replyTo={replyTo} />
+      <CallDrawer open={call} onClose={() => setCall(false)} replyTo={replyTo} share={share} />
       <SaveDrawer open={save} onClose={() => setSave(false)} />
       <ArenaDrawer open={arena} onClose={() => setArena(false)} />
       <SearchSheet open={search} onClose={() => setSearch(false)} />

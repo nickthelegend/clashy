@@ -15,7 +15,7 @@ import { VenueChip } from '@/ui/orderbook';
 import { ART, BackBtn, Bone, ChangePill, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
-  BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag, Stat,
+  BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat,
 } from '@/ui/practice-kit';
 import { Sheet } from '@/ui/sheet';
 import { C, S, fmtUsd } from '@/ui/tokens';
@@ -103,6 +103,7 @@ function HistoryRow({ c, first }: { c: import('@/chain/practice').Closed; first:
         <Txt v="small" lines={1} style={{ marginTop: 2 }}>{fmtPrice(c.entry)} → {fmtPrice(c.exit)} · {ago(c.closedAt)}</Txt>
       </View>
       <Txt v="label" color={c.pnl >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{signedUsd(c.pnl)}</Txt>
+      <ShareTrade p={c} />
     </Pressable>
   );
 }
