@@ -17,13 +17,12 @@ import { STOCKS } from '@/chain/stocks';
 import { VENUES } from '@/chain/venues';
 import { ProfileAvatar, STOCK_ART } from './feed';
 import { Search as SearchIcon } from './icons';
-import { ART, CRESTS, Pending, Row, Sparkline, Txt, rankFor } from './kit';
+import { ART, CRESTS, Row, Sparkline, Txt, rankFor } from './kit';
 import { MarketLogo } from './practice-kit';
 import { Sheet } from './sheet';
-import { C, FONT } from './tokens';
+import { C, F, FONT } from './tokens';
 
-/** Tiles inside the drawer sit one step above its surface (the drawer itself is C.s1). */
-const TILE = C.s2;
+const HAIR = '#24242B';
 const RECENT = 'clashy:search:recent:v1';
 const VIEWED = 'clashy:search:viewed:v1';
 const crestSrc = (n: number) => CRESTS[((n % CRESTS.length) + CRESTS.length) % CRESTS.length];
@@ -73,8 +72,8 @@ function hotFrom(h: PriceHistory): Hot[] {
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: on }}
-      hitSlop={5} style={({ pressed }) => ({ height: 34, paddingHorizontal: 13, borderRadius: 17, justifyContent: 'center', backgroundColor: on ? C.ink : C.s2, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      <Text style={{ ...FONT.medium, fontSize: 13, color: on ? '#000' : C.ink }}>{label}</Text>
+      style={({ pressed }) => ({ height: 34, paddingHorizontal: 13, borderRadius: 10, borderWidth: 1, justifyContent: 'center', borderColor: on ? 'rgba(48,209,88,0.35)' : '#2E2E36', backgroundColor: on ? 'rgba(48,209,88,0.12)' : 'transparent', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+      <Text style={{ ...FONT.semi, fontSize: 13.5, color: on ? C.up : C.ink }}>{label}</Text>
     </Pressable>
   );
 }
@@ -83,7 +82,7 @@ function Section({ title, onClear, children }: { title: string; onClear?: () => 
   return (
     <View style={{ marginTop: 22 }}>
       <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-        <Txt v="label">{title}</Txt>
+        <Txt v="label" style={{ fontSize: 15 }}>{title}</Txt>
         {onClear ? <Pressable onPress={onClear} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Clear ${title.toLowerCase()}`}><Txt v="small" color={C.dim}>Clear</Txt></Pressable> : null}
       </Row>
       {children}
@@ -93,7 +92,7 @@ function Section({ title, onClear, children }: { title: string; onClear?: () => 
 
 function Pic({ pic, names, size = 40 }: { pic: Viewed['pic']; names: Map<string, Profile>; size?: number }) {
   if (pic.kind === 'player') return <ProfileAvatar p={names.get(pic.owner)} size={size} />;
-  if (pic.kind === 'squad') return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}><Image source={crestSrc(pic.crest)} style={{ width: size - 8, height: size - 8 }} contentFit="contain" /></View>;
+  if (pic.kind === 'squad') return <View style={{ width: size, height: size, borderRadius: 12, backgroundColor: '#1A1A22', alignItems: 'center', justifyContent: 'center' }}><Image source={crestSrc(pic.crest)} style={{ width: size - 6, height: size - 6 }} contentFit="contain" /></View>;
   return <MarketLogo m={pic.m} size={size} />;
 }
 
@@ -102,7 +101,7 @@ function ListRow({ pic, names, title, sub, right, rightSub, rightColor, onPress 
 }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 7, paddingHorizontal: 8, marginHorizontal: -8, borderRadius: 14, backgroundColor: pressed ? '#1C1C22' : 'transparent' })}>
       <Pic pic={pic} names={names} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{title}</Txt>
@@ -110,8 +109,8 @@ function ListRow({ pic, names, title, sub, right, rightSub, rightColor, onPress 
       </View>
       {right ? (
         <View style={{ alignItems: 'flex-end', maxWidth: '40%' }}>
-          <Txt v="num" lines={1}>{right}</Txt>
-          {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ marginTop: 1, fontVariant: ['tabular-nums'] }}>{rightSub}</Txt> : null}
+          <Txt v="label" lines={1} style={{ fontVariant: ['tabular-nums'] }}>{right}</Txt>
+          {rightSub ? <Txt v="small" lines={1} color={rightColor} style={{ fontVariant: ['tabular-nums'] }}>{rightSub}</Txt> : null}
         </View>
       ) : null}
     </Pressable>
@@ -193,25 +192,29 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
   return (
     <View style={{ minHeight: minH }}>
       {/* the box */}
-      <Row style={{ gap: 8, height: 44, borderRadius: 22, paddingLeft: 14, paddingRight: 5, backgroundColor: C.s2 }}>
-        <SearchIcon size={17} color={C.muted} />
+      <Row style={{ gap: 10, height: 52, marginHorizontal: -18, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: HAIR }}>
+        <SearchIcon size={18} color={C.muted} />
         <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Search players, squads, stocks and coins…" placeholderTextColor={C.dim}
           autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search"
           onSubmitEditing={() => { if (hits[0]) open(hits[0]); }}
-          style={{ flex: 1, minWidth: 0, height: 42, color: C.ink, ...FONT.medium, fontSize: 15 }} />
+          style={{ flex: 1, minWidth: 0, height: 50, color: C.ink, ...FONT.medium, fontSize: 16.5 }} />
         {q ? (
-          <Pressable onPress={() => setQ('')} accessibilityLabel="Clear search" hitSlop={8} style={({ pressed }) => ({ width: 32, height: 32, borderRadius: 16, backgroundColor: pressed ? C.s1 : C.card, alignItems: 'center', justifyContent: 'center' })}>
+          <Pressable onPress={() => setQ('')} accessibilityLabel="Clear search" hitSlop={8} style={({ pressed }) => ({ width: 30, height: 30, borderRadius: 15, backgroundColor: pressed ? '#2A2A33' : C.s2, alignItems: 'center', justifyContent: 'center' })}>
             <Text style={{ color: C.ink, ...FONT.bold, fontSize: 12 }}>✕</Text>
           </Pressable>
         ) : null}
       </Row>
 
       {query ? (
-        <Animated.View entering={FadeIn.duration(150)} style={{ marginTop: 8 }}>
+        <Animated.View entering={FadeIn.duration(150)} style={{ marginTop: 12 }}>
           {hits.length ? hits.map((h) => (
             <ListRow key={h.key} pic={h.pic} names={names} title={h.title} sub={h.sub} right={h.right} rightSub={h.rightSub} rightColor={h.rightColor} onPress={() => open(h)} />
           )) : (
-            <Pending art={ART.emptySearch} title={profiles.status === 'loading' || !cat ? 'Searching…' : `Nothing called "${q.trim()}"`} body="Try a player's name, a squad, or a ticker like NVDA, SOL or BONK." />
+            <View style={{ alignItems: 'center', paddingVertical: 36 }}>
+              <Image source={ART.emptySearch} style={{ width: 110, height: 110 }} contentFit="contain" />
+              <Txt v="label" style={{ marginTop: 6 }}>{profiles.status === 'loading' || !cat ? 'Searching…' : `Nothing called "${q.trim()}"`}</Txt>
+              <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>Try a player's name, a squad, or a ticker like NVDA, SOL or BONK.</Txt>
+            </View>
           )}
         </Animated.View>
       ) : (
@@ -223,8 +226,8 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
             <View style={{ flex: 1 }} />
             {web ? (
               <>
-                <Pressable onPress={() => step(-1)} accessibilityLabel="Previous" hitSlop={7} style={({ pressed }) => ({ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? C.s2 : 'transparent' })}><Txt v="label" color={C.muted}>‹</Txt></Pressable>
-                <Pressable onPress={() => step(1)} accessibilityLabel="Next" hitSlop={7} style={({ pressed }) => ({ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? C.s2 : 'transparent' })}><Txt v="label" color={C.muted}>›</Txt></Pressable>
+                <Pressable onPress={() => step(-1)} accessibilityLabel="Previous" hitSlop={6} style={({ pressed }) => ({ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? '#24242B' : 'transparent' })}><Txt v="label" color={C.muted}>‹</Txt></Pressable>
+                <Pressable onPress={() => step(1)} accessibilityLabel="Next" hitSlop={6} style={({ pressed }) => ({ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? '#24242B' : 'transparent' })}><Txt v="label" color={C.muted}>›</Txt></Pressable>
               </>
             ) : null}
           </Row>
@@ -232,23 +235,23 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
             style={{ marginHorizontal: -18, marginTop: 12 }} contentContainerStyle={{ paddingHorizontal: 18, gap: 10 }}>
             {tab === 'hot' ? (
               hist.status === 'error' ? <View style={{ height: 150, justifyContent: 'center' }}><Txt v="small">{hist.error}</Txt></View>
-                : !hot.length ? [0, 1].map((i) => <View key={i} style={{ width: 160, height: 140, borderRadius: 16, backgroundColor: TILE }} />)
+                : !hot.length ? [0, 1].map((i) => <View key={i} style={{ width: 168, height: 150, borderRadius: 16, backgroundColor: '#1A1A20' }} />)
                   : hot.map((h) => (
                     <Pressable key={h.sym} onPress={() => open({ key: `h:${h.sym}`, href: h.href, title: h.name, sub: h.sym, pic: h.m })} accessibilityRole="button" accessibilityLabel={h.name}
-                      style={({ pressed }) => ({ width: 160, borderRadius: 16, backgroundColor: pressed ? C.card : TILE, padding: 12, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+                      style={({ pressed }) => ({ width: 168, borderRadius: 16, backgroundColor: pressed ? '#202027' : '#1A1A20', padding: 12, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
                       <Row style={{ gap: 8 }}>
-                        <MarketLogo m={h.m.m} size={32} />
+                        <MarketLogo m={h.m.m} size={34} />
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Txt v="label" lines={1} style={{ fontSize: 14 }}>{h.name}</Txt>
-                          <Txt v="small" lines={1} style={{ fontSize: 12 }}>{h.sym}</Txt>
+                          <Txt v="small" lines={1} style={{ fontSize: 11.5 }}>${h.sym}</Txt>
                         </View>
                       </Row>
-                      <View style={{ marginTop: 10 }}><Sparkline data={h.series} w={136} h={40} /></View>
-                      <Row style={{ justifyContent: 'space-between', marginTop: 8, gap: 6 }}>
-                        <Txt v="num" lines={1} style={{ fontSize: 14, flexShrink: 1 }}>{fmtPrice(h.last)}</Txt>
-                        <Txt v="small" color={h.change >= 0 ? C.up : C.down} style={{ fontSize: 12, fontVariant: ['tabular-nums'] }}>{h.change >= 0 ? '+' : '−'}{Math.abs(h.change).toFixed(2)}%</Txt>
+                      <View style={{ marginTop: 10 }}><Sparkline data={h.series} w={144} h={44} /></View>
+                      <Row style={{ justifyContent: 'space-between', marginTop: 8 }}>
+                        <Txt v="label" style={{ fontVariant: ['tabular-nums'] }}>{fmtPrice(h.last)}</Txt>
+                        <Txt v="small" color={h.change >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>{h.change >= 0 ? '+' : '−'}{Math.abs(h.change).toFixed(2)}%</Txt>
                       </Row>
-                      <Txt v="small" style={{ fontSize: 11, marginTop: 2, color: C.dim }}>{h.spanH >= 23 ? 'last 24h' : `last ${Math.max(1, Math.round(h.spanH))}h recorded`}</Txt>
+                      <Txt v="small" style={{ fontSize: 10.5, marginTop: 2 }}>{h.spanH >= 23 ? 'last 24h' : `last ${Math.max(1, Math.round(h.spanH))}h recorded`}</Txt>
                     </Pressable>
                   ))
             ) : !top.length ? (
@@ -258,16 +261,12 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
               const owner = r.owner.toBase58();
               return (
                 <Pressable key={owner} onPress={() => open({ key: `u:${owner}`, href: `/u/${owner}`, title: p?.name ?? 'Player', sub: `${r.rp} pts`, pic: { kind: 'player', owner } })} accessibilityRole="button" accessibilityLabel={p?.name}
-                  style={({ pressed }) => ({ width: 120, alignItems: 'center', borderRadius: 16, backgroundColor: pressed ? C.card : TILE, paddingVertical: 12, paddingHorizontal: 8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-                  <View>
-                    <ProfileAvatar p={p} size={44} />
-                    <View style={{ position: 'absolute', right: -4, bottom: -2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.s1, alignItems: 'center', justifyContent: 'center' }}>
-                      <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 10.5 }}>{i + 1}</Txt>
-                    </View>
-                  </View>
-                  <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '100%', fontSize: 14 }}>{p?.name}</Txt>
-                  <Txt v="small" lines={1} style={{ fontSize: 12 }}>{rankFor(r.rp).label} · {r.rp} pts</Txt>
-                  <Txt v="small" lines={1} style={{ fontSize: 12, color: C.dim }}>{r.wins}W {r.losses}L</Txt>
+                  style={({ pressed }) => ({ width: 140, alignItems: 'center', borderRadius: 16, backgroundColor: pressed ? '#202027' : '#1A1A20', paddingVertical: 14, paddingHorizontal: 8, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+                  <Txt v="small" color={i === 0 ? '#FFD66B' : C.muted} style={{ ...FONT.semi }}>#{i + 1}</Txt>
+                  <View style={{ marginTop: 6 }}><ProfileAvatar p={p} size={52} /></View>
+                  <Txt v="label" lines={1} style={{ marginTop: 8, maxWidth: '100%' }}>{p?.name}</Txt>
+                  <Txt v="small" lines={1}>{rankFor(r.rp).label} · {r.rp} pts</Txt>
+                  <Txt v="small" lines={1} style={{ fontSize: 11.5 }}>{r.wins}W {r.losses}L</Txt>
                 </Pressable>
               );
             })}
@@ -277,7 +276,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
             {recent.length ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {recent.map((r) => (
-                  <Pressable key={r} onPress={() => setQ(r)} accessibilityRole="button" accessibilityLabel={`Search ${r}`} hitSlop={5} style={({ pressed }) => ({ height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: pressed ? C.card : C.s2, justifyContent: 'center' })}>
+                  <Pressable key={r} onPress={() => setQ(r)} style={({ pressed }) => ({ height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: pressed ? '#26262E' : '#1C1C22', justifyContent: 'center' })}>
                     <Txt v="small" color={C.ink}>{r}</Txt>
                   </Pressable>
                 ))}
@@ -293,7 +292,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
       )}
 
       {hints ? (
-        <Row style={{ marginTop: 22, marginHorizontal: -18, paddingHorizontal: 18, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.line, gap: 14 }}>
+        <Row style={{ marginTop: 22, marginHorizontal: -18, paddingHorizontal: 18, paddingTop: 12, borderTopWidth: 1, borderTopColor: HAIR, gap: 14 }}>
           <Kbd k="↵" label="to open" /><Kbd k="esc" label="to close" />
           <View style={{ flex: 1 }} />
           <Kbd k="⌘K" />
@@ -305,7 +304,7 @@ function SearchBody({ onClose, minH }: { onClose: () => void; minH: number }) {
 
 const Kbd = ({ k, label }: { k: string; label?: string }) => (
   <Row style={{ gap: 6 }}>
-    <View style={{ minWidth: 26, height: 22, paddingHorizontal: 6, borderRadius: 6, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ minWidth: 26, height: 22, paddingHorizontal: 6, borderRadius: 6, borderWidth: 1, borderColor: '#34343E', alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ ...FONT.semi, fontSize: 11, color: C.muted }}>{k}</Text>
     </View>
     {label ? <Txt v="small" style={{ fontSize: 12 }}>{label}</Txt> : null}

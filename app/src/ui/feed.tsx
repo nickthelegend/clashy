@@ -14,18 +14,16 @@ import { useCatalog, type Market } from '@/chain/practice';
 import { MarketCallCard } from './market-call';
 import { MarketLogo } from './practice-kit';
 import { ART, AVATARS, Btn, ErrorLine, Row, Txt } from './kit';
-import { Heart, More, Reply, Share, Swords } from './icons';
+import { Heart, More, Reply, Share } from './icons';
 import { Lottie } from './lottie';
-import { C, FONT, fmtUsd } from './tokens';
+import { C, F, FONT, fmtUsd } from './tokens';
 
 export const STOCK_ART: Record<string, number> = { NVDA: ART.stockNVDA, TSLA: ART.stockTSLA, AAPL: ART.stockAAPL, SPY: ART.stockSPY, GOOGL: ART.stockGOOGL };
 type Chain = ReturnType<typeof useChain>;
 
 export const ProfileAvatar = ({ p, size = 40 }: { p?: Profile; size?: number }) => (
-  <Image source={AVATARS[(p?.avatar ?? 0) % AVATARS.length]} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.bg }} contentFit="cover" />
+  <Image source={AVATARS[(p?.avatar ?? 0) % AVATARS.length]} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#000' }} contentFit="cover" />
 );
-/** Real logos for the clash coins (stocks use STOCK_ART). */
-const COIN_LOGO: Record<string, number> = { SOL: ART.logoSOL, BTC: ART.logoBTC, ETH: ART.logoETH };
 const nameOf = (p: Profile | undefined, key: PublicKey) => p?.name ?? `${key.toBase58().slice(0, 4)}…${key.toBase58().slice(-4)}`;
 
 /** The author's live position in the called stock: value at the live price and profit against what they paid. */
@@ -34,9 +32,10 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
   const profit = value !== null && holding ? value - holding.cost : null;
   const pct = profit !== null && holding && holding.cost > 0 ? (profit / holding.cost) * 100 : null;
   return (
-    <Pressable onPress={() => router.push(`/stock/${stock.symbol}` as Href)} accessibilityRole="button" accessibilityLabel={`${stock.name} position`}
-      style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? C.s1 : C.card, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12 })}>
-      <Image source={STOCK_ART[stock.symbol]} style={{ width: 38, height: 38, borderRadius: 19 }} contentFit="cover" />
+    <Pressable onPress={() => router.push(`/stock/${stock.symbol}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, padding: 12 })}>
+      <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
+        <Image source={STOCK_ART[stock.symbol]} style={{ width: 40, height: 40 }} contentFit="contain" />
+      </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>{stock.name}</Txt>
         <Txt v="small" lines={1}>{holding && holding.shares > 0 ? `${stock.symbol} · ${value === null ? '…' : fmtUsd(value)}` : `${stock.symbol} · tokenized stock`}</Txt>
@@ -46,12 +45,12 @@ export function PositionCard({ stock, holding, price }: { stock: Stock; holding?
           <Txt v="label" color={profit === null ? C.muted : profit >= 0 ? C.up : C.down} style={{ fontVariant: ['tabular-nums'] }}>
             {profit === null ? '…' : `${profit >= 0 ? '+' : '−'}${fmtUsd(Math.abs(profit))}`}
           </Txt>
-          <Txt v="small" style={{ fontSize: 12, fontVariant: ['tabular-nums'] }} color={pct === null ? C.muted : profit! >= 0 ? C.up : C.down}>{pct !== null ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% profit` : 'profit'}</Txt>
+          <Txt v="small" style={{ fontSize: 11.5, fontVariant: ['tabular-nums'] }} color={pct === null ? C.muted : profit! >= 0 ? C.up : C.down}>{pct !== null ? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% profit` : 'profit'}</Txt>
         </View>
       ) : (
         <View style={{ alignItems: 'flex-end' }}>
-          <Txt v="num">{price ? fmtUsd(price) : '…'}</Txt>
-          <Txt v="small" style={{ fontSize: 12 }}>{holding ? 'Sold out' : 'No position'}</Txt>
+          <Txt v="small" style={{ fontSize: 11 }}>{holding ? 'Sold out' : 'No position'}</Txt>
+          <Txt v="label">{price ? fmtUsd(price) : '…'}</Txt>
         </View>
       )}
     </Pressable>
@@ -69,17 +68,15 @@ function DuelCard({ duel, author }: { duel: PublicKey; author: PublicKey }) {
   const pot = (v.stake * 2 - Math.floor((v.stake * 2 * 300) / 10_000)) / USDC;
   const sym = COIN_SYMBOLS[v.coin] ?? '?';
   return (
-    <Pressable onPress={() => router.push(`/match/${duel.toBase58()}` as Href)} accessibilityRole="button" accessibilityLabel={`Clash on ${sym}, see the replay`}
-      style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? C.s1 : C.card, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12 })}>
-      {COIN_LOGO[sym] || STOCK_ART[sym] ? <Image source={COIN_LOGO[sym] ?? STOCK_ART[sym]} style={{ width: 38, height: 38, borderRadius: 19 }} contentFit="cover" />
-        : <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Swords size={17} color={C.ink} /></View>}
+    <Pressable onPress={() => router.push(`/match/${duel.toBase58()}` as Href)} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: pressed ? '#141419' : '#0D0D10', borderRadius: 14, padding: 12 })}>
+      <Image source={ART.tileDuel} style={{ width: 44, height: 44 }} contentFit="contain" />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1}>Clash on {sym}</Txt>
         <Txt v="small" lines={1}>{v.entryPrice.toFixed(2)} → {v.exitPrice.toFixed(2)} · settled on Solana</Txt>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
-        <Txt v="num" color={won ? C.up : v.winner === 3 ? C.ink : C.down}>{won ? `+${fmtUsd(pot - v.stake / USDC)}` : v.winner === 3 ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Txt>
-        <Txt v="small" style={{ fontSize: 12 }}>{won ? 'Won' : v.winner === 3 ? 'Draw' : 'Lost'}</Txt>
+        <Txt v="small" style={{ fontSize: 11 }}>{won ? 'Won' : v.winner === 3 ? 'Draw' : 'Lost'}</Txt>
+        <Txt v="label" color={won ? C.up : C.muted}>{won ? `+${fmtUsd(pot - v.stake / USDC)}` : v.winner === 3 ? '±0' : `−${fmtUsd(v.stake / USDC)}`}</Txt>
       </View>
     </Pressable>
   );
@@ -100,7 +97,7 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
   return (
     <View style={{ flexDirection: 'row', gap: 12, paddingTop: reply ? 6 : 14, paddingBottom: threadBelow ? 0 : 12 }}>
       <View style={{ alignItems: 'center' }}>
-        <Pressable onPress={() => router.push(`/u/${post.author.toBase58()}` as Href)} accessibilityRole="button" accessibilityLabel={`${nameOf(author, post.author)}'s profile`}><ProfileAvatar p={author} size={reply ? 32 : 40} /></Pressable>
+        <Pressable onPress={() => router.push(`/u/${post.author.toBase58()}` as Href)}><ProfileAvatar p={author} size={reply ? 34 : 42} /></Pressable>
         {threadBelow ? <View style={{ width: 2, flex: 1, backgroundColor: C.s2, marginTop: 6, borderRadius: 1 }} /> : null}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -109,23 +106,23 @@ export function PostItem({ post, profiles, holdings, prices, me, onReply, onLike
           {author && author.dayStreak >= 2 ? <Txt v="small" style={{ fontSize: 12 }}>🔥{author.dayStreak}</Txt> : null}
           <Txt v="small" style={{ fontSize: 13 }}>· {ago(post.ts)} ago</Txt>
           <View style={{ flex: 1 }} />
-          <More size={15} color={C.dim} />
+          <More size={16} color={C.dim} />
         </Row>
         <Pressable onPress={() => router.push(`/post/${post.seq}` as Href)}><Txt v="body" style={{ marginTop: 3, fontSize: 15, lineHeight: 21 }}>{post.text}</Txt></Pressable>
         {stock ? <PositionCard stock={stock} holding={holdings.get(holdingKey(post.author, post.refkey))} price={prices[stock.symbol]} /> : null}
         {target?.kind === 'market' ? <MarketCallCard id={target.id} /> : null}
         {post.kind === 2 ? <DuelCard duel={post.refkey} author={post.author} /> : null}
-        <Row style={{ marginTop: 8, gap: 20 }}>
-          <Pressable onPress={share} hitSlop={12} accessibilityRole="button" accessibilityLabel="Share"><Share size={15} color={C.dim} /></Pressable>
-          <Pressable onPress={() => onReply(post)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Reply" style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Reply size={15} color={C.dim} /><Txt v="small" style={{ fontSize: 12 }}>{post.replies || ''}</Txt>
+        <Row style={{ marginTop: 10, gap: 22 }}>
+          <Pressable onPress={share} hitSlop={8}><Share size={17} color={C.muted} /></Pressable>
+          <Pressable onPress={() => onReply(post)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Reply size={17} color={C.muted} /><Txt v="small">{post.replies || ''}</Txt>
           </Pressable>
-          <Pressable onPress={() => { if (!liked && me) setPop(true); onLike(post); }} disabled={liked || liking === post.seq} hitSlop={12} accessibilityRole="button" accessibilityLabel={liked ? 'Liked' : 'Like'} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            {pop ? <Lottie name="heart" size={52} style={{ position: 'absolute', left: -18, top: -18 }} onDone={() => setPop(false)} /> : null}
-            <Heart size={15} color={liked ? C.brand : C.dim} filled={liked} /><Txt v="small" color={liked ? C.brand : C.muted} style={{ fontSize: 12 }}>{post.likes || ''}</Txt>
+          <Pressable onPress={() => { if (!liked && me) setPop(true); onLike(post); }} disabled={liked || liking === post.seq} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            {pop ? <Lottie name="heart" size={56} style={{ position: 'absolute', left: -19, top: -19 }} onDone={() => setPop(false)} /> : null}
+            <Heart size={17} color={liked ? C.opp : C.muted} filled={liked} /><Txt v="small" color={liked ? C.opp : C.muted}>{post.likes || ''}</Txt>
           </Pressable>
           <View style={{ flex: 1 }} />
-          {stock && prices[stock.symbol] ? <Txt v="small" lines={1} style={{ ...FONT.medium, fontSize: 12, fontVariant: ['tabular-nums'] }} color={C.muted}>{stock.symbol} {fmtUsd(prices[stock.symbol])}</Txt> : null}
+          {stock && prices[stock.symbol] ? <Txt v="small" style={{ ...FONT.semi }} color={C.ink}>{stock.symbol} {fmtUsd(prices[stock.symbol])}</Txt> : null}
         </Row>
       </View>
     </View>
@@ -141,7 +138,7 @@ export function Thread(props: Omit<ItemProps, 'threadBelow' | 'reply'> & { repli
       <PostItem {...props} threadBelow={shown.length > 0} />
       {shown.map((r, i) => <PostItem key={r.seq} {...props} post={r} reply threadBelow={i < shown.length - 1} />)}
       {props.replies.length > 2 && !all ? (
-        <Pressable onPress={() => setAll(true)} accessibilityRole="button" style={{ paddingLeft: 52, paddingBottom: 12, minHeight: 32, justifyContent: 'center' }}><Txt v="small" color={C.brandSoft} style={{ ...FONT.medium }}>Show {props.replies.length - 2} more replies</Txt></Pressable>
+        <Pressable onPress={() => setAll(true)} style={{ paddingLeft: 54, paddingBottom: 12 }}><Txt v="small" color={C.up} style={{ ...FONT.semi }}>Show {props.replies.length - 2} more replies</Txt></Pressable>
       ) : <View style={{ height: 4 }} />}
     </View>
   );
@@ -207,7 +204,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
   };
   if (!me) return null;
   return (
-    <View style={{ paddingBottom: 6 }}>
+    <View style={{ backgroundColor: C.s1, borderRadius: 18, padding: 14, marginBottom: 6 }}>
       {replyTo ? (
         <Row style={{ marginBottom: 8, gap: 6 }}>
           <Txt v="small" style={{ flex: 1 }} lines={1}>Replying to "{replyTo.text}"</Txt>
@@ -226,31 +223,30 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
             const coin = !hit ? (tag ? allMarkets.find((m) => m.kind !== 'perp' && m.symbol.toLowerCase() === tag) : majors.find((m) => new RegExp(`\\b(${m.symbol}|${m.name})\\b`, 'i').test(t))) : undefined;
             setMkt(coin ?? null);
           }
-        }} placeholder={replyTo ? 'Your reply' : 'Where does a price go next, and why?'} placeholderTextColor={C.muted} multiline maxLength={140}
+        }} placeholder={replyTo ? 'Your reply' : "What's your call?"} placeholderTextColor={C.muted} multiline maxLength={140}
           style={{ flex: 1, color: C.ink, ...FONT.medium, fontSize: 16, minHeight: 40, paddingTop: 8 }} />
       </Row>
       {!replyTo ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           {STOCKS.map((s) => (
             <Pressable key={s.symbol} onPress={() => { setPicked(true); setMkt(null); setSym(sym === s.symbol ? null : s.symbol); setBack(0); }}
-              accessibilityRole="button" accessibilityState={{ selected: sym === s.symbol }} hitSlop={4}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: sym === s.symbol ? C.ink : C.s2 }}>
-              <Image source={STOCK_ART[s.symbol]} style={{ width: 18, height: 18, borderRadius: 9 }} contentFit="cover" />
-              <Txt v="small" color={sym === s.symbol ? '#000' : C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{s.symbol}</Txt>
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: sym === s.symbol ? C.brand : C.s2 }}>
+              <Image source={STOCK_ART[s.symbol]} style={{ width: 18, height: 18 }} contentFit="contain" />
+              <Txt v="small" color={sym === s.symbol ? C.onBrand : C.ink} style={{ ...FONT.semi, fontSize: 12 }}>{s.symbol}</Txt>
             </Pressable>
           ))}
           {[...majors, ...(mkt && !majors.some((m) => m.id === mkt.id) ? [mkt] : [])].map((m) => {
             const on = mkt?.id === m.id;
             return (
               <Pressable key={m.id} onPress={() => pickMarket(on ? null : m)} accessibilityRole="button" accessibilityState={{ selected: on }}
-                hitSlop={4} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: on ? C.ink : C.s2, maxWidth: 170 }}>
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, height: 30, borderRadius: 15, backgroundColor: on ? C.brand : C.s2, maxWidth: 170 }}>
                 <MarketLogo m={m} size={18} />
-                <Txt v="small" lines={1} color={on ? '#000' : C.ink} style={{ ...FONT.semi, fontSize: 12, flexShrink: 1 }}>{m.symbol}</Txt>
+                <Txt v="small" lines={1} color={on ? C.onBrand : C.ink} style={{ ...FONT.semi, fontSize: 12, flexShrink: 1 }}>{m.symbol}</Txt>
               </Pressable>
             );
           })}
           <Pressable onPress={() => setBrowse((b) => !b)} accessibilityRole="button" accessibilityLabel="Call another market"
-            hitSlop={4} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, height: 30, borderRadius: 15, backgroundColor: browse ? C.ink : C.s2 }}>
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, height: 30, borderRadius: 15, backgroundColor: browse ? C.ink : C.s2 }}>
             <Txt v="small" color={browse ? '#000' : C.brandSoft} style={{ ...FONT.semi, fontSize: 12 }}>{browse ? 'Close' : '+ Perps, memecoins…'}</Txt>
           </Pressable>
         </View>
@@ -282,7 +278,7 @@ export function Composer({ chain, me, replyTo, onCancelReply, onPosted, stashBal
           <Txt v="small">{held && held.shares > 0 ? `Your ${stock.symbol} position shows on the call. Add to it from your Stash:` : `Back your call: buy ${stock.symbol} from your Stash, so your position shows on the post.`}</Txt>
           <Row style={{ gap: 6, marginTop: 8 }}>
             {[0, 5, 10, 25].map((n) => (
-              <Pressable key={n} onPress={() => setBack(n)} accessibilityRole="button" accessibilityState={{ selected: back === n }} hitSlop={4} style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: back === n ? C.ink : C.s2 }}>
+              <Pressable key={n} onPress={() => setBack(n)} style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: back === n ? C.ink : C.s2 }}>
                 <Txt v="small" color={back === n ? '#000' : C.ink} style={{ ...FONT.semi }}>{n === 0 ? 'Just post' : `$${n}`}</Txt>
               </Pressable>
             ))}
@@ -304,9 +300,14 @@ export function JoinCard({ chain }: { chain: Chain }) {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState(0);
   return (
-    <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 16, marginBottom: 14 }}>
-      <Txt v="h2">Pick your name</Txt>
-      <Txt v="small" style={{ marginTop: 2 }}>It goes on your calls, clashes and squads. Yours alone, on chain. Fees are on Clashy.</Txt>
+    <View style={{ backgroundColor: C.s1, borderRadius: 20, padding: 16, marginBottom: 14 }}>
+      <Row style={{ gap: 12 }}>
+        <Image source={ART.onSquad} style={{ width: 64, height: 96, borderRadius: 12 }} contentFit="cover" />
+        <View style={{ flex: 1 }}>
+          <Txt v="h2">Pick your name</Txt>
+          <Txt v="small" style={{ marginTop: 4 }}>It goes on your calls, clashes and squads. Yours alone, on chain. Fees are on Clashy.</Txt>
+        </View>
+      </Row>
       <TextInput value={name} onChangeText={(t) => setName(t.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16))} placeholder="your_name" placeholderTextColor={C.muted}
         autoCapitalize="none" autoCorrect={false} style={{ marginTop: 14, color: C.ink, ...FONT.semi, fontSize: 17, backgroundColor: C.s2, borderRadius: 12, paddingHorizontal: 12, height: 46 }} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
@@ -317,7 +318,7 @@ export function JoinCard({ chain }: { chain: Chain }) {
         ))}
       </View>
       {chain.err ? <ErrorLine msg={chain.err} /> : null}
-      <Btn title={chain.busy === 'join' ? 'Setting you up…' : 'Join Clashy'} style={{ marginTop: 14 }} disabled={!!chain.busy || name.length < 3 || !chain.sponsor} onPress={chain.join(name, avatar)} />
+      <Btn title={chain.busy === 'join' ? 'Setting you up…' : 'Join Clashy'} kind="white" style={{ marginTop: 14 }} disabled={!!chain.busy || name.length < 3 || !chain.sponsor} onPress={chain.join(name, avatar)} />
     </View>
   );
 }

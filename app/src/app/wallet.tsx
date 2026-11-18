@@ -4,16 +4,15 @@
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IS_LOCAL_NET, NET, PROGRAM_ID, USDC, base, faucetUsdc, usdcAta } from '@/chain/client';
 import { SendUsdc, WalletCard, useChain } from '@/chain/useChain';
 import { useDeskColumn } from '@/ui/layout';
-import { ART, BackBtn, Btn, ErrorLine, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { ART, BackBtn, Btn, ErrorLine, Money, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { ArrowDown, ArrowUp, Copy, Plus } from '@/ui/icons';
 import { Sheet } from '@/ui/sheet';
-import { ActionRow, RoundAction } from '@/ui/watchlist';
-import { C, S } from '@/ui/tokens';
+import { C, F, FONT, S } from '@/ui/tokens';
 
 type Move = { sig: string; at: number; delta: number; game: boolean; what: string | null };
 const explorerTx = (sig: string) => `https://explorer.solana.com/tx/${sig}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`;
@@ -37,18 +36,18 @@ async function history(owner: import('@solana/web3.js').PublicKey): Promise<Move
   });
 }
 
-/** A round action that can be switched off (dimmed, not pressable) while it has nothing to act on. */
-function Action({ disabled, ...p }: React.ComponentProps<typeof RoundAction> & { disabled?: boolean }) {
+function Action({ label, icon, onPress, disabled, tint = C.s2 }: { label: string; icon: React.ReactNode; onPress: () => void; disabled?: boolean; tint?: string }) {
   return (
-    <View style={{ flex: 1, opacity: disabled ? 0.4 : 1 }} pointerEvents={disabled ? 'none' : 'auto'} accessibilityState={{ disabled: !!disabled }}>
-      <RoundAction {...p} />
-    </View>
+    <Pressable onPress={onPress} disabled={disabled} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 8, opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] })}>
+      <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: tint, alignItems: 'center', justifyContent: 'center' }}>{icon}</View>
+      <Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{label}</Txt>
+    </Pressable>
   );
 }
 
 function SettingRow({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, minHeight: 50, backgroundColor: pressed ? C.s1 : 'transparent' })}>
+    <Pressable onPress={onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 54, borderBottomWidth: 1, borderBottomColor: '#1A1A1F', backgroundColor: pressed ? C.s2 : 'transparent' })}>
       <Txt v="label" color={danger ? C.down : C.ink} style={{ flex: 1 }}>{label}</Txt>
       <Txt v="label" color={C.dim}>›</Txt>
     </Pressable>
@@ -89,47 +88,49 @@ export default function Wallet() {
 
       {!me ? <View style={{ marginTop: 16 }}><WalletCard chain={chain} note="USDC only" need={0} /></View> : (
         <>
-          <View style={{ marginTop: 6 }}>
+          <View style={{ alignItems: 'center', marginTop: 8 }}>
             <Txt v="small">{wallet.signer?.kind === 'privy' ? wallet.signer.label : 'Your wallet'}</Txt>
-            <View style={{ marginTop: 2 }}>{bal == null ? <Txt v="title">…</Txt> : <Money value={bal} size={40} />}</View>
-            <Row style={{ gap: 6, marginTop: 4 }}>
-              <Image source={ART.logoUSDC} style={{ width: 16, height: 16, borderRadius: 8 }} contentFit="cover" />
-              <Txt v="small" lines={1} style={{ flexShrink: 1 }}>USDC{IS_LOCAL_NET ? ' · test network' : ''} · no gas fees</Txt>
-            </Row>
+            <View style={{ marginTop: 4 }}>{bal == null ? <Txt v="title">…</Txt> : <Money value={bal} size={56} />}</View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: C.s1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 }}>
+              <Image source={ART.logoUSDC} style={{ width: 18, height: 18, borderRadius: 9 }} contentFit="cover" />
+              <Txt v="small" color={C.ink}>USDC{IS_LOCAL_NET ? ' · test network' : ''} · no gas fees</Txt>
+            </View>
           </View>
 
-          <ActionRow>
-            {wallet.addFunds ? <Action primary label="Add" icon={<Plus size={22} color={C.onBrand} />} onPress={wallet.addFunds} />
-              : faucet ? <Action primary label={busy === 'faucet' ? 'Adding…' : 'Test USDC'} icon={<Plus size={22} color={C.onBrand} />} disabled={!!busy} onPress={getTest} /> : null}
-            <Action label="Send" icon={<ArrowUp size={21} color={C.ink} />} disabled={!bal} onPress={() => setSending(true)} />
-            <Action label="Receive" icon={<ArrowDown size={21} color={C.ink} />} onPress={() => setReceiving(true)} />
-          </ActionRow>
+          <Row style={{ marginTop: 26, marginBottom: 6 }}>
+            {wallet.addFunds ? <Action label="Add" tint={C.up} icon={<Plus color="#04120A" />} onPress={wallet.addFunds} />
+              : faucet ? <Action label={busy === 'faucet' ? 'Adding…' : 'Test USDC'} tint={C.up} icon={<Plus color="#04120A" />} disabled={!!busy} onPress={getTest} /> : null}
+            <Action label="Send" icon={<ArrowUp />} disabled={!bal} onPress={() => setSending(true)} />
+            <Action label="Receive" icon={<ArrowDown />} onPress={() => setReceiving(true)} />
+          </Row>
           {err ? <ErrorLine msg={err} /> : null}
 
-          <Txt v="h2" style={{ marginTop: 28, marginBottom: 4 }}>Activity</Txt>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 6 }}>Activity</Text>
           {moves === null ? <SkeletonRows n={3} /> : moves.length === 0 ? (
-            <Pending art={ART.coinsPile} title="No money moves yet" body="Add USDC, then save it, invest it or play with it." />
+            <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+              <Image source={ART.coinsPile} style={{ width: 90, height: 90 }} contentFit="contain" />
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>No money moves yet. Add USDC, then save it, invest it or play with it.</Txt>
+            </View>
           ) : moves.map((m) => (
-            <Pressable key={m.sig} onPress={() => Linking.openURL(explorerTx(m.sig))} accessibilityRole="link" accessibilityLabel={`${what(m)}, open on the explorer`}
-              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}>
-                {m.delta >= 0 ? <ArrowDown size={18} color={C.ink} /> : <ArrowUp size={18} color={C.ink} />}
+            <Pressable key={m.sig} onPress={() => Linking.openURL(explorerTx(m.sig))} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, opacity: pressed ? 0.6 : 1 })}>
+              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: m.delta >= 0 ? C.upBg : C.s2, alignItems: 'center', justifyContent: 'center' }}>
+                {m.delta >= 0 ? <ArrowDown size={18} color={C.up} /> : <ArrowUp size={18} color={C.ink} />}
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Txt v="label" lines={1}>{what(m)}</Txt>
-                <Txt v="small" lines={1} style={{ marginTop: 1 }}>{m.at ? new Date(m.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}</Txt>
+                <Txt v="small">{m.at ? new Date(m.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}</Txt>
               </View>
-              <Txt v="num" color={m.delta >= 0 ? C.up : C.ink}>{m.delta >= 0 ? '+' : '−'}${Math.abs(m.delta).toFixed(2)}</Txt>
+              <Txt v="label" color={m.delta >= 0 ? C.up : C.ink}>{m.delta >= 0 ? '+' : '−'}${Math.abs(m.delta).toFixed(2)}</Txt>
             </Pressable>
           ))}
 
-          <Txt v="h2" style={{ marginTop: 28, marginBottom: 10 }}>Account</Txt>
-          <View style={{ backgroundColor: C.card, borderRadius: 18, overflow: 'hidden', paddingVertical: 4 }}>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 8 }}>Account</Text>
+          <View style={{ backgroundColor: C.s1, borderRadius: 20, overflow: 'hidden' }}>
             <SettingRow label="View on Solana Explorer" onPress={explorer} />
             {wallet.exportKey ? <SettingRow label="Export your key" onPress={wallet.exportKey} /> : null}
             {wallet.logout ? <SettingRow label="Sign out" danger onPress={wallet.logout} /> : null}
           </View>
-          <Txt v="small" style={{ marginTop: 14, fontSize: 12, color: C.dim, lineHeight: 17 }}>Your key stays with you. Stakes wait in the Clashy program's escrow on Solana until the game settles.</Txt>
+          <Txt v="small" style={{ marginTop: 14, lineHeight: 18 }}>Your money stays in your own wallet until you play. A stake waits in the Clashy program's escrow on Solana and comes back to you when the game settles. Clashy never sees your key.</Txt>
         </>
       )}
 
@@ -138,10 +139,10 @@ export default function Wallet() {
         <SendUsdc chain={chain} onDone={() => setSending(false)} />
       </Sheet>
       <Sheet open={receiving} onClose={() => setReceiving(false)} title="Receive USDC">
-        <Row style={{ gap: 10 }}>
-          <Image source={ART.logoUSDC} style={{ width: 28, height: 28, borderRadius: 14 }} contentFit="cover" />
-          <Txt v="small" style={{ flex: 1 }}>Send only USDC on Solana to this address.</Txt>
-        </Row>
+        <View style={{ alignItems: 'center' }}>
+          <Image source={ART.coinsPile} style={{ width: 96, height: 96 }} contentFit="contain" />
+          <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>Send only USDC on Solana to this address.</Txt>
+        </View>
         <Pressable onPress={copy} style={{ marginTop: 14, backgroundColor: C.s2, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Txt v="label" style={{ flex: 1, minWidth: 0, wordBreak: 'break-all', lineHeight: 22 } as object}>{me?.toBase58()}</Txt>
           {copied ? <Txt v="small" color={C.up}>Copied</Txt> : <Copy color={C.brandSoft} />}

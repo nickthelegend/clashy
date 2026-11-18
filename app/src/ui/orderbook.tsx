@@ -5,14 +5,14 @@ import { Pressable, View } from 'react-native';
 import Svg, { G, Line as SLine, Rect } from 'react-native-svg';
 import { VENUES, mid, spreadBps, type BookFeed, type Candle, type Level, type Print, type Venue } from '@/chain/venues';
 import { LiveDot, Row, Txt } from './kit';
-import { C, FONT } from './tokens';
+import { C } from './tokens';
 
-/** The venue a market trades on: a grey chip with the venue's own colour as a small dot (its mark, like a logo). */
 export function VenueChip({ venue, small }: { venue: Venue; small?: boolean }) {
+  const book = venue !== 'jupiter';
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: small ? 1 : 2 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: book ? 'rgba(171,159,242,0.15)' : C.s2, borderRadius: 7, paddingHorizontal: 7, paddingVertical: small ? 1 : 3 }}>
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: venue === 'phoenix' ? '#FF7A45' : venue === 'pacifica' ? '#3EC7E0' : '#C7F284' }} />
-      <Txt v="small" color={C.muted} style={{ ...FONT.medium, fontSize: 11 }} lines={1}>{VENUES[venue].name}</Txt>
+      <Txt v="small" color={book ? C.brandSoft : C.muted} style={{ fontSize: small ? 11 : 11.5 }} lines={1}>{VENUES[venue].name}</Txt>
     </View>
   );
 }
@@ -46,7 +46,7 @@ export function CandleChart({ candles, w, h = 220, last }: { candles: Candle[]; 
   return (
     <View style={{ width: w, height: h }}>
       <Svg width={w} height={h}>
-        {[0.25, 0.5, 0.75].map((f) => <SLine key={f} x1={0} x2={w - R_ + 2} y1={h * f} y2={h * f} stroke={C.line} />)}
+        {[0.25, 0.5, 0.75].map((f) => <SLine key={f} x1={0} x2={w - R_ + 2} y1={h * f} y2={h * f} stroke="#17171C" />)}
         {data.map((k, i) => {
           const x = i * cw + cw / 2;
           const g = k.c >= k.o;
@@ -61,31 +61,28 @@ export function CandleChart({ candles, w, h = 220, last }: { candles: Candle[]; 
         })}
         <SLine x1={0} x2={w} y1={Y(px)} y2={Y(px)} stroke={up ? C.up : C.down} strokeOpacity={0.55} strokeDasharray="2 3" />
       </Svg>
-      <View pointerEvents="none" style={{ position: 'absolute', right: 2, top: Math.max(2, Math.min(h - 22, Y(px) - 10)), backgroundColor: C.s2, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 }}>
-        <Txt v="small" color={up ? C.up : C.down} style={{ ...FONT.semi, fontSize: 11, fontVariant: ['tabular-nums'] }}>{fmtP(px, d)}</Txt>
+      <View pointerEvents="none" style={{ position: 'absolute', right: 2, top: Math.max(2, Math.min(h - 22, Y(px) - 10)), backgroundColor: up ? C.up : C.down, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 }}>
+        <Txt v="small" color="#000" style={{ fontSize: 10.5, fontVariant: ['tabular-nums'] }}>{fmtP(px, d)}</Txt>
       </View>
-      <Txt v="small" color={C.dim} style={{ position: 'absolute', right: 4, top: 2, fontSize: 10.5, fontVariant: ['tabular-nums'] }}>{fmtP(hi0, d)}</Txt>
-      <Txt v="small" color={C.dim} style={{ position: 'absolute', right: 4, bottom: 0, fontSize: 10.5, fontVariant: ['tabular-nums'] }}>{fmtP(lo0, d)}</Txt>
+      <Txt v="small" style={{ position: 'absolute', right: 4, top: 2, fontSize: 10 }}>{fmtP(hi0, d)}</Txt>
+      <Txt v="small" style={{ position: 'absolute', right: 4, bottom: 0, fontSize: 10 }}>{fmtP(lo0, d)}</Txt>
     </View>
   );
 }
 
 /* ---------- the book ---------- */
 const ROWS = 9;
-/** Book and tape numbers: 12.5 px, tabular, so the columns line up like a terminal. */
-const NUM = { ...FONT.regular, fontSize: 12.5, fontVariant: ['tabular-nums' as const] };
-const HEAD = { ...FONT.medium, fontSize: 11 };
 function Side({ rows, kind, max, d, onPick }: { rows: [number, number, number][]; kind: 'bid' | 'ask'; max: number; d: number; onPick?: (p: number) => void }) {
   const col = kind === 'bid' ? C.up : C.down;
   return (
     <View>
       {rows.map(([p, a, cum]) => (
         <Pressable key={`${kind}${p}`} onPress={onPick ? () => onPick(p) : undefined} disabled={!onPick} accessibilityLabel={`${kind === 'bid' ? 'Bid' : 'Ask'} ${p}`}
-          style={({ pressed }) => ({ height: 23, flexDirection: 'row', alignItems: 'center', backgroundColor: pressed ? C.s1 : 'transparent' })}>
-          <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: 5, bottom: 5, width: `${Math.min(100, (cum / max) * 100)}%`, backgroundColor: kind === 'bid' ? C.upBg : C.downBg, opacity: 0.75, borderRadius: 2 }} />
-          <Txt v="small" color={col} style={[NUM, { flex: 1 }]}>{fmtP(p, d)}</Txt>
-          <Txt v="small" color={C.ink} style={[NUM, { flex: 1, textAlign: 'right' }]}>{fmtSize(a)}</Txt>
-          <Txt v="small" color={C.muted} style={[NUM, { flex: 1, textAlign: 'right' }]}>{fmtUsdC(cum * p)}</Txt>
+          style={({ pressed }) => ({ height: 24, flexDirection: 'row', alignItems: 'center', backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
+          <View pointerEvents="none" style={{ position: 'absolute', right: 0, top: 2, bottom: 2, width: `${Math.min(100, (cum / max) * 100)}%`, backgroundColor: kind === 'bid' ? 'rgba(48,209,88,0.11)' : 'rgba(255,69,58,0.11)', borderRadius: 3 }} />
+          <Txt v="small" color={col} style={{ flex: 1, fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtP(p, d)}</Txt>
+          <Txt v="small" color={C.ink} style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtSize(a)}</Txt>
+          <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtUsdC(cum * p)}</Txt>
         </Pressable>
       ))}
     </View>
@@ -112,15 +109,15 @@ export function OrderBookView({ feed, base, onPick }: { feed: BookFeed; base: st
   return (
     <View>
       <Row style={{ height: 26 }}>
-        <Txt v="small" color={C.dim} style={[HEAD, { flex: 1 }]}>Price (USD)</Txt>
-        <Txt v="small" color={C.dim} style={[HEAD, { flex: 1, textAlign: 'right' }]}>Size ({base})</Txt>
-        <Txt v="small" color={C.dim} style={[HEAD, { flex: 1, textAlign: 'right' }]}>Total</Txt>
+        <Txt v="small" style={{ flex: 1, fontSize: 11 }}>Price (USD)</Txt>
+        <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Size ({base})</Txt>
+        <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Total</Txt>
       </Row>
       <Side rows={[...asks].reverse()} kind="ask" max={max} d={d} onPick={onPick} />
-      <Row style={{ height: 34, gap: 8 }}>
-        <Txt v="num" style={{ fontSize: 14.5 }}>{m !== undefined ? fmtP(m, d) : '–'}</Txt>
-        <Txt v="small" color={C.dim} style={{ flex: 1, fontSize: 12 }}>mid</Txt>
-        <Txt v="small" style={{ fontSize: 12, fontVariant: ['tabular-nums'] }}>Spread {sp !== undefined ? `${sp < 10 ? sp.toFixed(2) : sp.toFixed(1)} bps` : '–'}</Txt>
+      <Row style={{ height: 36, gap: 10 }}>
+        <Txt v="label" style={{ fontVariant: ['tabular-nums'] }}>{m !== undefined ? fmtP(m, d) : '–'}</Txt>
+        <Txt v="small" style={{ flex: 1 }}>mid</Txt>
+        <Txt v="small" style={{ fontVariant: ['tabular-nums'] }}>Spread {sp !== undefined ? `${sp < 10 ? sp.toFixed(2) : sp.toFixed(1)} bps` : '–'}</Txt>
       </Row>
       <Side rows={bids} kind="bid" max={max} d={d} onPick={onPick} />
     </View>
@@ -134,15 +131,15 @@ export function TapeView({ trades, base }: { trades: Print[]; base: string }) {
   return (
     <View>
       <Row style={{ height: 26 }}>
-        <Txt v="small" color={C.dim} style={[HEAD, { flex: 1 }]}>Price (USD)</Txt>
-        <Txt v="small" color={C.dim} style={[HEAD, { flex: 1, textAlign: 'right' }]}>Size ({base})</Txt>
-        <Txt v="small" color={C.dim} style={[HEAD, { flex: 1, textAlign: 'right' }]}>Time</Txt>
+        <Txt v="small" style={{ flex: 1, fontSize: 11 }}>Price (USD)</Txt>
+        <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Size ({base})</Txt>
+        <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 11 }}>Time</Txt>
       </Row>
       {trades.slice(0, ROWS * 2 + 1).map((t) => (
-        <Row key={t.id} style={{ height: 23 }}>
-          <Txt v="small" color={t.side === 'buy' ? C.up : C.down} style={[NUM, { flex: 1 }]}>{fmtP(t.price, d)}</Txt>
-          <Txt v="small" color={C.ink} style={[NUM, { flex: 1, textAlign: 'right' }]}>{fmtSize(t.size)}</Txt>
-          <Txt v="small" color={C.muted} style={[NUM, { flex: 1, textAlign: 'right' }]}>{clock(t.t, now)}</Txt>
+        <Row key={t.id} style={{ height: 24 }}>
+          <Txt v="small" color={t.side === 'buy' ? C.up : C.down} style={{ flex: 1, fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtP(t.price, d)}</Txt>
+          <Txt v="small" color={C.ink} style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{fmtSize(t.size)}</Txt>
+          <Txt v="small" style={{ flex: 1, textAlign: 'right', fontSize: 12.5, fontVariant: ['tabular-nums'] }}>{clock(t.t, now)}</Txt>
         </Row>
       ))}
     </View>

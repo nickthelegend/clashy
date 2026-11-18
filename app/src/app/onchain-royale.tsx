@@ -3,6 +3,7 @@
 // Solana. Any player's device resolves a round once its timer runs out (resolve_round is permissionless).
 // The look lives in ui/royale.tsx; wallet and transaction proof live in the bottom drawer.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -17,13 +18,12 @@ import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain'
 import { CallButtons, coinName } from '@/ui/clash';
 import { ClayLoop } from '@/ui/clay';
 import { FX, Hit, RoundBanner } from '@/ui/fx';
-import { Jar } from '@/ui/icons';
-import { BackBtn, Btn, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
+import { ART, BackBtn, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { Lottie } from '@/ui/lottie';
-import { GOLD, Hearts, OpenRoyale, RoundRing, SURFACE, Segmented, StatusPill, Table, TableRoll, type Seat } from '@/ui/royale';
+import { BigCta, EDGE, GOLD, Hearts, HowItWorks, OpenRoyale, RoundRing, SURFACE, Segmented, StatusPill, Table, TableRoll, type Seat } from '@/ui/royale';
 import { Sheet } from '@/ui/sheet';
-import { C, FONT, S, fmtUsd } from '@/ui/tokens';
+import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const ACTIVE = 'clashy:chain:tour';
 const NO_COIN = 255;
@@ -199,10 +199,10 @@ export default function OnchainRoyale() {
 
   const fresh = lobby.filter((t) => Date.now() - t.nonce < STALE_MIN * 60_000);
   const older = lobby.filter((t) => Date.now() - t.nonce >= STALE_MIN * 60_000);
-  const lobbyCard = (t: TourView, stale: boolean, index = 0) => {
+  const lobbyCard = (t: TourView, stale: boolean) => {
     const mine = !!wallet && t.players.some((p) => p.equals(wallet));
     return (
-      <OpenRoyale key={t.key.toBase58()} index={index} host={names.get(t.creator.toBase58())} hostName={nameOf(t.creator)} taken={t.count} max={t.maxPlayers} lives={t.startLives}
+      <OpenRoyale key={t.key.toBase58()} host={names.get(t.creator.toBase58())} hostName={nameOf(t.creator)} taken={t.count} max={t.maxPlayers} lives={t.startLives}
         pot={(t.entry * t.count) / USDC} age={`${(t.entry / USDC).toFixed(0)} USDC in · ${ago(Date.now() - t.nonce)}`} mine={mine} stale={stale}
         disabled={!!busy} onOpen={() => setActiveTour(t.key)} onJoin={() => (ready ? join(t) : setProof(true))} />
     );
@@ -212,13 +212,13 @@ export default function OnchainRoyale() {
   const over = !!active && !!tour && tour.status >= 3;
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: '#07070A' }}>
       <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
         <Row style={{ gap: 10, marginBottom: 6 }}>
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <View style={{ flex: 1 }} />
-          <Pressable onPress={() => setProof(true)} accessibilityRole="button" accessibilityLabel="Wallet and on-chain proof" hitSlop={5}
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.s2, borderRadius: 18, paddingHorizontal: 12, height: 36, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+          <Pressable onPress={() => setProof(true)} accessibilityRole="button" accessibilityLabel="Wallet and on-chain proof"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: SURFACE, borderRadius: 16, paddingHorizontal: 12, height: 44 }}>
             <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
           </Pressable>
         </Row>
@@ -232,29 +232,29 @@ export default function OnchainRoyale() {
                 <ClayLoop name={survived ? 'win' : me >= 0 ? 'ko' : 'royale'} size={170} loop={survived} style={{ borderRadius: 36 }} />
                 {survived ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
               </View>
-              <Text style={{ ...FONT.bold, fontSize: 34, color: me < 0 ? C.ink : survived ? C.up : C.down, marginTop: 8, letterSpacing: -1, textAlign: 'center' }}>
+              <Text style={{ ...FONT.display, fontSize: 38, color: me < 0 ? C.ink : survived ? C.up : C.down, marginTop: 8, letterSpacing: -1, textAlign: 'center' }}>
                 {me < 0 ? 'Royale over' : survived ? 'You survived' : 'Knocked out'}
               </Text>
               {me >= 0 ? (
-                <Text style={{ ...FONT.semi, fontSize: 26, letterSpacing: -0.6, fontVariant: ['tabular-nums'], color: survived ? C.up : C.down }}>{survived ? `+${share.toFixed(2)} USDC` : `−${(tour.entry / USDC).toFixed(2)} USDC`}</Text>
+                <Text style={{ ...FONT.display, fontSize: 30, color: survived ? GOLD : C.ink }}>{survived ? `+${share.toFixed(2)} USDC` : `−${(tour.entry / USDC).toFixed(2)} USDC`}</Text>
               ) : null}
               <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>
                 {survivors === 0 ? 'Nobody had a heart left.' : survivors === 1 ? 'Last one standing took the pot.' : `${survivors} survivors split ${payout.toFixed(2)} USDC.`}
                 {' '}{tour.round} round{tour.round === 1 ? '' : 's'} on {sym ? coinName(sym) : 'the coin'}.
               </Txt>
-              <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: C.card, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 10 }}>
-                <Txt v="h2" style={{ textAlign: 'center', marginBottom: 14 }}>The table</Txt>
+              <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
+                <Text style={{ ...FONT.semi, fontSize: 18, color: C.ink, textAlign: 'center', marginBottom: 14 }}>The table</Text>
                 <Table seats={seatsOf(tour, true)} startLives={tour.startLives} />
               </View>
-              <Btn title="Back to the lobby" h={52} style={{ marginTop: 16, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />
+              <BigCta title="Back to the lobby" color={C.ink} onPress={() => setActiveTour(null)} />
             </Animated.View>
           ) : (
             /* ---------- cancelled ---------- */
-            <Animated.View entering={FadeInDown.duration(300)} style={{ alignItems: 'center', backgroundColor: C.card, borderRadius: 18, padding: 16, marginTop: 10 }}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.s2, alignItems: 'center', justifyContent: 'center' }}><Jar size={20} color={C.ink} /></View>
-              <Txt v="h2" style={{ marginTop: 10, textAlign: 'center' }}>{(tour.entry / USDC).toFixed(2)} USDC is back</Txt>
-              <Txt v="small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 18 }}>The Royale was cancelled before round 1, so every entry went straight back to its player.</Txt>
-              <Btn title="Back to the lobby" h={48} style={{ marginTop: 14, alignSelf: 'stretch' }} onPress={() => setActiveTour(null)} />
+            <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 26, padding: 18, marginTop: 6 }}>
+              <Image source={ART.stash} style={{ width: 90, height: 90 }} contentFit="contain" />
+              <Text style={{ ...FONT.display, fontSize: 26, color: C.ink, marginTop: 6, textAlign: 'center' }}>{(tour.entry / USDC).toFixed(2)} USDC IS BACK</Text>
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>The Royale was cancelled before round 1, so every entry went straight back to its player.</Txt>
+              <BigCta title="Back to the lobby" color={C.ink} onPress={() => setActiveTour(null)} />
             </Animated.View>
           )
         ) : inGame && tour ? (
@@ -265,19 +265,19 @@ export default function OnchainRoyale() {
                 <TableRoll pool={POOL} landed={sym} />
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 20, alignSelf: 'stretch' }}>
                   {[['Pot', fmtUsd(pot)], ['Seats', `${tour.count}/${tour.maxPlayers}`], ['Hearts', `${tour.startLives}`]].map(([k, v]) => (
-                    <View key={k} style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 12 }}>
-                      <Txt v="small">{k}</Txt>
-                      <Txt v="num" lines={1} color={k === 'Pot' ? GOLD : C.ink} style={{ fontSize: 17, marginTop: 2 }}>{v}</Txt>
+                    <View key={k} style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 20, paddingVertical: 12, alignItems: 'center' }}>
+                      <Text style={{ ...FONT.bold, fontSize: 10.5, color: C.muted, letterSpacing: 1 }}>{k}</Text>
+                      <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: k === 'Pot' ? GOLD : C.ink, marginTop: 2 }} numberOfLines={1}>{v}</Text>
                     </View>
                   ))}
                 </View>
-                <View style={{ alignSelf: 'stretch', marginTop: 12, backgroundColor: C.card, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 10 }}>
+                <View style={{ alignSelf: 'stretch', marginTop: 14, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
                   <Table seats={seatsOf(tour)} startLives={tour.startLives} empty={Math.max(0, tour.maxPlayers - tour.count)} />
                 </View>
                 {isHost && !tour.onEr ? (
                   <View style={{ alignSelf: 'stretch' }}>
-                    <Btn h={54} style={{ marginTop: 16 }}
-                      title={busy === 'live' ? 'Starting…' : tour.count < 2 ? 'Waiting for players' : tour.coin >= 3 ? 'Rolling the coin…' : `Start · ${tour.count} players`}
+                    <BigCta
+                      title={busy === 'live' ? 'Starting…' : tour.count < 2 ? 'Waiting for players' : tour.coin >= 3 ? 'Rolling the coin…' : `Start · ${tour.count} Players`}
                       disabled={!!busy || tour.count < 2 || tour.coin >= 3} onPress={goLive} />
                     <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{tour.count < 2 ? 'Share the table: anyone with a Clashy wallet can join from the lobby.' : 'Start whenever you like. Empty seats just stay empty.'}</Txt>
                     <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 10, height: 44, alignItems: 'center', justifyContent: 'center' }}>
@@ -286,7 +286,7 @@ export default function OnchainRoyale() {
                   </View>
                 ) : (
                   <View style={{ alignItems: 'center', marginTop: 18 }}>
-                    <Txt v="h2" style={{ textAlign: 'center' }}>{tour.onEr ? 'Starting round 1…' : 'Waiting for the host'}</Txt>
+                    <Text style={{ ...FONT.display, fontSize: 24, color: C.ink, textAlign: 'center' }}>{tour.onEr ? 'Starting round 1…' : 'Waiting for the host'}</Text>
                     <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>{tour.onEr ? 'Get ready to call it.' : `${nameOf(tour.creator)} starts the Royale. Your ${(tour.entry / USDC).toFixed(2)} USDC is held safely until then.`}</Txt>
                   </View>
                 )}
@@ -300,20 +300,20 @@ export default function OnchainRoyale() {
                   <StatusPill text={`${aliveNow} Left`} color={C.opp} />
                 </Row>
                 <View style={{ marginTop: 16 }}><RoundRing sym={sym ?? 'SOL'} left={left} total={tour.roundSecs} /></View>
-                <Text style={{ ...FONT.semi, fontSize: 34, letterSpacing: -1, fontVariant: ['tabular-nums'], color: move > 0 ? C.up : move < 0 ? C.down : C.ink, marginTop: 10 }}>{price ? fmtUsd(price) : '…'}</Text>
+                <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: move > 0 ? C.up : move < 0 ? C.down : C.ink, marginTop: 10 }}>{price ? fmtUsd(price) : '…'}</Text>
                 <Txt v="small">{sym ? coinName(sym) : 'Coin'} from {fmtUsd(tour.roundPrice)} · {movePct >= 0 ? '+' : ''}{movePct.toFixed(3)}%</Txt>
-                <Text style={{ ...FONT.semi, fontSize: 20, fontVariant: ['tabular-nums'], color: left > 0 && left < 3 ? C.opp : C.muted, marginTop: 8 }}>{left > 0 ? `${Math.ceil(left)} s to call` : 'Calling it…'}</Text>
+                <Text style={{ ...FONT.semi, fontSize: 20, color: left > 0 && left < 3 ? C.opp : C.muted, marginTop: 8 }}>{left > 0 ? `${Math.ceil(left)} S to call` : 'Calling it…'}</Text>
                 <View style={{ alignSelf: 'stretch', marginTop: 16 }}>
                   {me >= 0 && tour.lives[me] > 0 ? (
                     tour.calls[me] ? (
-                      <View style={{ alignItems: 'center', backgroundColor: tour.calls[me] === 1 ? C.upBg : C.downBg, borderRadius: 18, padding: 16 }}>
-                        <Txt v="h2" color={tour.calls[me] === 1 ? C.up : C.down} style={{ textAlign: 'center' }}>{tour.calls[me] === 1 ? '▲ You called up' : '▼ You called down'}</Txt>
+                      <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 24, padding: 18, borderWidth: 2, borderColor: tour.calls[me] === 1 ? C.up : C.down }}>
+                        <Text style={{ ...FONT.display, fontSize: 24, color: tour.calls[me] === 1 ? C.up : C.down, textAlign: 'center' }}>{tour.calls[me] === 1 ? '▲ You called up' : '▼ You called down'}</Text>
                         <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>Locked in. Wrong call costs a heart when the clock hits zero.</Txt>
                       </View>
                     ) : <CallButtons onUp={() => call(1)} onDown={() => call(2)} disabled={!!busy || left <= 0} />
                   ) : me >= 0 ? (
-                    <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 18, padding: 16 }}>
-                      <Text style={{ ...FONT.bold, fontSize: 28, letterSpacing: -0.6, color: C.down }}>You're out</Text>
+                    <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 24, padding: 18 }}>
+                      <Text style={{ ...FONT.display, fontSize: 30, color: C.down }}>You're out</Text>
                       <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>No hearts left. Watch who outlasts the table.</Txt>
                     </View>
                   ) : null}
@@ -321,8 +321,8 @@ export default function OnchainRoyale() {
                 {me >= 0 && tour.lives[me] > 0 ? (
                   <Row style={{ gap: 8, marginTop: 14 }}><Txt v="small">Your hearts</Txt><Hearts lives={tour.lives[me]} max={tour.startLives} size={22} /></Row>
                 ) : null}
-                <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: C.card, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 10 }}>
-                  <Txt v="h2" style={{ textAlign: 'center', marginBottom: 14 }}>Still standing · {aliveNow}</Txt>
+                <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
+                  <Text style={{ ...FONT.semi, fontSize: 18, color: C.ink, textAlign: 'center', marginBottom: 14 }}>STILL STANDING · {aliveNow}</Text>
                   <Table seats={seatsOf(tour)} startLives={tour.startLives} showCalls />
                 </View>
               </View>
@@ -330,9 +330,9 @@ export default function OnchainRoyale() {
               /* ---------- final round resolved, paying out ---------- */
               <View style={{ alignItems: 'center' }}>
                 <ClayLoop name="royale" size={150} style={{ borderRadius: 34 }} />
-                <Text style={{ ...FONT.bold, fontSize: 34, letterSpacing: -1, color: C.ink, marginTop: 8, textAlign: 'center' }}>Final bell</Text>
+                <Text style={{ ...FONT.display, fontSize: 34, color: C.ink, marginTop: 8, textAlign: 'center' }}>Final bell</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>{tour.onEr ? 'Locking in the last round…' : `Paying ${fmtUsd(payout)} to the survivors…`}</Txt>
-                <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: C.card, borderRadius: 18, paddingVertical: 16, paddingHorizontal: 10 }}>
+                <View style={{ alignSelf: 'stretch', marginTop: 20, backgroundColor: '#0E0E13', borderRadius: 26, paddingVertical: 18, paddingHorizontal: 10 }}>
                   <Table seats={seatsOf(tour, true)} startLives={tour.startLives} />
                 </View>
               </View>
@@ -342,40 +342,49 @@ export default function OnchainRoyale() {
         ) : (
           /* ---------- lobby ---------- */
           <>
-            <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 2 }}>
-              <Txt v="title">Royale</Txt>
-              <Txt v="small" style={{ marginTop: 2, lineHeight: 18 }}>{ENTRY_USDC} USDC in. Last one standing takes the pot.</Txt>
-            </Animated.View>
-            <Segmented label="Seats" value={seats} onChange={setSeats} items={(['2', '4', '8', '16'] as const).map((k) => ({ key: k, label: k }))} />
-            <Segmented label="Hearts each" note="A wrong call costs a heart" value={lives} onChange={setLives} items={(['1', '2', '3'] as const).map((k) => ({ key: k, label: k }))} />
-
-            <View style={{ marginTop: 12, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 12, gap: 8 }}>
-              <Row style={{ justifyContent: 'space-between', gap: 10 }}><Txt v="small">You put in</Txt><Txt v="label" style={{ fontVariant: ['tabular-nums'] }}>{ENTRY_USDC.toFixed(2)} USDC</Txt></Row>
-              <Row style={{ justifyContent: 'space-between', gap: 10 }}><Txt v="small" lines={1} style={{ flexShrink: 1 }}>A full table of {seats} pays</Txt><Txt v="label" color={C.up} style={{ fontVariant: ['tabular-nums'] }}>{fmtUsd(potAfterRake(ENTRY_USDC * USDC, +seats))}</Txt></Row>
-              <Row style={{ justifyContent: 'space-between', gap: 10 }}><Txt v="small">Each round</Txt><Txt v="small" color={C.ink}>Call up or down in {ROUND_SECS} s</Txt></Row>
+            <View style={{ alignItems: 'center', marginTop: 4 }}>
+              <ClayLoop name="royale" size={150} style={{ borderRadius: 34 }} />
+              <Text style={{ ...FONT.bold, fontSize: 42, letterSpacing: -1.4, color: C.ink, marginTop: -4 }}>Royale</Text>
+              <Txt v="small" style={{ textAlign: 'center' }}>{ENTRY_USDC} USDC in. Last one standing takes the pot.</Txt>
             </View>
+            <HowItWorks secs={ROUND_SECS} />
+            <Segmented label="Seats" value={seats} onChange={setSeats} items={(['2', '4', '8', '16'] as const).map((k) => ({ key: k, label: k }))} />
+            <Segmented label="Hearts each" value={lives} onChange={setLives} items={(['1', '2', '3'] as const).map((k) => ({
+              key: k,
+              label: (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={{ ...FONT.semi, fontSize: 18, color: lives === k ? '#000' : C.ink }}>{k}</Text>
+                  <Image source={FX.heart} style={{ width: 18, height: 18 }} contentFit="contain" />
+                </View>
+              ),
+            }))} />
+            <Txt v="small" style={{ textAlign: 'center', marginTop: 12 }}>
+              A full table of {seats} pays <Text style={{ ...FONT.bold, color: GOLD }}>{fmtUsd(potAfterRake(ENTRY_USDC * USDC, +seats))}</Text> to whoever is left.
+            </Txt>
+            <BigCta title={busy === 'host' ? 'Hosting…' : ready ? `Host · ${ENTRY_USDC} USDC` : 'Set up your wallet'} disabled={!!busy} onPress={ready ? host : () => setProof(true)} />
 
-            <Btn h={54} style={{ marginTop: 14 }} title={busy === 'host' ? 'Hosting…' : ready ? `Host · ${ENTRY_USDC} USDC` : 'Set up your wallet'} disabled={!!busy} onPress={ready ? host : () => setProof(true)} />
-
-            <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 4 }}>
-              <Txt v="h2">Open royales</Txt>
+            <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 10 }}>
+              <Text style={{ ...FONT.display, fontSize: 24, color: C.ink }}>Open royales</Text>
               <Txt v="small">{fresh.length} open</Txt>
             </Row>
             {lobbyErr ? <ErrorLine msg={lobbyErr} /> : null}
             {fresh.length === 0 ? (
-              <Txt v="small" style={{ paddingVertical: 8 }}>No fresh tables right now. Host one and players can jump in from here.</Txt>
-            ) : fresh.map((t, i) => lobbyCard(t, false, i))}
+              <View style={{ alignItems: 'center', backgroundColor: SURFACE, borderRadius: 22, padding: 18 }}>
+                <Image source={ART.bellArt} style={{ width: 70, height: 70 }} contentFit="contain" />
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>No fresh tables right now. Host one and players can jump in from here.</Txt>
+              </View>
+            ) : fresh.map((t) => lobbyCard(t, false))}
 
             {older.length ? (
               <>
                 <Pressable onPress={() => setShowOld((s) => !s)} accessibilityRole="button" style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                   <Txt v="label" color={C.muted}>Older tables · {older.length}</Txt>
-                  <Txt v="small" color={C.muted}>{showOld ? 'Hide' : 'Show'}</Txt>
+                  <Txt v="small" color={C.muted}>{showOld ? 'Hide ▲' : 'Show ▼'}</Txt>
                 </Pressable>
                 {showOld ? (
                   <>
-                    <Txt v="small" style={{ fontSize: 12, color: C.dim, marginBottom: 2 }}>Opened over {STALE_MIN} minutes ago. Still open on chain, but the host may be gone.</Txt>
-                    {older.map((t, i) => lobbyCard(t, true, i))}
+                    <Txt v="small" style={{ marginBottom: 8 }}>Opened over {STALE_MIN} minutes ago. Still open on chain, but the host may be gone.</Txt>
+                    {older.map((t) => lobbyCard(t, true))}
                   </>
                 ) : null}
               </>
