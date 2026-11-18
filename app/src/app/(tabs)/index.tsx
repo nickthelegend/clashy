@@ -59,7 +59,7 @@ export default function HomeScreen() {
   const col = useDeskColumn();
   const { desk } = useLayout();
   const [tab, setTab] = useState<Tab>('calls');
-  const { openCall, openSave } = useCreate();
+  const { openCall, openSave, openSearch } = useCreate();
   const [liking, setLiking] = useState<number | null>(null);
   const [likeErr, setLikeErr] = useState<string>();
   const chain = useChain();
@@ -132,9 +132,16 @@ export default function HomeScreen() {
             <View><Txt v="small" style={{ fontSize: 12 }}>gm,</Txt><Txt v="label">@{myProfile.name}</Txt></View>
           </Pressable>
         ) : desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
-        {wallet.status === 'out' ? <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} /> : (
+        {wallet.status === 'out' ? (
           <Row style={{ gap: 8 }}>
-            <Pressable onPress={() => router.push('/search' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+              <SearchI size={18} color={C.ink} />
+            </Pressable>
+            <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} />
+          </Row>
+        ) : (
+          <Row style={{ gap: 8 }}>
+            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
             <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>

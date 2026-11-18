@@ -16,12 +16,13 @@ import {
 import { TF_MS, bookFresh, fillUsd, mid, useBookFeed, useCandles, type BookFeed, type Timeframe } from '@/chain/venues';
 import { BackBtn, Bone, ErrorLine, LiveDot, Money, Row, SkeletonRows, Txt } from './kit';
 import { useDeskColumn } from './layout';
+import { Keypad, editAmount, type Key } from './keypad';
 import { CandleChart, OrderBookView, TapeView, VenueChip, decimalsFor, fmtP, fmtUsdC } from './orderbook';
 import {
   BarBtn, CARD, CloseSheet, HAIR, Head, Line, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, SideTag,
 } from './practice-kit';
 import { Sheet } from './sheet';
-import { C, S } from './tokens';
+import { C, F, S } from './tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/practice' as Href));
 const usd2 = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -38,6 +39,22 @@ function Seg<T extends string>({ value, options, onChange, small }: { value: T; 
           <Pressable key={o.k} onPress={() => { Haptics.selectionAsync(); onChange(o.k); }} accessibilityRole="tab" accessibilityState={{ selected: on }}
             style={{ flex: 1, height: small ? 36 : 44, borderRadius: small ? 9 : 13, backgroundColor: on ? (o.color ?? C.s2) : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
             <Txt v={small ? 'small' : 'label'} color={on ? (o.fg ?? C.ink) : C.muted} style={small ? { fontSize: 13 } : undefined}>{o.label}</Txt>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function UnderTabs<T extends string>({ value, options, onChange }: { value: T; options: { k: T; label: string }[]; onChange: (k: T) => void }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 22, borderBottomWidth: 1, borderBottomColor: '#1C1C22', marginBottom: 6 }}>
+      {options.map((o) => {
+        const on = o.k === value;
+        return (
+          <Pressable key={o.k} onPress={() => { Haptics.selectionAsync(); onChange(o.k); }} accessibilityRole="tab" accessibilityState={{ selected: on }}
+            style={{ height: 42, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: on ? C.brandSoft : 'transparent', marginBottom: -1 }}>
+            <Txt v="label" color={on ? C.ink : C.dim} style={{ fontSize: 15 }}>{o.label}</Txt>
           </Pressable>
         );
       })}
@@ -122,10 +139,10 @@ export function BookMarketPage({ m }: { m: Market }) {
               <Txt v="small">{px && isFresh(px) ? `Mark price · live from ${VENUES[venue].name}` : px ? 'Mark price is stale' : 'Reading the mark price'}</Txt>
             </Row>
           </Row>
-          {pxErr ? <ErrorLine msg={pxErr} /> : null}
+          {pxErr && !(px && isFresh(px)) ? <ErrorLine msg={pxErr} /> : null}
         </Animated.View>
 
-        <Row style={{ backgroundColor: CARD, borderRadius: 20, borderWidth: 1, borderColor: HAIR, paddingVertical: 12, paddingHorizontal: 14, marginTop: 14, gap: 10 }}>
+        <Row style={{ marginTop: 16, gap: 10 }}>
           <StatCell k="Funding /hr" v={funding !== undefined ? `${funding >= 0 ? '' : '−'}${pct(Math.abs(funding))}` : '…'} color={funding === undefined ? undefined : funding >= 0 ? C.up : C.down} />
           <StatCell k="Open int." v={feed.stats.oi !== undefined ? fmtUsdC(feed.stats.oi) : '–'} />
           <StatCell k="24h vol." v={feed.stats.vol24h !== undefined ? fmtUsdC(feed.stats.vol24h) : '–'} />
@@ -133,44 +150,42 @@ export function BookMarketPage({ m }: { m: Market }) {
         </Row>
 
         {/* chart */}
-        <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, marginTop: 12, overflow: 'hidden' }}>
-          <Row style={{ gap: 6, padding: 10, paddingBottom: 4 }}>
+        <View style={{ marginTop: 14 }}>
+          <Row style={{ gap: 2, marginLeft: -8 }}>
             {TFS.map((t) => {
               const on = t === tf;
               return (
                 <Pressable key={t} onPress={() => { Haptics.selectionAsync(); setTf(t); }} accessibilityRole="button" accessibilityState={{ selected: on }}
-                  style={{ height: 32, minWidth: 44, paddingHorizontal: 10, borderRadius: 10, backgroundColor: on ? C.s2 : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                  <Txt v="small" color={on ? C.ink : C.muted}>{t.toUpperCase()}</Txt>
+                  style={{ height: 36, minWidth: 40, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }}>
+                  <Txt v="small" color={on ? C.ink : C.dim} style={{ fontFamily: on ? F.semi : F.medium, fontSize: 14 }}>{t}</Txt>
                 </Pressable>
               );
             })}
             <View style={{ flex: 1 }} />
             <Txt v="small" style={{ fontSize: 11 }}>{VENUES[venue].name} candles</Txt>
           </Row>
-          <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ paddingHorizontal: 6, paddingBottom: 8 }}>
-            {chartW > 0 && candles && candles.length > 1 ? <CandleChart candles={candles} w={chartW - 12} h={200} last={mark} />
+          <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ paddingTop: 4 }}>
+            {chartW > 0 && candles && candles.length > 1 ? <CandleChart candles={candles} w={chartW} h={220} last={mark} />
               : cErr ? <View style={{ height: 200, justifyContent: 'center', paddingHorizontal: 8 }}><ErrorLine msg={cErr} onRetry={cReload} /></View>
                 : candles && candles.length <= 1 ? <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">{VENUES[venue].name} has no {tf} candles for {sym} yet</Txt></View>
                   : <View style={{ height: 200, alignItems: 'center', justifyContent: 'center' }}><Bone w={'92%'} h={160} r={14} /></View>}
           </View>
-          {candles && candles.length > 1 ? <Txt v="small" style={{ fontSize: 11, paddingHorizontal: 14, paddingBottom: 10 }}>Last {Math.min(60, candles.length)} {tf} candles · {span(Math.min(60, candles.length) * TF_MS[tf])}</Txt> : null}
+          {candles && candles.length > 1 ? <Txt v="small" style={{ fontSize: 11, marginTop: 4 }}>Last {Math.min(60, candles.length)} {tf} candles · {span(Math.min(60, candles.length) * TF_MS[tf])}</Txt> : null}
         </View>
 
         {/* book + trades */}
-        <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, marginTop: 12, overflow: 'hidden', paddingBottom: 6 }}>
-          <View style={{ padding: 10 }}>
-            <Seg small value={panel} onChange={setPanel} options={[{ k: 'book', label: 'Order book' }, { k: 'trades', label: 'Trades' }]} />
-          </View>
+        <View style={{ marginTop: 22 }}>
+          <UnderTabs value={panel} onChange={setPanel} options={[{ k: 'book', label: 'Order book' }, { k: 'trades', label: 'Trades' }]} />
           {panel === 'book' ? <OrderBookView feed={feed} base={sym} onPick={(p) => setTrade({ side: mark !== undefined && p > mark ? 'short' : 'long', limit: p })} />
             : <TapeView trades={feed.trades} base={sym} />}
-          <Row style={{ gap: 6, paddingHorizontal: 12, paddingTop: 8 }}>
+          <Row style={{ gap: 6, paddingTop: 8 }}>
             <LiveDot color={feed.mode === 'stream' ? C.up : feed.mode === 'snapshot' ? '#FFB020' : C.dim} />
             <Txt v="small" style={{ flex: 1, fontSize: 11.5 }} lines={2}>
               {feed.mode === 'stream' ? `Live stream from ${VENUES[venue].name}` : feed.mode === 'snapshot' ? `The stream is down: a fresh ${VENUES[venue].name} snapshot every 2 s` : 'Connecting'}
               {panel === 'book' ? ' · tap a price for a limit order' : ''}
             </Txt>
           </Row>
-          {feed.error ? <View style={{ paddingHorizontal: 12 }}><ErrorLine msg={feed.error} /></View> : null}
+          {feed.error ? <ErrorLine msg={feed.error} /> : null}
         </View>
 
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
@@ -187,7 +202,7 @@ export function BookMarketPage({ m }: { m: Market }) {
         <Head title="Your positions" right={mine.length ? `${mine.length} open` : undefined} />
         {!pr.book ? <SkeletonRows n={1} square /> : mine.length === 0 ? (
           <Pressable onPress={() => setTrade({ side: 'long' })} accessibilityRole="button"
-            style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+            style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <MarketLogo m={m} size={48} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="label">No paper position on {m.symbol}</Txt>
@@ -202,7 +217,7 @@ export function BookMarketPage({ m }: { m: Market }) {
         {orders.length ? (
           <>
             <Head title="Open orders" right={`${orders.length} resting`} />
-            <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
               {orders.map((o, i) => (
                 <Row key={o.id} style={{ gap: 10, minHeight: 60, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
                   <SideTag p={{ kind: 'perp', side: o.side, lev: o.lev }} />
@@ -224,7 +239,7 @@ export function BookMarketPage({ m }: { m: Market }) {
         {past.length ? (
           <>
             <Head title="Closed here" />
-            <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
               {past.map((c, i) => (
                 <Row key={c.id} style={{ gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
                   <SideTag p={c} />
@@ -262,8 +277,9 @@ const span = (ms: number) => {
 };
 
 /* ---------- the order drawer ---------- */
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 const PRESETS = [100, 500, 1000];
+/** What was typed, with thousands separators: "64,636.0". */
+const typed = (s: string) => { const [w, f] = s.split('.'); return `${Number(w || '0').toLocaleString('en-US')}${s.includes('.') ? `.${f ?? ''}` : ''}`; };
 
 function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, funding, pr }: {
   open: boolean; onClose: () => void; side: Side; limit0?: number; m: Market; px?: Px; feed: BookFeed; funding?: number; pr: Practice;
@@ -303,20 +319,10 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
   const max = Math.floor((cash / (1 + (lev * feePct) / 100)) * 100) / 100;
   const bestBid = b?.bids[0]?.[0], bestAsk = b?.asks[0]?.[0];
 
-  const tap = (k: string) => {
-    Haptics.selectionAsync();
+  const tap = (k: Key) => {
     setErr(undefined);
-    const set = field === 'price' ? setLim : setV;
-    const dec = field === 'price' ? 8 : 2;
-    set((x) => {
-      if (k === '⌫') return x.slice(0, -1);
-      if (k === '.') return x.includes('.') ? x : (x || '0') + '.';
-      const next = x === '0' ? k : x + k;
-      const [, dd] = next.split('.');
-      if (dd && dd.length > dec) return x;
-      if (Number(next) > 100_000_000) return x;
-      return next;
-    });
+    if (field === 'price') setLim((x) => editAmount(x, k, Math.max(d, 2), 100_000_000));
+    else setV((x) => editAmount(x, k, 2, 1_000_000));
   };
   const go = async () => {
     if (!px || !isFresh(px)) { setErr('Waiting for a fresh mark price. Try again in a few seconds.'); return; }
@@ -347,7 +353,7 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
       <Pressable onPress={() => { Haptics.selectionAsync(); setField(k); }} accessibilityRole="button" accessibilityState={{ selected: on }}
         style={{ flex: 1, minWidth: 0, borderRadius: 16, borderWidth: 1.5, borderColor: on ? C.brandSoft : '#26262E', backgroundColor: '#15151A', paddingHorizontal: 12, paddingVertical: 9 }}>
         <Txt v="small" style={{ fontSize: 11.5 }}>{title}</Txt>
-        <Txt v="title" color={val ? C.ink : C.dim} lines={1} style={{ fontSize: 22, marginTop: 1, fontVariant: ['tabular-nums'] }}>{val ? `$${val}` : hint}</Txt>
+        <Txt v="title" color={val ? C.ink : C.dim} lines={1} style={{ fontSize: 22, marginTop: 1, fontVariant: ['tabular-nums'] }}>{val ? `$${typed(val)}` : hint}</Txt>
       </Pressable>
     );
   };
@@ -434,26 +440,20 @@ function BookOrderSheet({ open, onClose, side: side0, limit0, m, px, feed, fundi
             )}
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
-            {KEYS.map((k) => (
-              <Pressable key={k} onPress={() => tap(k)} accessibilityLabel={k === '⌫' ? 'Delete' : k}
-                style={({ pressed }) => ({ width: '33.33%', height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: pressed ? '#1F1F26' : 'transparent' })}>
-                <Txt v="title" style={{ fontSize: 22 }}>{k}</Txt>
-              </Pressable>
-            ))}
+          <View style={{ marginTop: 12 }}>
+            <Keypad compact onKey={tap} onClear={() => (field === 'price' ? setLim('') : setV(''))} onEnter={() => { if (v && !busy) go(); }} active={open && !done} />
           </View>
 
-          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, borderWidth: 1, borderColor: '#26262E', padding: 14, marginTop: 4, gap: 8 }}>
+          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, marginTop: 12, gap: 7 }}>
             <Line k="Position size" v={usd2(size)} />
-            {type === 'market' ? (
-              <>
-                <Line k="Average fill" v={fill?.vwap ? fmtP(fill.vwap, d) : '–'} />
-                <Line k="Slippage vs mid" v={slip !== undefined ? `${slip.toFixed(slip < 0.1 ? 3 : 2)}%${fill ? ` · ${fill.levels} level${fill.levels === 1 ? '' : 's'}` : ''}` : '–'} color={slip !== undefined && slip > 0.5 ? C.down : undefined} />
-              </>
-            ) : <Line k="Fills at" v={limit > 0 ? `${fmtP(limit, d)} (post-only)` : '–'} />}
-            <Line k={`${type === 'market' ? 'Taker' : 'Maker'} fee (${pct(feePct, 4)})`} v={usd2(fee)} />
-            <Line k={`Funding (${sideFunding === undefined ? '…' : `${sideFunding >= 0 ? 'you pay' : 'you get'} ${pct(Math.abs(sideFunding))}/hr`})`} v={sideFunding === undefined ? '…' : `${usd2((size * Math.abs(sideFunding)) / 100)}/hr`} />
+            {type === 'market'
+              ? <Line k={`Average fill${slip !== undefined ? ` · ${slip.toFixed(slip < 0.1 ? 3 : 2)}% slippage` : ''}`} v={fill?.vwap ? fmtP(fill.vwap, d) : '–'} color={slip !== undefined && slip > 0.5 ? C.down : undefined} />
+              : <Line k="Fills at (post-only)" v={limit > 0 ? fmtP(limit, d) : '–'} />}
+            <Line k={`${type === 'market' ? 'Taker' : 'Maker'} fee · ${pct(feePct, 4)}`} v={usd2(fee)} />
             <Line k="Liquidation (approx.)" v={liq !== null ? fmtPrice(liq) : '–'} color={liq !== null ? C.down : undefined} />
+            <Txt v="small" style={{ fontSize: 11.5 }} lines={1}>
+              {sideFunding === undefined ? 'Reading the funding rate…' : `Funding: ${sideFunding >= 0 ? 'you pay' : 'you get'} ${pct(Math.abs(sideFunding))}/hr · ${usd2((size * Math.abs(sideFunding)) / 100)}/hr at this size`}
+            </Txt>
           </View>
           {fill && !fill.complete ? <ErrorLine msg={`The ${side === 'long' ? 'ask' : 'bid'} side only shows ${usd2(fill.usd)} right now. Try a smaller size.`} /> : null}
           {!fresh ? <ErrorLine msg={feed.error ?? `Waiting for ${VENUES[venue].name}'s live order book.`} /> : null}

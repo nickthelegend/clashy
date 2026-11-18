@@ -14,6 +14,7 @@ import {
   usePractice, usePrices, type Market, type PoolInfo, type Position, type Practice, type Px, type Side,
 } from '@/chain/practice';
 import { BookMarketPage } from '@/ui/book-market';
+import { Keypad, editAmount, type Key } from '@/ui/keypad';
 import { ART, BackBtn, Bone, ErrorLine, LiveChart, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
@@ -58,7 +59,7 @@ export default function PracticeMarketRoute() {
     resolveMarket(id).then((x) => alive && setM(x)).catch((e) => alive && setErr((e as Error).message));
     return () => { alive = false; };
   }, [id, n]);
-  if (err && !m) return <Shell><View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 14 }}><ErrorLine msg={`${err} This market couldn't load.`} onRetry={() => setN((x) => x + 1)} /></View></Shell>;
+  if (err && !m) return <Shell><View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}><ErrorLine msg={`${err} This market couldn't load.`} onRetry={() => setN((x) => x + 1)} /></View></Shell>;
   if (m === undefined) return <Shell><Row style={{ gap: 12 }}><Bone w={44} h={44} r={22} /><View style={{ gap: 8 }}><Bone w={140} h={14} /><Bone w={90} h={11} /></View></Row><Bone w={200} h={50} r={12} style={{ marginTop: 22 }} /><Bone w={'100%'} h={220} r={22} style={{ marginTop: 14 }} /></Shell>;
   if (m === null) {
     return (
@@ -144,7 +145,7 @@ function MarketPage({ m }: { m: Market }) {
             samples.length > 1 ? (
               <LiveChart data={samples.map((x) => x.p)} w={chartW} h={210} color={lineColor} minSpan={perp || m.kind === 'crypto' ? 0.0006 : 0.001} />
             ) : (
-              <View style={{ width: chartW, height: 210, borderRadius: 22, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+              <View style={{ width: chartW, height: 210, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
                 <LiveDot color={C.brandSoft} />
                 <Txt v="label" style={{ marginTop: 10, textAlign: 'center' }}>Watching the price</Txt>
                 <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>The chart draws itself from the live price while this page is open. Nothing before that is shown.</Txt>
@@ -176,7 +177,7 @@ function MarketPage({ m }: { m: Market }) {
         <Head title="Your paper trades" right={mine.length ? `${mine.length} open` : undefined} />
         {!pr.book ? <SkeletonRows n={1} square /> : mine.length === 0 ? (
           <Pressable onPress={() => setTrade('long')} accessibilityRole="button"
-            style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, borderWidth: 1, borderColor: HAIR, borderStyle: 'dashed', padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+            style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <MarketLogo m={m} size={52} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="label">No paper trade on {m.symbol} yet</Txt>
@@ -195,7 +196,7 @@ function MarketPage({ m }: { m: Market }) {
         {past.length ? (
           <>
             <Head title="Closed here" />
-            <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: CARD, borderRadius: 24, overflow: 'hidden' }}>
               {past.map((c, i) => (
                 <Row key={c.id} style={{ gap: 10, minHeight: 56, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
                   <SideTag p={c} />
@@ -231,7 +232,7 @@ function MarketPage({ m }: { m: Market }) {
 }
 
 function PerpFacts({ info, error, onRetry }: { info?: PoolInfo; error?: string; onRetry: () => void }) {
-  if (!info) return error ? <View style={{ backgroundColor: CARD, borderRadius: 24, borderWidth: 1, borderColor: HAIR, padding: 14 }}><ErrorLine msg={error} onRetry={onRetry} /></View> : <SkeletonRows n={2} square />;
+  if (!info) return error ? <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 14 }}><ErrorLine msg={error} onRetry={onRetry} /></View> : <SkeletonRows n={2} square />;
   return (
     <View style={{ gap: 8 }}>
       <Row style={{ gap: 8 }}>
@@ -252,7 +253,6 @@ function PerpFacts({ info, error, onRetry }: { info?: PoolInfo; error?: string; 
 }
 
 /* ---------- the trade drawer ---------- */
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
 const PRESETS = [100, 500, 1000];
 
 function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
@@ -279,19 +279,7 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
   const max = feePct !== undefined ? Math.floor((cash / (1 + (L * feePct) / 100)) * 100) / 100 : cash;
   const waitingPool = perp && !pool;
 
-  const tap = (k: string) => {
-    Haptics.selectionAsync();
-    setErr(undefined);
-    setV((x) => {
-      if (k === '⌫') return x.slice(0, -1);
-      if (k === '.') return x.includes('.') ? x : (x || '0') + '.';
-      const next = x === '0' ? k : x + k;
-      const [, d] = next.split('.');
-      if (d && d.length > 2) return x;
-      if (Number(next) > 1_000_000) return x;
-      return next;
-    });
-  };
+  const tap = (k: Key) => { setErr(undefined); setV((x) => editAmount(x, k, 2, 1_000_000)); };
   const go = async () => {
     if (!px || !isFresh(px)) { setErr('Waiting for a fresh live price. Try again in a few seconds.'); return; }
     if (waitingPool) { setErr(poolErr ?? "Jupiter Perps' fee and borrow rate haven't loaded yet."); return; }
@@ -382,16 +370,11 @@ function TradeSheet({ open, onClose, side: side0, m, px, pool, poolErr, pr }: {
             </Pressable>
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
-            {KEYS.map((k) => (
-              <Pressable key={k} onPress={() => tap(k)} accessibilityLabel={k === '⌫' ? 'Delete' : k}
-                style={({ pressed }) => ({ width: '33.33%', height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: pressed ? '#1F1F26' : 'transparent' })}>
-                <Txt v="title" style={{ fontSize: 24 }}>{k}</Txt>
-              </Pressable>
-            ))}
+          <View style={{ marginTop: 12 }}>
+            <Keypad compact={perp} onKey={tap} onClear={() => setV('')} onEnter={() => { if (v && !busy) go(); }} active={open && !done} />
           </View>
 
-          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, borderWidth: 1, borderColor: '#26262E', padding: 14, marginTop: 6, gap: 9 }}>
+          <View style={{ backgroundColor: '#1B1B21', borderRadius: 18, padding: 14, marginTop: 12, gap: 9 }}>
             {perp ? (
               <>
                 <Line k="Position size" v={usd2(size)} />

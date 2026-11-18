@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { ZoomIn, FadeIn } from 'react-native-reanimated';
 import { Sheet } from './sheet';
 import { errText } from '@/chain/useChain';
+import { Keypad, editAmount, type Key } from './keypad';
 import { ErrorLine, Txt } from './kit';
 import { C, F } from './tokens';
 
@@ -15,8 +16,6 @@ export type AmountProps = {
   success: string; successSub?: string;
 };
 
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫'];
-
 export function AmountSheet({ open, onClose, title, sub, art, presets = [5, 10, 25, 50], max, min = 0.01, confirm, onConfirm, success, successSub }: AmountProps) {
   const [v, setV] = useState('');
   const [busy, setBusy] = useState(false);
@@ -24,19 +23,7 @@ export function AmountSheet({ open, onClose, title, sub, art, presets = [5, 10, 
   const [done, setDone] = useState<number | null>(null);
   useEffect(() => { if (open) { setV(''); setErr(undefined); setDone(null); } }, [open]);
   const n = Number(v || '0');
-  const tap = (k: string) => {
-    Haptics.selectionAsync();
-    setErr(undefined);
-    setV((x) => {
-      if (k === '⌫') return x.slice(0, -1);
-      if (k === '.') return x.includes('.') ? x : (x || '0') + '.';
-      const next = x === '0' ? k : x + k;
-      const [, d] = next.split('.');
-      if (d && d.length > 2) return x;
-      if (Number(next) > 1_000_000) return x;
-      return next;
-    });
-  };
+  const tap = (k: Key) => { setErr(undefined); setV((x) => editAmount(x, k, 2, 1_000_000)); };
   const go = async () => {
     if (!(n >= min)) { setErr(`At least $${min}`); return; }
     if (max !== undefined && n > max + 1e-9) { setErr(`You have $${max.toFixed(2)}`); return; }
@@ -77,15 +64,11 @@ export function AmountSheet({ open, onClose, title, sub, art, presets = [5, 10, 
               </Pressable>
             ) : null}
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
-            {KEYS.map((k) => (
-              <Pressable key={k} onPress={() => tap(k)} style={({ pressed }) => ({ width: '33.33%', height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: pressed ? '#1F1F26' : 'transparent' })}>
-                <Text style={{ fontFamily: F.semi, fontSize: 26, color: C.ink }}>{k}</Text>
-              </Pressable>
-            ))}
+          <View style={{ marginTop: 14 }}>
+            <Keypad onKey={tap} onClear={() => setV('')} onEnter={() => { if (v && !busy) go(); }} active={open && done === null} />
           </View>
           {err ? <ErrorLine msg={err} /> : null}
-          <Pressable onPress={go} disabled={busy || !v} style={({ pressed }) => ({ marginTop: 10, height: 58, borderRadius: 29, backgroundColor: v ? C.ink : '#2A2A31', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+          <Pressable onPress={go} disabled={busy || !v} style={({ pressed }) => ({ marginTop: 14, height: 58, borderRadius: 29, backgroundColor: v ? C.ink : '#2A2A31', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <Text style={{ fontFamily: F.bold, fontSize: 17, color: v ? '#000' : C.muted }}>{busy ? 'Confirming…' : v ? confirm(n) : 'Enter an amount'}</Text>
           </Pressable>
         </View>
