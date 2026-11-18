@@ -4,6 +4,7 @@
 // "Clash" opens a real 5 USDC duel on chain and posts it as a card anyone in the squad can accept; accepting takes you
 // to the duel board where it is joined for real. Opening a channel the first time moves it onto the rollup.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
@@ -133,30 +134,34 @@ export default function ClanChat() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[{ flex: 1, paddingTop: insets.top + 8 }, col]}>
-        {/* header: back, squad crest, # channel, squad name */}
-        <Row style={{ gap: 10, paddingHorizontal: 14, paddingBottom: 10 }}>
-          <BackBtn onPress={back} />
-          {s ? <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: CARD, alignItems: 'center', justifyContent: 'center' }}><Image source={crestSrc(s.crest)} style={{ width: 32, height: 32 }} contentFit="contain" /></View> : null}
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Row style={{ gap: 4 }}>
-              <Txt v="label" color={C.muted} style={{ fontSize: 17, ...FONT.bold }}>#</Txt>
-              <Txt v="label" lines={1} style={{ fontSize: 16.5, ...FONT.bold, flexShrink: 1 }}>{chName}</Txt>
+        {/* header: the squad's banner with its crest, name, members and the rollup light */}
+        <View style={{ paddingHorizontal: 12, paddingBottom: 10 }}>
+          <LinearGradient colors={['#221C3A', '#121218']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 24, padding: 10, paddingRight: 14 }}>
+            <Row style={{ gap: 10 }}>
+              <BackBtn onPress={back} />
+              {s ? <Image source={crestSrc(s.crest)} style={{ width: 46, height: 46 }} contentFit="contain" /> : null}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Txt v="label" lines={1} style={{ fontSize: 17, ...FONT.bold }}>{s ? s.name : myClan.status === 'ready' && !clan ? 'No squad' : 'Loading…'}</Txt>
+                <Txt v="small" style={{ fontSize: 12 }} lines={1}>{s ? `${s.members.length} member${s.members.length === 1 ? '' : 's'} · #${chName}` : ' '}</Txt>
+              </View>
+              {st === 'live' ? (
+                <Row style={{ gap: 5, backgroundColor: 'rgba(48,209,88,0.14)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.up }} /><Txt v="small" color={C.up} style={{ fontSize: 11.5, ...FONT.semi }}>Live</Txt>
+                </Row>
+              ) : null}
             </Row>
-            <Txt v="small" style={{ fontSize: 12 }} lines={1}>{s ? `${s.name} · ${s.members.length} member${s.members.length === 1 ? '' : 's'}` : myClan.status === 'ready' && !clan ? 'No squad' : 'Loading…'}</Txt>
-          </View>
-          {st === 'live' ? <Row style={{ gap: 5 }}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.up }} /><Txt v="small" color={C.up} style={{ fontSize: 11.5 }}>Rollup</Txt></Row> : null}
-        </Row>
-        {/* channel switcher */}
-        {clan ? (
-          <Row style={{ gap: 6, paddingHorizontal: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#16161C' }}>
-            {CHANNELS.map((c) => (
-              <Pressable key={c.id} onPress={() => switchTo(c.id)} style={{ height: 32, paddingHorizontal: 12, borderRadius: 10, backgroundColor: c.id === ch ? '#22222B' : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.bold, fontSize: 13 }}>#</Txt>
-                <Txt v="small" color={c.id === ch ? C.ink : C.muted} style={{ ...FONT.semi, fontSize: 13 }}>{c.name}</Txt>
-              </Pressable>
-            ))}
-          </Row>
-        ) : null}
+            {clan ? (
+              <View style={{ flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 14, padding: 3, gap: 3, marginTop: 10 }}>
+                {CHANNELS.map((c) => (
+                  <Pressable key={c.id} onPress={() => switchTo(c.id)} accessibilityRole="tab" accessibilityState={{ selected: c.id === ch }}
+                    style={{ flex: 1, height: 34, borderRadius: 11, backgroundColor: c.id === ch ? C.brand : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                    <Txt v="small" color={c.id === ch ? C.onBrand : C.muted} style={{ ...FONT.semi, fontSize: 13 }}>#{c.name}</Txt>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </LinearGradient>
+        </View>
 
         <ScrollView ref={scroll as never} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
           {myClan.status === 'ready' && !clan ? (
@@ -170,12 +175,10 @@ export default function ClanChat() {
               action={busy === 'open' ? 'Opening…' : `Open #${chName}`} disabled={!!busy || state.status !== 'ready' || !me} onAction={openChannel} />
           ) : (
             <>
-              <View style={{ paddingTop: 8, paddingBottom: 16, borderBottomWidth: msgs.length ? 1 : 0, borderBottomColor: '#16161C', marginBottom: 8 }}>
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#1C1C23', alignItems: 'center', justifyContent: 'center' }}>
-                  <Txt v="title" color={C.ink} style={{ fontSize: 30, ...FONT.bold }}>#</Txt>
-                </View>
-                <Txt v="title" style={{ ...FONT.display, fontSize: 24, marginTop: 10 }}>Welcome to #{chName}</Txt>
-                <Txt v="small" style={{ marginTop: 4, lineHeight: 18 }}>The start of {s?.name ?? 'the squad'}'s #{chName}. {CHANNELS.find((c) => c.id === ch)?.blurb ?? ''}. {count > msgs.length ? `Showing the latest ${msgs.length} of ${count}.` : ''}</Txt>
+              <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 14 }}>
+                {s ? <Image source={crestSrc(s.crest)} style={{ width: 72, height: 72 }} contentFit="contain" /> : null}
+                <Txt v="title" style={{ ...FONT.display, fontSize: 21, marginTop: 6, textAlign: 'center' }}>Welcome to #{chName}</Txt>
+                <Txt v="small" style={{ marginTop: 3, lineHeight: 18, textAlign: 'center' }}>{CHANNELS.find((c) => c.id === ch)?.blurb ?? ''}. Live on the MagicBlock rollup.{count > msgs.length ? ` Latest ${msgs.length} of ${count}.` : ''}</Txt>
               </View>
               {msgs.length === 0 ? <Txt v="small" style={{ marginTop: 8 }}>No messages yet. Say gm, or tap Clash to challenge the squad.</Txt> : msgs.map((m, i) => {
                 const p = prof.get(m.author.toBase58());
@@ -198,20 +201,29 @@ export default function ClanChat() {
                         <Txt v="small" style={{ flex: 1, fontSize: 12.5 }}><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt> posted a clash challenge · {time(m.ts)}</Txt>
                       </Row>
                     ) : null}
-                    <Row style={{ gap: 12, alignItems: 'flex-start', marginTop: grouped ? 2 : m.kind === 1 ? 4 : 14 }}>
-                      {grouped ? <View style={{ width: 40 }} /> : <ProfileAvatar p={p} size={40} />}
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        {grouped ? null : (
-                          <Row style={{ gap: 6, flexWrap: 'wrap' }}>
-                            <Txt v="label" color={capt ? GOLD : C.ink} style={{ fontSize: 14.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt>
-                            {capt ? <Image source={ART.crown} style={{ width: 14, height: 14 }} contentFit="contain" /> : null}
-                            <Txt v="small" color={C.dim} style={{ fontSize: 11 }}>{time(m.ts)}</Txt>
-                          </Row>
-                        )}
-                        {m.kind === 1 ? <ChallengeCard m={m} mine={!!me && m.author.equals(me)} onAccept={accept} />
-                          : <Txt v="body" color="#DCDCE2" style={{ fontSize: 15, lineHeight: 21, marginTop: grouped ? 0 : 1 }}>{m.text}</Txt>}
-                      </View>
-                    </Row>
+                    {(() => {
+                      const mine = !!me && m.author.equals(me);
+                      if (m.kind === 1) return <View style={{ marginTop: 6, alignSelf: mine ? 'flex-end' : 'flex-start', width: '86%' }}><ChallengeCard m={m} mine={mine} onAccept={accept} /></View>;
+                      return (
+                        <Row style={{ gap: 8, alignItems: 'flex-end', marginTop: grouped ? 3 : 12, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                          {mine ? null : grouped ? <View style={{ width: 34 }} /> : <Pressable onPress={() => router.push(`/u/${m.author.toBase58()}` as Href)}><ProfileAvatar p={p} size={34} /></Pressable>}
+                          <View style={{ maxWidth: '78%' }}>
+                            {grouped || mine ? null : (
+                              <Row style={{ gap: 5, marginBottom: 3, marginLeft: 4 }}>
+                                <Txt v="small" color={capt ? GOLD : C.brandSoft} style={{ fontSize: 12.5, ...FONT.semi }}>{p?.name ?? short(m.author.toBase58())}</Txt>
+                                {capt ? <Image source={ART.crown} style={{ width: 13, height: 13 }} contentFit="contain" /> : null}
+                              </Row>
+                            )}
+                            <View style={{ backgroundColor: mine ? C.brand : '#1A1A22', borderRadius: 20, borderBottomRightRadius: mine ? 6 : 20, borderBottomLeftRadius: mine ? 20 : 6, paddingHorizontal: 14, paddingVertical: 9 }}>
+                              <Txt v="body" color={mine ? C.onBrand : '#E6E6EC'} style={{ fontSize: 15, lineHeight: 21 }}>{m.text}</Txt>
+                            </View>
+                            {i === msgs.length - 1 || !msgs[i + 1].author.equals(m.author) || msgs[i + 1].ts - m.ts >= 300 ? (
+                              <Txt v="small" color={C.dim} style={{ fontSize: 10.5, marginTop: 3, textAlign: mine ? 'right' : 'left', marginHorizontal: 6 }}>{time(m.ts)}</Txt>
+                            ) : null}
+                          </View>
+                        </Row>
+                      );
+                    })()}
                   </View>
                 );
               })}

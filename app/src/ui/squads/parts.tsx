@@ -36,7 +36,7 @@ export function RailIcon({ crest, selected, unread, label, onPress }: { crest: n
 /** A round rail button (discover ✦, create +). */
 export function RailButton({ glyph, label, onPress, color = C.up }: { glyph: string; label: string; onPress: () => void; color?: string }) {
   return (
-    <Pressable onPress={onPress} accessibilityLabel={label} style={({ pressed }) => ({ width: 48, height: 48, borderRadius: pressed ? 16 : 24, backgroundColor: pressed ? color : CARD, alignItems: 'center', justifyContent: 'center', marginVertical: 3 })}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ width: 48, height: 48, borderRadius: pressed ? 16 : 24, backgroundColor: pressed ? color : CARD, alignItems: 'center', justifyContent: 'center', marginVertical: 3 })}>
       {({ pressed }) => <Txt v="label" color={pressed ? '#000' : color} style={{ fontSize: glyph === '+' ? 26 : 19, lineHeight: 28, marginTop: glyph === '+' ? -2 : 0 }}>{glyph}</Txt>}
     </Pressable>
   );

@@ -3,6 +3,7 @@
 // Help, and Account (address, explorer, export key, sign out), with the app version at the foot. Every value is read
 // from the chain; rows without a real value say so instead of guessing.
 import Constants from 'expo-constants';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
@@ -30,24 +31,25 @@ const fmtWhen = (ts: number) => new Date(ts * 1000).toLocaleString([], { month: 
 function Group({ title, children, foot }: { title: string; children: ReactNode; foot?: string }) {
   return (
     <View style={{ marginTop: 24 }}>
-      <Txt v="h2" style={{ marginBottom: 8, marginLeft: 4 }}>{title}</Txt>
+      <Txt v="small" color={C.muted} style={{ ...FONT.bold, fontSize: 11.5, letterSpacing: 1.3, marginBottom: 8, marginLeft: 8 }}>{title.toUpperCase()}</Txt>
       <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>{children}</View>
       {foot ? <Txt v="small" style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17, fontSize: 12 }}>{foot}</Txt> : null}
     </View>
   );
 }
 
-function SettingRow({ art, label, sub, value, onPress, danger, first, loading }: {
-  art?: number; label: string; sub?: string; value?: string; onPress: () => void; danger?: boolean; first?: boolean; loading?: boolean;
+function SettingRow({ art, label, sub, value, onPress, danger, first, loading, logo }: {
+  art?: number; label: string; sub?: string; value?: string; onPress: () => void; danger?: boolean; first?: boolean; loading?: boolean; /** A real brand logo (USDC, Solana) sits smaller and round. */ logo?: boolean;
 }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={value ? `${label}, ${value}` : label}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
-      {!first ? <View style={{ position: 'absolute', top: 0, right: 0, left: art ? 66 : 14, height: 1, backgroundColor: HAIR }} /> : null}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: pressed ? '#1A1A21' : 'transparent' })}>
+      {!first ? <View style={{ position: 'absolute', top: 0, right: 0, left: art ? 72 : 14, height: 1, backgroundColor: HAIR }} /> : null}
       {art ? (
-        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#1A1A21', alignItems: 'center', justifyContent: 'center' }}>
-          <Image source={art} style={{ width: 34, height: 34 }} contentFit="contain" />
-        </View>
+        <LinearGradient colors={danger ? ['rgba(255,69,58,0.22)', 'rgba(255,69,58,0.06)'] : ['rgba(171,159,242,0.20)', 'rgba(171,159,242,0.04)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{ width: 46, height: 46, borderRadius: 15, alignItems: 'center', justifyContent: 'center' }}>
+          <Image source={art} style={{ width: logo ? 28 : 40, height: logo ? 28 : 40, borderRadius: logo ? 14 : 0 }} contentFit="contain" />
+        </LinearGradient>
       ) : null}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1} color={danger ? C.down : C.ink} style={{ fontSize: 15 }}>{label}</Txt>
@@ -120,8 +122,9 @@ export default function Settings() {
         <>
           {/* profile */}
           <Animated.View entering={FadeInDown.duration(300)}>
-            <Pressable onPress={go('/profile')} accessibilityRole="button" accessibilityLabel="Edit profile"
-              style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 24, backgroundColor: CARD, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+            <Pressable onPress={go(p ? '/edit-profile' : '/welcome?step=name')} accessibilityRole="button" accessibilityLabel={p ? 'Edit profile' : 'Pick a name'}
+              style={({ pressed }) => ({ marginTop: 18, borderRadius: 26, overflow: 'hidden', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+              <LinearGradient colors={['#2A2245', '#131219']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
               {prof.status === 'loading' ? <Bone w={64} h={64} r={32} /> : (
                 <View style={{ borderRadius: 40, borderWidth: 2.5, borderColor: C.brand, padding: 2 }}><ProfileAvatar p={p ?? undefined} size={60} /></View>
               )}
@@ -138,14 +141,15 @@ export default function Settings() {
                   </>
                 )}
               </View>
-              <View style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: C.s2, justifyContent: 'center' }}>
-                <Txt v="label" style={{ fontSize: 13 }}>{p ? 'Edit profile' : 'Pick a name'}</Txt>
+              <View style={{ height: 38, paddingHorizontal: 14, borderRadius: 19, backgroundColor: C.brand, justifyContent: 'center' }}>
+                <Txt v="label" color={C.onBrand} style={{ fontSize: 13 }}>{p ? 'Edit profile' : 'Pick a name'}</Txt>
               </View>
+              </LinearGradient>
             </Pressable>
           </Animated.View>
 
           <Group title="Money">
-            <SettingRow first art={ART.coinsPile} label="Wallet" sub="Add, send and receive USDC" value={bal == null ? undefined : fmtUsd(bal)} loading={bal == null} onPress={go('/wallet')} />
+            <SettingRow first art={ART.logoUSDC} logo label="Wallet" sub="Add, send and receive USDC" value={bal == null ? undefined : fmtUsd(bal)} loading={bal == null} onPress={go('/wallet')} />
             <SettingRow art={ART.stash} label="Stash" sub={st?.goalName ? `Saving for ${st.goalName}` : 'Your savings jar and stocks'}
               value={st === undefined ? undefined : st === null ? 'Not opened' : fmtUsd(st.balance)} loading={stash.status === 'loading'} onPress={go('/stash')} />
           </Group>
@@ -158,9 +162,14 @@ export default function Settings() {
               value={p ? (onBreak ? `Until ${fmtWhen(p.breakUntil)}` : 'Off') : undefined} loading={prof.status === 'loading'} onPress={go('/stash')} />
           </Group>
 
+          <Group title="Social">
+            <SettingRow first art={ART.chat} label="Messages and requests" sub="Direct messages, follow requests, notifications" onPress={go('/chats')} />
+            <SettingRow art={ART.invite} label="Profile and privacy" sub="Avatar, bio, link, private account" onPress={go('/edit-profile')} />
+          </Group>
+
           <Group title="Squads">
             <SettingRow first art={ART.clubhouse} label="Your squads" value={n === null ? undefined : n ? `${n} squad${n === 1 ? '' : 's'}` : 'None yet'} loading={squads.status === 'loading'} onPress={go('/clans')} />
-            <SettingRow art={ART.crestCreate} label="Discover squads" sub="Find a crew or start your own" onPress={go('/squads/discover')} />
+            <SettingRow art={ART.crestCreate} label="Squad leaderboard" sub="Top squads, or start your own" onPress={go('/squads/discover')} />
           </Group>
 
           <Group title="Help">
@@ -170,9 +179,9 @@ export default function Settings() {
           </Group>
 
           <Group title="Account" foot="Your money stays in your own wallet. Clashy never sees your key.">
-            <SettingRow first label="Wallet address" sub={wallet.signer?.kind === 'privy' ? wallet.signer.label : wallet.signer?.label} value={copied ? 'Copied' : short(key!)} onPress={copy} />
-            <SettingRow label="View on Solana Explorer" onPress={explorer} />
-            {wallet.exportKey ? <SettingRow label="Export your key" sub="Opens in Privy's secure window" onPress={wallet.exportKey} /> : null}
+            <SettingRow first art={ART.coinsPile} label="Wallet address" sub={wallet.signer?.kind === 'privy' ? wallet.signer.label : wallet.signer?.label} value={copied ? 'Copied' : short(key!)} onPress={copy} />
+            <SettingRow art={ART.logoSOL} logo label="View on Solana Explorer" sub="Every clash, chest and payout is public" onPress={explorer} />
+            {wallet.exportKey ? <SettingRow art={ART.limits} label="Export your key" sub="Opens in Privy's secure window" onPress={wallet.exportKey} /> : null}
             {wallet.logout ? <SettingRow label="Sign out" danger onPress={wallet.logout} /> : null}
           </Group>
           {errs.map((e, i) => <ErrorLine key={i} msg={e.error} onRetry={e.reload} />)}

@@ -139,14 +139,14 @@ export default function HomeScreen() {
         ) : desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         {wallet.status === 'out' ? (
           <Row style={{ gap: 8 }}>
-            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={() => openSearch()} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
             <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} />
           </Row>
         ) : (
           <Row style={{ gap: 8 }}>
-            <Pressable onPress={openSearch} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={() => openSearch()} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
             <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
