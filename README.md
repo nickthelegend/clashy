@@ -16,6 +16,19 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
   [chain/README.md](chain/README.md) and [chain/TESTING.md](chain/TESTING.md).
 - **MagicBlock VRF rolls every coin**, proven locally with MagicBlock's own `vrf-oracle`.
 - **Not deployed** to devnet or mainnet (devnet BLOCKED on devnet SOL). No real money moves anywhere.
+- **v2 (Nov 19, 2026):**
+  - **Trades:** tap any trade for its own page: profit and ROI, real candles with Open and Close pins, details, and
+    Copy trade.
+  - **Charts:** every chart has a crosshair (hover or drag).
+  - **Desktop:** an order-book trading terminal on wide screens.
+  - **Social:** Instagram-style Chats with DMs, notifications and follow requests; Follow and Message on profiles;
+    Edit profile.
+  - **Squads:** a squad podium, and squad search in the search drawer.
+  - **Art:** Lottie onboarding and a squad war scene.
+  - **Backend:** the social server ([server/](server/)) and the whole backend in Docker
+    ([docker/README.md](docker/README.md)).
+  - **System design and costs:** [docs/SYSTEM-DESIGN.md](docs/SYSTEM-DESIGN.md). It covers 100 players (load-tested
+    at p95 8 ms with 0 errors) and a 6.58 SOL exact-size mainnet deploy (measured), not 12 SOL.
 - **App:** the practice games run on live prices with no money. Three screens play the real program on the local
   stack: **On-chain duel**, **On-chain Royale** and **On-chain clan** (chest, votes, wars). On web you sign in with
   **Privy** (email or Google); Privy makes a Solana wallet that holds USDC, signs silently inside the game, and lets you
@@ -27,6 +40,8 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
 |---|---|
 | `app/` | Expo app (iOS, Android, web): duels, 9 practice games, clans, ranks, chat, and the On-chain duel screen |
 | `chain/` | Anchor program `clashy`, local MagicBlock stack launcher (with the local USDC mint), price crank, sponsor relay, mainnet-fork Phoenix trade, tests |
+| `server/` | Social server: DMs, follows, follow requests, notifications, bios (Node, built-in SQLite, wallet sign-in) |
+| `docker/`, `docker-compose.yml` | The backend in containers: relay, crank, social, web, the local chain, Caddy |
 | `web/` | Landing page (Vite + React + motion) |
 | `landing/` | Second landing page variant with the clay animation clips |
 | `assets/` | Brand, 3D/clay art and clay animation clips (`assets/SOURCES.md` says how each was made) |
