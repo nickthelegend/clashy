@@ -10,9 +10,6 @@ const FILES = {
   heart: require('../../assets/lottie/heart-pop.json'),
   confetti: require('../../assets/lottie/confetti.json'),
   flame: require('../../assets/lottie/flame.json'),
-  onboardSpend: require('../../assets/lottie/onboard-spend.json'),
-  onboardInvest: require('../../assets/lottie/onboard-invest.json'),
-  onboardSquad: require('../../assets/lottie/onboard-squad.json'),
   squadWar: require('../../assets/lottie/squad-war.json'),
 };
 export type LottieName = keyof typeof FILES;

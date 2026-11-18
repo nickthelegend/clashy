@@ -161,87 +161,6 @@ def flame():
     return doc('flame', W, H, op, [image_layer(1, 'streak-flame', f['w'], f['h'], ks, op)], [f])
 
 
-"""Onboarding scenes (Nov 19): one looping 9:16 scene per welcome slide, 3 s at 60 fps, built from the same clay
-cutouts. Every loop ends where it starts, so it plays forever without a jump."""
-OW, OH, OP = 360, 640, 180
-
-
-def bob(x, y, amp=8, phase=0, period=OP):
-    """A slow float: up and down around (x, y), back to the start at the end of the loop."""
-    pts = []
-    for k in range(5):
-        t = int(period * k / 4)
-        pts.append((t, [x, y + amp * math.sin(phase + math.pi * k / 2), 0]))
-    return kf(pts)
-
-
-def pop_in(t0, peak=112, size=100):
-    """Scale from 0 with an overshoot, holding at size until the loop ends, then shrinking back to 0 to loop."""
-    return kf([(0, [0, 0, 100]), (t0, [0, 0, 100]), (t0 + 10, [peak, peak, 100]), (t0 + 18, [size, size, 100]),
-               (OP - 14, [size, size, 100]), (OP - 2, [0, 0, 100]), (OP, [0, 0, 100])], EASE_OUT)
-
-
-def burst(ind0, cx, cy, t0, colors, n=8, r=110):
-    out = []
-    for k in range(n):
-        ang = 2 * math.pi * k / n + 0.3
-        out.append(shape_layer(ind0 + k, f'p{ind0 + k}', [ellipse(9 if k % 2 else 13, colors[k % len(colors)])], transform(
-            kf([(t0, [cx, cy, 0]), (t0 + 26, [cx + math.cos(ang) * r, cy + math.sin(ang) * r * 0.8, 0])], EASE_OUT),
-            s=kf([(t0, [60, 60, 100]), (t0 + 30, [0, 0, 100])])), OP, ip=t0))
-    return out
-
-
-def onboard_spend():
-    card, coin, jar = asset('spend-card', 250), asset('roundup-coin', 120), asset('stash-jar', 230)
-    card_ks = transform(kf([(0, [180, 200, 0]), (20, [180, 190, 0]), (32, [180, 214, 0]), (44, [180, 196, 0]), (OP, [180, 200, 0])]), a=(card['w'] / 2, card['h'] / 2),
-                        r=kf([(0, [-8]), (26, [-2]), (40, [-10]), (OP, [-8])]))
-    # the change: a coin pops off the card and arcs into the jar
-    coin_ks = transform(kf([(30, [200, 220, 0]), (52, [250, 300, 0]), (74, [190, 440, 0])], EASE), a=(coin['w'] / 2, coin['h'] / 2),
-                        s=kf([(30, [0, 0, 100]), (38, [110, 110, 100]), (66, [96, 96, 100]), (74, [55, 55, 100])]),
-                        r=kf([(30, [0]), (74, [360])]), o=kf([(30, [100]), (72, [100]), (76, [0])]))
-    jar_ks = transform((180, 560), a=(jar['w'] / 2, jar['h']),
-                       s=kf([(0, [100, 100, 100]), (74, [100, 100, 100]), (80, [112, 86, 100]), (88, [95, 107, 100]), (96, [102, 98, 100]), (104, [100, 100, 100]), (OP, [100, 100, 100])]))
-    return doc('onboard-spend', OW, OH, OP, [
-        *burst(20, 180, 450, 76, [GOLD, MINT, INDIGO, PINK]),
-        image_layer(1, 'roundup-coin', coin['w'], coin['h'], coin_ks, 78),
-        image_layer(2, 'spend-card', card['w'], card['h'], card_ks, OP),
-        image_layer(3, 'stash-jar', jar['w'], jar['h'], jar_ks, OP),
-    ], [card, coin, jar])
-
-
-def onboard_invest():
-    jar = asset('stash-jar', 220)
-    stocks = [asset(n, 128) for n in ('stock-chip', 'stock-index', 'stock-phone', 'stock-car')]
-    spots = [(92, 170), (270, 150), (80, 330), (282, 315)]
-    layers = []
-    for k, (a, (x, y)) in enumerate(zip(stocks, spots)):
-        t0 = 10 + k * 16
-        # each stock rises out of the jar to its spot, then floats
-        p = kf([(0, [180, 470, 0]), (t0, [180, 470, 0]), (t0 + 22, [x, y, 0]), (t0 + 52, [x, y - 8, 0]), (t0 + 82, [x, y + 6, 0]), (OP - 14, [x, y, 0]), (OP, [180, 470, 0])], EASE)
-        layers.append(image_layer(1 + k, a['id'], a['w'], a['h'], transform(p, a=(a['w'] / 2, a['h'] / 2), s=pop_in(t0, 118), r=kf([(0, [0]), (t0 + 22, [(-1) ** k * 8]), (OP, [0])])), OP))
-    jar_ks = transform((180, 600), a=(jar['w'] / 2, jar['h']),
-                       s=kf([(0, [100, 100, 100]), (8, [106, 94, 100]), (18, [97, 104, 100]), (60, [104, 96, 100]), (72, [100, 100, 100]), (OP, [100, 100, 100])]))
-    return doc('onboard-invest', OW, OH, OP, [*layers, *burst(30, 180, 430, 64, [MINT, GOLD, INDIGO]), image_layer(9, 'stash-jar', jar['w'], jar['h'], jar_ks, OP)], [*stocks, jar])
-
-
-def onboard_squad():
-    mega, chat, cup, pod = asset('megaphone', 190), asset('chat-bubbles', 170), asset('cup-big', 170), asset('podium', 260)
-    mega_ks = transform(bob(110, 170, 7), a=(mega['w'] / 2, mega['h'] / 2),
-                        r=kf([(0, [-10]), (8, [-2]), (16, [-12]), (24, [-4]), (32, [-10]), (OP, [-10])]),
-                        s=kf([(0, [100, 100, 100]), (6, [108, 94, 100]), (14, [97, 104, 100]), (24, [100, 100, 100]), (OP, [100, 100, 100])]))
-    chat_ks = transform(bob(262, 250, 9, phase=1.2), a=(chat['w'] / 2, chat['h'] / 2), s=pop_in(20, 120))
-    cup_ks = transform(kf([(0, [180, 560, 0]), (60, [180, 560, 0]), (84, [180, 392, 0]), (120, [180, 384, 0]), (OP - 12, [180, 392, 0]), (OP, [180, 560, 0])], EASE_OUT),
-                       a=(cup['w'] / 2, cup['h'] / 2), s=pop_in(60, 116), r=kf([(60, [0]), (84, [-6]), (100, [4]), (116, [0])]))
-    pod_ks = transform((180, 560), a=(pod['w'] / 2, pod['h'] / 2))
-    return doc('onboard-squad', OW, OH, OP, [
-        *burst(40, 180, 380, 86, [GOLD, PINK, INDIGO, MINT], n=10, r=130),
-        image_layer(1, 'cup-big', cup['w'], cup['h'], cup_ks, OP),
-        image_layer(2, 'megaphone', mega['w'], mega['h'], mega_ks, OP),
-        image_layer(3, 'chat-bubbles', chat['w'], chat['h'], chat_ks, OP),
-        image_layer(4, 'podium', pod['w'], pod['h'], pod_ks, OP),
-    ], [mega, chat, cup, pod])
-
-
 def app_asset(name, size):
     """A cutout from app/assets/art (webp with alpha), embedded like asset()."""
     im = Image.open(os.path.join(HERE, '..', 'assets', 'art', f'{name}.webp')).convert('RGBA')
@@ -291,7 +210,7 @@ def squad_war():
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     for name, make in [('coin-drop', coin_drop), ('heart-pop', heart_pop), ('confetti', confetti), ('flame', flame),
-                       ('onboard-spend', onboard_spend), ('onboard-invest', onboard_invest), ('onboard-squad', onboard_squad), ('squad-war', squad_war)]:
+                       ('squad-war', squad_war)]:
         path = os.path.join(OUT, f'{name}.json')
         with open(path, 'w') as fh:
             json.dump(make(), fh, separators=(',', ':'))

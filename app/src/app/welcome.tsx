@@ -1,41 +1,29 @@
-// Onboarding: three slides on the money journey (spend and round up, save into stocks, call it with your crew),
-// then sign in, then pick your name and clay avatar. Joining creates the player, the profile and the Stash on chain
+// Onboarding: four slides on what Clashy is (1v1 PvP trading, real perps and order books, squads and wars, and stocks
+// savings last), then sign in, then pick your name and clay avatar. Joining creates the player, the profile and the Stash on chain
 // (sponsored). Home sends anyone signed in without a name back here (?step=name).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useChain } from '@/chain/useChain';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ClayLoop, type ClayName } from '@/ui/clay';
-import { Lottie, type LottieName } from '@/ui/lottie';
 import { AVATARS, Btn, ErrorLine, Row, Txt, Wordmark } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
 
 export const ONBOARDED_KEY = 'clashy:onboarded';
 
-const SLIDES: { loop: ClayName; lottie: LottieName; glow: [string, string]; title: string; body: string }[] = [
-  { loop: 'onSpend', lottie: 'onboardSpend', glow: ['#3B2F7A', '#120F22'], title: 'Spend. Save the change.', body: 'Pay anyone in USDC and round up: the change lands in your Stash, in the same transaction.' },
-  { loop: 'onInvest', lottie: 'onboardInvest', glow: ['#14523E', '#0B1712'], title: 'Savings into stocks.', body: 'Buy real tokenized stocks like NVIDIA, Apple and the S&P 500 from your Stash, from $5. The shares are yours.' },
-  { loop: 'onSquad', lottie: 'onboardSquad', glow: ['#6A2246', '#1A0B13'], title: 'Call it with your crew.', body: 'Post calls with your real position, clash friends for $5, and climb the Weekly Cup with your squad.' },
+// What Clashy is, in the order that matters: PvP trading first, perps and order books, squads, and stocks savings last.
+// fit: the three onboarding clips are 9:16 and fill the card; the square and wide clips sit whole on its black, never cropped.
+const SLIDES: { loop: ClayName; fill?: boolean; title: string; body: string }[] = [
+  { loop: 'hero', title: 'Trade against people, not the house.', body: 'Clash a rival 1v1 on the same coin: long or short, with leverage. When the bell rings, the better trade takes the pot.' },
+  { loop: 'ko', title: 'Real perps. Real order books.', body: 'Trade Jupiter, Phoenix and Pacifica perps on their live prices and books. Get liquidated and you are knocked out.' },
+  { loop: 'war', title: 'Squad up and go to war.', body: 'Pool a USDC chest with your crew, vote on trades together, and take on rival squads in wars and Royale.' },
+  { loop: 'onInvest', fill: true, title: 'Stack real stocks on the side.', body: 'Save USDC in your Stash and buy tokenized NVIDIA, Apple or the S&P 500 from $5. The shares are yours.' },
 ];
-
-/** A slide's scene: the Lottie (made from our clay art) on a glowing stage on the web; the clay clip on phones until
- *  the native Lottie player is added. Reduced motion shows the stage still. */
-function Stage({ item, w }: { item: (typeof SLIDES)[number]; w: number }) {
-  const h = w * (16 / 9);
-  if (Platform.OS !== 'web') return <ClayLoop name={item.loop} width={w} height={h} cover style={{ borderRadius: 32 }} />;
-  return (
-    <LinearGradient colors={item.glow} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ width: w, height: h, borderRadius: 32, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ position: 'absolute', width: w * 1.1, height: w * 1.1, borderRadius: w, backgroundColor: 'rgba(255,255,255,0.05)', top: h * 0.18 }} />
-      <Lottie name={item.lottie} width={w} height={h} loop />
-    </LinearGradient>
-  );
-}
 
 function NameStep({ onDone }: { onDone: () => void }) {
   const chain = useChain();
@@ -118,7 +106,7 @@ export default function Welcome() {
             getItemLayout={(_, k) => ({ length: w, offset: w * k, index: k })}
             renderItem={({ item }) => (
               <View style={{ width: w, paddingHorizontal: S.gutter, justifyContent: 'center', alignItems: 'center' }}>
-                <Stage item={item} w={Math.min(w - 80, 270)} />
+                <ClayLoop name={item.loop} width={Math.min(w - 80, 270)} height={Math.min(w - 80, 270) * (16 / 9)} cover={!!item.fill} style={{ borderRadius: 32 }} />
                 <Txt v="title" style={{ marginTop: 24, fontSize: 30, textAlign: 'center' }}>{item.title}</Txt>
                 <Txt v="body" color="#B9B9C2" style={{ marginTop: 10, textAlign: 'center', lineHeight: 21, maxWidth: 330 }}>{item.body}</Txt>
               </View>
