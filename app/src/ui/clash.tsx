@@ -173,13 +173,27 @@ function PerpsSide({ pnl, call, lev, ko, entry, who, right }: { pnl: number; cal
 }
 
 /** Lobby mode card. */
-export function ModeCard({ title, sub, art, on, onPress }: { title: string; sub: string; art: React.ReactNode; on: boolean; onPress: () => void }) {
+/** One game mode in the lobby's picker: art, name, the rules in one line, and a radio. */
+export function ModeRow({ title, sub, art, on, onPress, tag, index = 0 }: {
+  title: string; sub: string; art: ReactNode; on: boolean; onPress: () => void; tag?: string; index?: number;
+}) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 24, padding: 14, backgroundColor: on ? C.brand : '#15151B', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      <View style={{ height: 78, alignItems: 'center', justifyContent: 'center' }}>{art}</View>
-      <Text style={{ ...FONT.display, fontSize: 24, color: on ? C.onBrand : C.ink, marginTop: 6 }}>{title}</Text>
-      <Txt v="small" color={on ? 'rgba(22,15,51,0.72)' : C.muted}>{sub}</Txt>
-    </Pressable>
+    <Animated.View entering={FadeInDown.delay(60 + index * 50).duration(340)}>
+      <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${title}: ${sub}`}
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 22, backgroundColor: on ? '#1C1A26' : pressed ? '#141419' : '#0F0F13', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+        <View style={{ width: 60, height: 60, borderRadius: 18, backgroundColor: '#17161E', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>{art}</View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={{ ...FONT.bold, fontSize: 18, color: C.ink }}>{title}</Text>
+            {tag ? <View style={{ borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, backgroundColor: 'rgba(240,70,140,0.16)' }}><Text style={{ ...FONT.bold, fontSize: 11.5, color: C.opp }}>{tag}</Text></View> : null}
+          </View>
+          <Txt v="small" lines={2} style={{ marginTop: 2, lineHeight: 18 }}>{sub}</Txt>
+        </View>
+        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: on ? C.brand : '#24232C', alignItems: 'center', justifyContent: 'center' }}>
+          {on ? <Animated.View entering={ZoomIn.duration(180)} style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.onBrand }} /> : null}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 

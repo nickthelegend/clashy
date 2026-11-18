@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChain } from '@/chain/useChain';
 import { readPortfolio, readStash, usePoll, usePrices } from '@/chain/social';
 import { readChestStakes, type ChestStake } from '@/chain/chest-stakes';
-import { readPriceHistory, type PriceHistory, type PriceRange } from '@/chain/history-prices';
+import { usePriceHistory, type PriceRange } from '@/chain/history-prices';
 import { STOCK_ART } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, CRESTS, ErrorLine, LiveChart, LiveDot, Money, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -35,22 +35,7 @@ const RANGES: { key: PriceRange; label: string; secs: number; past: string }[] =
 /** Allocation colours: one per kind of money. */
 const SLICE = { wallet: C.brand, stash: C.up, stocks: '#FFB547', chests: C.opp } as const;
 
-/** The crank's history for one range; refetched every minute (one new sample a minute) and reset on a range change. */
-function useHistory(range: PriceRange) {
-  const [s, setS] = useState<{ range: PriceRange; data?: PriceHistory; error?: string }>({ range });
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    setS((p) => (p.range === range ? p : { range }));
-    const run = () => readPriceHistory(range)
-      .then((data) => alive && setS({ range, data }))
-      .catch((e: Error) => alive && setS((p) => ({ range, data: p.range === range ? p.data : undefined, error: e.message })));
-    run();
-    const h = setInterval(run, 60_000);
-    return () => { alive = false; clearInterval(h); };
-  }, [range, n]);
-  return { ...(s.range === range ? s : { range }), reload: () => setN((x) => x + 1) };
-}
+const useHistory = (range: PriceRange) => usePriceHistory(range);
 
 function Head({ title, right }: { title: string; right?: string }) {
   return (

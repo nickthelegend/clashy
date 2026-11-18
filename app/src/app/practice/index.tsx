@@ -199,7 +199,7 @@ export default function PracticeHome() {
               {(() => {
                 const done = (pr.book?.clashes ?? []).filter((c) => c.result === 'won' || c.result === 'lost');
                 const won = done.filter((c) => c.result === 'won').length;
-                return done.length ? `You ${won} – ${done.length - won} the bot. The real 60-second clash with practice money.` : 'The real 60-second clash with practice money. Beat the bot, then clash real players.';
+                return done.length ? `You ${won}–${done.length - won} vs the bot · practice money` : '60-second rounds with practice money, live prices.';
               })()}
             </Txt>
           </View>

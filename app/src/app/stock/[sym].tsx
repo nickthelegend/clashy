@@ -20,7 +20,8 @@ import { SHARE, STOCKS, createStockAtaIx, minSharesFor, minUsdcFor, stockBySymbo
 import { AmountSheet } from '@/ui/amount';
 import { PostItem, ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { Search as SearchIcon, Swords } from '@/ui/icons';
-import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, LiveChart, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
+import { PriceChart } from '@/ui/price-chart';
 import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
@@ -32,12 +33,6 @@ const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}$${Math.abs(n).toFixed(2)}`;
 const pctText = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}%`;
 /** "42s", "3m", "1h 05m": how long this screen has been watching the price. */
-const span = (ms: number) => {
-  const s = Math.max(0, Math.round(ms / 1000));
-  if (s < 60) return `${s}s`;
-  if (s < 3600) return `${Math.floor(s / 60)}m`;
-  return `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}m`;
-};
 /** At 5 s a sample, one hour of live prices. */
 const MAX_SAMPLES = 720;
 
@@ -130,22 +125,11 @@ function StockPage({ st }: { st: Stock }) {
   // the chart: only the prices seen while this screen is open, one sample per on-chain read
   const priceData = prices.status === 'ready' ? prices.data : null;
   const [samples, setSamples] = useState<{ t: number; p: number }[]>([]);
-  const [seen, setSeen] = useState(0);
   useEffect(() => {
     const p = priceData?.[st.symbol];
     if (!p) return;
-    setSeen((n) => n + 1);
     setSamples((s) => [...s, { t: Date.now(), p }].slice(-MAX_SAMPLES));
   }, [priceData, st.symbol]);
-  const trimmed = seen > samples.length;
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { const h = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(h); }, []);
-  const [chartW, setChartW] = useState(0);
-  const first = samples[0]?.p;
-  const last = samples[samples.length - 1]?.p;
-  const moved = first && last ? last - first : 0;
-  const movedPct = first && last ? (moved / first) * 100 : 0;
-  const lineColor = moved >= 0 ? C.up : C.down;
 
   // calls on this stock: top-level posts that carry this stock
   const posts = board.status === 'ready' ? board.data : [];
@@ -256,33 +240,15 @@ function StockPage({ st }: { st: Stock }) {
             <Txt v="title" color={C.muted}>No price yet</Txt>
           )}
           <Row style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-            {samples.length > 1 ? (
-              <View style={{ backgroundColor: moved >= 0 ? C.upBg : C.downBg, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Txt v="small" color={lineColor} style={{ ...FONT.semi, fontVariant: ['tabular-nums'] }}>{signed(moved)} ({pctText(movedPct)})</Txt>
-              </View>
-            ) : null}
             <Row style={{ gap: 6 }}>
               <LiveDot color={C.up} />
-              <Txt v="small">{samples.length > 1 ? (trimmed ? `Live · last ${span(now - samples[0].t)}` : `Live since you opened · ${span(now - samples[0].t)}`) : 'Live price · updates every few seconds'}</Txt>
+              <Txt v="small">Live on-chain price · updates every few seconds</Txt>
             </Row>
           </Row>
           {prices.status === 'error' ? <ErrorLine msg={prices.error} onRetry={prices.reload} /> : null}
         </Animated.View>
 
-        {/* live chart */}
-        <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ marginTop: 14, marginHorizontal: -4 }}>
-          {chartW > 0 ? (
-            samples.length > 1 ? (
-              <LiveChart data={samples.map((x) => x.p)} w={chartW} h={220} color={lineColor} minSpan={0.0006} />
-            ) : (
-              <View style={{ width: chartW, height: 220, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-                <LiveDot color={C.brandSoft} />
-                <Txt v="label" style={{ marginTop: 10, textAlign: 'center' }}>Watching the price</Txt>
-                <Txt v="small" style={{ marginTop: 4, textAlign: 'center', lineHeight: 18 }}>The chart draws itself from the live price while this page is open. Nothing before that is shown.</Txt>
-              </View>
-            )
-          ) : <View style={{ height: 220 }} />}
-        </View>
+        <PriceChart sym={st.symbol} samples={samples} price={price} source="On-chain feed" />
 
         {/* quick facts, all read live */}
         <Row style={{ gap: 8, marginTop: 14 }}>
