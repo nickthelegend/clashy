@@ -8,9 +8,10 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  START, ago, fmtPrice, signedUsd, summary, useCatalog, useLiquidations, usePractice, usePrices,
-  type Kind, type Market, type Position, type Px,
+  START, VENUES, ago, fmtPrice, isBookVenue, signedUsd, summary, useCatalog, useLiquidations, useOrderFills, usePractice, usePrices,
+  type Kind, type Market, type Position, type Px, type Venue,
 } from '@/chain/practice';
+import { VenueChip } from '@/ui/orderbook';
 import { ART, BackBtn, Bone, ChangePill, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import {
@@ -44,7 +45,7 @@ function Tabs({ value, onChange }: { value: Kind; onChange: (k: Kind) => void })
 
 function sub(m: Market) {
   if (m.kind === 'stock') return `${m.ticker ?? `${m.symbol}x`} · tokenized stock`;
-  if (m.kind === 'perp') return `${m.symbol} · long or short`;
+  if (m.kind === 'perp') return m.symbol;
   if (m.kind === 'meme') return [m.symbol, m.holders !== undefined ? `${count(m.holders)} holders` : null].filter(Boolean).join(' · ');
   return m.symbol;
 }
@@ -65,7 +66,12 @@ function MarketRow({ m, px, first }: { m: Market; px?: Px; first: boolean }) {
             </View>
           ) : null}
         </Row>
-        <Txt v="small" lines={1} style={{ marginTop: 2 }}>{sub(m)}</Txt>
+        {m.kind === 'perp' && m.venue ? (
+          <Row style={{ gap: 6, marginTop: 3 }}>
+            <VenueChip venue={m.venue} small />
+            <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{sub(m)}</Txt>
+          </Row>
+        ) : <Txt v="small" lines={1} style={{ marginTop: 2 }}>{sub(m)}</Txt>}
       </View>
       <View style={{ alignItems: 'flex-end', maxWidth: '42%' }}>
         {px ? <Txt v="num" lines={1}>{fmtPrice(px.usdPrice)}</Txt> : <Bone w={64} h={13} />}
@@ -112,19 +118,25 @@ export default function PracticeHome() {
   const [resetting, setResetting] = useState(false);
   const [resetErr, setResetErr] = useState<string>();
   const [allHistory, setAllHistory] = useState(false);
+  const [venue, setVenue] = useState<Venue | 'all'>('all');
+  const [cancelErr, setCancelErr] = useState<string>();
 
   const all = useMemo(() => (cat ? [...cat.stocks, ...cat.crypto, ...cat.perps, ...cat.memes] : []), [cat]);
   const query = q.trim().toLowerCase();
   const list = useMemo(() => {
     if (!cat) return [];
     if (query) return all.filter((m) => m.name.toLowerCase().includes(query) || m.symbol.toLowerCase().includes(query) || (m.ticker ?? '').toLowerCase().includes(query) || m.mint === q.trim()).slice(0, 40);
-    return { stock: cat.stocks, crypto: cat.crypto, perp: cat.perps, meme: cat.memes }[tab].slice(0, 60);
-  }, [cat, all, tab, query, q]);
+    const perps = venue === 'all' ? cat.perps : cat.perps.filter((m) => m.venue === venue);
+    return { stock: cat.stocks, crypto: cat.crypto, perp: perps, meme: cat.memes }[tab].slice(0, 60);
+  }, [cat, all, tab, query, q, venue]);
+  const perpTotal = cat ? (venue === 'all' ? cat.perps.length : cat.perps.filter((m) => m.venue === venue).length) : 0;
 
-  const openMints = pr.book?.open.map((p) => p.mint).join(',') ?? '';
+  const openMints = [...(pr.book?.open.map((p) => p.mint) ?? []), ...(pr.book?.orders?.map((o) => o.mint) ?? [])].join(',');
   const mints = useMemo(() => [...list.map((m) => m.mint), ...(openMints ? openMints.split(',') : [])], [list, openMints]);
   const { prices, error: pxErr, at } = usePrices(mints);
   const liq = useLiquidations(pr, prices);
+  const fills = useOrderFills(pr);
+  const orders = pr.book?.orders ?? [];
   const s = pr.book ? summary(pr.book, prices) : null;
   const closed = pr.book?.closed ?? [];
   const shownHistory = allHistory ? closed : closed.slice(0, 10);
@@ -173,7 +185,7 @@ export default function PracticeHome() {
         </Animated.View>
         <Row style={{ gap: 8, marginTop: 10, paddingHorizontal: 2 }}>
           <LiveDot color={at ? C.up : C.dim} />
-          <Txt v="small" style={{ flex: 1, lineHeight: 17 }}>Practice · paper money. Real live prices from Jupiter; no real USDC moves.</Txt>
+          <Txt v="small" style={{ flex: 1, lineHeight: 17 }}>Practice · paper money. Real live prices from Jupiter, Phoenix and Pacifica; no real USDC moves.</Txt>
         </Row>
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
 
@@ -189,12 +201,63 @@ export default function PracticeHome() {
           </View>
         )}
 
+        {fills.last ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.upBg, borderRadius: 18, padding: 12, marginTop: 14 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Txt v="label" color={C.up}>Limit order filled</Txt>
+              <Txt v="small" style={{ marginTop: 2 }}>{fills.last.symbol} {fills.last.side} {fills.last.lev}x at {fmtPrice(fills.last.entry)}, as a maker.</Txt>
+            </View>
+            <Pressable onPress={fills.dismiss} hitSlop={8} style={{ height: 44, paddingHorizontal: 10, justifyContent: 'center' }}><Txt v="small" color={C.ink}>OK</Txt></Pressable>
+          </View>
+        ) : null}
+
+        {orders.length ? (
+          <>
+            <Head title="Open orders" right={`${orders.length} resting`} />
+            <View style={{ backgroundColor: CARD, borderRadius: 22, borderWidth: 1, borderColor: HAIR, overflow: 'hidden' }}>
+              {orders.map((o, i) => (
+                <Pressable key={o.id} onPress={() => router.push(`/practice/${o.marketId}` as Href)}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E', backgroundColor: pressed ? '#17171D' : 'transparent' })}>
+                  <MarketLogo m={o as unknown as Market} size={34} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Row style={{ gap: 6 }}><Txt v="label" lines={1} style={{ flexShrink: 1 }}>{o.symbol}</Txt><SideTag p={{ kind: 'perp', side: o.side, lev: o.lev }} /></Row>
+                    <Txt v="small" lines={1} style={{ marginTop: 2 }}>Limit {fmtPrice(o.limit)} · {usd2(o.margin)} margin · {VENUES[o.venue].name}</Txt>
+                  </View>
+                  <Pressable onPress={() => { setCancelErr(undefined); pr.cancel(o.id).catch((e) => setCancelErr((e as Error).message)); }} accessibilityRole="button" accessibilityLabel="Cancel order"
+                    style={({ pressed }) => ({ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+                    <Txt v="small" color={C.ink}>Cancel</Txt>
+                  </Pressable>
+                </Pressable>
+              ))}
+            </View>
+            {cancelErr ? <ErrorLine msg={cancelErr} /> : null}
+          </>
+        ) : null}
+
         {/* markets */}
         <Head title="Markets" right={!cat ? undefined : query ? `${list.length} across all markets` : 'Live prices'} />
         <Tabs value={tab} onChange={(k) => { setTab(k); setQ(''); }} />
         <View style={{ marginTop: 10 }}>
-          <SearchBar value={q} onChange={setQ} placeholder="Search stocks, coins, memecoins" />
+          <SearchBar value={q} onChange={setQ} placeholder="Search stocks, coins, perps, memecoins" />
         </View>
+        {tab === 'perp' && !query && cat ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
+            {(['all', 'phoenix', 'pacifica', 'jupiter'] as const).map((v) => {
+              const on = venue === v;
+              const n = v === 'all' ? cat.perps.length : cat.perps.filter((m) => m.venue === v).length;
+              return (
+                <Pressable key={v} onPress={() => setVenue(v)} accessibilityRole="button" accessibilityState={{ selected: on }}
+                  style={{ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: on ? C.ink : C.s1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Txt v="small" color={on ? '#000' : C.ink}>{v === 'all' ? 'All venues' : VENUES[v].name}</Txt>
+                  <Txt v="small" color={on ? '#444' : C.muted}>{n}</Txt>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+        {tab === 'perp' && cat && Object.keys(cat.venueErrors).length ? (
+          <ErrorLine msg={Object.entries(cat.venueErrors).map(([v, e]) => `${VENUES[v as Venue].name}: ${e}`).join(' ')} onRetry={reload} />
+        ) : null}
         {pxErr ? <ErrorLine msg={pxErr} /> : null}
         <View style={{ marginTop: 10 }}>
           {catErr && !cat ? (
@@ -216,7 +279,12 @@ export default function PracticeHome() {
           )}
         </View>
         {cat && !query && tab === 'meme' ? <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>pump.fun launches trending on Jupiter in the last hour and day. Spot only, no leverage. Memecoins can go to zero.</Txt> : null}
-        {cat && !query && tab === 'perp' ? <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>Jupiter Perps markets with their real open fee and hourly borrow rate. Leverage 2x to 100x, long or short.</Txt> : null}
+        {cat && !query && tab === 'perp' ? (
+          <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>
+            {perpTotal > list.length ? `Showing ${list.length} of ${perpTotal}; search to find any of them. ` : ''}
+            Phoenix and Pacifica are order books: your paper order fills against their real, live book at their real fees and funding. Jupiter Perps is a pool priced by oracle, up to 100x.
+          </Txt>
+        ) : null}
 
         {/* history */}
         <Head title="History" right={closed.length ? `${closed.length} closed` : undefined} />
@@ -234,7 +302,7 @@ export default function PracticeHome() {
         )}
 
         <Txt v="small" style={{ marginTop: 22, lineHeight: 18, textAlign: 'center' }}>
-          Prices come live from Jupiter; perps use Jupiter Perps' real open fee and hourly borrow rate (borrow is approximated by the hour).
+          Prices come live from Jupiter, Phoenix and Pacifica. Order-book perps fill against the venue's real book at its taker or maker fee and pay or earn its funding; Jupiter perps use Jupiter's open fee and hourly borrow (both approximated by the hour).
           Liquidations are checked only while Practice is open, against the live price. Your paper book is saved on this device{pr.signedIn ? ' for this wallet' : ''}.
         </Txt>
       </ScrollView>
