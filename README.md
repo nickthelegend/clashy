@@ -23,6 +23,10 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
   - **Desktop:** an order-book trading terminal on wide screens.
   - **Social:** Instagram-style Chats with DMs, notifications and follow requests; Follow and Message on profiles;
     Edit profile.
+  - **Stickers:** a Telegram-style emoji + sticker keyboard in every DM and squad chat, with 10 clay sticker packs
+    (Clashy, Perps, Solana, Solana DeFi, Solana Apps, MagicBlock, BONK, dogwifhat, Meme Zoo, Supercycle). It has
+    search, recents, favourites, a long-press preview and sticker suggestions as you type. Emoji-only messages show big.
+    Live taunts in a clash go to your rival in real time.
   - **Squads:** a squad podium, and squad search in the search drawer.
   - **Art:** Lottie onboarding and a squad war scene.
   - **Backend:** the social server ([server/](server/)) and the whole backend in Docker

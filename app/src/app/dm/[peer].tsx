@@ -1,20 +1,25 @@
 // A direct message thread: /dm/<their wallet>. Bubbles (yours on the right in lavender), day dividers, "Seen" under
 // your last message once they've read it, a Clash shortcut and a profile link up top. A thread from someone you don't
 // follow shows as a request until you reply. Messages live on Clashy's social server; it polls while open.
+// Stickers and 1-3 emoji show big without a bubble (a new one pops in); tap a sticker to open its pack. The composer's
+// sticker key swaps the keyboard for the emoji + sticker keyboard.
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
 import { useChain } from '@/chain/useChain';
 import { readProfile, usePoll } from '@/chain/social';
 import { social, useSocial, type Dm } from '@/chain/social-api';
 import { ProfileAvatar } from '@/ui/feed';
-import { ArrowUp, Swords } from '@/ui/icons';
+import { Swords } from '@/ui/icons';
+import { ChatComposer } from '@/ui/chat-composer';
+import { JumboEmoji, PackSheet, StickerMsg, useFreshSince } from '@/ui/chat-bits';
+import { jumboCount, stickerBody, stickerOf, type Sticker } from '@/stickers';
 import { ART, BackBtn, ErrorLine, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
-import { C, F, FONT, S } from '@/ui/tokens';
+import { C, FONT, S } from '@/ui/tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/chats' as Href));
 const day = (ms: number) => new Date(ms).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -53,15 +58,18 @@ function Thread({ peer }: { peer: PublicKey }) {
   }, [lastTheirs, id, chain.wallet.signer]);
   useEffect(() => { setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 60); }, [all.length]);
 
-  const send = async () => {
-    const body = text.trim();
+  const [pack, setPack] = useState<string | null>(null);
+  const fresh = useFreshSince();
+  const post = async (body: string, clear: boolean) => {
     if (!body || sending) return;
     setSending(true); setErr(undefined);
     try {
       const m = await social<Dm>(chain.wallet.signer, `/v1/dm/${id}`, { method: 'POST', body: { body } });
-      setExtra((x) => [...x, m]); setText(''); Haptics.selectionAsync(); t.reload();
+      setExtra((x) => [...x, m]); if (clear) setText(''); Haptics.selectionAsync(); t.reload();
     } catch (e) { setErr((e as Error).message); } finally { setSending(false); }
   };
+  const send = () => post(text.trim(), true);
+  const sendSticker = (s: Sticker) => post(stickerBody(s), false);
   const lastMine = [...all].reverse().find((m) => m.sender === me);
   const seen = !!lastMine && (t.data?.theirRead ?? 0) >= lastMine.id;
 
@@ -105,13 +113,19 @@ function Thread({ peer }: { peer: PublicKey }) {
                     const prev = all[i - 1];
                     const newDay = !prev || day(prev.at) !== day(m.at);
                     const joined = prev && !newDay && prev.sender === m.sender && m.at - prev.at < 5 * 60_000;
+                    const stk = stickerOf(m.body);
+                    const jumbo = stk ? 0 : jumboCount(m.body);
                     return (
                       <View key={m.id}>
                         {newDay ? <Txt v="small" style={{ textAlign: 'center', marginVertical: 10, fontSize: 12 }}>{day(m.at)}</Txt> : null}
                         <View style={{ flexDirection: 'row', justifyContent: mine ? 'flex-end' : 'flex-start', marginTop: joined ? 3 : 10 }}>
-                          <View style={{ maxWidth: '78%', backgroundColor: mine ? C.brand : '#1A1A21', borderRadius: 20, borderBottomRightRadius: mine ? 6 : 20, borderBottomLeftRadius: mine ? 20 : 6, paddingHorizontal: 14, paddingVertical: 9 }}>
-                            <Txt v="body" color={mine ? C.onBrand : C.ink} style={{ fontSize: 15.5, lineHeight: 21 }}>{m.body}</Txt>
-                          </View>
+                          {stk ? <StickerMsg s={stk} mine={mine} fresh={fresh(m.at)} onPress={() => setPack(stk.pack)} />
+                            : jumbo ? <JumboEmoji text={m.body.trim()} n={jumbo} fresh={fresh(m.at)} />
+                              : (
+                                <View style={{ maxWidth: '78%', backgroundColor: mine ? C.brand : '#1A1A21', borderRadius: 20, borderBottomRightRadius: mine ? 6 : 20, borderBottomLeftRadius: mine ? 20 : 6, paddingHorizontal: 14, paddingVertical: 9 }}>
+                                  <Txt v="body" color={mine ? C.onBrand : C.ink} style={{ fontSize: 15.5, lineHeight: 21 }}>{m.body}</Txt>
+                                </View>
+                              )}
                         </View>
                         {!all[i + 1] || all[i + 1].sender !== m.sender || all[i + 1].at - m.at > 5 * 60_000 ? (
                           <Txt v="small" style={{ fontSize: 11, marginTop: 3, textAlign: mine ? 'right' : 'left', paddingHorizontal: 6 }}>
@@ -126,21 +140,12 @@ function Thread({ peer }: { peer: PublicKey }) {
       </ScrollView>
 
       {me ? (
-        <View style={{ paddingHorizontal: S.gutter, paddingTop: 8, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: '#15151A' }}>
-          {err ? <ErrorLine msg={err} /> : null}
-          <Row style={[{ gap: 8 }, col]}>
-            <View style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: '#15151B', paddingHorizontal: 16, justifyContent: 'center' }}>
-              <TextInput value={text} onChangeText={setText} placeholder={`Message ${name}`} placeholderTextColor={C.dim} maxLength={1000} multiline
-                onSubmitEditing={send} blurOnSubmit={false} accessibilityLabel={`Message ${name}`}
-                style={{ color: C.ink, fontFamily: F.regular, fontSize: 15.5, paddingVertical: 10, maxHeight: 120, outlineStyle: 'none' } as object} />
-            </View>
-            <Pressable onPress={send} disabled={!text.trim() || sending} accessibilityRole="button" accessibilityLabel="Send"
-              style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, backgroundColor: text.trim() ? C.brand : C.s2, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.92 : 1 }] })}>
-              <ArrowUp size={20} color={text.trim() ? C.onBrand : C.dim} />
-            </Pressable>
-          </Row>
-        </View>
+        <>
+          {err ? <View style={{ paddingHorizontal: S.gutter }}><ErrorLine msg={err} /></View> : null}
+          <ChatComposer value={text} onChange={setText} onSend={send} onSticker={sendSticker} placeholder={`Message ${name}`} busy={sending} maxWidth={col.maxWidth as number | undefined} />
+        </>
       ) : null}
+      <PackSheet packId={pack} onClose={() => setPack(null)} onSend={me ? sendSticker : undefined} />
     </KeyboardAvoidingView>
   );
 }

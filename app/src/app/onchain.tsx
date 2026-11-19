@@ -19,6 +19,7 @@ import { WinExtras } from '@/ui/result';
 import { Sheet } from '@/ui/sheet';
 import { ProfileAvatar } from '@/ui/feed';
 import { useProfiles } from '@/chain/social';
+import { Taunts } from '@/ui/taunts';
 import { CallButtons, CoinRoll, CoinToken, FaceOff, LiveBoard, ModeRow, OpenClash, PERPS_LEVERAGE, Searching, clashLev, coinName, perpsNonce, symbolsIn } from '@/ui/clash';
 import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
@@ -416,6 +417,7 @@ export default function OnChainDuel() {
               <>
                 <LiveBoard me={meProf} rival={rivalProf} myPnl={myPnl} theirPnl={theirPnl} myCall={duel.side[me]} theirCall={duel.side[1 - me]} sym={sym2} price={price} entry={duel.entryPrice} left={left} onRollup={duel.status === 3}
                   perps={perps || duel.lev.some((l) => l > 1) ? { myLev: duel.lev[me] || duelLev, theirLev: duel.lev[1 - me] || duelLev, myKo: koMe, theirKo: koThem } : undefined} />
+                {duel.status === 3 || duel.status === 4 ? <Taunts rival={rivalKey && !rivalKey.equals(PublicKey.default) ? rivalKey : null} since={duel.startTs || duel.matchedAt} rivalName={rivalProf?.name ?? 'your rival'} /> : null}
                 {price !== null ? (
                   <View style={{ marginTop: 18, backgroundColor: '#0E0E13', borderRadius: 24, paddingVertical: 10, overflow: 'hidden' }}>
                     <LiveChart data={[duel.entryPrice, ...hist, price]} w={Math.min(winW, 820) - 2 * S.gutter} h={230} refLine={duel.entryPrice} refLabel="start" color={myPnl >= theirPnl ? C.brand : C.opp} />

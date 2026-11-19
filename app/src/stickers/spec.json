@@ -1,0 +1,85 @@
+{
+  "_": "Sticker packs. Each pack was generated on chatgpt.com as two 4x3 sheets (slots 1-12, 13-24); scripts/make-stickers.py cuts them, ships every slot not listed in `drop` (20 per pack) and writes assets/stickers/<id>/<slot>.webp plus src/stickers/packs.gen.ts. Each sticker: [caption, emoji, search tags].",
+  "packs": [
+    { "id": "clashy", "drop": [12, 20, 22, 23], "name": "Clashy", "blurb": "Trade against people, not the house", "cover": 1, "stickers": [
+      ["CLASH ME", "⚔️", "duel fight challenge swords"], ["1V1?", "👉", "duel challenge you"], ["LONG", "📈", "up buy rocket green"], ["SHORT", "📉", "down sell red"],
+      ["100X", "🤯", "leverage wow mind blown"], ["KNOCKOUT", "😵", "ko win dead"], ["GG EZ", "😏", "good game easy smug"], ["SQUAD UP", "🫂", "team squad clan"],
+      ["WAR!", "📯", "squad war fight"], ["VICTORY", "🏆", "win trophy"], ["REMATCH?", "😤", "again angry"], ["WEN CLASH", "⌚", "bored waiting when"],
+      ["GM", "☕", "good morning hello"], ["LIQUIDATED", "🫠", "liq rekt melt"], ["CASHED OUT", "💰", "profit money bag"], ["PVP ONLY", "🥊", "fight boxing"],
+      ["STACKED", "📊", "stocks savings coins"], ["ON FIRE", "🔥", "streak hot"], ["CHAMP", "👑", "crown cup winner"], ["COPY TRADE", "😉", "copy trade"],
+      ["SEND IT", "🚀", "button go"], ["SHIELDS UP", "🛡️", "defend shield"], ["BRB", "🏃", "be right back run"], ["LET'S GO", "🙌", "lfg hype"]
+    ] },
+    { "id": "perps", "drop": [12, 18, 19, 23], "name": "Perps", "blurb": "Bulls, bears and liquidation cascades", "cover": 1, "stickers": [
+      ["LONG", "🐂", "bull buy up"], ["SHORT", "🐻", "bear sell down"], ["LIQUIDATED", "💀", "liq rekt dead"], ["TP HIT", "🎯", "take profit win"],
+      ["SL HIT", "🥲", "stop loss sad"], ["50X", "🚀", "leverage jetpack"], ["SHORT SQUEEZE", "😖", "squeeze pain"], ["FUNDING", "💸", "funding rate paid"],
+      ["BUY THE DIP", "🏊", "dip buy"], ["SELL THE TOP", "🏔️", "top sell"], ["WHALE", "🐋", "whale big money"], ["ORDER BOOK", "📖", "book bids asks"],
+      ["PUMP", "🎈", "pump up green"], ["DUMP", "🗑️", "dump down red"], ["WICKED OUT", "🕯️", "wick candle stop"], ["DIAMOND HANDS", "💎", "hold hodl"],
+      ["PAPER HANDS", "🧻", "panic sell weak"], ["HEDGED", "🌳", "hedge safe"], ["ALL IN", "🎰", "yolo max"], ["SLIPPAGE", "🍌", "slip banana"],
+      ["GREEN CANDLE", "🟩", "green up candle"], ["RED CANDLE", "🟥", "red down candle"], ["ENTRY", "🚪", "open position enter"], ["EXIT", "🏃", "close position leave"]
+    ] },
+    { "id": "solana", "drop": [14, 16, 21, 24], "name": "Solana", "blurb": "Fast, cheap, only possible on Solana", "cover": 1, "stickers": [
+      ["GM", "☀️", "good morning sun"], ["400MS", "⏱️", "fast speed block time"], ["SEND IT", "📨", "send transfer"], ["SOL", "🪙", "coin sol"],
+      ["STAKED", "😌", "stake staking relax"], ["TINY FEES", "🤏", "cheap fees"], ["OPOS", "✨", "only possible on solana"], ["BUILDOOR", "🛠️", "build dev builder"],
+      ["CHEWING GLASS", "😬", "dev hard glass"], ["SOLANA SUMMER", "🏖️", "summer beach"], ["WAGMI", "🤗", "we all gonna make it"], ["TO THE MOON", "🚀", "moon rocket"],
+      ["HODL", "🫶", "hold hug"], ["VALIDATOR", "🔎", "validator node"], ["FIREDANCER", "💃", "firedancer client dance"], ["BREAKPOINT", "🎤", "conference breakpoint"],
+      ["SEEKER", "📱", "phone mobile seeker"], ["LFG", "🔥", "lets go hype"], ["SOL MAXI", "💪", "maxi strong"], ["GN", "🌙", "good night sleep"],
+      ["BLINKS", "🔗", "blinks link actions"], ["UP ONLY", "📈", "up only green"], ["THX", "💜", "thanks love"], ["SHIP IT", "🚢", "ship launch"]
+    ] },
+    { "id": "defi", "drop": [2, 11, 21, 23], "name": "Solana DeFi", "blurb": "Jupiter, Orca, Drift, Kamino and friends", "cover": 1, "stickers": [
+      ["SWAP", "🔄", "jupiter jup swap"], ["BEST PRICE", "💸", "jupiter jup route"], ["JLP", "🌱", "jupiter jlp perps yield"], ["POOL PARTY", "🎉", "raydium ray pool lp"],
+      ["LP'D", "💧", "raydium ray liquidity"], ["WHIRLPOOL", "🐋", "orca whirlpool"], ["SPLASH", "💦", "orca splash"], ["PERPS", "🏄", "drift perps"],
+      ["LEVERAGE", "🏋️", "drift leverage"], ["LEND", "🏦", "kamino lend borrow"], ["LOOPED", "🔁", "kamino loop multiply"], ["MARINATING", "🍲", "marinade msol stake"],
+      ["SLOW COOKED", "👨‍🍳", "marinade chef yield"], ["JITO TIP", "⚡", "jito mev tip"], ["JITOSOL", "🧡", "jito jitosol stake"], ["INFINITY", "♾️", "sanctum lst infinity cloud"],
+      ["ORACLE", "🔮", "pyth oracle price"], ["DLMM", "☄️", "meteora dlmm liquidity"], ["ORDER BOOK", "🔥", "phoenix order book"], ["SAVE", "🐷", "save solend savings"],
+      ["PRICE FEED", "📡", "pyth price feed"], ["LIMIT ORDER", "🎯", "jupiter limit order"], ["SHORT IT", "📉", "drift short"], ["YIELD", "🌾", "kamino yield farm"]
+    ] },
+    { "id": "apps", "name": "Solana Apps", "blurb": "Phantom, Backpack, pump.fun and the gang", "cover": 1, "stickers": [
+      ["GM", "👻", "phantom ghost wallet"], ["CONNECTED", "🔌", "phantom connect wallet"], ["SIGN?", "✍️", "phantom sign transaction"], ["BOO!", "😱", "phantom ghost scare"],
+      ["PACKED", "🎒", "backpack wallet"], ["LET'S GO", "🎒", "backpack go"], ["MINTED", "🖼️", "magic eden mint nft"], ["SWEEP", "🧹", "magic eden sweep floor"],
+      ["FLOOR", "📈", "tensor floor nft"], ["PUMP IT", "💊", "pump.fun pill pump"], ["BONDED", "🎓", "pump.fun bonded graduated"], ["KOTH", "👑", "pump.fun king of the hill"],
+      ["FAST RPC", "☀️", "helius rpc"], ["WEBHOOK", "🪝", "helius webhook"], ["MULTISIG", "🔐", "squads multisig vault"], ["SEEKER", "📱", "seeker phone solana mobile"],
+      ["LAUNCH", "🚀", "bonk.fun launch"], ["SWAPPED", "👻", "phantom swap"], ["LISTED", "🏷️", "tensor list nft"], ["GEM", "💎", "magic eden gem"],
+      ["INDEXED", "📚", "helius index"], ["SEND", "📤", "backpack send"], ["APPROVE", "✅", "squads approve"], ["DEV SOLD", "😭", "pump.fun dev sold rug"]
+    ] },
+    { "id": "magicblock", "drop": [11, 16, 20, 23], "name": "MagicBlock", "blurb": "Real-time Solana on ephemeral rollups", "cover": 1, "stickers": [
+      ["GM", "👋", "magicblock hello"], ["10MS", "⚡", "fast latency speed"], ["GASLESS", "⛽", "no gas free"], ["DELEGATE", "📦", "delegate account rollup"],
+      ["COMMIT", "✅", "commit state"], ["UNDELEGATE", "🔁", "undelegate return"], ["REAL-TIME", "⏱️", "realtime clock"], ["EPHEMERAL", "✨", "ephemeral rollup"],
+      ["VRF", "🎲", "random dice vrf"], ["GAME ON", "🎮", "game onchain"], ["SPEEDRUN", "🏃", "speed run fast"], ["MAGIC", "🪄", "magic wand"],
+      ["ROLLUP", "🌀", "rollup er"], ["SESSION KEY", "🔑", "session key"], ["ZERO FEES", "🆓", "free fees"], ["TICK", "🕹️", "tick crank"],
+      ["BOLT", "⚡", "bolt ecs"], ["PRIVATE", "🤫", "private er"], ["SCALE", "💪", "scale"], ["NO LAG", "🚫", "lag latency"],
+      ["POWERED", "🔌", "powered by magicblock"], ["SOLANA SPEED", "🏎️", "speed solana"], ["SHIP IT", "🚢", "ship launch"], ["LEVEL UP", "⬆️", "level up"]
+    ] },
+    { "id": "bonk", "drop": [16, 20, 21, 22], "name": "BONK", "blurb": "The dog coin of Solana", "cover": 1, "stickers": [
+      ["BONK!", "🏏", "bonk bat hit"], ["GM", "☀️", "good morning"], ["WOOF", "🐶", "dog woof"], ["MUCH WOW", "😮", "wow doge"],
+      ["BONKED", "😵", "hit dizzy"], ["BURN", "🔥", "burn fire"], ["HODL", "🫶", "hold"], ["TO THE MOON", "🚀", "moon"],
+      ["LOL", "😂", "laugh"], ["SAD", "😢", "cry sad"], ["GRRR", "😠", "angry"], ["LOVE", "❤️", "heart love"],
+      ["ZZZ", "😴", "sleep tired"], ["PARTY", "🥳", "party celebrate"], ["HMM", "🤔", "thinking"], ["BRB", "🏃", "be right back"],
+      ["COOL", "😎", "cool sunglasses"], ["WHAT", "😱", "shocked what"], ["RICH", "🤑", "money rich"], ["NO", "🙅", "no nope"],
+      ["YES", "👍", "yes ok"], ["OK", "👌", "ok fine"], ["THANKS", "🙏", "thanks thank you"], ["BYE", "👋", "bye wave"]
+    ] },
+    { "id": "wif", "drop": [13, 16, 23, 24], "name": "dogwifhat", "blurb": "It's literally just a dog wif a hat", "cover": 1, "stickers": [
+      ["WIF", "🐕", "dog wif hat"], ["HAT STAYS ON", "🧢", "hat stays on"], ["GM", "☀️", "good morning"], ["WOW", "😮", "wow"],
+      ["COMFY", "😌", "comfy cozy"], ["LET'S GO", "🙌", "lfg"], ["SAD", "😢", "sad cry"], ["LOL", "😂", "laugh"],
+      ["RICH", "🤑", "rich money"], ["COOL", "😎", "cool"], ["NOPE", "🙅", "no nope"], ["LOVE", "❤️", "love heart"],
+      ["ZZZ", "😴", "sleep"], ["PARTY", "🥳", "party"], ["HMM", "🤔", "thinking"], ["BRB", "🏃", "brb"],
+      ["OMG", "😱", "omg shocked"], ["THX", "🙏", "thanks"], ["HODL", "🫶", "hold"], ["MOON", "🚀", "moon"],
+      ["PUMP", "📈", "pump"], ["WAGMI", "🤗", "wagmi"], ["OK", "👌", "ok"], ["BYE", "👋", "bye"]
+    ] },
+    { "id": "zoo", "drop": [2, 12, 17, 24], "name": "Meme Zoo", "blurb": "POPCAT, MEW, MOODENG, PNUT, PENGU and more", "cover": 1, "stickers": [
+      ["POP", "😮", "popcat pop cat"], ["POP POP", "🐱", "popcat"], ["MEW", "🐱", "mew cat in a dogs world"], ["HISS", "😾", "mew cat angry"],
+      ["MOO DENG", "🦛", "moodeng hippo"], ["CHOMP", "😬", "moodeng bite"], ["PNUT", "🐿️", "pnut peanut squirrel"], ["NUTS", "🥜", "pnut peanut"],
+      ["HUGS", "🐧", "pengu penguin hug"], ["SLIDE", "🛝", "pengu penguin slide"], ["TOOT", "💨", "fartcoin fart"], ["6900", "📈", "spx6900 spx"],
+      ["SAMO", "🐕", "samo samoyed"], ["SMILE", "😁", "samo smile"], ["MYRO", "🐶", "myro dog"], ["MICHI", "🐈", "michi cat"],
+      ["OPEN WIDE", "😲", "popcat"], ["SPLASH", "💦", "moodeng hippo water"], ["GOOD VIBES", "🫶", "pengu vibes"], ["STAY NUTTY", "🤪", "pnut"],
+      ["SMELLS GOOD", "😤", "fartcoin"], ["FLIP IT", "🪙", "spx6900 flip stock market"], ["MEOW", "😺", "mew cat"], ["ZOOMIES", "💨", "samo dog run"]
+    ] },
+    { "id": "supercycle", "drop": [15, 18, 21, 23], "name": "Supercycle", "blurb": "Memecoin culture, stay strong", "cover": 1, "stickers": [
+      ["SUPERCYCLE", "🌊", "supercycle memecoin"], ["STAY STRONG", "💪", "stay strong murad"], ["CULT", "🕯️", "cult community"], ["BELIEVE", "🙏", "believe faith"],
+      ["WE'RE EARLY", "⏰", "early"], ["CTO", "🚩", "community takeover"], ["JEET", "🏃", "jeet sell run"], ["DEV SOLD", "😱", "dev sold rug"],
+      ["RUGGED", "🫥", "rug pull"], ["APE IN", "🦍", "ape buy"], ["BAGS", "💼", "bags holder"], ["100X GEM", "💎", "gem 100x"],
+      ["NFA", "🤷", "not financial advice"], ["DYOR", "🔍", "do your own research"], ["FEW", "😎", "few understand"], ["WAGMI", "🤗", "we all gonna make it"],
+      ["NGMI", "🫠", "not gonna make it"], ["COPE", "😩", "cope"], ["SEND IT", "🚀", "send"], ["BONDED", "🎓", "bonded pump.fun"],
+      ["SNIPED", "🎯", "sniper snipe"], ["FUD", "⛈️", "fud fear"], ["MOON MISSION", "🌕", "moon"], ["GEN WEALTH", "🏰", "generational wealth"]
+    ] }
+  ]
+}

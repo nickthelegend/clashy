@@ -15,6 +15,7 @@ import { P, base, clanName } from '@/chain/client';
 import { ago, clanLevel, readChannel, reader, usePoll, usePrices, useProfiles, type Profile } from '@/chain/social';
 import { fmtPnl, pnlColor, readStockPnl, saveSelected } from '@/chain/squads';
 import { errText, short, useChain } from '@/chain/useChain';
+import { previewText } from '@/stickers';
 import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
@@ -291,7 +292,7 @@ export default function SquadPublic() {
                           <Txt v="label" lines={1} color={m.author.equals(s.captain) ? GOLD : C.ink} style={{ fontSize: 13.5, flexShrink: 1 }}>{nameOf(m.author)}</Txt>
                           <Txt v="small" color={C.dim} style={{ fontSize: 11 }}>{ago(m.ts)}</Txt>
                         </Row>
-                        <Txt v="body" lines={2} color="#C9C9D1" style={{ fontSize: 14, lineHeight: 19, marginTop: 1 }}>{m.kind === 1 ? 'Posted a clash challenge' : m.text}</Txt>
+                        <Txt v="body" lines={2} color="#C9C9D1" style={{ fontSize: 14, lineHeight: 19, marginTop: 1 }}>{m.kind === 1 ? 'Posted a clash challenge' : previewText(m.text)}</Txt>
                       </View>
                     </Row>
                   ))}

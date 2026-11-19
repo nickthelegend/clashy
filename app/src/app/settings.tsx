@@ -4,6 +4,7 @@
 // from the chain; rows without a real value say so instead of guessing.
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import { PACKS } from '@/stickers';
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
@@ -165,6 +166,7 @@ export default function Settings() {
           <Group title="Social">
             <SettingRow first art={ART.chat} label="Messages and requests" sub="Direct messages, follow requests, notifications" onPress={go('/chats')} />
             <SettingRow art={ART.invite} label="Profile and privacy" sub="Avatar, bio, link, private account" onPress={go('/edit-profile')} />
+            <SettingRow art={PACKS[0].cover} label="Sticker packs" sub={`${PACKS.length} packs, ${PACKS.reduce((n, p) => n + p.stickers.length, 0)} stickers in every chat`} onPress={go('/stickers')} />
           </Group>
 
           <Group title="Squads">

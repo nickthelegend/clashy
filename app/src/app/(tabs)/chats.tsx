@@ -19,6 +19,7 @@ import { ART, CRESTS, ErrorLine, IconBtn, Pending, Row, SearchBar, SkeletonRows,
 import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
 import { C, FONT, S } from '@/ui/tokens';
+import { previewText } from '@/stickers';
 
 type Tab = 'messages' | 'notifications' | 'requests';
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
@@ -158,7 +159,7 @@ function ThreadRow({ t, me, p, name }: { t: Thread; me: string; p?: Profile; nam
       <ProfileAvatar p={p} size={54} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Txt v="label" lines={1} style={{ ...(t.unread ? FONT.bold : FONT.semi) }}>{name}</Txt>
-        <Txt v="small" lines={1} color={t.unread ? C.ink : C.muted} style={{ marginTop: 2, ...(t.unread ? FONT.semi : {}) }}>{mine ? 'You: ' : ''}{t.last.body} · {when(t.last.at)}</Txt>
+        <Txt v="small" lines={1} color={t.unread ? C.ink : C.muted} style={{ marginTop: 2, ...(t.unread ? FONT.semi : {}) }}>{mine ? 'You: ' : ''}{previewText(t.last.body)} · {when(t.last.at)}</Txt>
       </View>
       {t.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.brand }} /> : null}
     </Pressable>

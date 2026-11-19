@@ -27,6 +27,7 @@ import { Badge, CARD, Channel, GOLD, Group, HAIR, LevelBar, RailButton, RailIcon
 import { CreateSquadSheet } from '@/ui/squads/sheets';
 import { useCreate } from '@/ui/create';
 import { C, F, FONT } from '@/ui/tokens';
+import { previewText } from '@/stickers';
 
 const RAIL = 72;
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
@@ -213,7 +214,7 @@ export default function Squads() {
                 const last = meta?.last;
                 return (
                   <Channel key={c.id} name={c.name} unread={unread > 0} badge={unread ? `${unread > 99 ? '99+' : unread} new` : undefined} badgeColor={C.opp} count={unread ? undefined : meta?.count}
-                    sub={!meta ? 'Loading…' : last ? `${nameOf(last.author)}: ${last.kind === 1 ? 'posted a clash challenge' : last.text}` : meta.state === 'none' ? 'Not opened yet · tap to open' : 'No messages yet · say gm'}
+                    sub={!meta ? 'Loading…' : last ? `${nameOf(last.author)}: ${last.kind === 1 ? 'posted a clash challenge' : previewText(last.text)}` : meta.state === 'none' ? 'Not opened yet · tap to open' : 'No messages yet · say gm'}
                     onPress={() => openChat(c.id)} />
                 );
               })}

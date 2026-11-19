@@ -3,11 +3,13 @@
 // read from the channel account on the rollup, Discord style (grouped by author, avatar, name, time, day dividers).
 // "Clash" opens a real 5 USDC duel on chain and posts it as a card anyone in the squad can accept; accepting takes you
 // to the duel board where it is joined for real. Opening a channel the first time moves it onto the rollup.
+// Stickers travel as a 16-byte token in an ordinary channel message, so they're on chain like everything else; they
+// and 1-3 emoji show big without a bubble. Tap a sticker to open its pack.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { BN, CRYPTO_MASK, NET, P, PublicKey, USDC, USDC_MINT, random32, readDuel, sha256, usdcAta } from '@/chain/client';
@@ -18,9 +20,12 @@ import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { Swords } from '@/ui/icons';
+import { ChatComposer } from '@/ui/chat-composer';
+import { JumboEmoji, PackSheet, StickerMsg, useFreshSince } from '@/ui/chat-bits';
+import { jumboCount, stickerBody, stickerOf, type Sticker } from '@/stickers';
 import { useDeskColumn } from '@/ui/layout';
 import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
-import { C, F, FONT } from '@/ui/tokens';
+import { C, FONT } from '@/ui/tokens';
 
 const STAKE = 5;
 const time = (ts: number) => new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -105,6 +110,12 @@ export default function ClanChat() {
     await say(body);
     setText('');
   });
+  const [pack, setPack] = useState<string | null>(null);
+  const fresh = useFreshSince();
+  const sendSticker = (s: Sticker) => run('send', async () => {
+    if (!progs || !me || !clan) throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
+    await say(stickerBody(s));
+  })();
   const challenge = run('challenge', async () => {
     if (!me || !progs || !sponsor) throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
     const nonce = Date.now();
@@ -204,6 +215,8 @@ export default function ClanChat() {
                     {(() => {
                       const mine = !!me && m.author.equals(me);
                       if (m.kind === 1) return <View style={{ marginTop: 6, alignSelf: mine ? 'flex-end' : 'flex-start', width: '86%' }}><ChallengeCard m={m} mine={mine} onAccept={accept} /></View>;
+                      const stk = stickerOf(m.text);
+                      const jumbo = stk ? 0 : jumboCount(m.text);
                       return (
                         <Row style={{ gap: 8, alignItems: 'flex-end', marginTop: grouped ? 3 : 12, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                           {mine ? null : grouped ? <View style={{ width: 34 }} /> : <Pressable onPress={() => router.push(`/u/${m.author.toBase58()}` as Href)}><ProfileAvatar p={p} size={34} /></Pressable>}
@@ -214,9 +227,13 @@ export default function ClanChat() {
                                 {capt ? <Image source={ART.crown} style={{ width: 13, height: 13 }} contentFit="contain" /> : null}
                               </Row>
                             )}
-                            <View style={{ backgroundColor: mine ? C.brand : '#1A1A22', borderRadius: 20, borderBottomRightRadius: mine ? 6 : 20, borderBottomLeftRadius: mine ? 20 : 6, paddingHorizontal: 14, paddingVertical: 9 }}>
-                              <Txt v="body" color={mine ? C.onBrand : '#E6E6EC'} style={{ fontSize: 15, lineHeight: 21 }}>{m.text}</Txt>
-                            </View>
+                            {stk ? <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}><StickerMsg s={stk} mine={mine} fresh={fresh(m.ts * 1000)} onPress={() => setPack(stk.pack)} /></View>
+                              : jumbo ? <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}><JumboEmoji text={m.text.trim()} n={jumbo} fresh={fresh(m.ts * 1000)} /></View>
+                                : (
+                                  <View style={{ backgroundColor: mine ? C.brand : '#1A1A22', borderRadius: 20, borderBottomRightRadius: mine ? 6 : 20, borderBottomLeftRadius: mine ? 20 : 6, paddingHorizontal: 14, paddingVertical: 9 }}>
+                                    <Txt v="body" color={mine ? C.onBrand : '#E6E6EC'} style={{ fontSize: 15, lineHeight: 21 }}>{m.text}</Txt>
+                                  </View>
+                                )}
                             {i === msgs.length - 1 || !msgs[i + 1].author.equals(m.author) || msgs[i + 1].ts - m.ts >= 300 ? (
                               <Txt v="small" color={C.dim} style={{ fontSize: 10.5, marginTop: 3, textAlign: mine ? 'right' : 'left', marginHorizontal: 6 }}>{time(m.ts)}</Txt>
                             ) : null}
@@ -233,23 +250,17 @@ export default function ClanChat() {
         </ScrollView>
         {err ? <View style={{ paddingHorizontal: 14 }}><ErrorLine msg={err} /></View> : null}
         {st === 'live' && !notMember && clan ? (
-          <Row style={{ gap: 8, paddingHorizontal: 10, paddingTop: 8, paddingBottom: insets.bottom + 10 }}>
-            <Pressable onPress={challenge} disabled={!!busy} accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
-              style={({ pressed }) => ({ height: 46, paddingHorizontal: 12, borderRadius: 23, backgroundColor: pressed ? '#2A2A33' : '#1C1C23', flexDirection: 'row', alignItems: 'center', gap: 6, opacity: busy && busy !== 'challenge' ? 0.5 : 1 })}>
-              <Swords size={15} color={C.opp} />
-              <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 13 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
-            </Pressable>
-            <View style={{ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#1C1C23', flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 4 }}>
-              <TextInput value={text} onChangeText={setText} onSubmitEditing={send} placeholder={`Message #${chName}`} placeholderTextColor={C.dim} maxLength={120} returnKeyType="send"
-                style={{ flex: 1, height: 44, color: C.ink, ...FONT.medium, fontSize: 15, minWidth: 0 }} />
-              <Pressable onPress={send} disabled={!!busy || !text.trim()} accessibilityLabel="Send"
-                style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: text.trim() ? C.brand : '#2A2A33', alignItems: 'center', justifyContent: 'center' }}>
-                <Txt v="label" color={text.trim() ? C.onBrand : C.muted} style={{ fontSize: 18, marginTop: -2 }}>{busy === 'send' ? '…' : '↑'}</Txt>
+          <ChatComposer value={text} onChange={setText} onSend={send} onSticker={sendSticker} placeholder={`Message #${chName}`} maxLength={120} busy={!!busy}
+            left={(
+              <Pressable onPress={challenge} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
+                style={({ pressed }) => ({ height: 46, paddingHorizontal: 12, borderRadius: 23, backgroundColor: pressed ? '#2A2A33' : '#1C1C23', flexDirection: 'row', alignItems: 'center', gap: 6, opacity: busy && busy !== 'challenge' ? 0.5 : 1 })}>
+                <Swords size={15} color={C.opp} />
+                <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 13 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
               </Pressable>
-            </View>
-          </Row>
+            )} />
         ) : null}
       </View>
+      <PackSheet packId={pack} onClose={() => setPack(null)} onSend={st === 'live' && !notMember && clan ? sendSticker : undefined} />
     </KeyboardAvoidingView>
   );
 }

@@ -100,3 +100,29 @@ export const Gear = ({ size = 20, color = '#fff' }: P) => (
     <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </Svg>
 );
+// Chat composer: the emoji / sticker keyboard toggles and its strips
+export const Smile = ({ size, color = '#fff', stroke = 2 }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx="12" cy="12" r="9.2" /><Path d="M8.2 14.2a4.6 4.6 0 0 0 7.6 0" /><Line x1="9" x2="9.01" y1="9.6" y2="9.6" strokeWidth={2.8} /><Line x1="15" x2="15.01" y1="9.6" y2="9.6" strokeWidth={2.8} />
+  </Svg>
+);
+export const StickerI = ({ size, color = '#fff', stroke = 2 }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20.8 12.6V8a5 5 0 0 0-5-5H8a5 5 0 0 0-5 5v8a5 5 0 0 0 5 5h4.6z" /><Path d="M12.6 21v-3.4a5 5 0 0 1 5-5h3.2" />
+    <Line x1="8.6" x2="8.61" y1="9.4" y2="9.4" strokeWidth={2.8} /><Line x1="14.4" x2="14.41" y1="9.4" y2="9.4" strokeWidth={2.8} />
+  </Svg>
+);
+export const KeyboardI = ({ size, color = '#fff', stroke = 2 }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 5.5h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" />
+    <Path d="M6 9.5h.01M9.4 9.5h.01M12.8 9.5h.01M16.2 9.5h.01M18 9.5h.01M7.6 12.6h.01M11 12.6h.01M14.4 12.6h.01M8 15.6h8" strokeWidth={2.4} />
+  </Svg>
+);
+export const Clock = ({ size, color = '#fff', stroke = 2 }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round"><Circle cx="12" cy="12" r="9" /><Polyline points="12 7 12 12 15.5 14" /></Svg>
+);
+export const Star = ({ size, color = '#fff', stroke = 2, fill = 'none' }: P & { fill?: string }) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" fill={fill}>
+    <Path d="m12 3.2 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.6l6-.9z" />
+  </Svg>
+);
