@@ -155,6 +155,10 @@ export default function OnChainDuel() {
       // the creator's device checks; at the bell the joiner's checks too, so neither side alone picks the closing moment
       // (audit H1; the full fix, a price sampled at the bell, is in docs/AUDIT.md)
       const backup = me === 1 && Date.now() / 1000 >= d.startTs + d.lenSecs;
+      // nobody could finish it two minutes after the bell (prices stopped, the keeper is down): void it, both stakes come back
+      if (d.status === 3 && d.onEr && Date.now() / 1000 > d.startTs + d.lenSecs + 120) {
+        await once('void', () => onEr('Refund a stuck duel', progs.er.methods.voidDuel().accountsPartial({ payer: sponsor, duel: active })));
+      }
       if (d.status === 3 && d.onEr && (me === 0 || backup) && Date.now() % 2000 < 1000) {
         await onEr('Check duel', progs.er.methods.checkDuel().accountsPartial({ payer: sponsor, duel: active, price: P.feed(d.coin) })).catch((e) => setErr(`Checking the duel failed: ${errText(e)}`));
       }

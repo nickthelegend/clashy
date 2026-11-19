@@ -149,4 +149,6 @@ pub enum ClashyError {
     StepClosed,
     #[msg("Only members with shares in the chest can propose a trade")]
     NoShares,
+    #[msg("Only a captain who holds most of the chest can stake it in a war")]
+    NeedsMajority,
 }

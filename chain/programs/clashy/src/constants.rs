@@ -45,6 +45,9 @@ pub const MAX_CHALLENGE_SECS: i64 = 7 * 86_400;
 pub const DUEL_SETUP_SECS: i64 = 600;
 /// After picks close, both players get this long to reveal (audit: no forfeit while a reveal is still possible).
 pub const DUEL_REVEAL_SECS: i64 = 300;
+/// A live duel or Royale round nobody could finish this long after its bell can be voided by anyone (audit M-H2):
+/// the duel refunds both stakes; the Royale ends with its current leaders.
+pub const VOID_GRACE_SECS: i64 = 120;
 /// An unstarted tournament lobby can be cancelled by anyone after this.
 pub const TOUR_LOBBY_SECS: i64 = 3_600;
 /// A proposal the captain never executes can be closed by anyone this long after its deadline.

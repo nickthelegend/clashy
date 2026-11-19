@@ -45,7 +45,7 @@ const TOKEN_2022 = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
 /** Player-facing instructions the sponsor pays for. Admin, feed, delegation-callback and VRF-callback ones are not here. */
 const PLAYER_IXS = new Set([
-  'init_player', 'open_duel', 'join_duel', 'cancel_duel', 'abort_duel', 'request_coin_roll', 'reveal_seed', 'commit_pick',
+  'init_player', 'open_duel', 'join_duel', 'cancel_duel', 'abort_duel', 'void_duel', 'void_tournament', 'request_coin_roll', 'reveal_seed', 'commit_pick',
   'reveal_pick', 'delegate_duel', 'start_duel', 'check_duel', 'settle_duel', 'create_clan', 'join_clan', 'leave_clan',
   'deposit_chest', 'withdraw_chest', 'propose', 'vote', 'execute_proposal', 'reject_proposal', 'close_position',
   'declare_war', 'accept_war', 'cancel_war', 'settle_war', 'create_tournament', 'join_tournament', 'cancel_tournament',
@@ -54,7 +54,7 @@ const PLAYER_IXS = new Set([
   'stash_invest', 'stash_sell', 'open_channel', 'delegate_channel', 'post_message', 'post', 'like',
 ]);
 /** Instructions that may only run on the rollup (the rest only on Solana). */
-const ER_IXS = new Set(['start_duel', 'check_duel', 'start_tournament', 'call_round', 'resolve_round', 'post_message', 'post', 'like']);
+const ER_IXS = new Set(['start_duel', 'check_duel', 'void_duel', 'start_tournament', 'call_round', 'resolve_round', 'void_tournament', 'post_message', 'post', 'like']);
 const SPONSOR_SLOTS = new Set(['payer', 'rent_payer']);
 const PRIVY = process.env.CLASHY_PRIVY_APP_ID && process.env.CLASHY_PRIVY_APP_SECRET
   ? new PrivyClient(process.env.CLASHY_PRIVY_APP_ID, process.env.CLASHY_PRIVY_APP_SECRET) : null;

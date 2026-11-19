@@ -994,6 +994,32 @@ pub mod clashy {
         Ok(())
     }
 
+    /// Rollup, anyone: a live duel nobody could finish (the crank stalled, or nobody checked) is voided once its bell is
+    /// VOID_GRACE_SECS past. It ends as a draw and goes back to Solana, where settle_duel refunds both stakes with no rake,
+    /// so money can never be stuck on the rollup (audit M-H2).
+    pub fn void_duel(ctx: Context<VoidDuel>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        {
+            let d = &mut ctx.accounts.duel;
+            require!(d.status == duel_status::LIVE, ClashyError::WrongStatus);
+            require!(now > d.start_ts + d.len_secs as i64 + VOID_GRACE_SECS, ClashyError::NotExpired);
+            d.end_ts = now;
+            d.ko = 0;
+            d.winner = 0;
+            d.status = duel_status::FINISHED;
+            emit!(DuelFinished { duel: d.key(), coin: d.coin, entry_price: d.entry_price, exit_price: d.exit_price, pnl_bps: d.pnl_bps, ko: 0, winner: 0 });
+        }
+        ctx.accounts.duel.exit(&crate::ID)?;
+        MagicIntentBundleBuilder::new(
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.magic_context.to_account_info(),
+            ctx.accounts.magic_program.to_account_info(),
+        )
+        .commit_and_undelegate(&[ctx.accounts.duel.to_account_info()])
+        .build_and_invoke()?;
+        Ok(())
+    }
+
     /// Solana: pays the pot (minus rake) to the winner, or refunds both on a tie; updates ratings.
     pub fn settle_duel(ctx: Context<SettleDuel>) -> Result<()> {
         let d = &ctx.accounts.duel;
@@ -1264,6 +1290,9 @@ pub mod clashy {
         require!(stake >= MIN_STAKE, ClashyError::StakeTooLow);
         let a = &ctx.accounts.clan_a;
         require_keys_neq!(a.key(), ctx.accounts.clan_b.key(), ClashyError::SelfWar);
+        // audit P2: until war votes exist, only a captain holding most of the chest can stake it (no staged wars on
+        // members' money)
+        require!((ctx.accounts.captain_member.shares as u128) * 2 > a.shares as u128, ClashyError::NeedsMajority);
         require!(a.war == Pubkey::default(), ClashyError::WarLocked);
         require!(a.chest >= stake, ClashyError::ChestTooLow);
         require!(stake <= a.chest / 2, ClashyError::WarStakeTooBig);
@@ -1292,6 +1321,7 @@ pub mod clashy {
         let stake = ctx.accounts.war.stake;
         let b = &ctx.accounts.clan_b;
         require!(b.war == Pubkey::default(), ClashyError::WarLocked);
+        require!((ctx.accounts.captain_member.shares as u128) * 2 > b.shares as u128, ClashyError::NeedsMajority);
         require!(b.chest >= stake, ClashyError::ChestTooLow);
         require!(stake <= b.chest / 2, ClashyError::WarStakeTooBig);
         // only trades opened during the war count, so both clans start flat
@@ -1597,6 +1627,27 @@ pub mod clashy {
 
     /// Solana: players left with the most lives split the pot minus rake. Remaining accounts are
     /// every player's USDC token account in join order.
+    /// Rollup, anyone: a Royale whose round nobody could resolve (the crank stalled) ends VOID_GRACE_SECS after that round's
+    /// bell, with the players still on the most lives sharing the pot at settle, and goes back to Solana (audit M-H2).
+    pub fn void_tournament(ctx: Context<VoidTournament>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        {
+            let t = &mut ctx.accounts.tournament;
+            require!(t.status == tour_status::LIVE, ClashyError::WrongStatus);
+            require!(now > t.round_started_at + t.round_secs as i64 + VOID_GRACE_SECS, ClashyError::NotExpired);
+            t.status = tour_status::FINISHED;
+        }
+        ctx.accounts.tournament.exit(&crate::ID)?;
+        MagicIntentBundleBuilder::new(
+            ctx.accounts.payer.to_account_info(),
+            ctx.accounts.magic_context.to_account_info(),
+            ctx.accounts.magic_program.to_account_info(),
+        )
+        .commit_and_undelegate(&[ctx.accounts.tournament.to_account_info()])
+        .build_and_invoke()?;
+        Ok(())
+    }
+
     pub fn settle_tournament<'info>(ctx: Context<'_, '_, 'info, 'info, SettleTournament<'info>>) -> Result<()> {
         let t = &ctx.accounts.tournament;
         require!(t.status == tour_status::FINISHED, ClashyError::WrongStatus);
@@ -2086,6 +2137,8 @@ pub struct DeclareWar<'info> {
     #[account(mut, constraint = clan_a.captain == captain.key() @ ClashyError::NotCaptain)]
     pub clan_a: Box<Account<'info, Clan>>,
     pub clan_b: Box<Account<'info, Clan>>,
+    #[account(seeds = [MEMBER_SEED, clan_a.key().as_ref(), captain.key().as_ref()], bump = captain_member.bump)]
+    pub captain_member: Box<Account<'info, Member>>,
     /// CHECK: clan A's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_a.key().as_ref()], bump = clan_a.chest_bump)]
     pub chest_a: UncheckedAccount<'info>,
@@ -2111,6 +2164,8 @@ pub struct AcceptWar<'info> {
     pub clan_a: Box<Account<'info, Clan>>,
     #[account(mut, address = war.clan_b, constraint = clan_b.captain == captain.key() @ ClashyError::NotCaptain)]
     pub clan_b: Box<Account<'info, Clan>>,
+    #[account(seeds = [MEMBER_SEED, clan_b.key().as_ref(), captain.key().as_ref()], bump = captain_member.bump)]
+    pub captain_member: Box<Account<'info, Member>>,
     /// CHECK: clan B's USDC chest, checked by seeds.
     #[account(mut, seeds = [CHEST_SEED, clan_b.key().as_ref()], bump = clan_b.chest_bump)]
     pub chest_b: UncheckedAccount<'info>,
@@ -2291,6 +2346,24 @@ pub struct CallRound<'info> {
     pub player: Signer<'info>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
     pub tournament: Account<'info, Tournament>,
+}
+
+#[commit]
+#[derive(Accounts)]
+pub struct VoidTournament<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
+    pub tournament: Account<'info, Tournament>,
+}
+
+#[commit]
+#[derive(Accounts)]
+pub struct VoidDuel<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Account<'info, Duel>,
 }
 
 #[commit]

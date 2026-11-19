@@ -180,6 +180,32 @@ export type Clashy = {
           "writable": true
         },
         {
+          "name": "captainMember",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clanB"
+              },
+              {
+                "kind": "account",
+                "path": "captain"
+              }
+            ]
+          }
+        },
+        {
           "name": "chestB",
           "writable": true,
           "pda": {
@@ -1488,6 +1514,32 @@ export type Clashy = {
         },
         {
           "name": "clanB"
+        },
+        {
+          "name": "captainMember",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  109,
+                  98,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "clanA"
+              },
+              {
+                "kind": "account",
+                "path": "captain"
+              }
+            ]
+          }
         },
         {
           "name": "chestA",
@@ -5568,10 +5620,6 @@ export type Clashy = {
     },
     {
       "name": "settleTournament",
-      "docs": [
-        "Solana: players left with the most lives split the pot minus rake. Remaining accounts are",
-        "every player's USDC token account in join order."
-      ],
       "discriminator": [
         106,
         1,
@@ -6944,6 +6992,131 @@ export type Clashy = {
       ]
     },
     {
+      "name": "voidDuel",
+      "docs": [
+        "Rollup, anyone: a live duel nobody could finish (the crank stalled, or nobody checked) is voided once its bell is",
+        "VOID_GRACE_SECS past. It ends as a draw and goes back to Solana, where settle_duel refunds both stakes with no rake,",
+        "so money can never be stuck on the rollup (audit M-H2)."
+      ],
+      "discriminator": [
+        65,
+        60,
+        119,
+        158,
+        245,
+        56,
+        35,
+        216
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "magicProgram",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magicContext",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "voidTournament",
+      "docs": [
+        "Solana: players left with the most lives split the pot minus rake. Remaining accounts are",
+        "every player's USDC token account in join order.",
+        "Rollup, anyone: a Royale whose round nobody could resolve (the crank stalled) ends VOID_GRACE_SECS after that round's",
+        "bell, with the players still on the most lives sharing the pot at settle, and goes back to Solana (audit M-H2)."
+      ],
+      "discriminator": [
+        70,
+        20,
+        227,
+        159,
+        19,
+        173,
+        216,
+        152
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "magicProgram",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magicContext",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "vote",
       "docs": [
         "Votes are weighted by the member's chest shares; one vote per member per proposal."
@@ -7808,6 +7981,11 @@ export type Clashy = {
       "code": 6072,
       "name": "noShares",
       "msg": "Only members with shares in the chest can propose a trade"
+    },
+    {
+      "code": 6073,
+      "name": "needsMajority",
+      "msg": "Only a captain who holds most of the chest can stake it in a war"
     }
   ],
   "types": [
