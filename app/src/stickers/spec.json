@@ -33,7 +33,7 @@
       ["ORACLE", "🔮", "pyth oracle price"], ["DLMM", "☄️", "meteora dlmm liquidity"], ["ORDER BOOK", "🔥", "phoenix order book"], ["SAVE", "🐷", "save solend savings"],
       ["PRICE FEED", "📡", "pyth price feed"], ["LIMIT ORDER", "🎯", "jupiter limit order"], ["SHORT IT", "📉", "drift short"], ["YIELD", "🌾", "kamino yield farm"]
     ] },
-    { "id": "apps", "name": "Solana Apps", "blurb": "Phantom, Backpack, pump.fun and the gang", "cover": 1, "stickers": [
+    { "id": "apps", "drop": [3, 14, 18, 21], "name": "Solana Apps", "blurb": "Phantom, Backpack, pump.fun and the gang", "cover": 1, "stickers": [
       ["GM", "👻", "phantom ghost wallet"], ["CONNECTED", "🔌", "phantom connect wallet"], ["SIGN?", "✍️", "phantom sign transaction"], ["BOO!", "😱", "phantom ghost scare"],
       ["PACKED", "🎒", "backpack wallet"], ["LET'S GO", "🎒", "backpack go"], ["MINTED", "🖼️", "magic eden mint nft"], ["SWEEP", "🧹", "magic eden sweep floor"],
       ["FLOOR", "📈", "tensor floor nft"], ["PUMP IT", "💊", "pump.fun pill pump"], ["BONDED", "🎓", "pump.fun bonded graduated"], ["KOTH", "👑", "pump.fun king of the hill"],
