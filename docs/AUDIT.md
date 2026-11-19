@@ -116,7 +116,8 @@
 | Program unit tests (`cargo test --lib`) | **11/11** |
 | On-chain end-to-end (`tests/clashy.test.ts`: duel, challenge board, VRF, squad chest and war, Royale) | **5/5** |
 | Relay (`tests/sponsor.test.ts`, with the new compute-budget, rent-farming and wrong-address cases) | **5/5** |
-| Social server, SQLite and Postgres 16 | **4/4 each** | On-chain, the end-to-end suite runs the full duel, VRF, squad chest and wars, and Royale flows. The fixes were checked in the following ways:
+| Social server, SQLite and Postgres 16 | **4/4 each** |
+| Stuck duel voided after the grace, both refunded, no rake (`tests/void.test.ts`) | **1/1** | On-chain, the end-to-end suite runs the full duel, VRF, squad chest and wars, and Royale flows. The fixes were checked in the following ways:
 - **Crank / admin separation:** the live config moved from the admin key to the crank key through `update_config`, and the crank pushes with its own key.
 - **Relay defences:** each has a test.
 - **Pick deadlines:** checked by code review only. A deadline test would have to wait out the real 10-minute window. Add a clock-warp test in the program unit tests before mainnet.
