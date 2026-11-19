@@ -66,7 +66,7 @@ SPONSOR=.keys/local-sponsor.json
 
 if up "$BASE_PORT"; then echo "base already up on :$BASE_PORT"; else
   echo "starting base on :$BASE_PORT"
-  mb-test-validator --rpc-port "$BASE_PORT" --ledger "$DIR/ledger" --faucet-port 9898 \
+  mb-test-validator --rpc-port "$BASE_PORT" --ledger "$DIR/ledger" --faucet-port 9898 --gossip-port 18000 --dynamic-port-range 18001-18060 \
     --limit-ledger-size 5000000 ${EXTRA[@]+"${EXTRA[@]}"} >"$DIR/base.log" 2>&1 &
   wait_rpc "$BASE_PORT" base
 fi
