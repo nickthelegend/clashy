@@ -126,3 +126,21 @@ export const Star = ({ size, color = '#fff', stroke = 2, fill = 'none' }: P & { 
     <Path d="m12 3.2 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.6l6-.9z" />
   </Svg>
 );
+export const Clip = ({ size, color = '#fff', stroke = 2 }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="m20.2 11.4-8 8a5.2 5.2 0 0 1-7.4-7.4l8.4-8.4a3.5 3.5 0 0 1 4.9 4.9l-8.4 8.4a1.7 1.7 0 0 1-2.5-2.5l7.7-7.6" />
+  </Svg>
+);
+/** The send arrow: a paper plane, filled. */
+export const Plane = ({ size, color = '#fff' }: P) => (
+  <Svg {...base(size)} fill={color} stroke="none"><Path d="M3.4 20.4 21 12 3.4 3.6l.1 6.6L15 12 3.5 13.8z" /></Svg>
+);
+/** Read receipts: one check when sent, two when they've read it. */
+export const Ticks = ({ size = 16, color = '#fff', double }: P & { double?: boolean }) => (
+  <Svg width={size * 1.15} height={size} viewBox="0 0 18 16" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    {double ? <><Path d="m1.6 8.6 3.4 3.4 7-8" /><Path d="m7.6 11.4.6.6 7-8" /></> : <Path d="m3.6 8.6 3.4 3.4 7-8" />}
+  </Svg>
+);
+export const ReplyArrow = ({ size = 18, color = '#fff' }: P) => (
+  <Svg {...base(size)} stroke={color} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round"><Path d="M9 14 4 9l5-5" /><Path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Svg>
+);

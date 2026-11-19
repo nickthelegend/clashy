@@ -22,10 +22,32 @@ export const stickerBody = (s: Sticker) => STICKER_TAG + s.id;
 export const stickerOf = (body: string | undefined | null): Sticker | null =>
   body && body.startsWith(STICKER_TAG) ? BY_ID.get(body.slice(STICKER_TAG.length).trim()) ?? null : null;
 export const isStickerBody = (body: string | undefined | null) => !!body && body.startsWith(STICKER_TAG);
+// Replies and reactions ride in ordinary messages too, so they work in DMs and in on-chain squad channels alike:
+//   a reply:    "⁣re:<message id>⁣" + the reply (text or a sticker token)
+//   a reaction: "⁣rx:<message id>:<emoji>" (an empty emoji takes yours back); the thread folds these onto the
+//               message they point at instead of showing them as messages.
+const SEP = '⁣';
+export const replyBody = (to: number, body: string) => `${SEP}re:${to}${SEP}${body}`;
+export const reactBody = (to: number, emoji: string) => `${SEP}rx:${to}:${emoji}`;
+export type Parsed = { text: string; reply?: number; react?: { to: number; emoji: string } };
+export function parseBody(body: string): Parsed {
+  if (body.startsWith(`${SEP}rx:`)) {
+    const m = body.match(/^⁣rx:(\d+):(.*)$/su);
+    if (m) return { text: '', react: { to: Number(m[1]), emoji: m[2].trim() } };
+  }
+  if (body.startsWith(`${SEP}re:`)) {
+    const m = body.match(/^⁣re:(\d+)⁣(.*)$/su);
+    if (m) return { text: m[2], reply: Number(m[1]) };
+  }
+  return { text: body };
+}
+
 /** One line for chat lists and notifications: "😏 Sticker" instead of the raw token. */
-export const previewText = (body: string) => {
-  if (!isStickerBody(body)) return body;
-  const s = stickerOf(body);
+export const previewText = (body: string): string => {
+  const p = parseBody(body);
+  if (p.react) return p.react.emoji ? `Reacted ${p.react.emoji} to a message` : 'Removed a reaction';
+  if (!isStickerBody(p.text)) return p.text;
+  const s = stickerOf(p.text);
   return s ? `${s.emoji} Sticker` : 'Sticker';
 };
 

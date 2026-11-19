@@ -5,10 +5,11 @@
 //             a big preview (send, favourite). A search box at the top of the grid finds stickers by word, tag or emoji.
 //   Emoji:    the same frame with a category strip; tap inserts into the message, ⌫ deletes the last emoji.
 // The bottom bar switches tabs. Every pick is remembered per device (recents) so the next chat starts with them.
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FlatList, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, type LayoutChangeEvent } from 'react-native';
+import { FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
 import {
   EMOJI_GROUPS, PACKS, packOf, rememberEmoji, rememberSticker, searchEmoji, searchStickers, toggleFav, useStickerMemory, type Sticker,
@@ -18,7 +19,7 @@ import { Txt } from './kit';
 import { C, F, FONT } from './tokens';
 
 export type KbTab = 'emoji' | 'stickers';
-const PANEL_BG = '#0D0D11';
+const PANEL_BG = '#0D0D12';
 const CHIP = '#1B1A22';
 const HEAD_H = 34;
 
@@ -90,7 +91,7 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 
 function Strip({ children }: { children: ReactNode }) {
   return (
-    <View style={{ height: 50, borderBottomWidth: 1, borderBottomColor: '#18181E' }}>
+    <View style={{ height: 54, borderBottomWidth: 1, borderBottomColor: '#18181E' }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 6, alignItems: 'center', gap: 2 }}>{children}</ScrollView>
     </View>
   );
@@ -98,8 +99,9 @@ function Strip({ children }: { children: ReactNode }) {
 function StripBtn({ on, onPress, label, children }: { on: boolean; onPress: () => void; label: string; children: ReactNode }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: on }}
-      style={({ pressed }) => ({ width: 44, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? '#262431' : pressed ? '#1C1B23' : 'transparent' })}>
+      style={({ pressed }) => ({ width: 46, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? '#25232F' : pressed ? '#1C1B23' : 'transparent', transform: [{ scale: pressed ? 0.92 : 1 }] })}>
       {children}
+      {on ? <View style={{ position: 'absolute', bottom: -4, width: 16, height: 3, borderRadius: 2, backgroundColor: C.brand }} /> : null}
     </Pressable>
   );
 }
@@ -153,7 +155,7 @@ function StickerTab({ width, onSticker }: { width: number; onSticker: (s: Sticke
         <StripBtn on={active === 'recent'} onPress={() => (mem.recent.length ? jump('recent') : jump(PACKS[0]?.id ?? ''))} label="Recently used"><Clock size={21} color={active === 'recent' ? C.ink : C.muted} /></StripBtn>
         {PACKS.map((p) => (
           <StripBtn key={p.id} on={active === p.id} onPress={() => jump(p.id)} label={`${p.name} pack`}>
-            <Image source={p.cover} style={{ width: 32, height: 32 }} contentFit="contain" />
+            <Image source={p.cover} style={{ width: 34, height: 34 }} contentFit="contain" />
           </StripBtn>
         ))}
       </Strip>
@@ -193,8 +195,10 @@ export function StickerPeek({ s, onClose, onSend, fav }: { s: Sticker | null; on
   return (
     <Modal visible={!!s} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       {s ? (
-        <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)} style={{ flex: 1, backgroundColor: 'rgba(4,4,8,0.82)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <Pressable style={{ position: 'absolute', inset: 0 }} onPress={onClose} accessibilityLabel="Close preview" />
+        <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(4,4,8,0.45)' }]} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close preview" />
           <Text style={{ fontSize: 30, marginBottom: 6 }}>{s.emoji}</Text>
           <Animated.View entering={ZoomIn.springify().damping(13).stiffness(220)}>
             <Image source={s.src} style={{ width: 260, height: 260 }} contentFit="contain" accessibilityLabel={`${s.word} sticker`} />

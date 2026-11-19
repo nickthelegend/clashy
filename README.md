@@ -27,6 +27,12 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
     (Clashy, Perps, Solana, Solana DeFi, Solana Apps, MagicBlock, BONK, dogwifhat, Meme Zoo, Supercycle). It has
     search, recents, favourites, a long-press preview and sticker suggestions as you type. Emoji-only messages show big.
     Live taunts in a clash go to your rival in real time.
+  - **Chat:** WhatsApp-style threads in DMs and squad channels. Bubbles have tails, with the time and read ticks
+    inside. A faint Clashy doodle wallpaper sits behind them. Swipe a message to reply. Long-press it over a
+    blurred chat for six quick reactions (or any emoji), Reply, Copy and the author's profile. A scroll-to-bottom
+    button counts new messages. The composer has an emoji key, 📎 shortcuts (Clash, Stickers, Emoji, Profile or
+    the squad page), a field that grows as you type, and a round send button that is a quick 🔥 when empty.
+    Replies and reactions are ordinary messages underneath, so squad ones are on chain too.
   - **Squads:** a squad podium, and squad search in the search drawer.
   - **Art:** Lottie onboarding and a squad war scene.
   - **Backend:** the social server ([server/](server/)) and the whole backend in Docker

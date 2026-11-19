@@ -8,7 +8,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -21,21 +21,16 @@ import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { Swords } from '@/ui/icons';
 import { ChatComposer } from '@/ui/chat-composer';
-import { JumboEmoji, PackSheet, StickerMsg, useFreshSince } from '@/ui/chat-bits';
-import { jumboCount, stickerBody, stickerOf, type Sticker } from '@/stickers';
+import { PackSheet } from '@/ui/chat-bits';
+import { ChatThread, type CMsg, type ReplyTo } from '@/ui/chat-thread';
+import { Shield } from '@/ui/icons';
+import { reactBody, replyBody, stickerBody, type Sticker } from '@/stickers';
 import { useDeskColumn } from '@/ui/layout';
-import { CARD, GOLD, HAIR, crestSrc } from '@/ui/squads/parts';
+import { CARD, HAIR, crestSrc } from '@/ui/squads/parts';
 import { C, FONT } from '@/ui/tokens';
 
 const STAKE = 5;
 const time = (ts: number) => new Date(ts * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-const dayKey = (ts: number) => new Date(ts * 1000).toDateString();
-const dayLabel = (ts: number) => {
-  const d = new Date(ts * 1000);
-  const today = new Date();
-  const y = new Date(); y.setDate(today.getDate() - 1);
-  return d.toDateString() === today.toDateString() ? 'Today' : d.toDateString() === y.toDateString() ? 'Yesterday' : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-};
 
 function ChallengeCard({ m, mine, onAccept }: { m: ChatMsg; mine: boolean; onAccept: () => void }) {
   const duel = usePoll(() => readDuel(reader, m.refkey), 4000, [m.refkey.toBase58()]);
@@ -78,10 +73,10 @@ export default function ClanChat() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string>();
-  const scroll = useRef<{ scrollToEnd: (o?: { animated?: boolean }) => void } | null>(null);
+  const [reply, setReply] = useState<ReplyTo | null>(null);
   const msgs = chat.status === 'ready' && chat.data ? chat.data.msgs : [];
   const count = chat.status === 'ready' && chat.data ? chat.data.count : 0;
-  useEffect(() => { setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 60); }, [msgs.length, ch]);
+  useEffect(() => { setReply(null); }, [ck, ch]);
   // this device has now seen every message in the channel (drives the unread badges in the Squads rail)
   useEffect(() => { if (clan && chat.status === 'ready') markSeen(clan, ch, count); }, [ck, ch, count, chat.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const st = state.status === 'ready' ? state.data : 'none';
@@ -102,20 +97,34 @@ export default function ClanChat() {
   });
   const say = (body: string, kind = 0, ref = PublicKey.default) => onEr(kind === 1 ? 'Post a challenge' : 'Message', progs!.er.methods.postMessage(body, kind, ref)
     .accountsPartial({ author: me!, channel: P.channel(clan!, ch), member: P.member(clan!, me!) }));
-  const send = run('send', async () => {
-    const body = text.trim();
-    if (!body) return;
+  // every message is one on-chain post (120 bytes); a reply carries a short link to the message it answers
+  const post = (raw: string, after?: () => void) => run('send', async () => {
+    if (!raw) return;
     if (!progs || !me || !clan) throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
-    if (new TextEncoder().encode(body).length > 120) throw new Error('120 bytes at most');
+    const body = reply && !raw.startsWith('\u2063rx:') ? replyBody(reply.id, raw) : raw;
+    if (new TextEncoder().encode(body).length > 120) throw new Error(reply ? 'Too long for a reply: squad messages are 120 bytes, and the reply link takes about 12' : '120 bytes at most');
     await say(body);
-    setText('');
-  });
-  const [pack, setPack] = useState<string | null>(null);
-  const fresh = useFreshSince();
-  const sendSticker = (s: Sticker) => run('send', async () => {
-    if (!progs || !me || !clan) throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
-    await say(stickerBody(s));
+    after?.();
   })();
+  const send = () => post(text.trim(), () => { setText(''); setReply(null); });
+  const [pack, setPack] = useState<string | null>(null);
+  const sendSticker = (s: Sticker) => post(stickerBody(s), () => setReply(null));
+  const quick = () => post('🔥', () => setReply(null));
+  const react = (to: number, emoji: string) => run('react', async () => {
+    if (!progs || !me || !clan) throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
+    await say(reactBody(to, emoji));
+  })();
+  const items: CMsg[] = useMemo(() => msgs.map((m) => ({ id: m.i, author: m.author.toBase58(), at: m.ts * 1000, body: m.text, kind: m.kind })), [msgs]);
+  const who = (a: string) => {
+    const p = prof.get(a);
+    const capt = !!s?.captain && s.captain.toBase58() === a;
+    return {
+      name: p?.name ?? short(a),
+      badge: capt ? <Image source={ART.crown} style={{ width: 13, height: 13 }} contentFit="contain" /> : undefined,
+      avatar: <ProfileAvatar p={p} size={30} />,
+      onPress: () => router.push(`/u/${a}` as Href),
+    };
+  };
   const challenge = run('challenge', async () => {
     if (!me || !progs || !sponsor) throw new Error("Clashy's payment relay is offline, so nothing can be sent right now. Try again in a minute.");
     const nonce = Date.now();
@@ -153,12 +162,16 @@ export default function ClanChat() {
               {s ? <Image source={crestSrc(s.crest)} style={{ width: 46, height: 46 }} contentFit="contain" /> : null}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Txt v="label" lines={1} style={{ fontSize: 17, ...FONT.bold }}>{s ? s.name : myClan.status === 'ready' && !clan ? 'No squad' : 'Loading…'}</Txt>
-                <Txt v="small" style={{ fontSize: 12 }} lines={1}>{s ? `${s.members.length} member${s.members.length === 1 ? '' : 's'} · #${chName}` : ' '}</Txt>
-              </View>
-              {st === 'live' ? (
-                <Row style={{ gap: 5, backgroundColor: 'rgba(48,209,88,0.14)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.up }} /><Txt v="small" color={C.up} style={{ fontSize: 11.5, ...FONT.semi }}>Live</Txt>
+                <Row style={{ gap: 5 }}>
+                  {st === 'live' ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.up }} accessibilityLabel="Live on the rollup" /> : null}
+                  <Txt v="small" style={{ fontSize: 12, flexShrink: 1 }} lines={1}>{s ? `${st === 'live' ? 'Live · ' : ''}${s.members.length} member${s.members.length === 1 ? '' : 's'} · #${chName}` : ' '}</Txt>
                 </Row>
+              </View>
+              {st === 'live' && !notMember && clan ? (
+                <Pressable onPress={challenge} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
+                  style={({ pressed }) => ({ height: 34, paddingHorizontal: 11, borderRadius: 17, backgroundColor: 'rgba(240,70,140,0.18)', flexDirection: 'row', alignItems: 'center', gap: 5, opacity: busy && busy !== 'challenge' ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                  <Swords size={14} color={C.opp} /><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
+                </Pressable>
               ) : null}
             </Row>
             {clan ? (
@@ -174,90 +187,55 @@ export default function ClanChat() {
           </LinearGradient>
         </View>
 
-        <ScrollView ref={scroll as never} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
-          {myClan.status === 'ready' && !clan ? (
-            <Empty title="Join a squad to chat" body="Every squad has #general and #trades, live on the MagicBlock rollup." action="Find a squad" onAction={() => router.replace('/squads/discover' as Href)} />
-          ) : notMember ? (
-            <Empty title="You're not in this squad" body="Only members can read and post here. Join it from Discover: it's free." action="Open Discover" onAction={() => router.replace('/squads/discover' as Href)} />
-          ) : state.status === 'loading' || myClan.status === 'loading' ? (
-            <Txt v="small" style={{ textAlign: 'center', marginTop: 30 }}>Loading #{chName}…</Txt>
-          ) : st !== 'live' ? (
-            <Empty title={`#${chName} isn't open yet`} body="Open it once for the squad: it moves onto the MagicBlock rollup, where every message is instant and free."
-              action={busy === 'open' ? 'Opening…' : `Open #${chName}`} disabled={!!busy || state.status !== 'ready' || !me} onAction={openChannel} />
-          ) : (
-            <>
-              <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 14 }}>
+        {st === 'live' && !notMember && clan && !(myClan.status === 'ready' && !clan) ? (
+          <ChatThread msgs={items} me={me?.toBase58()} group who={who} onReply={setReply} onReact={react} onPack={setPack}
+            special={(m, mine) => (m.kind === 1 ? (() => {
+              const raw = msgs.find((x) => x.i === m.id);
+              if (!raw) return null;
+              return (
+                <View style={{ marginTop: 10 }}>
+                  <Row style={{ gap: 8, paddingLeft: 6, justifyContent: 'center' }}>
+                    <Swords size={13} color={C.opp} />
+                    <Txt v="small" style={{ fontSize: 12.5 }}><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{who(m.author).name}</Txt> posted a clash challenge · {time(raw.ts)}</Txt>
+                  </Row>
+                  <View style={{ marginTop: 6, alignSelf: mine ? 'flex-end' : 'flex-start', width: '86%' }}><ChallengeCard m={raw} mine={mine} onAccept={accept} /></View>
+                </View>
+              );
+            })() : null)}
+            top={(
+              <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 8 }}>
                 {s ? <Image source={crestSrc(s.crest)} style={{ width: 72, height: 72 }} contentFit="contain" /> : null}
                 <Txt v="title" style={{ ...FONT.display, fontSize: 21, marginTop: 6, textAlign: 'center' }}>Welcome to #{chName}</Txt>
-                <Txt v="small" style={{ marginTop: 3, lineHeight: 18, textAlign: 'center' }}>{CHANNELS.find((c) => c.id === ch)?.blurb ?? ''}. Live on the MagicBlock rollup.{count > msgs.length ? ` Latest ${msgs.length} of ${count}.` : ''}</Txt>
+                <View style={{ marginTop: 8, backgroundColor: 'rgba(28,27,36,0.92)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7, maxWidth: 340 }}>
+                  <Txt v="small" style={{ lineHeight: 17, textAlign: 'center', fontSize: 12.5 }}>{CHANNELS.find((c) => c.id === ch)?.blurb ?? ''}. Live on the MagicBlock rollup: every message, sticker and reaction is on chain.{count > msgs.length ? ` Latest ${msgs.length} of ${count}.` : ''}</Txt>
+                </View>
+                {msgs.length === 0 ? <Txt v="small" style={{ marginTop: 10 }}>No messages yet. Say gm, or send a clash challenge from 📎.</Txt> : null}
               </View>
-              {msgs.length === 0 ? <Txt v="small" style={{ marginTop: 8 }}>No messages yet. Say gm, or tap Clash to challenge the squad.</Txt> : msgs.map((m, i) => {
-                const p = prof.get(m.author.toBase58());
-                const prev = msgs[i - 1];
-                const newDay = !prev || dayKey(prev.ts) !== dayKey(m.ts);
-                const grouped = !newDay && !!prev && prev.author.equals(m.author) && m.ts - prev.ts < 300 && prev.kind === 0 && m.kind === 0;
-                const capt = !!s?.captain.equals(m.author);
-                return (
-                  <View key={m.i}>
-                    {newDay ? (
-                      <Row style={{ gap: 10, marginVertical: 12 }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#1C1C23' }} />
-                        <Txt v="small" color={C.dim} style={{ fontSize: 11, ...FONT.semi }}>{dayLabel(m.ts)}</Txt>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#1C1C23' }} />
-                      </Row>
-                    ) : null}
-                    {m.kind === 1 ? (
-                      <Row style={{ gap: 8, marginTop: 10, paddingLeft: 6 }}>
-                        <Swords size={13} color={C.opp} />
-                        <Txt v="small" style={{ flex: 1, fontSize: 12.5 }}><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{p?.name ?? short(m.author.toBase58())}</Txt> posted a clash challenge · {time(m.ts)}</Txt>
-                      </Row>
-                    ) : null}
-                    {(() => {
-                      const mine = !!me && m.author.equals(me);
-                      if (m.kind === 1) return <View style={{ marginTop: 6, alignSelf: mine ? 'flex-end' : 'flex-start', width: '86%' }}><ChallengeCard m={m} mine={mine} onAccept={accept} /></View>;
-                      const stk = stickerOf(m.text);
-                      const jumbo = stk ? 0 : jumboCount(m.text);
-                      return (
-                        <Row style={{ gap: 8, alignItems: 'flex-end', marginTop: grouped ? 3 : 12, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
-                          {mine ? null : grouped ? <View style={{ width: 34 }} /> : <Pressable onPress={() => router.push(`/u/${m.author.toBase58()}` as Href)}><ProfileAvatar p={p} size={34} /></Pressable>}
-                          <View style={{ maxWidth: '78%' }}>
-                            {grouped || mine ? null : (
-                              <Row style={{ gap: 5, marginBottom: 3, marginLeft: 4 }}>
-                                <Txt v="small" color={capt ? GOLD : C.brandSoft} style={{ fontSize: 12.5, ...FONT.semi }}>{p?.name ?? short(m.author.toBase58())}</Txt>
-                                {capt ? <Image source={ART.crown} style={{ width: 13, height: 13 }} contentFit="contain" /> : null}
-                              </Row>
-                            )}
-                            {stk ? <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}><StickerMsg s={stk} mine={mine} fresh={fresh(m.ts * 1000)} onPress={() => setPack(stk.pack)} /></View>
-                              : jumbo ? <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}><JumboEmoji text={m.text.trim()} n={jumbo} fresh={fresh(m.ts * 1000)} /></View>
-                                : (
-                                  <View style={{ backgroundColor: mine ? C.brand : '#1A1A22', borderRadius: 20, borderBottomRightRadius: mine ? 6 : 20, borderBottomLeftRadius: mine ? 20 : 6, paddingHorizontal: 14, paddingVertical: 9 }}>
-                                    <Txt v="body" color={mine ? C.onBrand : '#E6E6EC'} style={{ fontSize: 15, lineHeight: 21 }}>{m.text}</Txt>
-                                  </View>
-                                )}
-                            {i === msgs.length - 1 || !msgs[i + 1].author.equals(m.author) || msgs[i + 1].ts - m.ts >= 300 ? (
-                              <Txt v="small" color={C.dim} style={{ fontSize: 10.5, marginTop: 3, textAlign: mine ? 'right' : 'left', marginHorizontal: 6 }}>{time(m.ts)}</Txt>
-                            ) : null}
-                          </View>
-                        </Row>
-                      );
-                    })()}
-                  </View>
-                );
-              })}
-            </>
-          )}
-          {chat.status === 'error' ? <ErrorLine msg={chat.error} onRetry={chat.reload} /> : null}
-        </ScrollView>
+            )}
+            footer={chat.status === 'error' ? <ErrorLine msg={chat.error} onRetry={chat.reload} /> : null} />
+        ) : (
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
+            {myClan.status === 'ready' && !clan ? (
+              <Empty title="Join a squad to chat" body="Every squad has #general and #trades, live on the MagicBlock rollup." action="Find a squad" onAction={() => router.replace('/squads/discover' as Href)} />
+            ) : notMember ? (
+              <Empty title="You're not in this squad" body="Only members can read and post here. Join it from Discover: it's free." action="Open Discover" onAction={() => router.replace('/squads/discover' as Href)} />
+            ) : state.status === 'loading' || myClan.status === 'loading' ? (
+              <Txt v="small" style={{ textAlign: 'center', marginTop: 30 }}>Loading #{chName}…</Txt>
+            ) : (
+              <Empty title={`#${chName} isn't open yet`} body="Open it once for the squad: it moves onto the MagicBlock rollup, where every message is instant and free."
+                action={busy === 'open' ? 'Opening…' : `Open #${chName}`} disabled={!!busy || state.status !== 'ready' || !me} onAction={openChannel} />
+            )}
+            {chat.status === 'error' ? <ErrorLine msg={chat.error} onRetry={chat.reload} /> : null}
+          </ScrollView>
+        )}
         {err ? <View style={{ paddingHorizontal: 14 }}><ErrorLine msg={err} /></View> : null}
         {st === 'live' && !notMember && clan ? (
-          <ChatComposer value={text} onChange={setText} onSend={send} onSticker={sendSticker} placeholder={`Message #${chName}`} maxLength={120} busy={!!busy}
-            left={(
-              <Pressable onPress={challenge} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
-                style={({ pressed }) => ({ height: 46, paddingHorizontal: 12, borderRadius: 23, backgroundColor: pressed ? '#2A2A33' : '#1C1C23', flexDirection: 'row', alignItems: 'center', gap: 6, opacity: busy && busy !== 'challenge' ? 0.5 : 1 })}>
-                <Swords size={15} color={C.opp} />
-                <Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 13 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
-              </Pressable>
-            )} />
+          <ChatComposer value={text} onChange={setText} onSend={send} onSticker={sendSticker} onQuick={quick} placeholder={`Message #${chName}`} maxLength={120} busy={!!busy}
+            reply={reply} onCancelReply={() => setReply(null)}
+            attach={[
+              { key: 'clash', label: busy === 'challenge' ? 'Posting…' : `Clash · ${STAKE} USDC`, color: '#F0468C', icon: <Swords size={24} color="#fff" />, onPress: challenge },
+              { key: 'squad', label: 'Squad page', color: '#3A8DFF', icon: <Shield size={24} color="#fff" />, onPress: () => router.push(`/squad/${ck}` as Href) },
+            ]} />
         ) : null}
       </View>
       <PackSheet packId={pack} onClose={() => setPack(null)} onSend={st === 'live' && !notMember && clan ? sendSticker : undefined} />
