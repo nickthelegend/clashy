@@ -28,6 +28,7 @@ import { CreateSquadSheet } from '@/ui/squads/sheets';
 import { useCreate } from '@/ui/create';
 import { C, F, FONT } from '@/ui/tokens';
 import { previewText } from '@/stickers';
+import { TourTarget } from '@/tour';
 
 const RAIL = 72;
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
@@ -118,6 +119,7 @@ export default function Squads() {
         {/* rail: every squad I'm in, then discover and create */}
         <View style={{ width: RAIL, backgroundColor: '#07070A', borderRightWidth: 1, borderRightColor: '#16161C' }}>
           <ScrollView contentContainerStyle={{ alignItems: 'center', paddingTop: 10, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+            <TourTarget id="squads-rail" style={{ alignItems: 'center', alignSelf: 'stretch' }}>
             {loading ? [0, 1].map((i) => <Bone key={i} w={48} h={48} r={24} style={{ marginVertical: 3 }} />) : null}
             {squads.map((q) => (
               <RailIcon key={q.key.toBase58()} crest={q.crest} label={q.name} selected={!!clanKey && q.key.equals(clanKey)} unread={unreadOf(q.key)} onPress={() => pick(q.key)} />
@@ -125,6 +127,7 @@ export default function Squads() {
             {squads.length ? <View style={{ width: 30, height: 2, borderRadius: 1, backgroundColor: '#24242C', marginVertical: 8 }} /> : null}
             <RailButton glyph="✦" label="Find other squads" onPress={() => openSearch('squads')} />
             <RailButton glyph="+" label="Start a squad" onPress={() => (me ? setCreating(true) : wallet.login?.())} />
+            </TourTarget>
           </ScrollView>
         </View>
 
@@ -132,11 +135,11 @@ export default function Squads() {
           {loading ? (
             <View><Bone w="100%" h={240} r={20} /><View style={{ height: 14 }} /><SkeletonRows n={4} square /></View>
           ) : none ? (
-            <EmptySquads signedOut={!me} onLogin={() => wallet.login?.()} onCreate={() => setCreating(true)} />
+            <TourTarget id="squads-empty"><EmptySquads signedOut={!me} onLogin={() => wallet.login?.()} onCreate={() => setCreating(true)} /></TourTarget>
           ) : current ? (
             <>
               {/* server banner */}
-              <View style={{ borderRadius: 20, backgroundColor: CARD }}>
+              <TourTarget id="squads-main" style={{ borderRadius: 20, backgroundColor: CARD }}>
                 <SquadBanner crest={current.crest} height={120}><ClayLoop name="clanCity" width="100%" height={120} cover /></SquadBanner>
                 <View style={{ paddingHorizontal: 14, paddingTop: 32, paddingBottom: 14 }}>
                   <Row style={{ gap: 8 }}>
@@ -169,7 +172,7 @@ export default function Squads() {
                     <Tile art={ART.cupBig} label="Cup" sub={cupLeft()} onPress={() => router.push('/cup' as Href)} />
                   </Row>
                 </View>
-              </View>
+              </TourTarget>
 
               <Group title="CHALLENGES" />
               <Channel name="clashes" glyph={(c) => <Swords size={14} color={c} />} badge={openDuels.length ? `${openDuels.length} open` : undefined} live={liveDuels.length > 0} unread={openDuels.length > 0}

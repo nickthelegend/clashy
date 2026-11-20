@@ -20,6 +20,7 @@ import { useDeskColumn } from '@/ui/layout';
 import { Sheet } from '@/ui/sheet';
 import { C, FONT, S } from '@/ui/tokens';
 import { previewText } from '@/stickers';
+import { TourTarget } from '@/tour';
 
 type Tab = 'messages' | 'notifications' | 'requests';
 const short = (s: string) => `${s.slice(0, 4)}…${s.slice(-4)}`;
@@ -63,20 +64,22 @@ export default function Chats() {
           <Txt v="title">Chats</Txt>
           <Row style={{ gap: 8 }}>
             <IconBtn size={40} onPress={() => setSearching((s) => !s)}><Search size={18} color={C.ink} /></IconBtn>
+            <TourTarget id="chats-new">
             <Pressable onPress={() => (me ? setComposing(true) : chain.wallet.login?.())} accessibilityRole="button" accessibilityLabel="New message"
               style={({ pressed }) => ({ height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: C.brand, flexDirection: 'row', alignItems: 'center', gap: 6, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
               <Plus size={16} color={C.onBrand} /><Txt v="label" color={C.onBrand} style={{ fontSize: 14 }}>New</Txt>
             </Pressable>
+            </TourTarget>
           </Row>
         </Row>
         {searching ? <View style={{ marginBottom: 12 }}><SearchBar value={q} onChange={setQ} placeholder="Search your messages" /></View> : null}
 
         {!me ? (
-          <Pending art={ART.emptyChats} title="Sign in to chat" body="Message any player, see who followed you, and answer follow requests." action="Sign in" onAction={() => chain.wallet.login?.()} />
+          <TourTarget id="chats-signin"><Pending art={ART.emptyChats} title="Sign in to chat" body="Message any player, see who followed you, and answer follow requests." action="Sign in" onAction={() => chain.wallet.login?.()} /></TourTarget>
         ) : (
           <>
-            <SquadStrip me={me} />
-            <View style={{ marginTop: 16 }}><UnderTabsWide items={tabs} value={tab} onChange={openTab} /></View>
+            <TourTarget id="chats-squads"><SquadStrip me={me} /></TourTarget>
+            <TourTarget id="chats-tabs" style={{ marginTop: 16 }}><UnderTabsWide items={tabs} value={tab} onChange={openTab} /></TourTarget>
             {inbox.error && !inbox.data ? <ErrorLine msg={inbox.error} onRetry={inbox.reload} />
               : inbox.loading && !inbox.data ? <SkeletonRows n={5} />
                 : tab === 'messages' ? (

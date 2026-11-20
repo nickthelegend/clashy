@@ -6,7 +6,7 @@
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { useCreate } from './create';
 import { ProfileAvatar } from './feed';
 import { BackBtn, Bone, ErrorLine, LiveDot, Row, STICKERS, Txt } from './kit';
 import { useDeskColumn } from './layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { VenueChip } from './orderbook';
 import { BarBtn, CARD, CloseSheet, HAIR, MarketLogo, PaperBadge, tradeOf } from './practice-kit';
 import { TradeChart } from './trade-chart';
@@ -93,10 +94,13 @@ export function TradeDetail({ v }: { v: TradeView }) {
   const copyHref = `/practice/${m.id}?copy=${t.side}&lev=${t.lev}&amt=${t.margin}${name && !mine ? `&who=${encodeURIComponent(name)}` : ''}` as Href;
   const share = () => mine && openCall(null, { marketId: m.id, trade: tradeOf(mine) });
   const barH = 54 + 12 + insets.bottom + 10;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('trade');
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
+        <TourScroll value={ts.scroller}>
         {/* the market */}
         <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
@@ -113,7 +117,8 @@ export function TradeDetail({ v }: { v: TradeView }) {
         </Row>
 
         {/* the result */}
-        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 16 }}>
+        <TourTarget id="trade-result" style={{ marginTop: 16 }}>
+        <Animated.View entering={FadeInDown.duration(320)}>
           <LinearGradient colors={[pnl === undefined ? '#15151B' : pnl >= 0 ? 'rgba(48,209,88,0.16)' : 'rgba(255,69,58,0.15)', '#0E0E12']} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }}
             style={{ borderRadius: 26, padding: 16, overflow: 'hidden' }}>
             <Row style={{ gap: 8 }}>
@@ -136,10 +141,12 @@ export function TradeDetail({ v }: { v: TradeView }) {
             {stick ? <Image source={sticker(stick)} style={{ position: 'absolute', right: 10, top: 10, width: 74, height: 74, transform: [{ rotate: '8deg' }] }} contentFit="contain" accessibilityLabel={stick} /> : null}
           </LinearGradient>
         </Animated.View>
+        </TourTarget>
         {pxErr && open ? <ErrorLine msg={pxErr} /> : null}
 
         {/* the chart */}
-        <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 12, paddingTop: 14, marginTop: 12 }}>
+        <TourTarget id="trade-chart" style={{ marginTop: 12 }}>
+        <View style={{ backgroundColor: CARD, borderRadius: 24, padding: 12, paddingTop: 14 }}>
           <Row style={{ justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 2 }}>
             <Txt v="label">On the chart</Txt>
             {chart.data ? <Txt v="small" style={{ fontSize: 12 }}>{chart.data.tf} candles · {held((chart.data.to - chart.data.from) + CHART_TF_MS[chart.data.tf])}</Txt> : null}
@@ -164,9 +171,11 @@ export function TradeDetail({ v }: { v: TradeView }) {
           ) : null}
           {chart.data ? <Txt v="small" color={C.dim} style={{ fontSize: 11, marginTop: 6, paddingHorizontal: 2 }} lines={2}>{chart.data.source}</Txt> : null}
         </View>
+        </TourTarget>
 
         {/* the details */}
-        <View style={{ backgroundColor: CARD, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 4, marginTop: 12 }}>
+        <TourTarget id="trade-details" style={{ marginTop: 12 }}>
+        <View style={{ backgroundColor: CARD, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 4 }}>
           <Item k="Entry price" v={fmtPrice(t.entry)} />
           {t.exit ? <Item k={liquidated ? 'Liquidated at' : 'Exit price'} v={fmtPrice(t.exit)} color={liquidated ? C.down : undefined} />
             : <Item k={isBookVenue(venue) ? 'Mark price' : 'Live price'} v={now !== undefined ? fmtPrice(now) : '…'} />}
@@ -180,6 +189,7 @@ export function TradeDetail({ v }: { v: TradeView }) {
           {mine ? <Item k="Fees" v={feesOf(mine)} /> : <Item k="Fees" v={net ? 'In the profit (author’s book)' : 'Not included'} />}
           <Item k="Where" v={perp ? VENUES[venue].name : 'Jupiter price, spot'} last />
         </View>
+        </TourTarget>
 
         {/* who posted it */}
         {post ? (
@@ -202,11 +212,13 @@ export function TradeDetail({ v }: { v: TradeView }) {
         <Txt v="small" style={{ marginTop: 18, lineHeight: 18, textAlign: 'center' }}>
           Practice trade · paper money.{post && !mine ? ' Posted from its author’s Practice book on their device, not checked on chain.' : ''}{myOpen ? '' : ' Copying opens the same side and leverage at today’s price.'}
         </Txt>
+        </TourScroll>
       </ScrollView>
 
       {/* actions */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 12, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
-        <View style={[{ flexDirection: 'row', gap: 8 }, col]}>
+        <TourTarget id="trade-actions" style={col}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           {myOpen ? (
             <>
               <BarBtn title="Share" bg={C.brand} fg={C.onBrand} onPress={share} />
@@ -224,6 +236,7 @@ export function TradeDetail({ v }: { v: TradeView }) {
             </>
           )}
         </View>
+        </TourTarget>
       </View>
       {myOpen ? <CloseSheet p={closing} px={closing ? px : undefined} pr={pr} onClose={() => setClosing(null)} /> : null}
     </View>

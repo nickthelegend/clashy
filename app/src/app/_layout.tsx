@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClashyWallet } from '@/chain/wallet';
+import { TourOverlay } from '@/tour';
 import { CreateProvider } from '@/ui/create';
 import { C } from '@/ui/tokens';
 
@@ -81,6 +82,7 @@ export default function Root() {
           <Stack.Screen name="dm/[peer]" />
           <Stack.Screen name="edit-profile" />
         </Stack>
+        <TourOverlay />
         </CreateProvider>
       </ThemeProvider>
       </ClashyWallet>

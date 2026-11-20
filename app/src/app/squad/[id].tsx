@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, Share as RNShare, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { Share, Swords } from '@/ui/icons';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { Badge, CARD, GOLD, HAIR, LevelBar, MemberStack, SquadBanner } from '@/ui/squads/parts';
 import { C, F, FONT, S } from '@/ui/tokens';
 
@@ -111,6 +112,8 @@ export default function SquadPublic() {
   const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string>();
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('squad', !!s);
 
   const prof = profiles.status === 'ready' ? profiles.data : new Map<string, Profile>();
   const nameOf = (k: PublicKey) => prof.get(k.toBase58())?.name ?? short(k.toBase58());
@@ -166,7 +169,8 @@ export default function SquadPublic() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 120 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 120 }}>
+        <TourScroll value={ts.scroller}>
         {top}
 
         {!s ? (
@@ -178,7 +182,8 @@ export default function SquadPublic() {
         ) : (
           <>
             {/* banner, crest, name */}
-            <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 14, borderRadius: 24, backgroundColor: CARD }}>
+            <TourTarget id="squad-card" style={{ marginTop: 14 }}>
+            <Animated.View entering={FadeInDown.duration(320)} style={{ borderRadius: 24, backgroundColor: CARD }}>
               <SquadBanner crest={s.crest} height={150}><ClayLoop name="clanCity" width="100%" height={150} cover /></SquadBanner>
               {s.atWar ? <View style={{ position: 'absolute', top: 12, right: 12 }}><Badge text="At war" color={C.opp} /></View> : null}
               <View style={{ paddingHorizontal: 16, paddingTop: 36, paddingBottom: 16 }}>
@@ -203,18 +208,22 @@ export default function SquadPublic() {
                 ) : null}
               </View>
             </Animated.View>
+            </TourTarget>
 
             {/* numbers */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            <TourTarget id="squad-stats" style={{ marginTop: 10 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Stat k="Squad P&L" v={pnl === null ? '…' : fmtPnl(pnl)} color={pnl === null ? C.muted : pnlColor(pnl, C.up, C.down, C.ink)} sub={priced ? 'Chest trades + members’ stocks' : 'Some prices still loading'} />
               <Stat k="Chest" v={`$${s.chest.toFixed(2)}`} sub="Shared USDC" />
               <Stat k="Members" v={String(s.memberCount)} sub={`Level ${s.level}`} />
               <Stat k="War record" v={`${s.wins}W ${s.losses}L`} sub={s.wins + s.losses ? `${Math.round((s.wins / (s.wins + s.losses)) * 100)}% won` : 'No wars yet'} />
             </View>
+            </TourTarget>
             {stocks.status === 'error' ? <ErrorLine msg={stocks.error} onRetry={stocks.reload} /> : null}
 
             {/* wars */}
             <Head title="Squad wars" right={s.wins + s.losses ? `${s.wins + s.losses} fought` : undefined} />
+            <TourTarget id="squad-wars">
             {liveWar ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: 'rgba(240,70,140,0.10)', borderWidth: 1, borderColor: 'rgba(240,70,140,0.4)', marginBottom: 8 }}>
                 <ClayLoop name="war" size={52} style={{ borderRadius: 14 }} />
@@ -242,6 +251,7 @@ export default function SquadPublic() {
                 <Txt v="small" style={{ flex: 1, lineHeight: 18 }}>No wars fought yet. The captain can challenge another squad, chest against chest.</Txt>
               </View>
             ) : null}
+            </TourTarget>
 
             {/* members */}
             <Head title="Members" right={`${s.members.length}`} />
@@ -305,6 +315,7 @@ export default function SquadPublic() {
             {squad.status === 'error' ? <ErrorLine msg={squad.error} onRetry={squad.reload} /> : null}
           </>
         )}
+        </TourScroll>
       </ScrollView>
 
       {/* the one action */}
@@ -314,8 +325,8 @@ export default function SquadPublic() {
           <View style={[col, { paddingHorizontal: S.gutter, paddingTop: 8, paddingBottom: insets.bottom + 12 }]}>
             {err ? <ErrorLine msg={err} /> : null}
             {isMember
-              ? <Btn title="Open squad" h={56} onPress={() => openSquad(s.key)} />
-              : <Btn title={busy ? 'Joining…' : me ? 'Join squad' : 'Sign in to join'} kind="white" h={56} disabled={busy} onPress={join} />}
+              ? <TourTarget id="squad-open"><Btn title="Open squad" h={56} onPress={() => openSquad(s.key)} /></TourTarget>
+              : <TourTarget id="squad-join"><Btn title={busy ? 'Joining…' : me ? 'Join squad' : 'Sign in to join'} kind="white" h={56} disabled={busy} onPress={join} /></TourTarget>}
             {!isMember ? <Txt v="small" style={{ textAlign: 'center', marginTop: 6, fontSize: 11.5 }}>Free to join · be in as many squads as you like</Txt> : null}
           </View>
         </View>

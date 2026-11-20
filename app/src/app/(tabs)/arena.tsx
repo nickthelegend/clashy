@@ -17,6 +17,7 @@ import { ProfileAvatar } from '@/ui/feed';
 import { BotPic } from '@/ui/practice-kit';
 import { ART, ErrorLine, LiveDot, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
+import { TourScroll, TourTarget, useTourScroll } from '@/tour';
 
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
 const cupLeft = () => {
@@ -79,10 +80,12 @@ export default function Play() {
   const real = (d: FeedDuel) => !isTestAccount(names.get(d.creator.toBase58())) && !isTestAccount(names.get(d.joiner.toBase58()));
   const live = feed.status === 'ready' ? feed.data.live.filter(real) : [];
   const settled = feed.status === 'ready' ? feed.data.settled.filter((d) => real(d) && d.ts > 0).slice(0, 6) : [];
+  const ts = useTourScroll<React.ComponentRef<typeof ScrollView>>();
   const top = board.status === 'ready' ? board.data.filter((p) => names.has(p.owner.toBase58()) && !isTestAccount(names.get(p.owner.toBase58()))).slice(0, 3) : [];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 10, paddingHorizontal: S.gutter, paddingBottom: 120, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 10, paddingHorizontal: S.gutter, paddingBottom: 120, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Txt v="title">Play</Txt>
         <Pressable onPress={go('/wallet')} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.s2, borderRadius: 20, paddingHorizontal: 14, height: 38, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
@@ -93,6 +96,7 @@ export default function Play() {
 
       {/* the hero: Clash */}
       <Animated.View entering={FadeInDown.duration(380)}>
+        <TourTarget id="arena-clash">
         <Pressable onPress={go('/clash')} style={({ pressed }) => ({ marginTop: 16, borderRadius: 30, overflow: 'hidden', backgroundColor: '#14101C', borderWidth: 1.5, borderColor: '#3A2340', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
           <View style={{ position: 'absolute', right: -40, top: -40, width: 260, height: 260, borderRadius: 130, backgroundColor: C.opp, opacity: 0.16 }} />
           <View style={{ position: 'absolute', left: -60, bottom: -80, width: 240, height: 240, borderRadius: 120, backgroundColor: C.brand, opacity: 0.18 }} />
@@ -110,9 +114,11 @@ export default function Play() {
             <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: '#fff' }}>Find a rival · from $5</Text>
           </View>
         </Pressable>
+        </TourTarget>
       </Animated.View>
 
       {/* Royale and the squad war */}
+      <TourTarget id="arena-games">
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
         <GameTile title="Royale" sub="Up to 16 players" line="$2 in · last one standing" loop="royale" tint="#FFC94A" onPress={go('/onchain-royale')} />
         <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" art={<WarScene width={150} height={96} />} tint={C.brandSoft} onPress={go('/clans')} />
@@ -121,8 +127,10 @@ export default function Play() {
         <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
         <GameTile title="Practice clash" sub="vs Clashy Bot · free" line="Practice money, live prices" art={<BotPic size={56} />} tint={C.brandSoft} onPress={go('/practice/clash')} />
       </Row>
+      </TourTarget>
 
       {/* the Weekly Cup */}
+      <TourTarget id="arena-cup">
       <Pressable onPress={go('/cup')} style={({ pressed }) => ({ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 24, padding: 12, backgroundColor: '#1A1406', borderWidth: 1, borderColor: '#3D3010', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
         <Image source={ART.cupBig} style={{ width: 64, height: 64 }} contentFit="contain" />
         <View style={{ flex: 1 }}>
@@ -131,9 +139,11 @@ export default function Play() {
         </View>
         <Txt v="label" color="#FFD66B">›</Txt>
       </Pressable>
+      </TourTarget>
 
       {/* live on chain */}
       <Head title="Live now" />
+      <TourTarget id="arena-live">
       {feed.status === 'loading' ? <SkeletonRows n={2} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : live.length ? (
         live.slice(0, 4).map((d) => <VersusRow key={d.key.toBase58()} d={d} names={names} live />)
       ) : (
@@ -142,9 +152,11 @@ export default function Play() {
           <Txt v="small" style={{ flex: 1 }}>No clashes running right now. Start one and the next rival takes you on.</Txt>
         </Pressable>
       )}
+      </TourTarget>
 
       <Head title="Top players" right="Leaderboard" onRight={go('/leaderboard')} />
       {board.status === 'loading' ? <SkeletonRows n={1} /> : top.length ? (
+        <TourTarget id="arena-top">
         <Row style={{ gap: 8 }}>
           {top.map((p, i) => {
             const prof = names.get(p.owner.toBase58());
@@ -158,6 +170,7 @@ export default function Play() {
             );
           })}
         </Row>
+        </TourTarget>
       ) : <Txt v="small">Win a clash to get on the board.</Txt>}
 
       <Head title="Recent results" />
@@ -167,6 +180,7 @@ export default function Play() {
         <Badge text="Real USDC" color={C.up} />
         <Txt v="small">Every fee paid by Clashy · settled on Solana</Txt>
       </Row>
+      </TourScroll>
     </ScrollView>
   );
 }

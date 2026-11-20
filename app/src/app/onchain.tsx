@@ -25,6 +25,7 @@ import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 
 type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
 /** The program's DUEL_SETUP_SECS: after this a matched duel that never reached the rollup can be aborted. */
@@ -265,16 +266,22 @@ export default function OnChainDuel() {
   const koMe = !!duel && me >= 0 && !!(duel.ko & (1 << me));
   const koThem = !!duel && me >= 0 && !!(duel.ko & (1 << (1 - me)));
   const pot = (stake * 2 * 0.97).toFixed(2);
+  // first visit: a short tour of the setup (modes, stake, find a rival, open clashes, the proof strip)
+  const ts = useTourScroll<React.ComponentRef<typeof ScrollView>>();
+  useScreenTour('clash', !duel || duel.status === 6 || !active);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07070A' }}>
-      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+        <TourScroll value={ts.scroller}>
         <Row style={{ gap: 10, marginBottom: 6 }}>
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <View style={{ flex: 1 }} />
+          <TourTarget id="clash-wallet">
           <Pressable onPress={() => setProof(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#15151B', borderRadius: 14, paddingHorizontal: 12, height: 34 }}>
             <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
           </Pressable>
+          </TourTarget>
         </Row>
         {err ? <ErrorLine msg={err} /> : null}
 
@@ -313,14 +320,14 @@ export default function OnChainDuel() {
                 </Animated.View>
 
                 <Txt v="small" style={{ ...FONT.semi, color: C.dim, marginTop: 22, marginBottom: 8 }}>Pick a game</Txt>
-                <View style={{ gap: 8 }}>
+                <TourTarget id="clash-modes" style={{ gap: 8 }}>
                   <ModeRow index={0} title="Crypto" sub="60 seconds · SOL, BTC or ETH, up or down" on={mode === 'crypto'} onPress={() => setMode('crypto')}
                     art={<Row style={{ gap: -14 }}><CoinToken sym="SOL" size={30} /><CoinToken sym="BTC" size={30} /></Row>} />
                   <ModeRow index={1} title="Perps" tag="Up to 50×" sub="60 seconds with leverage · liquidated means out" on={mode === 'perps'} onPress={() => setMode('perps')}
                     art={<Row style={{ gap: -14 }}><CoinToken sym="ETH" size={30} /><CoinToken sym="SOL" size={30} /></Row>} />
                   <ModeRow index={2} title="Stocks" sub="1 hour · NVIDIA, Tesla, Apple, S&P or Alphabet" on={mode === 'stocks'} onPress={() => setMode('stocks')}
                     art={<ClayLoop name="stocks" size={60} />} />
-                </View>
+                </TourTarget>
 
                 {mode === 'perps' ? (
                   <Animated.View entering={FadeInDown.duration(260)}>
@@ -339,6 +346,7 @@ export default function OnChainDuel() {
                   </Animated.View>
                 ) : null}
 
+                <TourTarget id="clash-stake">
                 <Row style={{ justifyContent: 'space-between', marginTop: 20, marginBottom: 8, gap: 10 }}>
                   <Txt v="small" style={{ ...FONT.semi, color: C.dim }}>Stake</Txt>
                   <Txt v="small" lines={1} style={{ flexShrink: 1 }}>{bal === null ? 'USDC' : `${bal.toFixed(2)} USDC in your wallet`}</Txt>
@@ -357,13 +365,17 @@ export default function OnChainDuel() {
                   <Row style={{ justifyContent: 'space-between' }}><Txt v="small">Winner takes</Txt><Txt v="label" color={C.up} style={{ fontVariant: ['tabular-nums'] }}>{pot} USDC</Txt></Row>
                   <Row style={{ justifyContent: 'space-between' }}><Txt v="small">Dead heat or no rival</Txt><Txt v="small" color={C.ink}>Your stake comes back</Txt></Row>
                 </View>
+                </TourTarget>
 
+                <TourTarget id="clash-go">
                 <Pressable onPress={ready ? open : () => setProof(true)} disabled={!!busy} accessibilityRole="button"
                   style={({ pressed }) => ({ marginTop: 14, height: 62, borderRadius: 31, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: C.opp, shadowOpacity: 0.45, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
                   <Text style={{ ...FONT.bold, fontSize: 20, color: '#fff' }}>{busy === 'open' ? 'Opening…' : ready ? (mode === 'perps' ? `Find a rival · $${stake} at ${lev}×` : `Find a rival · $${stake}`) : 'Set up your wallet'}</Text>
                 </Pressable>
+                </TourTarget>
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 8, lineHeight: 18 }}>{mode === 'perps' ? `You both go long or short at ${lev}×, sealed until you both lock. Best return wins; liquidated loses on the spot.` : 'Your call is sealed until both of you lock. Best call wins.'}</Txt>
 
+                <TourTarget id="clash-open">
                 <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 10 }}>
                   <Text style={{ ...FONT.bold, fontSize: 20, color: C.ink }}>Open clashes</Text>
                   <Txt v="small">{others.length} waiting</Txt>
@@ -377,6 +389,7 @@ export default function OnChainDuel() {
                 ) : others.map((d) => (
                   <OpenClash key={d.key.toBase58()} who={names.get(d.creator.toBase58())} stake={d.stake / USDC} secs={d.lenSecs} mask={d.poolMask ?? 0b111} lev={clashLev(d.nonce)} disabled={!ready || !!busy} onJoin={() => join(d)} />
                 ))}
+                </TourTarget>
               </>
             ) : null}
           </>
@@ -433,6 +446,7 @@ export default function OnChainDuel() {
             <Hit k={duel.status === 4 && duel.ko ? 1 : 0} src={FX.ko} />
           </Animated.View>
         )}
+        </TourScroll>
       </ScrollView>
 
       <Sheet open={proof} onClose={() => setProof(false)} title="Wallet and on-chain proof">

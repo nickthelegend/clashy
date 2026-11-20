@@ -2,7 +2,7 @@
 // make; a share of every win; real tokenized stocks (xStocks) bought and sold through Orca from the Stash, with the
 // cost kept on chain; and the limits you set on yourself, which the program enforces on every stake.
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ComputeBudgetProgram, PublicKey, Transaction } from '@solana/web3.js';
@@ -18,6 +18,7 @@ import { ART, BackBtn, Btn, Card, ErrorLine, Money, Row, Txt } from '@/ui/kit';
 import { AmountSheet } from '@/ui/amount';
 import { Sheet, SheetTile } from '@/ui/sheet';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const field = { color: C.ink, ...FONT.medium, fontSize: 16, backgroundColor: C.s2, borderRadius: 16, paddingHorizontal: 14, height: 52 } as const;
@@ -135,9 +136,12 @@ export default function StashScreen() {
   const stockProfit = port.status === 'ready' ? port.data.reduce((a, x) => a + (x.shares > 0 ? x.shares * (px[x.stock.symbol] ?? 0) - x.cost : 0), 0) : 0;
   const now = Date.now() / 1000;
   const stakedToday = prof && prof.day === Math.floor(now / 86_400) ? prof.stakedToday : 0;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('stash', !!me && hasProfile === true);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10, marginBottom: 12 }}>
         <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         <Txt v="title">Stash</Txt>
@@ -172,11 +176,13 @@ export default function StashScreen() {
               <Txt v="small" style={{ marginTop: 4 }}>{Math.round(pct * 100)}% of {fmtUsd(goal)}{s?.goalName ? ` · ${s.goalName}` : ''}</Txt>
             </View>
           ) : null}
-          <Row style={{ gap: 8, marginTop: 16 }}>
+          <TourTarget id="stash-actions" style={{ marginTop: 16 }}>
+          <Row style={{ gap: 8 }}>
             <Pressable onPress={() => setAmt({ kind: 'add' })} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: C.up, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label" color="#04120A">Add</Txt></Pressable>
             <Pressable onPress={() => setAmt({ kind: 'out' })} disabled={!s || s.balance <= 0} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: '#1F1F26', alignItems: 'center', justifyContent: 'center', opacity: !s || s.balance <= 0 ? 0.5 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label">Take out</Txt></Pressable>
             <Pressable onPress={() => setPickStock(true)} style={({ pressed }) => ({ flex: 1, height: 52, borderRadius: 26, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}><Txt v="label" color="#000">Invest</Txt></Pressable>
           </Row>
+          </TourTarget>
           {s ? (
             <Row style={{ gap: 8, marginTop: 10 }}>
               {[['Put in', s.savedManual], ['Round-ups', s.savedRoundup], ['From wins', s.savedWins]].map(([k, v]) => (
@@ -187,7 +193,8 @@ export default function StashScreen() {
           {err ? <ErrorLine msg={err} /> : null}
 
           {/* the goal */}
-          <Pressable onPress={() => setPanel('goal')} style={({ pressed }) => ({ marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 24, padding: 14, backgroundColor: '#0F1A12', borderWidth: 1, borderColor: '#1F3A26', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+          <TourTarget id="stash-goal" style={{ marginTop: 22 }}>
+          <Pressable onPress={() => setPanel('goal')} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 24, padding: 14, backgroundColor: '#0F1A12', borderWidth: 1, borderColor: '#1F3A26', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <Image source={ART.goal} style={{ width: 64, height: 64 }} contentFit="contain" />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Txt v="small" color="#8FD8A4" style={{ ...FONT.bold, letterSpacing: 0.6, fontSize: 11 }}>{goal > 0 ? 'Your goal' : 'Save for something'}</Txt>
@@ -201,6 +208,7 @@ export default function StashScreen() {
             </View>
             <Txt v="label" color={C.muted}>›</Txt>
           </Pressable>
+          </TourTarget>
 
           {/* stocks */}
           <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 4 }}>
@@ -237,17 +245,21 @@ export default function StashScreen() {
 
           {/* automatic saving and your limits */}
           <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 10 }}>On autopilot</Text>
+          <TourTarget id="stash-autopilot">
           <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
             <SetRow art={ART.roundup} title="Round-ups" value={(prof?.roundupStep ?? 0) > 0 ? `To next $${prof!.roundupStep}` : 'Off'} onPress={() => setPanel('roundup')} />
             <SetRow art={ART.spend} title="Pay someone" value="Rounds up" onPress={() => setPanel('pay')} />
             <SetRow art={ART.gift} title="Save from wins" value={(prof?.saveBps ?? 0) > 0 ? `${prof!.saveBps / 100}% of each win` : 'Off'} onPress={() => setPanel('wins')} />
           </View>
+          </TourTarget>
           <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>Your limits</Text>
           <Txt v="small" style={{ marginBottom: 10 }}>Set by you, enforced by the Clashy program on every stake. No app can go past them, ours included.</Txt>
+          <TourTarget id="stash-limits">
           <View style={{ backgroundColor: C.s1, borderRadius: 22, overflow: 'hidden' }}>
             <SetRow art={ART.limits} title="Daily stake limit" value={prof ? `${fmtUsd(prof.dailyLimit)} · ${fmtUsd(stakedToday)} used` : '…'} onPress={() => setPanel('limit')} />
             <SetRow art={ART.breakMoon} title="Take a break" value={prof && prof.breakUntil > now ? `Until ${new Date(prof.breakUntil * 1000).toLocaleDateString()}` : 'Off'} onPress={() => setPanel('break')} />
           </View>
+          </TourTarget>
         </>
       )}
       <AmountSheet open={amt?.kind === 'add'} onClose={() => setAmt(null)} title="Add to your Stash" sub={`From your wallet · ${(bal ?? 0).toFixed(2)} USDC`} max={bal ?? 0} presets={[5, 10, 25]}
@@ -316,6 +328,7 @@ export default function StashScreen() {
             onPress={() => { setPickStock(false); setTimeout(() => setAmt({ kind: 'buy', st }), 260); }} />
         ))}
       </Sheet>
+      </TourScroll>
     </ScrollView>
   );
 }

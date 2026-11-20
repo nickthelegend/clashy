@@ -3,7 +3,7 @@
 // and liquidation prices, every market with its live Jupiter price, and the history of closed trades. No real USDC
 // moves anywhere on this screen.
 import { router, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import {
 import { VenueChip } from '@/ui/orderbook';
 import { ART, BackBtn, Bone, ChangePill, ErrorLine, LiveDot, Money, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import {
   BarBtn, BotPic, BotTag, CARD, CloseSheet, EmptyCard, HAIR, Head, LiquidatedNotice, MarketLogo, OpenTrade, PaperBadge, ShareTrade, SideTag, Stat, myTradeHref,
 } from '@/ui/practice-kit';
@@ -141,6 +142,8 @@ export default function PracticeHome() {
   const s = pr.book ? summary(pr.book, prices) : null;
   const closed = pr.book?.closed ?? [];
   const shownHistory = allHistory ? closed : closed.slice(0, 10);
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('practice', pr.ready);
 
   const doReset = async () => {
     setResetErr(undefined);
@@ -149,7 +152,8 @@ export default function PracticeHome() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+        <TourScroll value={ts.scroller}>
         {/* header */}
         <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
@@ -160,7 +164,8 @@ export default function PracticeHome() {
         </Row>
 
         {/* paper balance */}
-        <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, padding: 16, marginTop: 18 }}>
+        <TourTarget id="prac-balance" style={{ marginTop: 18 }}>
+        <Animated.View entering={FadeIn.duration(260)} style={{ backgroundColor: CARD, borderRadius: 24, padding: 16 }}>
           <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <View style={{ flexShrink: 1, minWidth: 0 }}>
               <Txt v="small">Paper balance</Txt>
@@ -184,6 +189,7 @@ export default function PracticeHome() {
             <Stat label="Win rate" value={s && s.winRate !== null ? `${Math.round(s.winRate)}%` : '–'} sub={s ? `${s.wins} of ${s.trades} trades` : ' '} />
           </Row>
         </Animated.View>
+        </TourTarget>
         <Row style={{ gap: 8, marginTop: 10, paddingHorizontal: 2 }}>
           <LiveDot color={at ? C.up : C.dim} />
           <Txt v="small" style={{ flex: 1, lineHeight: 17 }}>Practice · paper money. Real live prices from Jupiter, Phoenix and Pacifica; no real USDC moves.</Txt>
@@ -191,8 +197,9 @@ export default function PracticeHome() {
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
 
         {/* the practice clash against the bot */}
+        <TourTarget id="prac-bot" style={{ marginTop: 16 }}>
         <Pressable onPress={() => router.push('/practice/clash' as Href)} accessibilityRole="button" accessibilityLabel="Practice clash against Clashy Bot"
-          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 16, padding: 14, borderRadius: 22, backgroundColor: pressed ? '#17171F' : '#121219', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 22, backgroundColor: pressed ? '#17171F' : '#121219', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
           <BotPic size={52} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Row style={{ gap: 6 }}><Txt v="label">Clash Clashy Bot</Txt><BotTag /></Row>
@@ -208,6 +215,7 @@ export default function PracticeHome() {
             <Txt v="label" color={C.onBrand}>{pr.book?.liveClash ? 'Resume' : 'Play'}</Txt>
           </View>
         </Pressable>
+        </TourTarget>
 
         {/* open trades */}
         <Head title="Open trades" right={pr.book?.open.length ? `${pr.book.open.length} open` : undefined} />
@@ -256,10 +264,12 @@ export default function PracticeHome() {
 
         {/* markets */}
         <Head title="Markets" right={!cat ? undefined : query ? `${list.length} across all markets` : 'Live prices'} />
-        <Tabs value={tab} onChange={(k) => { setTab(k); setQ(''); }} />
-        <View style={{ marginTop: 10 }}>
-          <SearchBar value={q} onChange={setQ} placeholder="Search stocks, coins, perps, memecoins" />
-        </View>
+        <TourTarget id="prac-markets">
+          <Tabs value={tab} onChange={(k) => { setTab(k); setQ(''); }} />
+          <View style={{ marginTop: 10 }}>
+            <SearchBar value={q} onChange={setQ} placeholder="Search stocks, coins, perps, memecoins" />
+          </View>
+        </TourTarget>
         {tab === 'perp' && !query && cat ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
             {(['all', 'phoenix', 'pacifica', 'jupiter'] as const).map((v) => {
@@ -325,6 +335,7 @@ export default function PracticeHome() {
           Prices come live from Jupiter, Phoenix and Pacifica. Order-book perps fill against the venue's real book at its taker or maker fee and pay or earn its funding; Jupiter perps use Jupiter's open fee and hourly borrow (both approximated by the hour).
           Liquidations are checked only while Practice is open, against the live price. Your paper book is saved on this device{pr.signedIn ? ' for this wallet' : ''}.
         </Txt>
+        </TourScroll>
       </ScrollView>
 
       <CloseSheet p={closing} px={closing ? prices[closing.mint] : undefined} pr={pr} onClose={() => setClosing(null)} />

@@ -1,10 +1,12 @@
 // Leaderboard: the best clashers of all time, ranked from the player accounts of the Clashy program on Solana.
 // Rank points and Elo move only when an on-chain clash settles; names and faces come from on-chain profiles.
 import { router, type Href } from 'expo-router';
+import type { ComponentRef } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { useLeaderboardOnchain, type PlayerRow } from '@/chain/reads';
 import { isTestAccount, useProfiles, type Profile } from '@/chain/social';
 import { useWallet } from '@/chain/wallet';
@@ -28,23 +30,29 @@ export default function Leaderboard() {
   const top = [rows[1], rows[0], rows[2]];
   const myIdx = rows.findIndex((r) => r.owner.toBase58() === me);
   const mine = myIdx >= 0 ? rows[myIdx] : undefined;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('leaderboard', board.status === 'ready' && profiles.status === 'ready');
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 32 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 32 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10 }}><BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/arena' as Href))} /></Row>
       <Txt v="title" style={{ marginTop: 10 }}>Leaderboard</Txt>
       <Txt v="small" style={{ marginTop: 2 }}>All-time clashers. A win is +25 points, a loss −15.</Txt>
 
       {board.status === 'loading' || profiles.status === 'loading' ? <SkeletonRows n={5} /> : board.status === 'error' ? <ErrorLine msg={board.error} /> : rows.length === 0 ? (
-        <View style={{ alignItems: 'center', marginTop: 30 }}>
+        <TourTarget id="lb-empty" style={{ marginTop: 30 }}>
+        <View style={{ alignItems: 'center' }}>
           <Image source={ART.emptyLeaderboard} style={{ width: 140, height: 140 }} contentFit="contain" />
           <Txt v="h2" style={{ marginTop: 8 }}>No winners yet</Txt>
           <Txt v="small" style={{ textAlign: 'center', marginTop: 4 }}>The first clash that settles puts its winner on the podium.</Txt>
           <Btn title="Start a clash" style={{ marginTop: 14, alignSelf: 'stretch' }} onPress={() => router.push('/clash' as Href)} />
         </View>
+        </TourTarget>
       ) : (
         <>
-          <Row style={{ alignItems: 'flex-end', gap: 8, marginTop: 26 }}>
+          <TourTarget id="lb-podium" style={{ marginTop: 26 }}>
+          <Row style={{ alignItems: 'flex-end', gap: 8 }}>
             {top.map((r, i) => {
               const place = i === 1 ? 1 : i === 0 ? 2 : 3;
               if (!r) return <View key={i} style={{ flex: 1 }} />;
@@ -64,6 +72,7 @@ export default function Leaderboard() {
               );
             })}
           </Row>
+          </TourTarget>
           <View style={{ backgroundColor: C.s1, borderRadius: 20, paddingVertical: 4 }}>
             {rows.slice(3).map((r, i) => {
               const p = names.get(r.owner.toBase58());
@@ -83,7 +92,8 @@ export default function Leaderboard() {
             {rows.length <= 3 ? <Txt v="small" style={{ padding: 14, textAlign: 'center' }}>Only {rows.length} ranked so far. Win a clash to join them.</Txt> : null}
           </View>
 
-          <View style={{ marginTop: 12, backgroundColor: C.s1, borderRadius: 20, padding: 12, borderWidth: 1.5, borderColor: mine ? C.brand : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TourTarget id="lb-me" style={{ marginTop: 12 }}>
+          <View style={{ backgroundColor: C.s1, borderRadius: 20, padding: 12, borderWidth: 1.5, borderColor: mine ? C.brand : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Text style={{ ...FONT.semi, fontSize: 20, color: mine ? C.brandSoft : C.muted, width: 40 }}>{mine ? `#${myIdx + 1}` : '–'}</Text>
             <View style={{ flex: 1 }}>
               <Txt v="label">{mine ? 'Your rank' : 'Not ranked yet'}</Txt>
@@ -91,12 +101,14 @@ export default function Leaderboard() {
             </View>
             <Btn title="Clash" h={40} onPress={() => router.push('/clash' as Href)} />
           </View>
+          </TourTarget>
         </>
       )}
 
       <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 28, marginBottom: 4 }}>The ladder</Text>
       <Txt v="small" style={{ marginBottom: 12 }}>Ten ranks from Rookie to Legend. Points come only from settled clashes.</Txt>
-      <RankStrip current={mine ? rankFor(mine.rp).n : 1} />
+      <TourTarget id="lb-ladder"><RankStrip current={mine ? rankFor(mine.rp).n : 1} /></TourTarget>
+      </TourScroll>
     </ScrollView>
   );
 }

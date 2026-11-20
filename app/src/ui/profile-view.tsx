@@ -28,6 +28,7 @@ import { Sheet } from './sheet';
 import { useDeskColumn } from './layout';
 import { Scrub, fmtWhen } from './scrub';
 import { C, F, FONT, S, fmtUsd } from './tokens';
+import { TourScroll, TourTarget, useTourScroll } from '@/tour';
 
 const CARD = '#15151B';
 const HAIR = '#23232B';
@@ -128,16 +129,18 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(undefined), 2200); return () => clearTimeout(t); }, [toast]);
 
   const readErr = [prof, rec, usdc, stash, port].find((x) => x.status === 'error') as { error: string } | undefined;
+  const ts = useTourScroll<React.ComponentRef<typeof ScrollView>>();
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 40 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 40 }}>
+      <TourScroll value={ts.scroller}>
       {/* ---------- header ---------- */}
       <View style={{ height: 150, borderRadius: 24, overflow: 'hidden', backgroundColor: CARD }}>
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}><ClayLoop name="journey" width="100%" height={150} cover /></View>
         <LinearGradient colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']} locations={[0, 0.4, 1]} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
         <Row style={{ position: 'absolute', top: 12, left: 12, right: 12, justifyContent: 'space-between' }}>
           {onBack ? <RoundBtn label="Back" onPress={onBack}><Back size={18} color={C.ink} /></RoundBtn> : <View />}
-          {isMe ? <Row style={{ gap: 8 }}><RoundBtn label="Wallet" onPress={() => router.push('/wallet')}><WalletI size={18} color={C.ink} /></RoundBtn><RoundBtn label="Settings" onPress={() => router.push('/settings' as never)}><Gear size={18} color={C.ink} /></RoundBtn></Row>
+          {isMe ? <TourTarget id="you-settings"><Row style={{ gap: 8 }}><RoundBtn label="Wallet" onPress={() => router.push('/wallet')}><WalletI size={18} color={C.ink} /></RoundBtn><RoundBtn label="Settings" onPress={() => router.push('/settings' as never)}><Gear size={18} color={C.ink} /></RoundBtn></Row></TourTarget>
             : <RoundBtn label="Share profile" onPress={share}><Share size={18} color={C.ink} /></RoundBtn>}
         </Row>
       </View>
@@ -196,6 +199,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
 
       {/* ---------- track record ---------- */}
       <View style={{ marginTop: 24 }}>
+        <TourTarget id="you-record">
         <Txt v="small" style={{ ...FONT.semi, letterSpacing: 0.2 }}>Net worth</Txt>
         <View style={{ marginTop: 2, minHeight: 56, justifyContent: 'center' }}>
           {worthReady ? <Money value={worth} size={48} /> : <Bone w={190} h={40} r={10} />}
@@ -214,6 +218,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
           <Part label="Stash" value={stash.status === 'ready' ? stashBal : null} onPress={isMe ? () => router.push('/stash' as never) : undefined} />
           <Part label="Stocks" value={port.status === 'ready' && (positions.length === 0 || prices.status === 'ready') ? stockValue : null} onPress={isMe ? () => router.push('/stash' as never) : undefined} />
         </Row>
+        </TourTarget>
 
         <View style={{ marginTop: 16, backgroundColor: CARD, borderRadius: 22, paddingTop: 14, paddingBottom: 10, overflow: 'hidden' }}>
           <Row style={{ paddingHorizontal: 14, justifyContent: 'space-between' }}>
@@ -339,6 +344,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         )}
       </View>
 
+      </TourScroll>
     </ScrollView>
   );
 }
@@ -551,7 +557,7 @@ export function ProfileSignedOut({ onSignIn, error, loading }: { onSignIn?: () =
         Sign in to get your Clashy wallet. Every clash you settle, every stock you buy and every call you post builds your profile, on chain.
       </Txt>
       {loading ? <Bone w="100%" h={52} r={16} style={{ marginTop: 18 }} /> : error ? <ErrorLine msg={error} /> : (
-        <Btn title="Sign in" onPress={onSignIn} h={52} style={{ marginTop: 18 }} />
+        <TourTarget id="you-signin" style={{ marginTop: 18 }}><Btn title="Sign in" onPress={onSignIn} h={52} /></TourTarget>
       )}
       <Row style={{ gap: 8, marginTop: 18 }}>
         {[['Net worth', ART.coinsPile], ['P&L line', ART.tileLine], ['Trophies', ART.winTrophy]].map(([t, a]) => (

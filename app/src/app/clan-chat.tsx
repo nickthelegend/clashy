@@ -26,6 +26,7 @@ import { ChatThread, type CMsg, type ReplyTo } from '@/ui/chat-thread';
 import { Shield } from '@/ui/icons';
 import { reactBody, replyBody, stickerBody, type Sticker } from '@/stickers';
 import { useDeskColumn } from '@/ui/layout';
+import { TourTarget, useScreenTour } from '@/tour';
 import { CARD, HAIR, crestSrc } from '@/ui/squads/parts';
 import { C, FONT } from '@/ui/tokens';
 
@@ -83,6 +84,7 @@ export default function ClanChat() {
   const chName = channelName(ch);
   const s = server.status === 'ready' ? server.data : null;
   const notMember = member.status === 'ready' && !member.data && !!me;
+  useScreenTour('squadchat', st === 'live' && !!clan && member.status === 'ready' && member.data === true);
 
   const run = (name: string, fn: () => Promise<unknown>) => async () => {
     if (busy) return;
@@ -168,14 +170,17 @@ export default function ClanChat() {
                 </Row>
               </View>
               {st === 'live' && !notMember && clan ? (
+                <TourTarget id="sc-clash">
                 <Pressable onPress={challenge} disabled={!!busy} accessibilityRole="button" accessibilityLabel={`Post a ${STAKE} USDC clash challenge`}
                   style={({ pressed }) => ({ height: 34, paddingHorizontal: 11, borderRadius: 17, backgroundColor: 'rgba(240,70,140,0.18)', flexDirection: 'row', alignItems: 'center', gap: 5, opacity: busy && busy !== 'challenge' ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
                   <Swords size={14} color={C.opp} /><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 12.5 }}>{busy === 'challenge' ? '…' : 'Clash'}</Txt>
                 </Pressable>
+                </TourTarget>
               ) : null}
             </Row>
             {clan ? (
-              <View style={{ flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 14, padding: 3, gap: 3, marginTop: 10 }}>
+              <TourTarget id="sc-channels" style={{ marginTop: 10 }}>
+              <View style={{ flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 14, padding: 3, gap: 3 }}>
                 {CHANNELS.map((c) => (
                   <Pressable key={c.id} onPress={() => switchTo(c.id)} accessibilityRole="tab" accessibilityState={{ selected: c.id === ch }}
                     style={{ flex: 1, height: 34, borderRadius: 11, backgroundColor: c.id === ch ? C.brand : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
@@ -183,11 +188,13 @@ export default function ClanChat() {
                   </Pressable>
                 ))}
               </View>
+              </TourTarget>
             ) : null}
           </LinearGradient>
         </View>
 
         {st === 'live' && !notMember && clan && !(myClan.status === 'ready' && !clan) ? (
+          <TourTarget id="sc-thread" style={{ flex: 1 }}>
           <ChatThread msgs={items} me={me?.toBase58()} group who={who} onReply={setReply} onReact={react} onPack={setPack}
             special={(m, mine) => (m.kind === 1 ? (() => {
               const raw = msgs.find((x) => x.i === m.id);
@@ -213,6 +220,7 @@ export default function ClanChat() {
               </View>
             )}
             footer={chat.status === 'error' ? <ErrorLine msg={chat.error} onRetry={chat.reload} /> : null} />
+          </TourTarget>
         ) : (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
             {myClan.status === 'ready' && !clan ? (
@@ -230,12 +238,14 @@ export default function ClanChat() {
         )}
         {err ? <View style={{ paddingHorizontal: 14 }}><ErrorLine msg={err} /></View> : null}
         {st === 'live' && !notMember && clan ? (
+          <TourTarget id="sc-composer">
           <ChatComposer value={text} onChange={setText} onSend={send} onSticker={sendSticker} onQuick={quick} placeholder={`Message #${chName}`} maxLength={120} busy={!!busy}
             reply={reply} onCancelReply={() => setReply(null)}
             attach={[
               { key: 'clash', label: busy === 'challenge' ? 'Posting…' : `Clash · ${STAKE} USDC`, color: '#F0468C', icon: <Swords size={24} color="#fff" />, onPress: challenge },
               { key: 'squad', label: 'Squad page', color: '#3A8DFF', icon: <Shield size={24} color="#fff" />, onPress: () => router.push(`/squad/${ck}` as Href) },
             ]} />
+          </TourTarget>
         ) : null}
       </View>
       <PackSheet packId={pack} onClose={() => setPack(null)} onSend={st === 'live' && !notMember && clan ? sendSticker : undefined} />

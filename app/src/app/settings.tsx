@@ -20,6 +20,9 @@ import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
+import { replayTour } from '@/tour';
+
+const TOUR_BOT = require('../../assets/art/avatar-bot.webp');
 
 const CARD = '#111116';
 const HAIR = '#1F1F27';
@@ -175,7 +178,8 @@ export default function Settings() {
           </Group>
 
           <Group title="Help">
-            <SettingRow first art={ART.onboarding} label="How Clashy works" sub="Clash, Royale, squads, the Stash, the Cup" onPress={go('/help')} />
+            <SettingRow first art={TOUR_BOT} label="Take the tour again" sub="Clashy Bot shows you every screen" onPress={() => void replayTour()} />
+            <SettingRow art={ART.onboarding} label="How Clashy works" sub="Clash, Royale, squads, the Stash, the Cup" onPress={go('/help')} />
             <SettingRow art={ART.spend} label="Fees" sub="One small cut of each pot, network fees on us" onPress={go('/help?topic=fees')} />
             <SettingRow art={ART.goal} label="Responsible play" sub="Limits, breaks and playing within your means" onPress={go('/help?topic=safe')} />
           </Group>

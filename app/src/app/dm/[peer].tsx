@@ -20,6 +20,7 @@ import { ProfileAvatar } from '@/ui/feed';
 import { Swords, User } from '@/ui/icons';
 import { ART, BackBtn, ErrorLine, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
+import { TourTarget, useScreenTour } from '@/tour';
 import { C, FONT, S } from '@/ui/tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/chats' as Href));
@@ -54,6 +55,7 @@ function Thread({ peer }: { peer: PublicKey }) {
     return [...msgs, ...extra.filter((x) => !msgs.some((m) => m.id === x.id))].sort((a, b) => a.id - b.id);
   }, [t.data, extra]);
   const lastTheirs = [...all].reverse().find((m) => m.sender !== me)?.id;
+  useScreenTour('dm', !!me && !!t.data);
 
   // mark what you've seen as read
   useEffect(() => {
@@ -91,10 +93,12 @@ function Thread({ peer }: { peer: PublicKey }) {
               <Txt v="small" lines={1} style={{ fontSize: 12 }}>{t.data?.request ? 'Message request' : 'Tap for profile'}</Txt>
             </View>
           </Pressable>
+          <TourTarget id="dm-clash">
           <Pressable onPress={() => router.push('/clash' as Href)} accessibilityRole="button" accessibilityLabel={`Clash ${name}`}
             style={({ pressed }) => ({ height: 38, paddingHorizontal: 13, borderRadius: 19, backgroundColor: 'rgba(240,70,140,0.16)', flexDirection: 'row', alignItems: 'center', gap: 6, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
             <Swords size={15} color={C.opp} /><Txt v="small" color={C.ink} style={{ ...FONT.semi, fontSize: 13 }}>Clash</Txt>
           </Pressable>
+          </TourTarget>
         </Row>
       </View>
 
@@ -105,6 +109,7 @@ function Thread({ peer }: { peer: PublicKey }) {
       ) : t.loading && !t.data ? (
         <View style={{ flex: 1, padding: S.gutter }}><SkeletonRows n={4} /></View>
       ) : (
+        <TourTarget id="dm-thread" style={{ flex: 1 }}>
         <ChatThread msgs={items} me={me} who={who} seenUpTo={t.data?.theirRead} onReply={setReply} onReact={react} onPack={setPack} contentStyle={col}
           top={(
             <>
@@ -122,17 +127,20 @@ function Thread({ peer }: { peer: PublicKey }) {
               ) : null}
             </>
           )} />
+        </TourTarget>
       )}
 
       {me ? (
         <View style={col}>
           {err ? <View style={{ paddingHorizontal: S.gutter }}><ErrorLine msg={err} /></View> : null}
+          <TourTarget id="dm-composer">
           <ChatComposer value={text} onChange={setText} onSend={send} onSticker={sendSticker} onQuick={quick} placeholder="Message" busy={sending}
             reply={reply} onCancelReply={() => setReply(null)}
             attach={[
               { key: 'clash', label: 'Clash', color: '#F0468C', icon: <Swords size={24} color="#fff" />, onPress: () => router.push('/clash' as Href) },
               { key: 'profile', label: 'Profile', color: '#3A8DFF', icon: <User size={24} color="#fff" />, onPress: () => router.push(`/u/${id}` as Href) },
             ]} />
+          </TourTarget>
         </View>
       ) : null}
       <PackSheet packId={pack} onClose={() => setPack(null)} onSend={me ? sendSticker : undefined} />

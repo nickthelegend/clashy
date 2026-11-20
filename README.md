@@ -33,6 +33,12 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
     button counts new messages. The composer has an emoji key, 📎 shortcuts (Clash, Stickers, Emoji, Profile or
     the squad page), a field that grows as you type, and a round send button that is a quick 🔥 when empty.
     Replies and reactions are ordinary messages underneath, so squad ones are on chain too.
+  - **Guided tour:** on first run, Clashy Bot walks a new player through every item on Home and every tab (Chats,
+    Play, Squads, You). The screen dims, the item is cut out with a glowing ring, and a card gives a one-line slogan
+    and what to do with it. The tour switches tabs and scrolls by itself, and skips anything that isn't on screen.
+    Inner screens (Clash, Cup, Leaderboard, Wallet, Stash, Portfolio, Practice, trades, stocks, squads, Royale, DMs,
+    squad chat) get a short tour on their first visit. Replay it from Settings → Take the tour again. Code:
+    [app/src/tour/](app/src/tour/).
   - **Squads:** a squad podium, and squad search in the search drawer.
   - **Art:** Lottie onboarding and a squad war scene.
   - **Backend:** the social server ([server/](server/)) and the whole backend in Docker

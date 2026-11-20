@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentRef } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@/chain/wallet';
 import { isTestAccount, readHoldings, reader, usePoll, usePrices, useProfiles, type Profile } from '@/chain/social';
@@ -14,6 +14,7 @@ import { ClayLoop } from '@/ui/clay';
 import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Btn, ErrorLine, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { C, F, FONT, fmtUsd } from '@/ui/tokens';
 
 const WEEK = 7 * 86_400;
@@ -62,9 +63,12 @@ export default function Cup() {
   const rows = board.status === 'ready' ? board.data : [];
   const top = [rows[1], rows[0], rows[2]];
   const myIdx = rows.findIndex((r) => r.owner.toBase58() === me);
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('cup', ready && board.status === 'ready' && rows.length > 0);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 40 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 40 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         <View style={{ flex: 1 }} />
@@ -77,7 +81,8 @@ export default function Cup() {
         <Txt v="title" style={{ fontSize: 44, marginTop: 8, ...FONT.display, letterSpacing: -1 }}>Weekly Cup</Txt>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 2 }}>Profit on the stocks in your Stash, plus clash winnings this week.</Txt>
       </View>
-      <Row style={{ gap: 8, marginTop: 14 }}>
+      <TourTarget id="cup-clock" style={{ marginTop: 14 }}>
+      <Row style={{ gap: 8 }}>
         {['Days', 'Hrs', 'Min', 'Sec'].map((k, i) => (
           <View key={k} style={{ flex: 1, backgroundColor: i === 3 ? C.brand : C.s1, borderRadius: 14, paddingVertical: 10, alignItems: 'center' }}>
             <Txt v="title" style={{ fontSize: 26 }} color={i === 3 ? C.onBrand : C.ink}>{String(parts[i]).padStart(2, '0')}</Txt>
@@ -85,6 +90,7 @@ export default function Cup() {
           </View>
         ))}
       </Row>
+      </TourTarget>
 
       {board.status === 'error' ? <ErrorLine msg={board.error} /> : board.status === 'loading' || !ready ? <SkeletonRows n={5} /> : rows.length === 0 ? (
         <View style={{ alignItems: 'center', marginTop: 24 }}>
@@ -94,7 +100,8 @@ export default function Cup() {
         </View>
       ) : (
         <>
-          <Row style={{ alignItems: 'flex-end', gap: 8, marginTop: 22 }}>
+          <TourTarget id="cup-podium" style={{ marginTop: 22 }}>
+          <Row style={{ alignItems: 'flex-end', gap: 8 }}>
             {top.map((r, i) => {
               const place = i === 1 ? 1 : i === 0 ? 2 : 3;
               if (!r) return <View key={i} style={{ flex: 1 }} />;
@@ -111,6 +118,7 @@ export default function Cup() {
               );
             })}
           </Row>
+          </TourTarget>
           <View style={{ backgroundColor: C.s1, borderRadius: 18, paddingVertical: 4, marginTop: 0 }}>
             {rows.slice(3).map((r, i) => (
               <Row key={r.owner.toBase58()} style={{ gap: 10, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: r.owner.toBase58() === me ? 'rgba(171,159,242,0.15)' : 'transparent' }}>
@@ -121,7 +129,8 @@ export default function Cup() {
               </Row>
             ))}
           </View>
-          <View style={{ marginTop: 14, backgroundColor: C.s1, borderRadius: 18, padding: 12, borderWidth: 1.5, borderColor: myIdx >= 0 ? C.opp : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TourTarget id="cup-me" style={{ marginTop: 14 }}>
+          <View style={{ backgroundColor: C.s1, borderRadius: 18, padding: 12, borderWidth: 1.5, borderColor: myIdx >= 0 ? C.opp : 'transparent', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Txt v="label" style={{ width: 34 }}>{myIdx >= 0 ? `#${myIdx + 1}` : '–'}</Txt>
             <View style={{ flex: 1 }}>
               <Txt v="label">{myIdx >= 0 ? 'You' : 'Not ranked yet'}</Txt>
@@ -129,8 +138,10 @@ export default function Cup() {
             </View>
             <Btn title="Play" h={40} onPress={() => router.push('/arena')} />
           </View>
+          </TourTarget>
         </>
       )}
+      </TourScroll>
     </ScrollView>
   );
 }

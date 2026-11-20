@@ -5,7 +5,7 @@
 // Allocation, holdings with profit and loss, and the cash rows all come from chain reads. Nothing is invented.
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentRef } from 'react';
 import { Platform, Pressable, ScrollView, View, type GestureResponderEvent } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { usePriceHistory, type PriceRange } from '@/chain/history-prices';
 import { STOCK_ART } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, CRESTS, ErrorLine, LiveChart, LiveDot, Money, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const CARD = '#111116';
@@ -205,9 +206,12 @@ export default function PortfolioScreen() {
     { key: 'stocks', label: 'Stocks', value: stockVal, color: SLICE.stocks },
     ...(chestList.length ? [{ key: 'chests', label: 'Squad chests', value: chestVal, color: SLICE.chests }] : []),
   ].filter((s) => s.value > 0.004);
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('portfolio', !!me && !balErr && !loading && !nothing);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 36 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 36 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10 }}>
         <BackBtn onPress={back} />
         <Txt v="title">Portfolio</Txt>
@@ -223,7 +227,8 @@ export default function PortfolioScreen() {
       ) : loading ? <Loading /> : (
         <>
           {/* net worth: one big number, cents dimmed; scrubbing the chart shows that moment instead */}
-          <Animated.View entering={FadeInDown.duration(300)} style={{ marginTop: 18 }}>
+          <TourTarget id="port-worth" style={{ marginTop: 18 }}>
+          <Animated.View entering={FadeInDown.duration(300)}>
             <Txt v="small">{shown ? 'Value then' : 'Net worth'}</Txt>
             <Money value={headV} size={46} />
             <Row style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
@@ -240,6 +245,7 @@ export default function PortfolioScreen() {
               </Txt>
             ) : null}
           </Animated.View>
+          </TourTarget>
 
           {nothing ? (
             <View style={{ marginTop: 22, backgroundColor: CARD, borderRadius: 24, padding: 18, alignItems: 'center' }}>
@@ -254,7 +260,8 @@ export default function PortfolioScreen() {
           ) : (
             <>
               {/* chart */}
-              <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ marginTop: 16, marginHorizontal: -4 }}>
+              <TourTarget id="port-chart" style={{ marginTop: 16 }}>
+              <View onLayout={(e) => setChartW(Math.floor(e.nativeEvent.layout.width))} style={{ marginHorizontal: -4 }}>
                 {chartW <= 0 ? <View style={{ height: CHART_H }} /> : hist.error && !hist.data ? (
                   <View style={{ width: chartW, height: CHART_H, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
                     <Txt v="label" style={{ textAlign: 'center' }}>Price history is not available</Txt>
@@ -287,6 +294,7 @@ export default function PortfolioScreen() {
                 )}
               </View>
               <View style={{ marginTop: 10 }}><RangePicker value={range} onChange={(r) => { setScrub(null); setRange(r); }} /></View>
+              </TourTarget>
               <Txt v="small" style={{ marginTop: 8, lineHeight: 18 }}>
                 What you hold now, at past prices · recorded by Clashy{hist.data?.first ? ` since ${when(hist.data.first)}` : ''}
                 {held.length === 0 ? ' · all cash, so the line stays flat' : ''}
@@ -305,6 +313,7 @@ export default function PortfolioScreen() {
               {slices.length ? (
                 <>
                   <Head title="Allocation" />
+                  <TourTarget id="port-alloc">
                   <View style={{ backgroundColor: CARD, borderRadius: 22, padding: 14 }}>
                     <View style={{ flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', gap: 2 }}>
                       {slices.map((s) => <View key={s.key} style={{ flexGrow: s.value, flexBasis: 0, minWidth: 4, backgroundColor: s.color }} />)}
@@ -320,12 +329,14 @@ export default function PortfolioScreen() {
                       ))}
                     </View>
                   </View>
+                  </TourTarget>
                 </>
               ) : null}
 
               {/* stocks */}
               <Head title="Stocks" right={held.length ? `${held.length} held · ${fmtUsd(stockCost)} paid` : undefined} />
               {port.status === 'error' ? <ErrorLine msg={port.error} onRetry={port.reload} /> : held.length === 0 ? (
+                <TourTarget id="port-nostocks">
                 <Pressable onPress={() => router.push('/stash' as Href)} style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 22, padding: 14, minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
                   <Row style={{ gap: -10 }}>
                     {['NVDA', 'TSLA', 'AAPL'].map((k) => <Image key={k} source={STOCK_ART[k]} style={{ width: 32, height: 32 }} contentFit="contain" />)}
@@ -336,7 +347,9 @@ export default function PortfolioScreen() {
                   </View>
                   <Txt v="label" color={C.dim}>›</Txt>
                 </Pressable>
+                </TourTarget>
               ) : (
+                <TourTarget id="port-stocks">
                 <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>
                   {held.map((h) => (
                     <HoldRow key={h.stock.symbol} art={STOCK_ART[h.stock.symbol]} name={h.stock.name}
@@ -347,6 +360,7 @@ export default function PortfolioScreen() {
                       onPress={() => router.push(`/stock/${h.stock.symbol}` as Href)} />
                   ))}
                 </View>
+                </TourTarget>
               )}
 
               {/* cash */}
@@ -384,6 +398,7 @@ export default function PortfolioScreen() {
           )}
         </>
       )}
+      </TourScroll>
     </ScrollView>
   );
 }

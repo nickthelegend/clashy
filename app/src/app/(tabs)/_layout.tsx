@@ -13,14 +13,17 @@ import { TabIcon, tabArt, type TabName } from '@/ui/tab-icons';
 import { useCreate } from '@/ui/create';
 import { C } from '@/ui/tokens';
 import { RightRail, Sidebar } from '@/ui/desk';
+import { TourTarget } from '@/tour';
 import { pref, useLayout } from '@/ui/layout';
 
 type TB = Omit<TabTriggerSlotProps, 'ref'> & { name: TabName; label: string };
 function TabBtn({ name, label, isFocused, ref: _r, ...props }: TB & { ref?: unknown }) {
   return (
-    <Pressable {...props} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: !!isFocused }} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 50, alignItems: 'center', justifyContent: 'center' }}>
-      <TabIcon name={name} on={!!isFocused} size={31} dot />
-    </Pressable>
+    <TourTarget id={`tab-${name}`}>
+      <Pressable {...props} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: !!isFocused }} onPressIn={() => Haptics.selectionAsync()} style={{ width: 56, height: 50, alignItems: 'center', justifyContent: 'center' }}>
+        <TabIcon name={name} on={!!isFocused} size={31} dot />
+      </Pressable>
+    </TourTarget>
   );
 }
 
@@ -33,6 +36,7 @@ function ArenaBtn({ on }: { on: boolean }) {
   const box = useAnimatedStyle(() => ({ transform: [{ scale: press.value * (1 + turn.value * 0.06) }] }));
   const icon = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 90}deg` }] }));
   return (
+    <TourTarget id="tab-play">
     <Pressable accessibilityRole="button" accessibilityLabel="Play a game" accessibilityState={{ expanded: arenaOpen }}
       onPressIn={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); press.value = withSpring(0.9, { damping: 15, stiffness: 400 }); }}
       onPressOut={() => { press.value = withSpring(1, { damping: 10, stiffness: 260 }); }}
@@ -41,6 +45,7 @@ function ArenaBtn({ on }: { on: boolean }) {
         <Animated.View style={icon}><Image source={tabArt('play')} style={{ width: 34, height: 34 }} contentFit="contain" /></Animated.View>
       </Animated.View>
     </Pressable>
+    </TourTarget>
   );
 }
 

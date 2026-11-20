@@ -1,7 +1,7 @@
 // Home: the calls feed. Players post calls on tokenized stocks with their real position attached (shares bought
 // through the Stash and what they cost, both on chain, marked to the live price), reply in threads and like once.
 // Posts live on the MagicBlock rollup; profiles, positions and prices are read from Solana. Nothing is invented.
-import { router, type Href } from 'expo-router';
+import { router, usePathname, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import { PullSearchHint, usePullSearch } from '@/ui/pull-search';
 import { Bell, Jar, Plus, Search as SearchI } from '@/ui/icons';
 import { Avatar, Btn, Card, ErrorLine, Money, Pending, Row, SkeletonRows, Txt, UnderTabs, Wordmark, ART } from '@/ui/kit';
 import { useDeskColumn, useLayout } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { C, F, FONT, S } from '@/ui/tokens';
 
 type Tab = 'calls' | 'duels';
@@ -64,6 +65,7 @@ export default function HomeScreen() {
   // pull down past the top and hold: search opens
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const pullSearch = usePullSearch(openSearch, scrollRef);
+  const tourScroll = useTourScroll(scrollRef);
   const [liking, setLiking] = useState<number | null>(null);
   const [likeErr, setLikeErr] = useState<string>();
   const chain = useChain();
@@ -126,10 +128,14 @@ export default function HomeScreen() {
   // signed in without a name: finish onboarding first
   useEffect(() => { if (me && hasProfile === false) router.replace('/welcome?step=name' as Href); }, [me?.toBase58(), hasProfile]); // eslint-disable-line react-hooks/exhaustive-deps
   const f = feed.status === 'ready' ? feed.data : null;
+  // first run: the guided tour, once onboarding is done (signed out, or signed in with a name)
+  const path = usePathname();
+  useScreenTour('main', path === '/' && wallet.status !== 'loading' && !(me && hasProfile !== true));
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-    <ScrollView ref={scrollRef} {...pullSearch.scrollProps} style={{ flex: 1, backgroundColor: C.bg, transform: [{ translateY: pullSearch.slide }] }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={scrollRef} {...pullSearch.scrollProps} onScroll={(e) => { pullSearch.scrollProps.onScroll(e); tourScroll.onScroll(e); }} style={{ flex: 1, backgroundColor: C.bg, transform: [{ translateY: pullSearch.slide }] }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+      <TourScroll value={tourScroll.scroller}>
       <Row style={{ justifyContent: 'space-between', marginBottom: 14 }}>
         {myProfile ? (
           <Pressable onPress={() => router.push('/profile')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -139,29 +145,38 @@ export default function HomeScreen() {
         ) : desk ? <Txt v="title">Home</Txt> : <Wordmark height={24} />}
         {wallet.status === 'out' ? (
           <Row style={{ gap: 8 }}>
+            <TourTarget id="home-search">
             <Pressable onPress={() => openSearch()} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
-            <Btn title="Sign in" h={36} onPress={() => wallet.login?.()} />
+            </TourTarget>
+            <TourTarget id="home-signin"><Btn title="Sign in" h={36} onPress={() => wallet.login?.()} /></TourTarget>
           </Row>
         ) : (
           <Row style={{ gap: 8 }}>
+            <TourTarget id="home-search">
             <Pressable onPress={() => openSearch()} accessibilityRole="button" accessibilityLabel="Search" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <SearchI size={18} color={C.ink} />
             </Pressable>
+            </TourTarget>
+            <TourTarget id="home-bell">
             <Pressable onPress={() => router.push('/inbox' as Href)} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#15151B', alignItems: 'center', justifyContent: 'center' }}>
               <Bell size={18} color={C.ink} />
             </Pressable>
+            </TourTarget>
+            <TourTarget id="home-add">
             <Pressable onPress={openSave} style={({ pressed }) => ({ height: 40, paddingHorizontal: 18, borderRadius: 20, backgroundColor: C.up, justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] })}>
               <Txt v="label" color="#04120A">Add</Txt>
             </Pressable>
+            </TourTarget>
           </Row>
         )}
       </Row>
 
       {me ? (
         // net worth, the way the best trading apps lead: one big number, cents dimmed, what moved it
-        <Pressable onPress={() => router.push('/portfolio' as Href)} style={{ marginBottom: 16 }}>
+        <TourTarget id="home-worth" style={{ marginBottom: 16, alignSelf: 'flex-start' }}>
+        <Pressable onPress={() => router.push('/portfolio' as Href)}>
           <Txt v="small">Net worth ›</Txt>
           <Money value={worth} size={46} />
           <Row style={{ gap: 8, marginTop: 4 }}>
@@ -172,10 +187,11 @@ export default function HomeScreen() {
           </Row>
           <Txt v="small" style={{ marginTop: 4 }}>Wallet ${(bal ?? 0).toFixed(2)} · Stash ${stashBal.toFixed(2)} · Stocks ${stockVal.toFixed(2)}</Txt>
         </Pressable>
+        </TourTarget>
       ) : null}
 
       {topCalls.length ? (
-        <View style={{ marginBottom: 14 }}>
+        <TourTarget id="home-topcalls" style={{ marginBottom: 14 }}>
           <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
             <Txt v="label">Top calls right now</Txt>
             <Pressable onPress={() => router.push('/cup' as Href)}><Txt v="small" color={C.brandSoft}>Weekly Cup ›</Txt></Pressable>
@@ -183,50 +199,56 @@ export default function HomeScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10, alignItems: 'flex-end' }}>
             {topCalls.map((t, i) => <TopCallCard key={t.key} t={t} rank={i + 1} profile={profMap.get(t.owner)} />)}
           </ScrollView>
-        </View>
+        </TourTarget>
       ) : null}
 
       {f && f.live.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter, marginBottom: 12 }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
+        <TourTarget id="home-live" style={{ marginBottom: 12 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10 }}>
           {f.live.map((d) => <Story key={d.key.toBase58()} d={d} />)}
         </ScrollView>
+        </TourTarget>
       ) : null}
 
       {wallet.status === 'out' ? (
-        <View style={{ borderRadius: 22, backgroundColor: C.s1, padding: 16, marginBottom: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <TourTarget id="home-pitch" style={{ borderRadius: 22, backgroundColor: C.s1, padding: 16, marginBottom: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <ClayLoop name="stocks" size={84} style={{ borderRadius: 16 }} />
           <View style={{ flex: 1 }}>
             <Txt v="h2">Calls with skin in the game</Txt>
             <Txt v="small" style={{ marginTop: 4 }}>Every position here is real: shares of real stocks, bought on chain, at the price they paid.</Txt>
             <Btn title="Sign in to post" h={36} style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => wallet.login?.()} />
           </View>
-        </View>
+        </TourTarget>
       ) : null}
 
       <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'calls', label: 'Calls' }, { key: 'duels', label: 'Clash results' }]} />
+        <TourTarget id="home-tabs"><UnderTabs<Tab> value={tab} onChange={setTab} items={[{ key: 'calls', label: 'Calls' }, { key: 'duels', label: 'Clash results' }]} /></TourTarget>
         {/* post a new call: opens the call drawer */}
+        <TourTarget id="home-call">
         <Pressable onPress={() => (myProfile ? openCall(null) : wallet.login?.())} accessibilityRole="button" accessibilityLabel="Post a call" hitSlop={8}
           style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, height: 30, paddingHorizontal: 12, borderRadius: 15, backgroundColor: C.brand, opacity: pressed ? 0.85 : 1 })}>
           <Plus size={14} color={C.onBrand} />
           <Txt v="small" color={C.onBrand} style={{ ...FONT.semi, fontSize: 13 }}>Call</Txt>
         </Pressable>
+        </TourTarget>
       </View>
       {likeErr ? <ErrorLine msg={likeErr} /> : null}
 
       {tab === 'calls' ? (
         board.status === 'loading' ? <SkeletonRows n={4} /> : board.status === 'error' ? <ErrorLine msg={board.error} onRetry={board.reload} /> : top.length === 0 ? (
           <Pending art={ART.chat} title="No calls yet" body="Post the first call: pick a stock, say why, and back it from your Stash so your position shows." />
-        ) : top.map((p) => (
-          <Thread key={p.seq} post={p} replies={repliesOf(p.seq)} profiles={profMap} holdings={holdMap} prices={px} me={myProfile}
-            onReply={(x) => (myProfile ? openCall(x) : wallet.login?.())} onLike={like} liking={liking} />
-        ))
+        ) : top.map((p, i) => {
+          const thread = <Thread key={p.seq} post={p} replies={repliesOf(p.seq)} profiles={profMap} holdings={holdMap} prices={px} me={myProfile}
+            onReply={(x) => (myProfile ? openCall(x) : wallet.login?.())} onLike={like} liking={liking} />;
+          return i === 0 ? <TourTarget key={p.seq} id="home-feed">{thread}</TourTarget> : thread;
+        })
       ) : feed.status === 'loading' ? <SkeletonRows n={3} /> : feed.status === 'error' ? <ErrorLine msg={feed.error} /> : (
         <>
           {f!.settled.length === 0 ? <Pending art={ART.duels} title="No clashes settled yet" body="Clash results show here, live from the Clashy program." action="Start a clash" onAction={() => router.push('/onchain')} />
             : f!.settled.map((d) => <DuelResult key={d.key.toBase58()} d={d} name={nameOf} />)}
         </>
       )}
+      </TourScroll>
     </ScrollView>
     <PullSearchHint pull={pullSearch.pull} top={insets.top} />
     </View>

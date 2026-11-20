@@ -8,12 +8,14 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useFeed, useLiveCounts } from '@/chain/reads';
 import { Collapse, Swords } from './icons';
 import { TabIcon } from './tab-icons';
+import { TourTarget } from '@/tour';
 import { ART, Art, Btn, LiveDot, Row, Txt, Wordmark } from './kit';
 import { C, F, FONT, R } from './tokens';
 
-type NavProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: (on: boolean) => ReactNode; collapsed: boolean };
-function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavProps & { ref?: unknown }) {
+type NavProps = Omit<TabTriggerSlotProps, 'ref'> & { label: string; icon: (on: boolean) => ReactNode; collapsed: boolean; tour: string };
+function NavItem({ label, icon, collapsed, tour, isFocused, ref: _r, ...props }: NavProps & { ref?: unknown }) {
   return (
+    <TourTarget id={tour}>
     <Pressable {...props} style={({ hovered }: { hovered?: boolean }) => ({
       flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md,
       paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start',
@@ -22,15 +24,16 @@ function NavItem({ label, icon, collapsed, isFocused, ref: _r, ...props }: NavPr
       {icon(!!isFocused)}
       {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: isFocused ? C.ink : C.muted }}>{label}</Text>}
     </Pressable>
+    </TourTarget>
   );
 }
 
-const NAV: { name: string; label: string; icon: (on: boolean) => ReactNode }[] = [
-  { name: 'index', label: 'Home', icon: (on) => <TabIcon name="home" on={on} size={26} /> },
-  { name: 'chats', label: 'Chats', icon: (on) => <TabIcon name="chats" on={on} size={26} /> },
-  { name: 'arena', label: 'Arena', icon: (on) => <TabIcon name="play" on={on} size={26} /> },
-  { name: 'clans', label: 'Squads', icon: (on) => <TabIcon name="squads" on={on} size={26} /> },
-  { name: 'profile', label: 'Profile', icon: (on) => <TabIcon name="you" on={on} size={26} /> },
+const NAV: { name: string; label: string; tour: string; icon: (on: boolean) => ReactNode }[] = [
+  { name: 'index', label: 'Home', tour: 'tab-home', icon: (on) => <TabIcon name="home" on={on} size={26} /> },
+  { name: 'chats', label: 'Chats', tour: 'tab-chats', icon: (on) => <TabIcon name="chats" on={on} size={26} /> },
+  { name: 'arena', label: 'Arena', tour: 'tab-play', icon: (on) => <TabIcon name="play" on={on} size={26} /> },
+  { name: 'clans', label: 'Squads', tour: 'tab-squads', icon: (on) => <TabIcon name="squads" on={on} size={26} /> },
+  { name: 'profile', label: 'Profile', tour: 'tab-you', icon: (on) => <TabIcon name="you" on={on} size={26} /> },
 ];
 
 export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -45,7 +48,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       <View style={{ gap: 4 }}>
         {NAV.map((n) => (
           <TabTrigger key={n.name} name={n.name} asChild>
-            <NavItem label={n.label} icon={n.icon} collapsed={collapsed} />
+            <NavItem label={n.label} icon={n.icon} collapsed={collapsed} tour={n.tour} />
           </TabTrigger>
         ))}
         <Pressable onPress={() => router.push('/wallet')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md, paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start', marginTop: 10 }}>

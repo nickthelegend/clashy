@@ -5,7 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { ClayLoop } from '@/ui/clay';
 import { FX, Hit, RoundBanner } from '@/ui/fx';
 import { ART, BackBtn, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { Lottie } from '@/ui/lottie';
 import { BigCta, EDGE, GOLD, Hearts, HowItWorks, OpenRoyale, RoundRing, SURFACE, Segmented, StatusPill, Table, TableRoll, type Seat } from '@/ui/royale';
 import { Sheet } from '@/ui/sheet';
@@ -210,17 +211,23 @@ export default function OnchainRoyale() {
 
   const inGame = !!active && !!tour && tour.status < 3;
   const over = !!active && !!tour && tour.status >= 3;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  // the lobby only: no tour while a Royale is open on this device (or still being looked up)
+  useScreenTour('royale', !active);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07070A' }}>
-      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+        <TourScroll value={ts.scroller}>
         <Row style={{ gap: 10, marginBottom: 6 }}>
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <View style={{ flex: 1 }} />
+          <TourTarget id="royale-wallet">
           <Pressable onPress={() => setProof(true)} accessibilityRole="button" accessibilityLabel="Wallet and on-chain proof"
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: SURFACE, borderRadius: 16, paddingHorizontal: 12, height: 44 }}>
             <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : `${bal.toFixed(2)} USDC`}</Txt>
           </Pressable>
+          </TourTarget>
         </Row>
         {err ? <ErrorLine msg={err} /> : null}
 
@@ -342,12 +349,14 @@ export default function OnchainRoyale() {
         ) : (
           /* ---------- lobby ---------- */
           <>
-            <View style={{ alignItems: 'center', marginTop: 4 }}>
+            <TourTarget id="royale-intro" style={{ marginTop: 4 }}>
+            <View style={{ alignItems: 'center' }}>
               <ClayLoop name="royale" size={150} style={{ borderRadius: 34 }} />
               <Text style={{ ...FONT.bold, fontSize: 42, letterSpacing: -1.4, color: C.ink, marginTop: -4 }}>Royale</Text>
               <Txt v="small" style={{ textAlign: 'center' }}>{ENTRY_USDC} USDC in. Last one standing takes the pot.</Txt>
             </View>
             <HowItWorks secs={ROUND_SECS} />
+            </TourTarget>
             <Segmented label="Seats" value={seats} onChange={setSeats} items={(['2', '4', '8', '16'] as const).map((k) => ({ key: k, label: k }))} />
             <Segmented label="Hearts each" value={lives} onChange={setLives} items={(['1', '2', '3'] as const).map((k) => ({
               key: k,
@@ -358,12 +367,15 @@ export default function OnchainRoyale() {
                 </View>
               ),
             }))} />
-            <Txt v="small" style={{ textAlign: 'center', marginTop: 12 }}>
+            <TourTarget id="royale-host" style={{ marginTop: 12 }}>
+            <Txt v="small" style={{ textAlign: 'center' }}>
               A full table of {seats} pays <Text style={{ ...FONT.bold, color: GOLD }}>{fmtUsd(potAfterRake(ENTRY_USDC * USDC, +seats))}</Text> to whoever is left.
             </Txt>
             <BigCta title={busy === 'host' ? 'Hosting…' : ready ? `Host · ${ENTRY_USDC} USDC` : 'Set up your wallet'} disabled={!!busy} onPress={ready ? host : () => setProof(true)} />
+            </TourTarget>
 
-            <Row style={{ justifyContent: 'space-between', marginTop: 28, marginBottom: 10 }}>
+            <TourTarget id="royale-open" style={{ marginTop: 28 }}>
+            <Row style={{ justifyContent: 'space-between', marginBottom: 10 }}>
               <Text style={{ ...FONT.display, fontSize: 24, color: C.ink }}>Open royales</Text>
               <Txt v="small">{fresh.length} open</Txt>
             </Row>
@@ -374,6 +386,7 @@ export default function OnchainRoyale() {
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 6 }}>No fresh tables right now. Host one and players can jump in from here.</Txt>
               </View>
             ) : fresh.map((t) => lobbyCard(t, false))}
+            </TourTarget>
 
             {older.length ? (
               <>
@@ -391,6 +404,7 @@ export default function OnchainRoyale() {
             ) : null}
           </>
         )}
+        </TourScroll>
       </ScrollView>
 
       <Sheet open={proof} onClose={() => setProof(false)} title="Wallet and on-chain proof">

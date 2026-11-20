@@ -3,12 +3,13 @@
 // history from the chain, and the account rows (explorer, export key, sign out).
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type ComponentRef } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IS_LOCAL_NET, NET, PROGRAM_ID, USDC, base, faucetUsdc, usdcAta } from '@/chain/client';
 import { SendUsdc, WalletCard, useChain } from '@/chain/useChain';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { ART, BackBtn, Btn, ErrorLine, Money, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { ArrowDown, ArrowUp, Copy, Plus } from '@/ui/icons';
 import { Sheet } from '@/ui/sheet';
@@ -73,6 +74,9 @@ export default function Wallet() {
     return () => { alive = false; };
   }, [me, tick, bal]);
 
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('wallet', !!me && moves !== null);
+
   const copy = async () => {
     if (!me) return;
     if (Platform.OS === 'web' && navigator.clipboard) await navigator.clipboard.writeText(me.toBase58());
@@ -83,12 +87,14 @@ export default function Wallet() {
   const explorer = () => me && Linking.openURL(`https://explorer.solana.com/address/${me.toBase58()}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 30 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 30 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10 }}><BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} /></Row>
 
       {!me ? <View style={{ marginTop: 16 }}><WalletCard chain={chain} note="USDC only" need={0} /></View> : (
         <>
-          <View style={{ alignItems: 'center', marginTop: 8 }}>
+          <TourTarget id="wallet-balance" style={{ marginTop: 8 }}>
+          <View style={{ alignItems: 'center' }}>
             <Txt v="small">{wallet.signer?.kind === 'privy' ? wallet.signer.label : 'Your wallet'}</Txt>
             <View style={{ marginTop: 4 }}>{bal == null ? <Txt v="title">…</Txt> : <Money value={bal} size={56} />}</View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: C.s1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 }}>
@@ -96,16 +102,20 @@ export default function Wallet() {
               <Txt v="small" color={C.ink}>USDC{IS_LOCAL_NET ? ' · test network' : ''} · no gas fees</Txt>
             </View>
           </View>
+          </TourTarget>
 
-          <Row style={{ marginTop: 26, marginBottom: 6 }}>
+          <TourTarget id="wallet-actions" style={{ marginTop: 26, marginBottom: 6 }}>
+          <Row>
             {wallet.addFunds ? <Action label="Add" tint={C.up} icon={<Plus color="#04120A" />} onPress={wallet.addFunds} />
               : faucet ? <Action label={busy === 'faucet' ? 'Adding…' : 'Test USDC'} tint={C.up} icon={<Plus color="#04120A" />} disabled={!!busy} onPress={getTest} /> : null}
             <Action label="Send" icon={<ArrowUp />} disabled={!bal} onPress={() => setSending(true)} />
             <Action label="Receive" icon={<ArrowDown />} onPress={() => setReceiving(true)} />
           </Row>
+          </TourTarget>
           {err ? <ErrorLine msg={err} /> : null}
 
-          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 6 }}>Activity</Text>
+          <TourTarget id="wallet-activity" style={{ marginTop: 26 }}>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginBottom: 6 }}>Activity</Text>
           {moves === null ? <SkeletonRows n={3} /> : moves.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 24 }}>
               <Image source={ART.coinsPile} style={{ width: 90, height: 90 }} contentFit="contain" />
@@ -123,6 +133,7 @@ export default function Wallet() {
               <Txt v="label" color={m.delta >= 0 ? C.up : C.ink}>{m.delta >= 0 ? '+' : '−'}${Math.abs(m.delta).toFixed(2)}</Txt>
             </Pressable>
           ))}
+          </TourTarget>
 
           <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: C.ink, marginTop: 26, marginBottom: 8 }}>Account</Text>
           <View style={{ backgroundColor: C.s1, borderRadius: 20, overflow: 'hidden' }}>
@@ -149,6 +160,7 @@ export default function Wallet() {
         </Pressable>
         <Btn title={copied ? 'Copied' : 'Copy address'} style={{ marginTop: 12 }} onPress={copy} />
       </Sheet>
+      </TourScroll>
     </ScrollView>
   );
 }

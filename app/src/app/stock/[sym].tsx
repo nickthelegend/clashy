@@ -5,7 +5,7 @@
 // exactly as the Stash screen does it.
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ComponentRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import { Search as SearchIcon, Swords } from '@/ui/icons';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, LiveDot, Money, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { PriceChart } from '@/ui/price-chart';
 import { useDeskColumn } from '@/ui/layout';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { Sheet } from '@/ui/sheet';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
@@ -217,10 +218,13 @@ function StockPage({ st }: { st: Stock }) {
 
   const shownHolders = allHolders ? holders : holders.slice(0, 8);
   const barH = 54 + 12 + insets.bottom + 10;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('stock', prices.status !== 'loading' && profiles.status !== 'loading' && holdings.status !== 'loading');
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
+        <TourScroll value={ts.scroller}>
         {/* header */}
         <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
@@ -235,7 +239,8 @@ function StockPage({ st }: { st: Stock }) {
         </Row>
 
         {/* price */}
-        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 22 }}>
+        <TourTarget id="stock-price" style={{ marginTop: 22 }}>
+        <Animated.View entering={FadeInDown.duration(320)}>
           {prices.status === 'loading' ? <Bone w={190} h={50} r={12} /> : price ? <Money value={price} size={52} /> : (
             <Txt v="title" color={C.muted}>No price yet</Txt>
           )}
@@ -249,6 +254,7 @@ function StockPage({ st }: { st: Stock }) {
         </Animated.View>
 
         <PriceChart sym={st.symbol} samples={samples} price={price} source="On-chain feed" />
+        </TourTarget>
 
         {/* quick facts, all read live */}
         <Row style={{ gap: 8, marginTop: 14 }}>
@@ -304,6 +310,7 @@ function StockPage({ st }: { st: Stock }) {
 
         {/* who holds it */}
         <Head title="Who holds it" right={holders.length ? `${holders.length} player${holders.length === 1 ? '' : 's'}` : undefined} />
+        <TourTarget id="stock-holders">
         {holdings.status === 'loading' || profiles.status === 'loading' ? <SkeletonRows n={3} /> : holdings.status === 'error' ? <ErrorLine msg={holdings.error} onRetry={holdings.reload} /> : profiles.status === 'error' ? <ErrorLine msg={profiles.error} onRetry={profiles.reload} /> : holders.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, borderRadius: 24, backgroundColor: '#0E0E12' }}>
             <Image source={STOCK_ART[st.symbol]} style={{ width: 72, height: 72 }} contentFit="contain" />
@@ -338,6 +345,7 @@ function StockPage({ st }: { st: Stock }) {
             ) : null}
           </View>
         )}
+        </TourTarget>
 
         {/* calls */}
         <Head title={`Calls on ${st.symbol}`} right={calls.length ? `${calls.length} call${calls.length === 1 ? '' : 's'}` : undefined} />
@@ -362,15 +370,18 @@ function StockPage({ st }: { st: Stock }) {
         <Txt v="small" style={{ marginTop: 22, lineHeight: 18, textAlign: 'center' }}>
           {st.name} as a real tokenized share. Prices, positions and calls are read live from Solana. Clashy pays every fee.
         </Txt>
+        </TourScroll>
       </ScrollView>
 
       {/* the bar that stays at the bottom */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 12, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
-        <View style={[{ flexDirection: 'row', gap: 8 }, col]}>
+        <TourTarget id="stock-bar" style={col}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           <BarBtn title={held ? 'Buy more' : `Buy ${st.symbol}`} bg={C.up} fg="#04120A" onPress={openBuy} disabled={!!busy} />
           {held ? <BarBtn title="Sell" bg="#1F1F26" fg={C.ink} onPress={() => { setErr(undefined); setSelling(true); }} disabled={!!busy} /> : null}
           <BarBtn title="Clash" bg={C.opp} fg="#fff" icon={<Swords size={17} color="#fff" />} onPress={() => router.push('/clash' as Href)} />
         </View>
+        </TourTarget>
       </View>
 
       <AmountSheet open={buying} onClose={() => setBuying(false)} title={`Buy ${st.name}`}
