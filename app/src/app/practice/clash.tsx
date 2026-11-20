@@ -4,7 +4,7 @@
 // the Practice paper balance; nothing is sent on chain. When you're ready, the result screen sends you to a real clash.
 import * as Haptics from 'expo-haptics';
 import { router, type Href } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { usePractice } from '@/chain/practice';
 import { useProfiles, type Profile } from '@/chain/social';
 import { errText } from '@/chain/useChain';
 import { useWallet } from '@/chain/walletCore';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { CoinToken, LiveBoard, coinName } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
 import { BackBtn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
@@ -116,10 +117,14 @@ export default function PracticeClash() {
   const left = live ? Math.max(0, (live.endsAt - now) / 1000) : null;
   const since = live ? feed.seen.filter((x) => x.t * 1000 >= live.startedAt - 1000).map((x) => x.p) : [];
   const ret = live && price !== null ? sideReturns(live, price) : null;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  // the tour lights the lobby's pickers, so it waits for the paper book and plays outside a round
+  useScreenTour('practiceclash', pr.ready && !live && !result);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+        <TourScroll value={ts.scroller}>
         <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
           <Txt v="h2" style={{ flex: 1 }}>Practice clash</Txt>
@@ -197,7 +202,8 @@ export default function PracticeClash() {
               </Txt>
             ) : <Txt v="small" style={{ textAlign: 'center', marginTop: 10, lineHeight: 18 }}>The real clash, with practice money. Beat the bot, then clash real players.</Txt>}
 
-            <Row style={{ justifyContent: 'center', gap: 10, marginTop: 22 }}>
+            <TourTarget id="pc-coins" style={{ marginTop: 22 }}>
+            <Row style={{ justifyContent: 'center', gap: 10 }}>
               {PRACTICE_COINS.map((c) => {
                 const on = c === coin;
                 return (
@@ -209,6 +215,7 @@ export default function PracticeClash() {
                 );
               })}
             </Row>
+            </TourTarget>
             <Row style={{ justifyContent: 'center', gap: 6, marginTop: 10 }}>
               <LiveDot color={feed.fresh ? C.up : C.dim} />
               <Txt v="small" style={{ fontVariant: ['tabular-nums'] }}>{price !== null ? `${coinName(coin)} ${fmtUsd(price)} · ${feed.fresh ? 'live from the rollup feed' : 'feed is quiet'}` : 'Reading the live price'}</Txt>
@@ -217,19 +224,25 @@ export default function PracticeClash() {
               {feed.seen.length > 1 ? <LiveChart data={feed.seen.map((x) => x.p)} w={chartW + 8} h={150} color={C.brand} minSpan={0.0006} /> : <View style={{ height: 150 }} />}
             </View>
 
-            <Txt v="small" style={{ marginTop: 18, marginBottom: 8 }}>Mode</Txt>
-            <Chips items={PRACTICE_LEVERAGE} value={lev as (typeof PRACTICE_LEVERAGE)[number]} onChange={setLev} label={(x) => (x === 1 ? 'Classic' : `${x}x`)} />
+            <TourTarget id="pc-mode" style={{ marginTop: 18 }}>
+              <Txt v="small" style={{ marginBottom: 8 }}>Mode</Txt>
+              <Chips items={PRACTICE_LEVERAGE} value={lev as (typeof PRACTICE_LEVERAGE)[number]} onChange={setLev} label={(x) => (x === 1 ? 'Classic' : `${x}x`)} />
+            </TourTarget>
             <Txt v="small" style={{ marginTop: 8, lineHeight: 17 }}>
               {lev === 1 ? 'Classic: the right call after 60 seconds takes the stake.' : `Perps ${lev}x: each side makes ${lev}× the move, up to the stake. A ${(100 / lev).toFixed(lev > 25 ? 1 : 0)}% move against you knocks you out.`}
             </Txt>
-            <Txt v="small" style={{ marginTop: 16, marginBottom: 8 }}>Stake · {usd2(cash)} practice money</Txt>
-            <Chips items={PRACTICE_STAKES} value={stake as (typeof PRACTICE_STAKES)[number]} onChange={setStake} label={(x) => `$${x}`} />
+            <TourTarget id="pc-stake" style={{ marginTop: 16 }}>
+              <Txt v="small" style={{ marginBottom: 8 }}>Stake · {usd2(cash)} practice money</Txt>
+              <Chips items={PRACTICE_STAKES} value={stake as (typeof PRACTICE_STAKES)[number]} onChange={setStake} label={(x) => `$${x}`} />
+            </TourTarget>
 
             <Txt v="small" style={{ marginTop: 22, textAlign: 'center' }}>Where will {coinName(coin)} be in 60 seconds?</Txt>
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <TourTarget id="pc-call" style={{ marginTop: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
               <BarBtn title="Higher ▲" bg={C.up} fg="#04120A" onPress={() => start('up')} disabled={busy || !pr.ready || !feed.fresh} h={60} />
               <BarBtn title="Lower ▼" bg={C.down} fg="#fff" onPress={() => start('down')} disabled={busy || !pr.ready || !feed.fresh} h={60} />
             </View>
+            </TourTarget>
             {feed.error ? <ErrorLine msg={feed.error} /> : !feed.fresh && feed.last ? <ErrorLine msg={`The ${coin} feed hasn't moved in over 10 s, so a clash can't start. The crank pushes prices every second; it may be stopped.`} /> : null}
             {err ? <ErrorLine msg={err} /> : null}
             <Txt v="small" style={{ marginTop: 12, textAlign: 'center', lineHeight: 18 }}>
@@ -241,6 +254,7 @@ export default function PracticeClash() {
         {!live && history.length ? (
           <>
             <Txt v="h2" style={{ marginTop: 30, marginBottom: 10 }}>Your practice clashes</Txt>
+            <TourTarget id="pc-history">
             <View style={{ backgroundColor: '#111116', borderRadius: 22, overflow: 'hidden' }}>
               {history.slice(0, 8).map((c, i) => (
                 <Row key={c.id} style={{ gap: 12, minHeight: 58, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: '#18181E' }}>
@@ -253,8 +267,10 @@ export default function PracticeClash() {
                 </Row>
               ))}
             </View>
+            </TourTarget>
           </>
         ) : null}
+        </TourScroll>
       </ScrollView>
     </View>
   );

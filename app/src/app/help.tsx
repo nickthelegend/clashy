@@ -12,6 +12,7 @@ import Svg, { Path } from 'react-native-svg';
 import { IS_LOCAL_NET, NET, P, PROGRAM_ID } from '@/chain/client';
 import { readProfile, reader, usePoll } from '@/chain/social';
 import { useWallet } from '@/chain/wallet';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { ClayLoop, type ClayName } from '@/ui/clay';
 import { ART, BackBtn, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -91,6 +92,8 @@ function Section({ id, title, lead, loop, still, tint, facts, faqs, focus, extra
   useEffect(() => { if (focus) setOpen((o) => (o === null ? 0 : o)); }, [focus]);
   return (
     <View onLayout={(e) => onLayout(id, e)} style={{ marginTop: 14 }}>
+      {/* the tour lights a section's card as help-<topic> */}
+      <TourTarget id={`help-${id}`}>
       <Animated.View entering={FadeInDown.duration(320)} style={{ backgroundColor: CARD, borderRadius: 26, borderWidth: focus ? 1.5 : 1, borderColor: focus ? tint + 'AA' : 'transparent' }}>
         <Row style={{ gap: 14, padding: 16, alignItems: 'center' }}>
           <View style={{ width: 84, height: 84, borderRadius: 22, backgroundColor: tint + '1F', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
@@ -109,6 +112,7 @@ function Section({ id, title, lead, loop, still, tint, facts, faqs, focus, extra
           <Faq key={f.q} q={f.q} open={open === i} onToggle={() => setOpen((o) => (o === i ? null : i))} last={i === faqs.length - 1}>{f.a}</Faq>
         ))}
       </Animated.View>
+      </TourTarget>
     </View>
   );
 }
@@ -174,9 +178,13 @@ export default function Help() {
   const usedToday = p && p.day === Math.floor(now / 86_400) ? p.stakedToday : 0;
   const onBreak = !!p && p.breakUntil > now;
   const explorer = () => Linking.openURL(`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`);
+  const ts = useTourScroll(scroll);
+  // the Fees card grows a line once the live rate is read, so the tour waits for it
+  useScreenTour('help', rake.status !== 'loading');
 
   return (
-    <ScrollView ref={scroll} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+    <ScrollView ref={scroll} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10 }}><BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/' as Href))} /></Row>
 
       {/* hero */}
@@ -189,7 +197,8 @@ export default function Help() {
       </View>
 
       {/* topic jump chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 14, marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
+      <TourTarget id="help-topics" style={{ marginTop: 14 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
         {TOPICS.map((t) => {
           const on = focus === t.key;
           return (
@@ -200,6 +209,7 @@ export default function Help() {
           );
         })}
       </ScrollView>
+      </TourTarget>
 
       <Section id="clash" focus={focus === 'clash'} onLayout={onLayout} title="Clash" tint={C.opp} loop="duel" still={ART.tileDuel}
         lead="1 v 1. Same coin, two sealed calls. Whoever calls it best takes the pot."
@@ -311,7 +321,8 @@ export default function Help() {
           { q: 'Can I check all this myself?', a: <A>Yes. Every stake, payout and fee is a public Solana transaction. Your wallet page links each one to Solana Explorer.</A> },
         ]} />
 
-      <Pressable onPress={explorer} style={({ pressed }) => ({ marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12', opacity: pressed ? 0.7 : 1 })}>
+      <TourTarget id="help-chain" style={{ marginTop: 18 }}>
+      <Pressable onPress={explorer} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 14, backgroundColor: '#0E0E12', opacity: pressed ? 0.7 : 1 })}>
         <Image source={ART.levelStar} style={{ width: 40, height: 40 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Txt v="label">Every rule here runs on chain</Txt>
@@ -319,6 +330,8 @@ export default function Help() {
         </View>
         <Txt v="label" color={C.muted}>›</Txt>
       </Pressable>
+      </TourTarget>
+      </TourScroll>
     </ScrollView>
   );
 }

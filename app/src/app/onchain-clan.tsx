@@ -8,7 +8,7 @@ import { Buffer } from 'buffer';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import {
 import { reader } from '@/chain/reads';
 import { clanLevel, readClanServer, usePoll, useProfiles, type Profile } from '@/chain/social';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { AmountSheet } from '@/ui/amount';
 import {
   ArtCard, BigGo, CoinTile, DirPick, HeadAction, MemberRow, PastWar, Pills, PnlPill, PositionCard, RivalRow, SectionHead, SquadVersus, Stat, TradeCard, fmtLeft,
@@ -222,10 +223,14 @@ export default function OnchainClan() {
   const memberKeys = server.status === 'ready' && server.data && mine && server.data.key.equals(mine.key) ? server.data.members : null;
   const sharePct = mine && mine.shares ? (myShares / mine.shares) * 100 : 0;
   const errHere = (s: Spot) => (err && spot === s ? <ErrorLine msg={err} /> : null);
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  // members only: signed out or squadless there's only a sign-in / discover card, so the tour waits for a squad
+  useScreenTour('clan', !loading && !!mine && !proof && amt === null && !proposing && !challenging);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }} keyboardShouldPersistTaps="handled">
+        <TourScroll value={ts.scroller}>
         {/* header: back, crest + name + level, wallet pill */}
         <Row style={{ gap: 10, marginBottom: 14, minHeight: 44 }}>
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/clans' as Href))} />
@@ -243,9 +248,11 @@ export default function OnchainClan() {
               </View>
             </Row>
           ) : <View style={{ flex: 1 }} />}
+          <TourTarget id="clan-wallet">
           <Pressable onPress={() => setProof(true)} hitSlop={6} accessibilityLabel="Wallet and transactions" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: pressed ? '#22222A' : CARD, borderRadius: 17, paddingHorizontal: 12, height: 36 })}>
             <LiveDot color={C.up} /><Txt v="small" color={C.ink} style={{ ...FONT.semi }}>{bal === null ? 'Wallet' : fmtUsd(bal)}</Txt>
           </Pressable>
+          </TourTarget>
         </Row>
         {err && !spot ? <ErrorLine msg={err} /> : null}
         {loadErr ? <ErrorLine msg={loadErr} /> : null}
@@ -271,6 +278,7 @@ export default function OnchainClan() {
         ) : (
           <>
             {/* chest hero */}
+            <TourTarget id="clan-chest">
             <Animated.View entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: CARD, overflow: 'hidden' }}>
               <LinearGradient colors={['rgba(171,159,242,0.24)', 'rgba(21,21,27,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 200 }} />
               <View style={{ padding: 16 }}>
@@ -301,10 +309,11 @@ export default function OnchainClan() {
                 {errHere('chest')}
               </View>
             </Animated.View>
+            </TourTarget>
 
             {/* trades */}
             <SectionHead title="Trades" sub={openProps.length ? `${openProps.length} vote${openProps.length === 1 ? '' : 's'} open` : 'Proposed and voted by the squad'}
-              right={<HeadAction label="Propose" disabled={!!busy} onPress={() => { setErr(undefined); setProposing(true); }} />} />
+              right={<TourTarget id="clan-propose"><HeadAction label="Propose" disabled={!!busy} onPress={() => { setErr(undefined); setProposing(true); }} /></TourTarget>} />
             {errHere('trades')}
             {openProps.length === 0 ? (
               <ArtCard art={<Image source={ART.coinsPile} style={{ width: 84, height: 84 }} contentFit="contain" />} title="No open votes" body={mine.chest === 0 ? 'Add to the chest first: an empty chest has nothing to trade.' : 'Call a move on SOL, BTC or ETH and the squad votes on it for 60 seconds.'}>
@@ -362,7 +371,7 @@ export default function OnchainClan() {
             <SectionHead title="Squad war" sub={activeWars.length ? undefined : `Stake ${fmtUsd(WAR_STAKE_USDC)} from the chest · best return takes the pot`}
               right={captain && activeWars.length === 0 ? <HeadAction label="Challenge" color={C.opp} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : undefined} />
             {errHere('war')}
-            {activeWars.map((w) => {
+            {activeWars.map((w, wi) => {
               const weA = w.a.equals(mine.key);
               const A = byKey(w.a); const B = byKey(w.b);
               const us = weA ? A : B; const them = weA ? B : A;
@@ -376,7 +385,8 @@ export default function OnchainClan() {
               const themName = them?.name ?? short((weA ? w.b : w.a).toBase58());
               const live = w.status === 1;
               return (
-                <Animated.View key={w.key.toBase58()} entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: '#0E0E13', borderWidth: 1, borderColor: live ? 'rgba(240,70,140,0.45)' : HAIR, padding: 16, marginBottom: 10, overflow: 'hidden' }}>
+                <TourTarget key={w.key.toBase58()} id={wi === 0 ? 'clan-war' : `clan-war-${wi}`} style={{ marginBottom: 10 }}>
+                <Animated.View entering={FadeInDown.springify()} style={{ borderRadius: 28, backgroundColor: '#0E0E13', borderWidth: 1, borderColor: live ? 'rgba(240,70,140,0.45)' : HAIR, padding: 16, overflow: 'hidden' }}>
                   <LinearGradient colors={['rgba(240,70,140,0.18)', 'rgba(14,14,19,0)']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 160 }} />
                   <View style={{ alignItems: 'center', marginBottom: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: live ? 'rgba(240,70,140,0.18)' : '#1A1A20', borderRadius: 14, paddingHorizontal: 12, height: 28 }}>
@@ -406,13 +416,16 @@ export default function OnchainClan() {
                       : <Txt v="small" style={{ textAlign: 'center' }}>Return on each starting chest from closed trades. Best return when the clock hits zero takes the pot.</Txt>}
                   </View>
                 </Animated.View>
+                </TourTarget>
               );
             })}
             {activeWars.length === 0 ? (
+              <TourTarget id="clan-nowar">
               <ArtCard art={<WarScene width={240} height={144} />} title={captain ? 'Pick a fight' : 'No war right now'}
                 body={captain ? `Stake ${fmtUsd(WAR_STAKE_USDC)} of the chest against a rival squad. Whoever trades the better return over the window takes both stakes.` : 'Your captain can challenge a rival squad. Whoever trades the better return takes both stakes.'}>
                 {captain ? <Btn title="Challenge a squad" kind="short" h={50} style={{ borderRadius: 25 }} disabled={!!busy} onPress={() => { setErr(undefined); setChallenging(true); }} /> : null}
               </ArtCard>
+              </TourTarget>
             ) : null}
             {pastWars.length ? (
               <View style={{ marginTop: 8 }}>
@@ -428,9 +441,11 @@ export default function OnchainClan() {
             {/* members */}
             <SectionHead title="Members" sub={`${mine.members} in the squad · ${mine.wins}W ${mine.losses}L in wars`} />
             {memberKeys ? (
+              <TourTarget id="clan-members">
               <MemberRow members={[...memberKeys].sort((a, b) => Number(mine.captain.equals(b)) - Number(mine.captain.equals(a))).map((k) => ({
                 key: k.toBase58(), p: names.get(k.toBase58()), name: names.get(k.toBase58())?.name ?? short(k.toBase58()), captain: mine.captain.equals(k), me: !!wallet && k.equals(wallet),
               }))} />
+              </TourTarget>
             ) : server.status === 'error' ? <ErrorLine msg={server.error} onRetry={server.reload} /> : (
               <Row style={{ gap: 12 }}>{[0, 1, 2, 3].map((i) => <Bone key={i} w={54} h={54} r={27} />)}</Row>
             )}
@@ -447,6 +462,7 @@ export default function OnchainClan() {
             ) : null}
           </>
         )}
+        </TourScroll>
       </ScrollView>
 
       {/* wallet and on-chain proof */}

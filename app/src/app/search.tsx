@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useClansOnchain, useLeaderboardOnchain, type ClanRow, type PlayerRow } from '@/chain/reads';
 import { isTestAccount, usePrices, useProfiles, type Profile } from '@/chain/social';
 import { STOCKS, type Stock } from '@/chain/stocks';
+import { TourTarget, useScreenTour } from '@/tour';
 import { ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { Search as SearchIcon } from '@/ui/icons';
 import { ART, BackBtn, CRESTS, ErrorLine, Row, SkeletonRows, Txt, rankFor } from '@/ui/kit';
@@ -137,6 +138,9 @@ export default function SearchScreen() {
     && (tab === 'all' ? !players.length && !squads.length && !stocks.length
       : tab === 'players' ? !players.length : tab === 'squads' ? !squads.length : !stocks.length);
   const cap = tab === 'all' ? 4 : 50;
+  // the quick picks only show before you type, so the tour waits for them (and skips if a search is already typed).
+  // No TourScroll here: the sticky header needs the box to stay the scroll view's first child; every target is up top.
+  useScreenTour('search', !query && board.status !== 'loading' && !playersLoading);
 
   const playersBlock = (title: string, list: Profile[], more?: boolean) => (
     <>
@@ -171,7 +175,8 @@ export default function SearchScreen() {
       <View style={{ backgroundColor: C.bg, paddingTop: 2, paddingBottom: 6 }}>
         <Row style={{ gap: 10 }}>
           <BackBtn onPress={back} />
-          <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: query ? '#33334A' : 'transparent', paddingLeft: 14, paddingRight: 6 }}>
+          <TourTarget id="search-box" style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 48, borderRadius: 24, backgroundColor: CARD, borderWidth: 1, borderColor: query ? '#33334A' : 'transparent', paddingLeft: 14, paddingRight: 6 }}>
             <SearchIcon size={17} color={C.muted} />
             <TextInput value={q} onChangeText={setQ} autoFocus placeholder="Players, squads, stocks" placeholderTextColor={C.dim}
               autoCapitalize="none" autoCorrect={false} returnKeyType="search" accessibilityLabel="Search"
@@ -182,8 +187,10 @@ export default function SearchScreen() {
               </Pressable>
             ) : null}
           </View>
+          </TourTarget>
         </Row>
-        <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: CARD, borderRadius: 22, padding: 3 }}>
+        <TourTarget id="search-tabs" style={{ marginTop: 12 }}>
+        <View style={{ flexDirection: 'row', backgroundColor: CARD, borderRadius: 22, padding: 3 }}>
           {TABS.map((t) => {
             const on = t.key === tab;
             return (
@@ -194,6 +201,7 @@ export default function SearchScreen() {
             );
           })}
         </View>
+        </TourTarget>
       </View>
 
       <Animated.View key={`${tab}:${query ? 1 : 0}`} entering={FadeIn.duration(180)}>
@@ -214,6 +222,7 @@ export default function SearchScreen() {
           <>
             <Head title="Top players" right="Leaderboard" onRight={go('/leaderboard')} />
             {board.status === 'loading' || playersLoading ? <SkeletonRows n={3} /> : board.status === 'error' ? <ErrorLine msg={board.error} /> : topPlayers.length ? (
+              <TourTarget id="search-top">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -S.gutter }} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 8 }}>
                 {topPlayers.map((r, i) => {
                   const p = names.get(r.owner.toBase58());
@@ -228,6 +237,7 @@ export default function SearchScreen() {
                   );
                 })}
               </ScrollView>
+              </TourTarget>
             ) : <Txt v="small">Win a clash to get on the board.</Txt>}
             {squadsBlock('Top squads', squads.slice(0, 3))}
             {stocksBlock('Stocks', STOCKS)}

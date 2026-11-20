@@ -4,7 +4,7 @@
 // and then this page says so instead of inventing one.
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Image } from 'expo-image';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ComponentRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, Share as RNShare, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicKey } from '@solana/web3.js';
@@ -18,6 +18,7 @@ import { useArchivedPost } from '@/chain/social-api';
 import { PositionCard, PostItem, ProfileAvatar, STOCK_ART } from '@/ui/feed';
 import { MarketCallCard } from '@/ui/market-call';
 import { callTarget } from '@/chain/calls';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { Heart, Reply, Share } from '@/ui/icons';
 import { ART, BackBtn, Bone, Btn, ErrorLine, IconBtn, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -99,6 +100,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
   const [pop, setPop] = useState(false);
   return (
     <View style={{ paddingTop: 12 }}>
+      <TourTarget id="post-author">
       <Pressable onPress={() => go(`/u/${post.author.toBase58()}`)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, opacity: pressed ? 0.7 : 1 })}>
         <ProfileAvatar p={author} size={52} />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -107,8 +109,11 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
         </View>
         <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>Profile ›</Txt>
       </Pressable>
+      </TourTarget>
 
-      <Txt v="body" style={{ marginTop: 14, fontSize: 21, lineHeight: 29, letterSpacing: -0.3 }}>{post.text}</Txt>
+      {/* the words and what rides along: a stock call carries the author's real shares */}
+      <TourTarget id={stock ? 'post-receipt' : 'post-call'} style={{ marginTop: 14 }}>
+      <Txt v="body" style={{ fontSize: 21, lineHeight: 29, letterSpacing: -0.3 }}>{post.text}</Txt>
 
       {stock ? (
         <Pressable onPress={() => go(`/stock/${stock.symbol}`)} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
@@ -117,6 +122,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
       ) : null}
       {(() => { const t = callTarget(post); return t?.kind === 'market' ? <MarketCallCard id={t.id} trade={post.trade} seq={post.seq} /> : null; })()}
       {post.kind === 2 ? <ClashLink duel={post.refkey} author={post.author} /> : null}
+      </TourTarget>
 
       {stock ? (
         <Row style={{ marginTop: 12, gap: 8 }}>
@@ -136,6 +142,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
         <Txt v="small" style={{ fontSize: 14 }}><Txt v="label" style={{ fontSize: 15 }} color={liked ? C.opp : C.ink}>{post.likes}</Txt> {post.likes === 1 ? 'Like' : 'Likes'}</Txt>
       </Row>
 
+      <TourTarget id="post-actions">
       <Row style={{ justifyContent: 'space-around', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: C.line }}>
         <Action onPress={onReply} label="Reply"><Reply size={22} color={C.muted} /></Action>
         <Action onPress={() => { if (!liked) setPop(true); onLike(); }} disabled={liked || liking} label={liked ? 'Liked' : 'Like'}>
@@ -144,6 +151,7 @@ function Focus({ post, author, holding, price, liked, liking, onLike, onReply, o
         </Action>
         <Action onPress={onShare} label="Share"><Share size={22} color={C.muted} /></Action>
       </Row>
+      </TourTarget>
     </View>
   );
 }
@@ -201,6 +209,9 @@ export default function CallThread() {
   const px = prices.status === 'ready' ? prices.data : {};
 
   // likes go through the program's `like` instruction on the rollup, exactly as Home sends them
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('post', board.status === 'ready' && !!post && profiles.status !== 'loading');
+
   const like = async (p: Post) => {
     if (!progs || !me) { wallet.login?.(); return; }
     setLiking(p.seq); setLikeErr(undefined);
@@ -230,7 +241,8 @@ export default function CallThread() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }} keyboardShouldPersistTaps="handled">
+        <TourScroll value={ts.scroller}>
         <Bar title={post && post.replyTo !== null ? 'Reply' : 'Call'} onShare={post ? () => share(post) : undefined} />
 
         {board.status === 'loading' ? (
@@ -262,7 +274,8 @@ export default function CallThread() {
 
             {replies.length ? (
               <>
-                <Row style={{ justifyContent: 'space-between', marginTop: 18, marginBottom: 2 }}>
+                <TourTarget id="post-replies" style={{ marginTop: 18 }}>
+                <Row style={{ justifyContent: 'space-between', marginBottom: 2 }}>
                   <Txt v="h2">Replies</Txt>
                   <Txt v="small">{replies.length} on the board · oldest first</Txt>
                 </Row>
@@ -271,12 +284,14 @@ export default function CallThread() {
                     <PostItem post={r} profiles={profMap} holdings={holdMap} prices={px} me={myProfile} onReply={reply} onLike={like} liking={liking} />
                   </Pressable>
                 ))}
+                </TourTarget>
                 {post.replies > replies.length ? (
                   <Txt v="small" style={{ marginTop: 10, textAlign: 'center' }}>{post.replies - replies.length} older {post.replies - replies.length === 1 ? 'reply has' : 'replies have'} scrolled off the board.</Txt>
                 ) : null}
               </>
             ) : (
-              <View style={{ alignItems: 'center', marginTop: 18, backgroundColor: CARD, borderRadius: 24, padding: 18 }}>
+              <TourTarget id="post-noreplies" style={{ marginTop: 18 }}>
+              <View style={{ alignItems: 'center', backgroundColor: CARD, borderRadius: 24, padding: 18 }}>
                 <Image source={ART.chat} style={{ width: 84, height: 84 }} contentFit="contain" />
                 <Txt v="h2" style={{ marginTop: 6 }}>{post.replies > 0 ? 'Replies scrolled off' : 'No replies yet'}</Txt>
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 4, lineHeight: 18 }}>
@@ -286,15 +301,18 @@ export default function CallThread() {
                 </Txt>
                 <Btn title={myProfile ? 'Reply' : 'Sign in to reply'} h={44} style={{ marginTop: 12, alignSelf: 'stretch' }} onPress={() => reply(post)} />
               </View>
+              </TourTarget>
             )}
           </>
         ) : null}
+        </TourScroll>
       </ScrollView>
 
       {post ? (
         // the reply bar, pinned like X's: opens the reply drawer
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10, paddingBottom: insets.bottom + 10 }}>
           <View style={{ ...col, paddingHorizontal: S.gutter }}>
+            <TourTarget id="post-replybar">
             <Pressable onPress={() => reply(post)} accessibilityLabel="Post your reply"
               style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, borderRadius: 23, paddingLeft: 6, paddingRight: 6, backgroundColor: pressed ? '#18181E' : CARD, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
               {myProfile ? <ProfileAvatar p={myProfile} size={34} /> : <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.s2 }} />}
@@ -303,6 +321,7 @@ export default function CallThread() {
                 <Txt v="label" color={C.onBrand} style={{ fontSize: 13 }}>Reply</Txt>
               </View>
             </Pressable>
+            </TourTarget>
           </View>
         </View>
       ) : null}

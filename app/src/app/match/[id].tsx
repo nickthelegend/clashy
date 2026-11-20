@@ -4,7 +4,7 @@
 // account on chain; a clash that is still open, still running or was cancelled says exactly that.
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ComponentRef, type ReactNode } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Share as RNShare, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ import { COIN_SYMBOLS, IS_LOCAL_NET, NET, P, base, readDuel, type DuelView } fro
 import { reader } from '@/chain/reads';
 import { explorer } from '@/chain/useChain';
 import { ago, usePoll, useProfiles, type Profile } from '@/chain/social';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { CoinToken, coinName } from '@/ui/clash';
 import { ProfileAvatar } from '@/ui/feed';
 import { Copy, Share, Shield } from '@/ui/icons';
@@ -240,6 +241,8 @@ export default function MatchReplay() {
     const h = setInterval(() => setTick((x) => x + 1), 1000);
     return () => clearInterval(h);
   }, [m?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('match', !!m);
 
   if (!key) return <Gone top={insets.top} title="No clash here" body={`"${id ?? ''}" is not a clash address. Open a result from Home or Play to see its replay.`} />;
   if (match.status === 'ready' && !m) return <Gone top={insets.top} title="No clash at this address" body={`Nothing on ${NET.label} is a Clashy clash at ${short(key.toBase58())}. It may be on another network, or the link is wrong.`} />;
@@ -273,7 +276,8 @@ export default function MatchReplay() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 36 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} contentContainerStyle={{ ...col, paddingTop: insets.top + 6, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 36 }}>
+        <TourScroll value={ts.scroller}>
         <Bar title={settled ? 'Clash result' : 'Clash'} onShare={m ? share : undefined} />
         {match.status === 'error' ? <ErrorLine msg={match.error} onRetry={match.reload} /> : null}
 
@@ -288,6 +292,7 @@ export default function MatchReplay() {
         ) : m && cash ? (
           <>
             {/* the result, or the honest state of a clash that has no result */}
+            <TourTarget id={settled ? 'match-result' : 'match-status'}>
             <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', paddingTop: 10 }}>
               {settled && !tie ? (
                 <View style={{ alignItems: 'center', paddingTop: 22 }}>
@@ -334,9 +339,11 @@ export default function MatchReplay() {
                 </View>
               ) : null}
             </Animated.View>
+            </TourTarget>
 
             {/* both players, face to face, with their calls */}
-            <Panel style={{ marginTop: 22, paddingTop: 20 }}>
+            <TourTarget id={hasJoiner ? 'match-players' : 'match-open'} style={{ marginTop: 22 }}>
+            <Panel style={{ marginTop: 0, paddingTop: 20 }}>
               <Duo a={pa} b={hasJoiner ? pb : null} aLabel={names2[0]} bLabel={hasJoiner ? names2[1] : 'Nobody yet'} win={wi} />
               {hasJoiner ? (
                 <Row style={{ gap: 10, marginTop: 16, alignItems: 'stretch' }}>
@@ -352,11 +359,13 @@ export default function MatchReplay() {
                 </Pressable>
               )}
             </Panel>
+            </TourTarget>
 
             {rolled ? <CoinPanel m={m} sym={sym} /> : null}
 
             {/* the money */}
-            <Panel>
+            <TourTarget id="match-pot" style={{ marginTop: 12 }}>
+            <Panel style={{ marginTop: 0 }}>
               <Label>The pot</Label>
               <Line k="Stakes" v={hasJoiner ? `${fmtUsd(cash.stake)} × 2` : `${fmtUsd(cash.stake)} (waiting for a second)`} />
               {settled && !tie ? (
@@ -374,6 +383,7 @@ export default function MatchReplay() {
                 <Line k="Winner takes" v={fmtUsd(cash.stake * 2 * (1 - m.rakeBps / 10_000))} color={C.up} strong />
               )}
             </Panel>
+            </TourTarget>
 
             {/* when */}
             <Panel>
@@ -385,7 +395,8 @@ export default function MatchReplay() {
             </Panel>
 
             {/* proof */}
-            <Pressable onPress={() => setProof(true)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, minHeight: 56, borderRadius: 20, paddingHorizontal: 14, backgroundColor: pressed ? '#17171D' : CARD })}>
+            <TourTarget id="match-proof" style={{ marginTop: 12 }}>
+            <Pressable onPress={() => setProof(true)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderRadius: 20, paddingHorizontal: 14, backgroundColor: pressed ? '#17171D' : CARD })}>
               <View style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: C.upBg, alignItems: 'center', justifyContent: 'center' }}><Shield size={17} color={C.up} /></View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Txt v="label">Proof</Txt>
@@ -393,9 +404,11 @@ export default function MatchReplay() {
               </View>
               <Txt v="label" color={C.muted} style={{ fontSize: 20 }}>›</Txt>
             </Pressable>
+            </TourTarget>
 
             {/* what next */}
-            <Row style={{ gap: 10, marginTop: 18 }}>
+            <TourTarget id="match-next" style={{ marginTop: 18 }}>
+            <Row style={{ gap: 10 }}>
               <Pressable onPress={() => go('/clash')} style={({ pressed }) => ({ flex: 1, height: 64, borderRadius: 22, backgroundColor: C.opp, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.97 : 1 }], shadowColor: C.opp, shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } })}>
                 <Txt v="h2" color="#fff" style={{ fontSize: 18 }}>{settled ? 'Rematch' : m.status === 0 && !expired ? 'Take it on' : 'Start a clash'}</Txt>
               </Pressable>
@@ -403,8 +416,10 @@ export default function MatchReplay() {
                 <Share size={22} color={C.ink} />
               </Pressable>
             </Row>
+            </TourTarget>
           </>
         ) : null}
+        </TourScroll>
       </ScrollView>
       {m ? <Proof open={proof} onClose={() => setProof(false)} m={m} /> : null}
     </View>

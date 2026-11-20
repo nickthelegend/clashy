@@ -4,13 +4,14 @@
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { readProfile, usePoll } from '@/chain/social';
 import { social, useSocialProfile } from '@/chain/social-api';
 import { errText, useChain } from '@/chain/useChain';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { ART, AVATARS, BackBtn, Bone, ErrorLine, Pending, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
@@ -61,11 +62,16 @@ export default function EditProfile() {
     } catch (e) { setErr(errText(e)); } finally { setSaving(undefined); }
   };
 
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  // waits for the avatar (chain) and the bio, link and privacy (social server), or that server's error
+  useScreenTour('editprofile', !!me && avatar !== null && (loaded || !!soc.error));
+
   if (!me) return <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top + 60, paddingHorizontal: S.gutter }}><Pending art={ART.emptyProfile} title="Sign in to edit your profile" body="Your profile is your avatar, name and track record on Solana." action="Sign in" onAction={() => chain.wallet.login?.()} /></View>;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 110 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 110 }} keyboardShouldPersistTaps="handled">
+        <TourScroll value={ts.scroller}>
         <Row style={{ gap: 12, marginBottom: 18 }}>
           <BackBtn onPress={back} />
           <Txt v="h2" style={{ flex: 1 }}>Edit profile</Txt>
@@ -83,6 +89,7 @@ export default function EditProfile() {
         </View>
 
         <Txt v="label" style={{ marginTop: 22, marginBottom: 10 }}>Avatar</Txt>
+        <TourTarget id="ep-avatars">
         <View style={{ backgroundColor: '#111116', borderRadius: 24, padding: 12, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }}>
           {AVATARS.map((src, i) => {
             const on = avatar === i;
@@ -94,16 +101,20 @@ export default function EditProfile() {
             );
           })}
         </View>
+        </TourTarget>
         <Txt v="small" style={{ marginTop: 6 }}>Saved on Solana. Clashy pays the fee.</Txt>
 
         <Txt v="label" style={{ marginTop: 22, marginBottom: 8 }}>Bio</Txt>
         {soc.error && !soc.data ? <ErrorLine msg={soc.error} onRetry={soc.reload} /> : !loaded ? <Bone w={'100%'} h={92} r={18} /> : (
           <>
-            <Field value={bio} onChange={(t) => { setBio(t); setSaved(false); }} placeholder="Perps degen, SOL maxi, squad captain…" max={160} multiline />
+            <TourTarget id="ep-bio">
+              <Field value={bio} onChange={(t) => { setBio(t); setSaved(false); }} placeholder="Perps degen, SOL maxi, squad captain…" max={160} multiline />
+            </TourTarget>
             <Txt v="small" style={{ textAlign: 'right', marginTop: 4, fontSize: 12 }}>{[...bio].length}/160</Txt>
             <Txt v="label" style={{ marginTop: 14, marginBottom: 8 }}>Link</Txt>
             <Field value={link} onChange={(t) => { setLink(t); setSaved(false); }} placeholder="https://x.com/you" max={124} />
-            <Row style={{ marginTop: 18, backgroundColor: '#111116', borderRadius: 20, padding: 14, gap: 12 }}>
+            <TourTarget id="ep-private" style={{ marginTop: 18 }}>
+            <Row style={{ backgroundColor: '#111116', borderRadius: 20, padding: 14, gap: 12 }}>
               <Image source={ART.limits} style={{ width: 40, height: 40 }} contentFit="contain" />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Txt v="label">Private account</Txt>
@@ -111,17 +122,21 @@ export default function EditProfile() {
               </View>
               <Switch value={priv} onValueChange={(v) => { Haptics.selectionAsync(); setPriv(v); setSaved(false); }} trackColor={{ true: C.brand, false: '#2A2A31' }} thumbColor="#fff" accessibilityLabel="Private account" />
             </Row>
+            </TourTarget>
           </>
         )}
         {err ? <ErrorLine msg={err} /> : null}
+        </TourScroll>
       </ScrollView>
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: '#1F1F27', paddingTop: 12, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
         <View style={col}>
+          <TourTarget id="ep-save">
           <Pressable onPress={saved && !dirty ? back : save} disabled={!!saving || (!dirty && !saved)} accessibilityRole="button" accessibilityLabel="Save profile"
             style={({ pressed }) => ({ height: 54, borderRadius: 27, backgroundColor: dirty || saved ? C.brand : '#2A2A31', alignItems: 'center', justifyContent: 'center', opacity: saving ? 0.7 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
             <Txt v="label" color={dirty || saved ? C.onBrand : C.muted} style={{ fontSize: 16 }}>{saving ?? (saved && !dirty ? 'Saved · Done' : dirty ? 'Save changes' : 'No changes yet')}</Txt>
           </Pressable>
+          </TourTarget>
         </View>
       </View>
     </View>

@@ -162,8 +162,8 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
             </>
           ) : (
             <>
-              <FollowPill owner={id} soc={soc} />
-              <RoundBtn label="Message" onPress={() => (wallet.signer ? router.push(`/dm/${id}` as never) : wallet.login?.())} size={44}><ChatI size={18} color={C.ink} /></RoundBtn>
+              <TourTarget id="player-follow"><FollowPill owner={id} soc={soc} /></TourTarget>
+              <TourTarget id="player-message"><RoundBtn label="Message" onPress={() => (wallet.signer ? router.push(`/dm/${id}` as never) : wallet.login?.())} size={44}><ChatI size={18} color={C.ink} /></RoundBtn></TourTarget>
               <RoundBtn label="Clash" onPress={() => router.push('/clash' as never)} size={44}><Swords size={18} color={C.ink} /></RoundBtn>
             </>
           )}
@@ -242,11 +242,14 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
       </View>
 
       {/* ---------- stats ---------- */}
+      <TourTarget id="you-stats">
       <Row style={{ gap: 8, marginTop: 14 }}>
         <Stat value={rec.status === 'loading' ? null : String(games)} label="Clashes played" />
         <Stat value={rec.status === 'loading' ? null : decided ? `${Math.round((wins / decided) * 100)}%` : '–'} label="Win rate" />
         <Stat value={prof.status === 'loading' ? null : String(p?.dayStreak ?? 0)} label="Day streak" />
       </Row>
+      </TourTarget>
+      <TourTarget id="you-rank">
       <Pressable onPress={() => router.push('/leaderboard')} style={({ pressed }) => ({ marginTop: 8, backgroundColor: pressed ? '#1A1A21' : CARD, borderRadius: 18, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 })}>
         <Image source={rank.src} style={{ width: 44, height: 44 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -260,8 +263,10 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
         </View>
         <Txt v="small" style={{ ...FONT.semi, fontSize: 18 }}>›</Txt>
       </Pressable>
+      </TourTarget>
 
       {/* ---------- tabs ---------- */}
+      <TourTarget id="you-tabs">
       <View style={{ flexDirection: 'row', marginTop: 22, borderBottomWidth: 1, borderBottomColor: HAIR }}>
         {([
           ['positions', 'Positions', positions.length],
@@ -281,6 +286,7 @@ export function ProfileView({ owner, isMe, onBack }: { owner: PublicKey; isMe: b
           );
         })}
       </View>
+      </TourTarget>
       <View style={{ marginTop: 12 }}>
         {tab === 'positions' ? (
           port.status === 'loading' ? <SkeletonRows n={3} square /> : port.status === 'error' ? <ErrorLine msg={port.error} /> : positions.length === 0 ? (

@@ -4,11 +4,13 @@
 // bottom bar (Long / Short for perps, Buy for spot) that opens the trade drawer. Paper money only.
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { historySym } from '@/chain/history-prices';
 import { errText } from '@/chain/useChain';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import {
   LEVERAGE, ago, fmtPrice, isBookVenue, isFresh, liqPrice, resolveMarket, signedPct, signedUsd, useLiquidations, usePoolInfo,
   usePractice, usePrices, type Market, type PoolInfo, type Position, type Practice, type Px, type Side,
@@ -105,10 +107,16 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
   const [closing, setClosing] = useState<Position | null>(null);
   const barH = 54 + 12 + insets.bottom + 10;
   const mcap = m.circSupply && price ? m.circSupply * price : m.mcap;
+  const sym = m.kind === 'stock' ? (m.ticker ?? m.symbol) : m.symbol;
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  // order-book markets render BookMarketPage instead, which has no tour; this one waits for the price, the pool's facts
+  // (perps) and the paper book, and never plays over an open drawer
+  useScreenTour('market', pr.ready && (!!px || !!pxErr) && (!perp || !!pool.info || !!pool.error) && trade === null && !closing);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1 }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: barH + 24 }}>
+        <TourScroll value={ts.scroller}>
         {/* header */}
         <Row style={{ gap: 12 }}>
           <BackBtn onPress={back} />
@@ -121,7 +129,8 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
         </Row>
 
         {/* price */}
-        <Animated.View entering={FadeInDown.duration(320)} style={{ marginTop: 22 }}>
+        <TourTarget id="mk-price" style={{ marginTop: 22 }}>
+        <Animated.View entering={FadeInDown.duration(320)}>
           {price === undefined ? (pxErr ? <Txt v="title" color={C.muted}>No price yet</Txt> : <Bone w={190} h={50} r={12} />)
             : price >= 1 ? <Money value={price} size={52} />
               : <Txt v="hero" style={{ fontSize: 44, fontVariant: ['tabular-nums'] }} lines={1}>{fmtPrice(price)}</Txt>}
@@ -138,12 +147,17 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
           </Row>
           {pxErr ? <ErrorLine msg={pxErr} /> : null}
         </Animated.View>
+        </TourTarget>
 
-        <PriceChart sym={m.kind === 'stock' ? (m.ticker ?? m.symbol) : m.symbol} samples={samples} price={price} minSpan={perp || m.kind === 'crypto' ? 0.0006 : 0.001} source="Jupiter price" />
+        {/* the chart has 1H / 24H / 7D only for the prices the crank records; the rest draw live only */}
+        <TourTarget id={historySym(sym) ? 'mk-chart' : 'mk-live'}>
+          <PriceChart sym={sym} samples={samples} price={price} minSpan={perp || m.kind === 'crypto' ? 0.0006 : 0.001} source="Jupiter price" />
+        </TourTarget>
         {liq.last ? <LiquidatedNotice c={liq.last} onDismiss={liq.dismiss} /> : null}
 
         {/* facts */}
         <Head title={perp ? 'Jupiter Perps pool' : 'Market facts'} right={perp && pool.info ? 'Live from Jupiter' : undefined} />
+        <TourTarget id={perp ? 'mk-pool' : 'mk-facts'}>
         {perp ? <PerpFacts info={pool.info} error={pool.error} onRetry={pool.reload} /> : (
           <View style={{ gap: 8 }}>
             <Row style={{ gap: 8 }}>
@@ -158,10 +172,12 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
             {m.kind === 'meme' ? <Txt v="small" style={{ lineHeight: 17, marginTop: 2 }}>A pump.fun launch. Spot only, no leverage. Memecoins can lose most of their value in minutes.</Txt> : null}
           </View>
         )}
+        </TourTarget>
 
         {/* your trades */}
         <Head title="Your paper trades" right={mine.length ? `${mine.length} open` : undefined} />
         {!pr.book ? <SkeletonRows n={1} square /> : mine.length === 0 ? (
+          <TourTarget id="mk-first">
           <Pressable onPress={() => setTrade('long')} accessibilityRole="button"
             style={({ pressed }) => ({ backgroundColor: '#0E0E12', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
             <MarketLogo m={m} size={52} />
@@ -173,10 +189,13 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
             </View>
             <Txt v="label" color={C.dim}>›</Txt>
           </Pressable>
+          </TourTarget>
         ) : (
+          <TourTarget id="mk-trades">
           <View style={{ gap: 10 }}>
             {mine.map((p) => <OpenTrade key={p.id} p={p} px={prices[p.mint]} onClose={() => setClosing(p)} onPress={() => router.push(myTradeHref(p))} />)}
           </View>
+          </TourTarget>
         )}
 
         {past.length ? (
@@ -199,11 +218,13 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
         <Txt v="small" style={{ marginTop: 22, lineHeight: 18, textAlign: 'center' }}>
           Practice · paper money. The price is live from Jupiter{perp ? ', and the fee and borrow rate are Jupiter Perps\' own' : ''}. Liquidations are checked only while Practice is open. No real USDC moves.
         </Txt>
+        </TourScroll>
       </ScrollView>
 
       {/* the bar that stays at the bottom */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: HAIR, paddingTop: 12, paddingBottom: insets.bottom + 10, paddingHorizontal: S.gutter }}>
-        <View style={[{ flexDirection: 'row', gap: 8 }, col]}>
+        <TourTarget id={perp ? 'mk-longshort' : 'mk-buy'} style={col}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           {perp ? (
             <>
               <BarBtn title="Long" bg={C.up} fg="#04120A" onPress={() => setTrade('long')} disabled={!pr.ready} />
@@ -211,6 +232,7 @@ function MarketPage({ m, copy }: { m: Market; copy?: CopyArgs }) {
             </>
           ) : <BarBtn title={`Buy ${m.symbol}`} bg={C.up} fg="#04120A" onPress={() => setTrade('long')} disabled={!pr.ready} />}
         </View>
+        </TourTarget>
       </View>
 
       <TradeSheet open={trade !== null} side={trade ?? 'long'} preset={preset} onClose={() => { setTrade(null); setPreset(undefined); }} m={m} px={px} pool={pool.info} poolErr={pool.error} pr={pr} />

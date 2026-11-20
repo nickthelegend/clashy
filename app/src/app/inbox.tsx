@@ -2,12 +2,14 @@
 // rollup board), duel challenges posted in your clan's #general, clan votes still open, your Weekly Cup place and
 // your Stash goal. Nothing is stored or invented: each row links to the real thing.
 import { router, type Href } from 'expo-router';
+import type { ComponentRef } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@/chain/wallet';
 import { readBoard, readChannel, readClanServer, readMyClan, readProfile, readStash, usePoll, useProfiles, ago } from '@/chain/social';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { ProfileAvatar } from '@/ui/feed';
 import { Lottie } from '@/ui/lottie';
 import { ART, BackBtn, Btn, Pending, Row, SkeletonRows, Txt } from '@/ui/kit';
@@ -59,13 +61,17 @@ export default function Inbox() {
   const streak = p && today - p.lastActiveDay <= 1 ? p.dayStreak : 0;
   const doneToday = !!p && p.lastActiveDay === today;
   const filled = Math.min(7, streak);
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('inbox', wallet.status !== 'loading' && (!me || inbox.status !== 'loading'));
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 40 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 40 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 10, marginBottom: 14 }}>
         <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         <Txt v="title" style={{ flex: 1 }}>Inbox</Txt>
       </Row>
+      <TourTarget id="inbox-streak">
       <View style={{ borderRadius: 22, padding: 16, backgroundColor: '#F0468C' }}>
         <Row style={{ gap: 12 }}>
           <Lottie name="flame" size={58} loop />
@@ -82,13 +88,14 @@ export default function Inbox() {
           ))}
         </Row>
       </View>
+      </TourTarget>
       <Txt v="small" style={{ marginTop: 8 }}>{doneToday ? 'Today counts. Come back tomorrow to keep it going.' : streak > 0 ? 'Not yet today: save, invest or play to keep your streak.' : 'Save, invest or play today to start one.'}</Txt>
 
       <Txt v="small" style={{ ...FONT.semi, fontSize: 11, letterSpacing: 0.8, marginTop: 20, marginBottom: 6 }}>New</Txt>
-      {!me ? <Pending art={ART.bellArt} title="Sign in" body="Replies, likes, squad challenges and votes show here." action="Sign in" onAction={() => wallet.login?.()} />
+      {!me ? <TourTarget id="inbox-signin"><Pending art={ART.bellArt} title="Sign in" body="Replies, likes, squad challenges and votes show here." action="Sign in" onAction={() => wallet.login?.()} /></TourTarget>
         : inbox.status === 'loading' ? <SkeletonRows n={4} /> : inbox.status === 'error' ? <Txt v="small">{inbox.error}</Txt> : inbox.data.length === 0 ? (
-          <Pending art={ART.bellArt} title="All caught up" body="Post a call or join a squad: replies, likes, challenges and votes land here." />
-        ) : inbox.data.map((it) => (
+          <TourTarget id="inbox-empty"><Pending art={ART.bellArt} title="All caught up" body="Post a call or join a squad: replies, likes, challenges and votes land here." /></TourTarget>
+        ) : <TourTarget id="inbox-list">{inbox.data.map((it) => (
           <Row key={it.key} style={{ gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
             {it.who ? <ProfileAvatar p={names.get(it.who.toBase58())} size={40} /> : <Image source={it.art} style={{ width: 40, height: 40 }} contentFit="contain" />}
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -97,12 +104,15 @@ export default function Inbox() {
             </View>
             {it.action ? <Btn title={it.action.label} h={32} onPress={() => router.push(it.action!.to)} /> : null}
           </Row>
-        ))}
-      <Pressable onPress={() => router.push('/cup' as Href)} style={{ marginTop: 16, backgroundColor: C.s1, borderRadius: 18, padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        ))}</TourTarget>}
+      <TourTarget id="inbox-cup" style={{ marginTop: 16 }}>
+      <Pressable onPress={() => router.push('/cup' as Href)} style={{ backgroundColor: C.s1, borderRadius: 18, padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
         <Image source={ART.cupBig} style={{ width: 44, height: 44 }} contentFit="contain" />
         <View style={{ flex: 1 }}><Txt v="label">Weekly Cup</Txt><Txt v="small">See where you stand this week</Txt></View>
         <Txt v="small" style={{ fontSize: 18 }}>›</Txt>
       </Pressable>
+      </TourTarget>
+      </TourScroll>
     </ScrollView>
   );
 }

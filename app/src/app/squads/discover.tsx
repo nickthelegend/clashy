@@ -5,13 +5,14 @@
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { PublicKey } from '@solana/web3.js';
 import { isTestAccount, usePoll, usePrices, useProfiles } from '@/chain/social';
 import { fmtPnl, pnlColor, readMySquads, readSquadBoard, saveSelected, type SquadRank } from '@/chain/squads';
 import { useChain } from '@/chain/useChain';
+import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { ClayLoop } from '@/ui/clay';
 import { ART, BackBtn, ErrorLine, MEDALS, Pending, Row, SearchBar, SkeletonRows, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
@@ -49,10 +50,14 @@ export default function DiscoverSquads() {
   const n = mySet.size;
   const goTo = (k: PublicKey) => { saveSelected(k); setOpen(null); router.dismissTo({ pathname: '/clans', params: { clan: k.toBase58() } } as unknown as Href); };
   const loading = board.status === 'loading' || (board.status === 'ready' && !board.data) || profiles.status === 'loading';
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  useScreenTour('discover', !loading && open === null && !creating);
+  const rankRows = list.map((s) => <RankRow key={s.key.toBase58()} s={s} rank={rankOf(s.key)} mine={mySet.has(s.key.toBase58())} onPress={() => setOpen(s)} />);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 36 }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 36 }} keyboardShouldPersistTaps="handled">
+        <TourScroll value={ts.scroller}>
         <Row style={{ gap: 10, paddingHorizontal: 16 }}>
           <BackBtn onPress={() => (router.canGoBack() ? router.back() : router.replace('/clans' as Href))} />
           <View style={{ flex: 1 }} />
@@ -84,6 +89,7 @@ export default function DiscoverSquads() {
           <View style={{ paddingHorizontal: 16, marginTop: 16 }}><SkeletonRows n={1} square /></View>
         ) : top.length ? (
           <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+            <TourTarget id="disc-podium">
             <LinearGradient colors={['#1B1730', '#0D0D12']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={{ borderRadius: 28, paddingTop: 16, paddingHorizontal: 10, overflow: 'hidden' }}>
               <Row style={{ justifyContent: 'space-between', paddingHorizontal: 6 }}>
                 <Txt v="label" style={{ fontSize: 15 }}>Top squads</Txt>
@@ -93,11 +99,12 @@ export default function DiscoverSquads() {
                 {[1, 0, 2].map((i) => <Podium key={i} s={top[i]} place={i} mine={!!top[i] && mySet.has(top[i].key.toBase58())} onPress={() => (top[i] ? setOpen(top[i]) : me ? setCreating(true) : chain.wallet.login?.())} />)}
               </View>
             </LinearGradient>
+            </TourTarget>
           </View>
         ) : null}
 
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-          <SearchBar value={q} onChange={setQ} placeholder="Search squads" />
+          <TourTarget id="disc-search"><SearchBar value={q} onChange={setQ} placeholder="Search squads" /></TourTarget>
 
           {myBest && !q ? (
             <>
@@ -113,13 +120,20 @@ export default function DiscoverSquads() {
           {loading ? <SkeletonRows n={5} square /> : board.status === 'error' ? <ErrorLine msg={board.error} onRetry={board.reload} /> : list.length === 0 ? (
             q ? <Pending art={ART.emptySearch} title="No squads match" body={`Nothing called “${q.trim()}”. Start it yourself?`} action="Start a squad" onAction={() => setCreating(true)} />
               : <Pending art={ART.clubhouse} title="No squads yet" body="Be the first: start a squad and invite your friends." action="Start a squad" onAction={() => setCreating(true)} />
-          ) : list.map((s) => <RankRow key={s.key.toBase58()} s={s} rank={rankOf(s.key)} mine={mySet.has(s.key.toBase58())} onPress={() => setOpen(s)} />)}
+          ) : (
+            // the tour lights the first three rows; the rest follow outside it
+            <>
+              <TourTarget id="disc-list">{rankRows.slice(0, 3)}</TourTarget>
+              {rankRows.slice(3)}
+            </>
+          )}
 
-          <View style={{ marginTop: 18 }}>
+          <TourTarget id="disc-create" style={{ marginTop: 18 }}>
             <SheetTile art={<Image source={ART.crestCreate} style={{ width: 50, height: 50 }} contentFit="contain" />} title="Start your own squad" line="Name it, pick a crest, you're the captain" accent={GOLD} onPress={() => (me ? setCreating(true) : chain.wallet.login?.())} />
-          </View>
+          </TourTarget>
           <Txt v="small" style={{ fontSize: 11.5, lineHeight: 16, marginTop: 4 }}>P&L = the chest's trading score plus members' stock positions at live prices, read from the Clashy program.</Txt>
         </View>
+        </TourScroll>
       </ScrollView>
 
       <SquadSheet squad={open} rank={open ? rankOf(open.key) : 0} mine={!!open && mySet.has(open.key.toBase58())} profiles={prof} chain={chain} onClose={() => setOpen(null)} onOpen={goTo} />

@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PACKS } from '@/stickers';
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentRef, type ReactNode } from 'react';
 import { Linking, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +20,7 @@ import { ProfileAvatar } from '@/ui/feed';
 import { ART, BackBtn, Bone, Btn, ErrorLine, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
-import { replayTour } from '@/tour';
+import { TourScroll, TourTarget, replayTour, useScreenTour, useTourScroll } from '@/tour';
 
 const TOUR_BOT = require('../../assets/art/avatar-bot.webp');
 
@@ -32,11 +32,12 @@ const VERSION: string = Constants.expoConfig?.version ?? (require('../../app.jso
 const fmtWhen = (ts: number) => new Date(ts * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 /* ---------- grouped rows ---------- */
-function Group({ title, children, foot }: { title: string; children: ReactNode; foot?: string }) {
+function Group({ title, children, foot, tour }: { title: string; children: ReactNode; foot?: string; /** A tour target id for the card. */ tour?: string }) {
+  const card = <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>{children}</View>;
   return (
     <View style={{ marginTop: 24 }}>
       <Txt v="small" color={C.muted} style={{ ...FONT.bold, fontSize: 11.5, letterSpacing: 1.3, marginBottom: 8, marginLeft: 8 }}>{title.toUpperCase()}</Txt>
-      <View style={{ backgroundColor: CARD, borderRadius: 22, overflow: 'hidden' }}>{children}</View>
+      {tour ? <TourTarget id={tour}>{card}</TourTarget> : card}
       {foot ? <Txt v="small" style={{ marginTop: 8, marginHorizontal: 4, lineHeight: 17, fontSize: 12 }}>{foot}</Txt> : null}
     </View>
   );
@@ -94,9 +95,13 @@ export default function Settings() {
   const st = stash.status === 'ready' ? stash.data : undefined;
   const n = squads.status === 'ready' ? squads.data.length : null;
   const errs = [prof, stash, squads].flatMap((x) => (x.status === 'error' ? [x] : []));
+  const ts = useTourScroll<ComponentRef<typeof ScrollView>>();
+  // signed in only: signed out the page is a single sign-in card
+  useScreenTour('settings', !!me && prof.status !== 'loading');
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+    <ScrollView ref={ts.ref} onScroll={ts.onScroll} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ ...col, paddingTop: insets.top + 8, paddingHorizontal: S.gutter, paddingBottom: insets.bottom + 40 }}>
+      <TourScroll value={ts.scroller}>
       <Row style={{ gap: 12 }}>
         <BackBtn onPress={back} />
         <Txt v="title" style={{ flex: 1 }}>Settings</Txt>
@@ -126,8 +131,9 @@ export default function Settings() {
         <>
           {/* profile */}
           <Animated.View entering={FadeInDown.duration(300)}>
+            <TourTarget id="set-profile" style={{ marginTop: 18 }}>
             <Pressable onPress={go(p ? '/edit-profile' : '/welcome?step=name')} accessibilityRole="button" accessibilityLabel={p ? 'Edit profile' : 'Pick a name'}
-              style={({ pressed }) => ({ marginTop: 18, borderRadius: 26, overflow: 'hidden', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+              style={({ pressed }) => ({ borderRadius: 26, overflow: 'hidden', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
               <LinearGradient colors={['#2A2245', '#131219']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
               {prof.status === 'loading' ? <Bone w={64} h={64} r={32} /> : (
                 <View style={{ borderRadius: 40, borderWidth: 2.5, borderColor: C.brand, padding: 2 }}><ProfileAvatar p={p ?? undefined} size={60} /></View>
@@ -150,15 +156,16 @@ export default function Settings() {
               </View>
               </LinearGradient>
             </Pressable>
+            </TourTarget>
           </Animated.View>
 
-          <Group title="Money">
+          <Group title="Money" tour="set-money">
             <SettingRow first art={ART.logoUSDC} logo label="Wallet" sub="Add, send and receive USDC" value={bal == null ? undefined : fmtUsd(bal)} loading={bal == null} onPress={go('/wallet')} />
             <SettingRow art={ART.stash} label="Stash" sub={st?.goalName ? `Saving for ${st.goalName}` : 'Your savings jar and stocks'}
               value={st === undefined ? undefined : st === null ? 'Not opened' : fmtUsd(st.balance)} loading={stash.status === 'loading'} onPress={go('/stash')} />
           </Group>
 
-          <Group title="Play safe" foot="Limits are enforced by the Clashy program on every stake. Lowering applies now, raising waits 24 hours, and a break can't be shortened.">
+          <Group title="Play safe" tour="set-safe" foot="Limits are enforced by the Clashy program on every stake. Lowering applies now, raising waits 24 hours, and a break can't be shortened.">
             <SettingRow first art={ART.limits} label="Daily stake limit"
               sub={p?.pendingAt ? `Rises to ${fmtUsd(p.pendingLimit)} on ${fmtWhen(p.pendingAt)}` : p ? `${fmtUsd(usedToday)} used today` : undefined}
               value={p ? `${fmtUsd(p.dailyLimit)} a day` : prof.status === 'ready' ? 'Pick a name first' : undefined} loading={prof.status === 'loading'} onPress={go('/stash')} />
@@ -178,7 +185,9 @@ export default function Settings() {
           </Group>
 
           <Group title="Help">
-            <SettingRow first art={TOUR_BOT} label="Take the tour again" sub="Clashy Bot shows you every screen" onPress={() => void replayTour()} />
+            <TourTarget id="set-replay">
+              <SettingRow first art={TOUR_BOT} label="Take the tour again" sub="A quick look at every screen and game" onPress={() => void replayTour()} />
+            </TourTarget>
             <SettingRow art={ART.onboarding} label="How Clashy works" sub="Clash, Royale, squads, the Stash, the Cup" onPress={go('/help')} />
             <SettingRow art={ART.spend} label="Fees" sub="One small cut of each pot, network fees on us" onPress={go('/help?topic=fees')} />
             <SettingRow art={ART.goal} label="Responsible play" sub="Limits, breaks and playing within your means" onPress={go('/help?topic=safe')} />
@@ -198,6 +207,7 @@ export default function Settings() {
         <Txt v="label" color={C.dim} style={{ ...FONT.semi, fontSize: 13 }}>Clashy {VERSION}</Txt>
         <Txt v="small" color={C.dim} style={{ fontSize: 11.5 }}>{IS_LOCAL_NET ? 'Test network · test USDC' : 'Solana · USDC'} · network fees paid by Clashy</Txt>
       </View>
+      </TourScroll>
     </ScrollView>
   );
 }

@@ -166,23 +166,29 @@ export default function Squads() {
                       <Txt v="label" style={{ fontSize: 16, fontVariant: ['tabular-nums'] }}>${current.chest.toFixed(2)}</Txt>
                     </View>
                   </Row>
+                  <TourTarget id="squads-tiles">
                   <Row style={{ gap: 8, marginTop: 12 }}>
                     <Tile art={ART.invite} label="Invite" onPress={invite} />
                     <Tile art={ART.stash} label="Chest" sub={current.openVotes ? `${current.openVotes} vote${current.openVotes === 1 ? '' : 's'}` : undefined} onPress={openChest} />
                     <Tile art={ART.cupBig} label="Cup" sub={cupLeft()} onPress={() => router.push('/cup' as Href)} />
                   </Row>
+                  </TourTarget>
                 </View>
               </TourTarget>
 
+              <TourTarget id="squads-challenges">
               <Group title="CHALLENGES" />
               <Channel name="clashes" glyph={(c) => <Swords size={14} color={c} />} badge={openDuels.length ? `${openDuels.length} open` : undefined} live={liveDuels.length > 0} unread={openDuels.length > 0}
                 sub={openDuels.length ? `${[...new Set(openDuels.map((d) => nameOf(d.creator)))].join(', ')} want${openDuels.length === 1 ? 's' : ''} a clash` : liveDuels.length ? `${liveDuels.length} live now` : 'No open clashes right now'}
                 onPress={() => router.push('/onchain' as Href)} />
               <Channel name="weekly-cup" glyph={(c) => <Crown size={15} color={c} />} live sub={`Ends in ${cupLeft()} · best calls win`} onPress={() => router.push('/cup' as Href)} />
+              </TourTarget>
 
+              <TourTarget id="squads-chest">
               <Group title="PORTFOLIO" />
               <Channel name="chest" glyph="$" badge={current.openVotes ? `${current.openVotes} vote${current.openVotes === 1 ? '' : 's'}` : undefined} badgeColor={GOLD} unread={current.openVotes > 0}
                 sub={`$${current.chest.toFixed(2)} USDC · trades ${fmtPnl(current.scorePnl)}`} onPress={openChest} />
+              </TourTarget>
 
               <Group title={`Lobby — ${s ? s.members.length : current.members}`} right={busyIn.size ? <Txt v="small" color={C.up} style={{ fontSize: 11, ...FONT.semi }}>{busyIn.size} clashing</Txt> : null} />
               {!s ? <SkeletonRows n={2} /> : [...s.members].sort((a, b) => Number(busyIn.has(b.toBase58())) - Number(busyIn.has(a.toBase58())) || Number(s.captain.equals(b)) - Number(s.captain.equals(a))).map((mk) => {
