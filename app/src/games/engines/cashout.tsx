@@ -10,9 +10,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, type Tick } from '../feed';
-import { BigNumber, BotSays, Choice, Clock, Go, MarketHead, Note, Panel, fmtPx, usd, useClock, type GameApi, type Line } from '../kit';
+import { BigNumber, BotSays, Choice, Clock, Go, MarketHead, Note, Panel, PxChart, RolledPanel, Sides, StatTile, absPct, bellPrice, fmtPx, mktLine, pBool, pNum, pNums, pStr, roundPath, secsIn, usd, useClock, useRolled, type Dot, type GameApi, type Line } from '../kit';
 import { fmtX } from '../odds';
-import { PxChart, RolledPanel, Sides, Stat, absPct, bellPrice, mktLine, pBool, pNum, pNums, pStr, roundPath, secsIn, useRolled, type Dot } from './_group-a';
 
 type Dir = 'long' | 'short';
 /** A cash-out: when, at what price and multiplier; `tt` is the time of the tick it priced from (for the chart). */
@@ -153,8 +152,8 @@ export default function Cashout({ g }: { g: GameApi }) {
         </TourTarget>
         {sym ? <PxChart g={g} sym={sym} h={150} color={def.tint} /> : null}
         <Row style={{ gap: 8 }}>
-          <Stat k="Leverage" v={`${lev}×`} />
-          <Stat k="Liquidated after" v={`${absPct(1 / lev)} against`} />
+          <StatTile k="Leverage" v={`${lev}×`} />
+          <StatTile k="Liquidated after" v={`${absPct(1 / lev)} against`} />
         </Row>
         {rungs.length ? (
           <Row style={{ gap: 6, flexWrap: 'wrap' }}>

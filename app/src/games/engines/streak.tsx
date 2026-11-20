@@ -11,9 +11,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, useLivePool, type Tick } from '../feed';
-import { BigNumber, Clock, Go, MarketHead, MarketTile, Note, Panel, Tag, usd, useClock, useRoll, type GameApi, type Line } from '../kit';
+import { BigNumber, Clock, Go, MarketHead, MarketTile, Note, Panel, PxChart, RolledPanel, StatTile, Tag, bellPrice, mv, pNum, poolList, pStr, usd, useClock, useRoll, type GameApi, type Line } from '../kit';
 import { fmtX, pick, sample } from '../odds';
-import { PxChart, RolledPanel, Stat, bellPrice, mv, pNum, pStr, poolList } from './_group-a';
 
 type Call = 'up' | 'down';
 type Cur = { sym: string; call: Call; entry: Tick; endsAt: number };
@@ -133,8 +132,8 @@ export default function Streak({ g }: { g: GameApi }) {
         <TourTarget id="g-pick">{picker}</TourTarget>
         {sym ? <PxChart g={g} sym={sym} h={140} color={def.tint} /> : null}
         <Row style={{ gap: 8 }}>
-          <Stat k="Right call" v={`Pot ×${step}`} />
-          {gauntlet ? <Stat k={`All ${rounds} right`} v={fmtX(Math.pow(step, rounds))} /> : <Stat k="Each call" v={`${roundSecs} s`} />}
+          <StatTile k="Right call" v={`Pot ×${step}`} />
+          {gauntlet ? <StatTile k={`All ${rounds} right`} v={fmtX(Math.pow(step, rounds))} /> : <StatTile k="Each call" v={`${roundSecs} s`} />}
         </Row>
         {g.stakeRow}
         <TourTarget id="g-go">

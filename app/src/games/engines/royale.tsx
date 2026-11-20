@@ -16,9 +16,8 @@ import { BotPic } from '@/ui/practice-kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, tickerOf, useLivePool } from '../feed';
-import { Choice, Clock, Logo, MarketChart, MarketHead, Note, Panel, fmtPx, useClock, useRoll, type GameApi, type Line } from '../kit';
+import { Choice, Clock, Heart, Logo, MarketChart, MarketHead, Note, Panel, clampInt, fmtPx, rollable, useClock, useRoll, type GameApi, type Line } from '../kit';
 import { fmtX, pick, signedPct } from '../odds';
-import { Heart, clampInt, rollable } from './_group-b';
 
 type Call = 'up' | 'down';
 type Seat = { id: string; name: string; tint: string; you?: boolean; hearts: number; out?: number; lostAt?: number };

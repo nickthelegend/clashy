@@ -11,7 +11,7 @@ export type Tick = { t: number; p: number };
 export type Mark = { p: number; t: number; ch24?: number };
 
 /** Pacifica's names for what Phoenix calls something else. */
-const PAC_ALIAS: Record<string, string> = { XAU: 'GOLD', XAG: 'SILVER', CL: 'WTIOIL', SP500: 'SPY', SKHYNIX: 'SKHY' };
+export const PAC_ALIAS: Record<string, string> = { XAU: 'GOLD', XAG: 'SILVER', CL: 'WTIOIL', SP500: 'SPY', SKHYNIX: 'SKHY' };
 const POLL_MS = 1500;
 /** A price older than this can't start or settle a round. */
 export const STALE_MS = 8000;

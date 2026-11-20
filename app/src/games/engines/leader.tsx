@@ -10,9 +10,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, tickerOf, useLivePool, type Feed, type PoolKey, type Tick } from '../feed';
-import { BotSays, Choice, Clock, Logo, MarketHead, Note, Panel, Tag, fmtSecs, useClock, type GameApi, type Line } from '../kit';
+import { BotSays, Choice, Clock, Logo, MarketHead, Note, Panel, Pill, Tag, Waiting, captureAt, fmtSecs, readEntries, rollMarkets, useClock, type GameApi, type Line } from '../kit';
 import { signedPct } from '../odds';
-import { Pill, Waiting, captureAt, readEntries, rollMarkets } from './_group-c';
 
 type Call = 'chase' | 'fade';
 const WINDOW = 5 * 60_000;

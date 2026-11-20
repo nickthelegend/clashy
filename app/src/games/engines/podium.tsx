@@ -10,9 +10,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, tickerOf, useLivePool } from '../feed';
-import { Clock, Go, Logo, MarketTile, Note, Panel, fmtPx, useClock, type GameApi, type Line } from '../kit';
+import { Clock, Go, Logo, MarketTile, Note, Panel, bellPrices, clampInt, fmtPx, rollable, useClock, type GameApi, type Line } from '../kit';
 import { sample, signedPct } from '../odds';
-import { bellPrices, clampInt, rollable } from './_group-b';
 
 /** A line of the payout table: the first `k` places in your exact order pay `x` × the stake. */
 type Tier = { k: number; x: number; label: string };

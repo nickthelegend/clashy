@@ -10,9 +10,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, useLivePool } from '../feed';
-import { BotSays, Clock, Go, Logo, MarketTile, Note, Panel, Tag, useClock, type GameApi, type Line } from '../kit';
+import { BotSays, Clock, Go, Logo, MarketTile, Note, Panel, Tag, bellPrices, clampInt, rollable, useClock, type GameApi, type Line } from '../kit';
 import { pick, sample, signedPct } from '../odds';
-import { bellPrices, clampInt, rollable } from './_group-b';
 
 export default function Draft({ g }: { g: GameApi }) {
   const { def } = g;

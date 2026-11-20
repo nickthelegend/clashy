@@ -13,9 +13,8 @@ import { MarketLogo } from '@/ui/practice-kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, tickerOf, useLivePool } from '../feed';
-import { Logo, Note, Panel, Tag, type GameApi, type Line } from '../kit';
+import { CountUp, Logo, Note, Panel, PotBar, Tag, fmtMetric, fmtPctUnits, useMemes, type GameApi, type Line, type MemeMetric } from '../kit';
 import { fmtX, sample } from '../odds';
-import { CountUp, PotBar, fmtMetric, fmtPctUnits, useMemes, type MemeMetric } from './_group-b';
 
 type Metric = 'ch24' | MemeMetric;
 type Item = { id: string; ticker: string; name: string; value: number; meme?: Market };

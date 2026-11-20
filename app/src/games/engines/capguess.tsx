@@ -12,9 +12,8 @@ import { ErrorLine, Row, Txt } from '@/ui/kit';
 import { MarketLogo } from '@/ui/practice-kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
-import { Choice, Note, Panel, Tag, type GameApi, type Line } from '../kit';
+import { Choice, CountUp, Note, Panel, PotBar, Tag, fmtMetric, nice, useMemes, type GameApi, type Line } from '../kit';
 import { fmtX, pick } from '../odds';
-import { CountUp, PotBar, fmtMetric, nice, useMemes } from './_group-b';
 
 type Metric = 'mcap' | 'holders';
 type Q = { m: Market; real: number; line: number };

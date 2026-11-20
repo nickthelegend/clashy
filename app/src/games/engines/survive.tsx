@@ -9,9 +9,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, type Tick } from '../feed';
-import { BigNumber, Choice, Clock, Go, MarketHead, Note, Panel, fmtPx, usd, useClock, type GameApi, type Line } from '../kit';
+import { BigNumber, Choice, Clock, Go, MarketHead, Note, Panel, PxChart, RolledPanel, absPct, bellPrice, fmtPx, mktLine, pNums, pStr, roundPath, secsIn, usd, useClock, useRolled, type Dot, type GameApi, type Level, type Line } from '../kit';
 import { fmtX, pStay, pTouch, payoutFor, sigmaOf } from '../odds';
-import { PxChart, RolledPanel, absPct, bellPrice, mktLine, pNums, pStr, roundPath, secsIn, useRolled, type Dot, type Level } from './_group-a';
 
 type Dir = 'long' | 'short' | 'both';
 type Final = { at: Tick; dead: boolean };

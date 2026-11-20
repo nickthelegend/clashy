@@ -13,9 +13,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { fallbackSigma, nameOf, tickerOf, useLivePool, type PoolKey, type Tick } from '../feed';
-import { Clock, Go, Logo, Note, Panel, fmtPx, useClock, type GameApi, type Line } from '../kit';
+import { Clock, Go, Logo, Note, Panel, Pill, Waiting, captureAt, fmtPx, pathOf, readEntries, rollMarkets, useClock, type GameApi, type Line } from '../kit';
 import { fmtPct, fmtX, payoutFor, pStay, pTouch, sample, sigmaOf, signedPct } from '../odds';
-import { Pill, Waiting, captureAt, pathOf, readEntries, rollMarkets } from './_group-c';
 
 type Kind = 'up' | 'down' | 'either';
 type Square = { sym: string; kind: Kind; d: number; p: number };

@@ -11,9 +11,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, poolOf, tickerOf, useLivePool, type PoolKey, type Tick } from '../feed';
-import { BotSays, Clock, Go, Logo, MarketTile, Note, Panel, Tag, useClock, useRoll, type GameApi, type Line } from '../kit';
+import { BotSays, Clock, Go, Logo, MarketTile, Note, Panel, Pill, Tag, Waiting, captureAt, readEntries, rollMarkets, useClock, useRoll, type GameApi, type Line } from '../kit';
 import { pick, signedPct } from '../odds';
-import { Pill, Waiting, captureAt, readEntries, rollMarkets } from './_group-c';
 
 type Cut = { sym: string; mv: number; k: number };
 

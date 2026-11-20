@@ -9,9 +9,8 @@ import { Row } from '@/ui/kit';
 import { C } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, type Tick } from '../feed';
-import { BotSays, Choice, Clock, MarketHead, Note, Panel, fmtPx, lengthLabel, useClock, type GameApi, type Line } from '../kit';
+import { BotSays, Choice, Clock, MarketHead, Note, Panel, PxChart, RolledPanel, Sides, StatTile, absPct, bellPrice, fmtPx, lengthLabel, mktLine, mv, pStr, roundPath, secsIn, useClock, useRolled, type Dot, type GameApi, type Level, type Line } from '../kit';
 import { evenBand, evenMove, sigmaOf } from '../odds';
-import { PxChart, RolledPanel, Sides, Stat, absPct, bellPrice, mktLine, mv, pStr, roundPath, secsIn, useRolled, type Dot, type Level } from './_group-a';
 
 type Mode = 'stay' | 'side' | 'bell';
 type Side = 'a' | 'b';
@@ -115,9 +114,9 @@ export default function Range({ g }: { g: GameApi }) {
         ) : null}
         {sym ? (
           <Row style={{ gap: 8 }}>
-            <Stat k="Band" v={`±${absPct(w)}`} />
-            <Stat k="Round" v={lengthLabel(def.secs)} />
-            <Stat k="Right side" v="2×" />
+            <StatTile k="Band" v={`±${absPct(w)}`} />
+            <StatTile k="Round" v={lengthLabel(def.secs)} />
+            <StatTile k="Right side" v="2×" />
           </Row>
         ) : null}
         {g.stakeRow}
@@ -159,13 +158,13 @@ export default function Range({ g }: { g: GameApi }) {
       <Row style={{ gap: 8 }}>
         {mode === 'bell' ? (
           <>
-            <Stat k={final ? 'Move at the bell' : 'Move now'} v={mv(now)} color={now === 0 ? C.ink : now > 0 ? C.up : C.down} />
-            <Stat k="Band" v={`±${absPct(half)}`} />
+            <StatTile k={final ? 'Move at the bell' : 'Move now'} v={mv(now)} color={now === 0 ? C.ink : now > 0 ? C.up : C.down} />
+            <StatTile k="Band" v={`±${absPct(half)}`} />
           </>
         ) : (
           <>
-            <Stat k="To the top" v={final?.touched ? (final.touched === 'top' ? 'Broken' : '–') : mv(hi / cur - 1)} color={mode === 'side' ? C.up : undefined} />
-            <Stat k="To the bottom" v={final?.touched ? (final.touched === 'bottom' ? 'Broken' : '–') : mv(lo / cur - 1)} color={mode === 'side' ? C.down : undefined} />
+            <StatTile k="To the top" v={final?.touched ? (final.touched === 'top' ? 'Broken' : '–') : mv(hi / cur - 1)} color={mode === 'side' ? C.up : undefined} />
+            <StatTile k="To the bottom" v={final?.touched ? (final.touched === 'bottom' ? 'Broken' : '–') : mv(lo / cur - 1)} color={mode === 'side' ? C.down : undefined} />
           </>
         )}
       </Row>

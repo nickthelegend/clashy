@@ -10,9 +10,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, type Tick } from '../feed';
-import { BotSays, Clock, Go, MarketHead, Note, Panel, fmtPx, useClock, type GameApi, type Line } from '../kit';
+import { BotSays, Clock, Go, MarketHead, Note, Panel, PxChart, RolledPanel, Sides, absPct, bellPrice, fmtPx, mktLine, mv, pStr, roundPath, useClock, useRolled, type GameApi, type Line } from '../kit';
 import { evenMove, sigmaOf } from '../odds';
-import { PxChart, RolledPanel, Sides, absPct, bellPrice, mktLine, mv, pStr, roundPath, useRolled } from './_group-a';
 
 type Mode = 'bell' | 'peak' | 'price';
 type Lock = { range: number; you: number; bot: number };

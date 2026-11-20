@@ -37,6 +37,8 @@ async function get<T>(path: string, what: string): Promise<T> {
   try { return (await r.json()) as T; } catch { throw new VenueError(`${what} sent an answer we couldn't read.`); }
 }
 const num = (v: unknown) => { const n = typeof v === 'number' ? v : Number(v); return Number.isFinite(n) ? n : undefined; };
+/** A read through the relay's market cache, for modules that need an endpoint this file doesn't wrap (the games' mark candles). */
+export const mktGet = <T,>(path: string, what: string) => get<T>(path, what);
 
 /* ---------- markets ---------- */
 export type VenueMarket = {

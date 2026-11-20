@@ -11,9 +11,8 @@ import { LiveChart, Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, poolOf, tickerOf, useLivePool, type PoolKey, type Tick } from '../feed';
-import { BotSays, Clock, Go, Logo, MarketChart, MarketHead, Note, Panel, Tag, fmtPx, useClock, useRoll, type GameApi, type Line } from '../kit';
+import { BotSays, Clock, Go, Logo, MarketChart, MarketHead, Note, Panel, Pill, Tag, captureAt, dirOf, fmtPx, otherSide, pathOf, readEntries, sideColor, sideGlyph, sideWord, useClock, useRoll, type GameApi, type Line, type Side } from '../kit';
 import { pick, signedPct } from '../odds';
-import { Pill, captureAt, dirOf, otherSide, pathOf, readEntries, sideColor, sideGlyph, sideWord, type Side } from './_group-c';
 
 /** The tick a side flipped on. */
 type FlipAt = { t: number; p: number };

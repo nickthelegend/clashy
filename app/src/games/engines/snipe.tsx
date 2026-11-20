@@ -10,8 +10,7 @@ import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, type Tick } from '../feed';
-import { BotSays, Clock, Go, MarketHead, Note, Panel, fmtPx, lengthLabel, useClock, type GameApi, type Line } from '../kit';
-import { PxChart, RolledPanel, Sides, Stat, absPct, bellPrice, mktLine, pStr, roundPath, secsIn, useRolled, type Dot } from './_group-a';
+import { BotSays, Clock, Go, MarketHead, Note, Panel, PxChart, RolledPanel, Sides, StatTile, absPct, bellPrice, fmtPx, lengthLabel, mktLine, pStr, roundPath, secsIn, useClock, useRolled, type Dot, type GameApi, type Line } from '../kit';
 
 /** A tap: when it happened (t), the time of the price it got (tt), and that price. */
 type Tap = { t: number; tt: number; p: number };
@@ -100,9 +99,9 @@ export default function Snipe({ g }: { g: GameApi }) {
         </TourTarget>
         {sym ? <PxChart g={g} sym={sym} h={150} color={def.tint} /> : null}
         <Row style={{ gap: 8 }}>
-          <Stat k="Window" v={lengthLabel(def.secs)} />
-          <Stat k="You tap" v="Once" />
-          <Stat k="Closer wins" v="2×" />
+          <StatTile k="Window" v={lengthLabel(def.secs)} />
+          <StatTile k="You tap" v="Once" />
+          <StatTile k="Closer wins" v="2×" />
         </Row>
         {g.stakeRow}
         <TourTarget id="g-go">

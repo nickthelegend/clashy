@@ -12,9 +12,8 @@ import { Row, Txt } from '@/ui/kit';
 import { C } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, poolOf, tickerOf, useLivePool, type PoolKey, type Tick } from '../feed';
-import { BigNumber, Clock, Go, Logo, MarketChart, MarketHead, Note, Panel, Tag, fmtPx, usd, useClock, useRoll, type GameApi, type Line } from '../kit';
+import { BigNumber, Clock, Go, Logo, MarketChart, MarketHead, Note, Panel, Pill, StatLine, Tag, captureAt, dirOf, fmtPx, pathOf, readEntries, sideColor, sideGlyph, sideWord, usd, useClock, useRoll, type GameApi, type Line, type Side } from '../kit';
 import { fmtX, pick, signedPct } from '../odds';
-import { Pill, Stat, captureAt, dirOf, pathOf, readEntries, sideColor, sideGlyph, sideWord, type Side } from './_group-c';
 
 type State = { value: number; pos: number; reserve: number; liq: boolean; liqAt?: Tick };
 
@@ -158,10 +157,10 @@ export default function AddOnce({ g }: { g: GameApi }) {
       </Panel>
       <MarketChart g={g} sym={sym} from={startedAt} entry={entry.p} h={170} />
       <Panel style={{ gap: 9 }}>
-        <Stat label="In the position" value={add ? `${usd(stake)} (both halves)` : `${usd(stake / 2)} (half)`} />
-        <Stat label="Entry" value={add ? `${fmtPx(entry.p)} and ${fmtPx(add.p)}` : fmtPx(entry.p)} />
-        <Stat label="Liquidation price" value={liqNow ? `${fmtPx(liqNow)}${dist !== null && !s.liq ? ` · ${(dist * 100).toFixed(2)}% away` : ''}` : 'None'} color={dist !== null && dist < 0.25 / lev ? C.down : undefined} />
-        {!add && open && liqIfAdd ? <Stat label="Liquidation if you add now" value={fmtPx(liqIfAdd)} /> : null}
+        <StatLine label="In the position" value={add ? `${usd(stake)} (both halves)` : `${usd(stake / 2)} (half)`} />
+        <StatLine label="Entry" value={add ? `${fmtPx(entry.p)} and ${fmtPx(add.p)}` : fmtPx(entry.p)} />
+        <StatLine label="Liquidation price" value={liqNow ? `${fmtPx(liqNow)}${dist !== null && !s.liq ? ` · ${(dist * 100).toFixed(2)}% away` : ''}` : 'None'} color={dist !== null && dist < 0.25 / lev ? C.down : undefined} />
+        {!add && open && liqIfAdd ? <StatLine label="Liquidation if you add now" value={fmtPx(liqIfAdd)} /> : null}
       </Panel>
       {g.phase === 'live' ? (
         <Animated.View entering={FadeIn} style={{ gap: 8 }}>

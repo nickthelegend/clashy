@@ -13,9 +13,8 @@ import { ART, Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { nameOf, tickerOf, useLivePool } from '../feed';
-import { BotSays, Clock, Logo, MarketChart, MarketHead, Note, Panel, Tag, fmtPx, useClock, useRoll, type GameApi, type Line } from '../kit';
+import { BotSays, Clock, Logo, MarketChart, MarketHead, Note, Panel, Tag, fmtPx, rollable, useClock, useRoll, type GameApi, type Line } from '../kit';
 import { pick, signedPct } from '../odds';
-import { rollable } from './_group-b';
 
 type Side = 'long' | 'short';
 type Ko = { side: Side; p: number; t: number };
