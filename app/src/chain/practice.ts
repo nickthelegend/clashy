@@ -379,10 +379,19 @@ export type Order = {
   icon?: string; stockSym?: string; art?: Market['art'];
   side: Side; lev: number; margin: number; limit: number; fee: number; takerPct: number; fundingPctHr: number; createdAt: number;
 };
+/** One round of a game (../games/catalog.ts) played with practice money. The stake leaves the balance at the start;
+ *  the payout (stake × multiplier, 0 on a loss) comes back at the end. `lines` is the round's receipt. */
+export type GameRun = {
+  id: string; gameId: string; name: string; stake: number; startedAt: number; endsAt?: number;
+  result?: 'won' | 'lost' | 'push' | 'abandoned'; payout?: number; pnl?: number; endedAt?: number;
+  lines?: [string, string][];
+};
 export type Book = {
   v: 1; balance: number; open: Position[]; closed: Closed[]; startedAt: number; orders?: Order[];
   /** Practice clashes against Clashy Bot (./paper-clash.ts): the one in play, and the finished ones (newest first). */
   liveClash?: PaperClash | null; clashes?: PaperClash[];
+  /** Games (../games): the round in play, and the finished ones (newest first). */
+  liveGame?: GameRun | null; games?: GameRun[];
 };
 
 const fresh = (): Book => ({ v: 1, balance: START, open: [], closed: [], startedAt: Date.now() });
@@ -593,9 +602,48 @@ export function usePractice() {
     });
   }, [k]);
 
+  /** Start a game round: the stake leaves the practice balance until the round ends. */
+  const startGame = useCallback((g: { gameId: string; name: string; stake: number; endsAt?: number }) => {
+    if (!k) return Promise.reject(new Error('Still loading your practice balance'));
+    return mutate(k, (b) => {
+      if (!(g.stake >= 1)) throw new Error('At least $1');
+      if (g.stake > b.balance + 1e-9) throw new Error(`You have $${b.balance.toFixed(2)} of practice money`);
+      // a round left open (the app closed mid-round) is refunded before the next one starts
+      const left = b.liveGame;
+      const games = left ? [{ ...left, result: 'abandoned' as const, payout: left.stake, pnl: 0, endedAt: Date.now() }, ...(b.games ?? [])] : b.games ?? [];
+      const run: GameRun = { id: newId(), gameId: g.gameId, name: g.name, stake: round2(g.stake), startedAt: Date.now(), endsAt: g.endsAt };
+      return { ...b, balance: round2(b.balance + (left ? left.stake : 0) - g.stake), liveGame: run, games: games.slice(0, 200) };
+    }).then((b) => b.liveGame!);
+  }, [k]);
+
+  /** End a game round: pay out stake × mult (0 on a loss, 1 on a push), with its receipt. */
+  const finishGame = useCallback((id: string, mult: number, lines: [string, string][] = []) => {
+    if (!k) return Promise.reject(new Error('Still loading your practice balance'));
+    let done: GameRun | undefined;
+    return mutate(k, (b) => {
+      const g = b.liveGame;
+      if (!g || g.id !== id) { done = b.games?.find((x) => x.id === id); return b; }
+      const payout = round2(Math.max(0, g.stake * mult));
+      const result: GameRun['result'] = Math.abs(payout - g.stake) < 0.005 ? 'push' : payout > g.stake ? 'won' : 'lost';
+      done = { ...g, payout, pnl: round2(payout - g.stake), result, endedAt: Date.now(), lines };
+      return { ...b, balance: round2(b.balance + payout), liveGame: null, games: [done, ...(b.games ?? [])].slice(0, 200) };
+    }).then(() => done!);
+  }, [k]);
+
+  /** No price to settle on (the feed went quiet through the bell): the stake comes back. */
+  const abandonGame = useCallback((id: string) => {
+    if (!k) return Promise.reject(new Error('Still loading your practice balance'));
+    return mutate(k, (b) => {
+      const g = b.liveGame;
+      if (!g || g.id !== id) return b;
+      const done: GameRun = { ...g, result: 'abandoned', payout: g.stake, pnl: 0, endedAt: Date.now() };
+      return { ...b, balance: round2(b.balance + g.stake), liveGame: null, games: [done, ...(b.games ?? [])].slice(0, 200) };
+    });
+  }, [k]);
+
   const reset = useCallback(() => (k ? mutate(k, () => fresh()) : Promise.reject(new Error('Still loading your paper balance'))), [k]);
 
-  return { book, ready: !!book, signedIn: !!owner, open, close, place, cancel, fillOrder, startClash, finishClash, abandonClash, reset };
+  return { book, ready: !!book, signedIn: !!owner, open, close, place, cancel, fillOrder, startClash, finishClash, abandonClash, startGame, finishGame, abandonGame, reset };
 }
 export type Practice = ReturnType<typeof usePractice>;
 

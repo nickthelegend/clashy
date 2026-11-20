@@ -18,6 +18,8 @@ import { BotPic } from '@/ui/practice-kit';
 import { ART, ErrorLine, LiveDot, Row, SkeletonRows, Txt } from '@/ui/kit';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 import { TourScroll, TourTarget, useTourScroll } from '@/tour';
+import { ENGINE_ART } from '@/games/art';
+import { GAMES } from '@/games/catalog';
 
 /** Monday 00:00 UTC of the current week (the Weekly Cup resets then). */
 const cupLeft = () => {
@@ -88,10 +90,12 @@ export default function Play() {
       <TourScroll value={ts.scroller}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Txt v="title">Play</Txt>
+        <TourTarget id="arena-wallet">
         <Pressable onPress={go('/wallet')} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.s2, borderRadius: 20, paddingHorizontal: 14, height: 38, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.up }} />
           <Txt v="label">{chain.bal == null ? '…' : `$${chain.bal.toFixed(2)}`}</Txt>
         </Pressable>
+        </TourTarget>
       </Row>
 
       {/* the hero: Clash */}
@@ -117,15 +121,47 @@ export default function Play() {
         </TourTarget>
       </Animated.View>
 
+      {/* the Games: 100 games on live prices */}
+      <Animated.View entering={FadeInDown.delay(60).duration(380)}>
+        <TourTarget id="arena-allgames">
+          <Pressable onPress={go('/games')} accessibilityRole="button" accessibilityLabel={`${GAMES.length} games. Memes, perps, stocks and party games.`}
+            style={({ pressed }) => ({ marginTop: 10, borderRadius: 26, overflow: 'hidden', backgroundColor: '#12101A', borderWidth: 1.5, borderColor: '#2E2645', padding: 16, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+            <View style={{ position: 'absolute', left: -50, top: -70, width: 200, height: 200, borderRadius: 100, backgroundColor: '#FFC94A', opacity: 0.12 }} />
+            <View style={{ position: 'absolute', right: -40, bottom: -90, width: 220, height: 220, borderRadius: 110, backgroundColor: C.brand, opacity: 0.16 }} />
+            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Txt v="small" color="#FFC94A" style={{ ...FONT.bold, letterSpacing: 0.6 }}>NEW · PRACTICE MONEY</Txt>
+                <Text style={{ ...FONT.bold, fontSize: 32, letterSpacing: -1, color: '#fff', marginTop: 2, lineHeight: 40 }}>{GAMES.length} Games</Text>
+                <Txt v="small" color="#C9C3D6" style={{ marginTop: 2, lineHeight: 18 }}>Memes, perps, stocks and party games on live prices.</Txt>
+              </View>
+              <Txt v="label" color={C.brandSoft} style={{ fontSize: 22 }}>›</Txt>
+            </Row>
+            <Row style={{ marginTop: 12 }}>
+              {(['royale', 'cashout', 'race', 'bingo', 'compare', 'snipe', 'flip'] as const).map((e) => ENGINE_ART[e]).map((src, i) => (
+                <Image key={i} source={src} style={{ width: 54, height: 54, marginLeft: i ? -10 : 0 }} contentFit="contain" />
+              ))}
+            </Row>
+          </Pressable>
+        </TourTarget>
+      </Animated.View>
+
       {/* Royale and the squad war */}
       <TourTarget id="arena-games">
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
+        <TourTarget id="arena-royale" style={{ flex: 1 }}>
         <GameTile title="Royale" sub="Up to 16 players" line="$2 in · last one standing" loop="royale" tint="#FFC94A" onPress={go('/onchain-royale')} />
+        </TourTarget>
+        <TourTarget id="arena-war" style={{ flex: 1 }}>
         <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" art={<WarScene width={150} height={96} />} tint={C.brandSoft} onPress={go('/clans')} />
+        </TourTarget>
       </Row>
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
+        <TourTarget id="arena-perps" style={{ flex: 1 }}>
         <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
+        </TourTarget>
+        <TourTarget id="arena-practice" style={{ flex: 1 }}>
         <GameTile title="Practice clash" sub="vs Clashy Bot · free" line="Practice money, live prices" art={<BotPic size={56} />} tint={C.brandSoft} onPress={go('/practice/clash')} />
+        </TourTarget>
       </Row>
       </TourTarget>
 

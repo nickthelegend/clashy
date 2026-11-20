@@ -51,7 +51,11 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             <NavItem label={n.label} icon={n.icon} collapsed={collapsed} tour={n.tour} />
           </TabTrigger>
         ))}
-        <Pressable onPress={() => router.push('/wallet')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md, paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start', marginTop: 10 }}>
+        <Pressable onPress={() => router.push('/games' as never)} accessibilityRole="button" accessibilityLabel="Games" style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md, paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start', marginTop: 10 }}>
+          <Image source={ART.tileRoyale} style={{ width: 26, height: 26 }} contentFit="contain" />
+          {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: C.muted }}>Games</Text>}
+        </Pressable>
+        <Pressable onPress={() => router.push('/wallet')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, height: 44, borderRadius: R.md, paddingHorizontal: collapsed ? 0 : 12, justifyContent: collapsed ? 'center' : 'flex-start' }}>
           <TabIcon name="wallet" on={false} size={26} />
           {collapsed ? null : <Text style={{ ...FONT.semi, fontSize: 15, color: C.muted }}>Wallet</Text>}
         </Pressable>
