@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import { useExportWallet, useFundWallet, useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
 import { createSolanaRpc, createSolanaRpcSubscriptions } from '@solana/kit';
-import { IS_LOCAL_NET, NET, PublicKey, type WalletSigner } from './client';
+import { IS_LOCAL_NET, NET, PublicKey, REAL_MONEY, type WalletSigner } from './client';
 import { Transaction } from '@solana/web3.js';
 import { DeviceWallet, WalletCtx, useWallet, type WalletState } from './walletCore';
 
@@ -41,7 +41,8 @@ function Bridge({ children }: { children: ReactNode }) {
       authToken: () => getAccessToken(),
     };
     // buying USDC only makes sense where it is real: the local fork's USDC comes from the faucet instead
-    const addFunds = IS_LOCAL_NET ? undefined : () => { fundWallet({ address: wallet.address, options: { chain: 'solana:mainnet', asset: 'USDC' } }).catch(() => {}); };
+    // buying USDC (real money) only on a real-money mainnet build; never in the practice beta or on devnet
+    const addFunds = !REAL_MONEY ? undefined : () => { fundWallet({ address: wallet.address, options: { chain: 'solana:mainnet', asset: 'USDC' } }).catch(() => {}); };
     return { status: 'in', signer, logout, addFunds, exportKey: () => { exportWallet({ address: wallet.address }).catch(() => {}); } };
   }, [ready, authenticated, user, wallet, walletsReady, login, logout, signTransaction, getAccessToken, exportWallet, fundWallet]);
   return <WalletCtx.Provider value={state}>{children}</WalletCtx.Provider>;
@@ -80,7 +81,7 @@ export function ClashyWallet({ children }: { children: ReactNode }) {
           accentColor: '#AB9FF2',
           walletChainType: 'solana-only',
           landingHeader: 'Sign in to Clashy',
-          loginMessage: 'Your Clashy wallet holds USDC. No SOL, no seed phrase: fees are on us.',
+          loginMessage: REAL_MONEY ? '18+ only. By signing in you agree to the Terms. No SOL, no seed phrase: fees are on us.' : '18+ only. By signing in you agree to the Terms. Free to play on practice money.',
         },
         // the cluster this build settles on (the local fork serves mainnet's USDC address)
         solana: { rpcs: { 'solana:mainnet': { rpc: createSolanaRpc(NET.base), rpcSubscriptions: createSolanaRpcSubscriptions(ws) } } },

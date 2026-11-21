@@ -160,6 +160,14 @@ export async function sendUsdc(signer: WalletSigner, to: PublicKey, amount: numb
 export const faucetUsdc = (owner: PublicKey) => post<{ usdc: number }>('/faucet', { owner: owner.toBase58() });
 /** True when this build plays on the local fork (test USDC from the faucet; no real money). */
 export const IS_LOCAL_NET = /127\.0\.0\.1|localhost/.test(NET.base);
+/** True on Solana mainnet. */
+export const IS_MAINNET = /mainnet/.test(NET.base);
+/**
+ * Real money (buying USDC, real stakes) is switched on only for a mainnet build made with
+ * EXPO_PUBLIC_CLASHY_REAL_MONEY=1, which needs Nick's go (lawyer, geofence, audit fixes). The public beta is practice
+ * money plus devnet test USDC, so it never offers a way to put real money in.
+ */
+export const REAL_MONEY = IS_MAINNET && process.env.EXPO_PUBLIC_CLASHY_REAL_MONEY === '1';
 
 /** An Anchor provider whose `.rpc()` goes through the sponsor relay. */
 function relayProvider(connection: typeof base, layer: Layer, signer: WalletSigner, sponsor: PublicKey) {

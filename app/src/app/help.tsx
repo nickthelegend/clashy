@@ -9,7 +9,7 @@ import { Linking, Platform, Pressable, ScrollView, Text, View, type LayoutChange
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { IS_LOCAL_NET, NET, P, PROGRAM_ID } from '@/chain/client';
+import { IS_LOCAL_NET, NET, P, PROGRAM_ID, REAL_MONEY } from '@/chain/client';
 import { readProfile, reader, usePoll } from '@/chain/social';
 import { useWallet } from '@/chain/wallet';
 import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
@@ -192,7 +192,7 @@ export default function Help() {
         <ClayLoop name="journey" width="100%" height={180} cover />
         <View style={{ padding: 18, paddingTop: 14 }}>
           <Txt v="title" style={{ fontSize: 30, lineHeight: 35, letterSpacing: -1 }}>How Clashy works</Txt>
-          <Txt v="body" color="#B9B9C3" style={{ marginTop: 6, lineHeight: 20 }}>Call where a price goes next. Beat a friend 1 v 1, outlast a whole table, team up with a squad, and save what you win. Real USDC, real rules, no small print.</Txt>
+          <Txt v="body" color="#B9B9C3" style={{ marginTop: 6, lineHeight: 20 }}>Call where a price goes next. Beat a friend 1 v 1, outlast a whole table, team up with a squad, and save what you win. {REAL_MONEY ? 'Real USDC, real rules, no small print.' : 'The public beta is free, on practice money; on-chain duels use test USDC with no value.'}</Txt>
         </View>
       </View>
 
@@ -279,7 +279,7 @@ export default function Help() {
         ]} />
 
       <Section id="safe" focus={focus === 'safe'} onLayout={onLayout} title="Play safe" tint={C.brand} loop="limits" still={ART.limits}
-        lead="Stakes are real money. Set your own limits, and the rules make sure they hold, even against you."
+        lead={REAL_MONEY ? 'Stakes are real money. Set your own limits, and the rules make sure they hold, even against you.' : 'The beta has no real money: practice money and test USDC only. Limits still work, so set yours, and the rules make sure they hold, even against you.'}
         facts={[{ text: 'Daily limit, enforced on chain' }, { text: 'Lowering is instant', color: C.up }, { text: 'Raising waits 24 h', color: '#FFC94A' }]}
         extra={me ? (
           <View style={{ backgroundColor: '#17171D', borderRadius: 18, padding: 14 }}>

@@ -76,8 +76,9 @@ export function Break() {
           <span>Fight your friends.</span>
         </h2>
         <p>
-          Trading arcades put you against a house pool that keeps your loss. On Clashy the other side is a person, the USDC pot
-          sits in escrow on Solana, and the winner takes it, minus a 3% rake. You never need SOL: Clashy pays every network fee.
+          Trading arcades put you against a house pool that keeps your loss. Clashy's real-money duels, coming later, put a person
+          on the other side: the USDC pot sits in escrow on Solana and the winner takes it, minus a small rake. Until then the
+          public beta is free, on practice money.
         </p>
       </div>
       <div className={`modes${reduce ? ' still' : ''}`}>
@@ -103,15 +104,15 @@ export function Join() {
           Make the first move.
         </motion.h2>
         <motion.div className="join-side" {...r}>
-          <p>The app is coming to iOS, Android and the Solana dApp Store. Until then, the Arena above is free to play. Sign in with email, play in USDC, no seed phrase.</p>
-          <a className="btn btn-primary" href="#arena">
-            Play a free duel
+          <p>The public beta is open at play.clashy.fun: 150 games on live prices, free with practice money. Real-money duels come later, and apps for iOS, Android and the Solana dApp Store are on the way.</p>
+          <a className="btn btn-primary" href="https://play.clashy.fun">
+            Play free
             <span className="arrow" aria-hidden="true">
               →
             </span>
           </a>
           <StoreBadges size="sm" />
-          <span className="sample">Free to try. USDC stakes when the app ships.</span>
+          <span className="sample">Practice money only. No deposits, no real stakes.</span>
         </motion.div>
       </div>
     </section>
@@ -140,6 +141,7 @@ export function Footer() {
         <div className="foot-links">
           <div>
             <span className="label">Play</span>
+            <a href="https://play.clashy.fun">Play free</a>
             <a href="#arena">Arena (free)</a>
             <a href="#how">How it works</a>
           </div>
@@ -150,13 +152,19 @@ export function Footer() {
               MagicBlock ↗
             </a>
           </div>
+          <div>
+            <span className="label">Legal</span>
+            <a href="https://play.clashy.fun/legal/terms">Terms</a>
+            <a href="https://play.clashy.fun/legal/privacy">Privacy</a>
+            <a href="https://play.clashy.fun/legal/responsible">Responsible play</a>
+          </div>
         </div>
         <div className="foot-q">
           <p>Trade against people, not the house.</p>
         </div>
       </div>
       <div className="wrap foot-fine">
-        <span>© 2026 Clashy · clashy.fun · In development: the app and duels for money are not live.</span>
+        <span>© 2026 Clashy · clashy.fun · Public beta on practice money, 18+. Duels for money are not live.</span>
         <span>Leveraged trading is risky. Arena prices: Binance spot. Art generated with ChatGPT.</span>
       </div>
     </footer>

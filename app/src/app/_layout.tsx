@@ -1,7 +1,7 @@
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DarkTheme, router, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, router, Stack, ThemeProvider, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -43,8 +43,11 @@ export default function Root() {
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDED_KEY).then((v) => setFirstOpen(!v)).catch(() => setFirstOpen(false)).finally(() => setChecked(true));
   }, []);
+  const path = usePathname();
   useEffect(() => { if (loaded && checked) SplashScreen.hideAsync(); }, [loaded, checked]);
-  useEffect(() => { if (loaded && checked && firstOpen) router.replace('/welcome'); }, [loaded, checked, firstOpen]);
+  // a legal page opened from a link (the landing's footer) shows itself on a first visit instead of the welcome slides;
+  // the path is only read once, at that first check
+  useEffect(() => { if (loaded && checked && firstOpen && !path.startsWith('/legal')) router.replace('/welcome'); }, [loaded, checked, firstOpen]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!loaded || !checked) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>

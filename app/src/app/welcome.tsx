@@ -3,9 +3,9 @@
 // (sponsored). Home sends anyone signed in without a name back here (?step=name).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useChain } from '@/chain/useChain';
@@ -38,6 +38,12 @@ function NameStep({ onDone }: { onDone: () => void }) {
         <Txt v="title" style={{ marginTop: 20, fontSize: 30, textAlign: 'center' }}>Sign in</Txt>
         <Txt v="body" color="#B9B9C2" style={{ marginTop: 8, textAlign: 'center', maxWidth: 320 }}>Email or Google. You get a wallet that holds USDC only: no seed phrase, no SOL. Every fee is on Clashy.</Txt>
         <Btn title="Sign in" kind="white" style={{ marginTop: 22, alignSelf: 'stretch' }} onPress={() => wallet.login?.()} />
+        <Txt v="small" style={{ marginTop: 12, textAlign: 'center', fontSize: 12, lineHeight: 17, maxWidth: 320 }}>
+          By continuing you confirm you're 18 or older and agree to the{' '}
+          <Text accessibilityRole="link" onPress={() => router.push('/legal/terms' as Href)} style={{ color: C.brandSoft }}>Terms</Text>
+          {' '}and{' '}
+          <Text accessibilityRole="link" onPress={() => router.push('/legal/privacy' as Href)} style={{ color: C.brandSoft }}>Privacy</Text>.
+        </Txt>
       </View>
     );
   }

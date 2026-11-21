@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import React, { useEffect, useState, type ComponentRef } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IS_LOCAL_NET, NET, PROGRAM_ID, USDC, base, faucetUsdc, usdcAta } from '@/chain/client';
+import { IS_LOCAL_NET, IS_MAINNET, NET, PROGRAM_ID, USDC, base, faucetUsdc, usdcAta } from '@/chain/client';
 import { SendUsdc, WalletCard, useChain } from '@/chain/useChain';
 import { useDeskColumn } from '@/ui/layout';
 import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
@@ -99,7 +99,7 @@ export default function Wallet() {
             <View style={{ marginTop: 4 }}>{bal == null ? <Txt v="title">…</Txt> : <Money value={bal} size={56} />}</View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: C.s1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 }}>
               <Image source={ART.logoUSDC} style={{ width: 18, height: 18, borderRadius: 9 }} contentFit="cover" />
-              <Txt v="small" color={C.ink}>USDC{IS_LOCAL_NET ? ' · test network' : ''} · no gas fees</Txt>
+              <Txt v="small" color={C.ink}>USDC{IS_MAINNET ? '' : ' · test network, no value'} · no gas fees</Txt>
             </View>
           </View>
           </TourTarget>

@@ -25,7 +25,7 @@ export function TopNav() {
             </a>
           ))}
         </nav>
-        <a className="btn btn-white btn-sm" href="#arena">
+        <a className="btn btn-white btn-sm" href="https://play.clashy.fun">
           Play free
         </a>
       </div>
@@ -59,7 +59,7 @@ export function FloatNav() {
           {l}
         </a>
       ))}
-      <a href="#arena" className="floatnav-cta">
+      <a href="https://play.clashy.fun" className="floatnav-cta">
         Play free
       </a>
     </motion.nav>
@@ -95,12 +95,12 @@ export function Hero() {
           the <Tile src="/art/crown.webp" bg="#FFC94A" delay={0.45} /> house.
         </h1>
         <motion.p className="hero-sub" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}>
-          Clashy turns trading into a game you play against people. Get matched, a coin is rolled for you both, you pick long
-          or short, and the best % in sixty seconds takes the pot.
+          Clashy turns trading into a game. The public beta has 150 games on live prices, free to play with practice money.
+          Real-money duels against people come later.
         </motion.p>
         <motion.div className="hero-ctas" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.6 }}>
-          <a className="btn btn-primary" href="#arena">
-            Play a free duel
+          <a className="btn btn-primary" href="https://play.clashy.fun">
+            Play free
             <span className="arrow" aria-hidden="true">
               →
             </span>
@@ -113,7 +113,7 @@ export function Hero() {
           </a>
         </motion.div>
         <motion.p className="hero-note" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7, duration: 0.6 }}>
-          Sign in with email. Play in USDC. No SOL, no seed phrase, fees on us.
+          Sign in with email or Google. Practice money only: no deposits, no seed phrase.
         </motion.p>
         <HeroCard />
       </div>
@@ -122,7 +122,7 @@ export function Hero() {
 }
 
 // The product card over a frosted stack, like tab.markets' event card. Prices are live; the
-// players and the pot are a design sample and the card says so.
+// players and the pot preview a real-money duel, and the card says those come later.
 function HeroCard() {
   const sol = useLivePrice(MARKETS[0])
   const reduce = useReducedMotion()
@@ -140,7 +140,7 @@ function HeroCard() {
           <span className="chip">
             <img src="/art/tile-duel.webp" alt="" width="20" height="20" /> knockout duel · quick match
           </span>
-          <span className="sample">Design sample · live price</span>
+          <span className="sample">Preview · real-money duels come later</span>
         </div>
         <h3 className="hcard-title">SOL rolled for both of you. Long or short?</h3>
         <div className="hcard-who">

@@ -17,7 +17,7 @@ const CARDS: Card[] = [
     n: '01',
     label: 'Clans',
     title: 'Your clan vs theirs.',
-    body: 'Pool a USDC war chest, vote on trades and fight a new war every week. A season every month.',
+    body: 'Pool a war chest with your crew, vote on trades and take on rival clans. No real money in the beta.',
     bg: '#F0468C',
     ink: '#fff',
     ui: (
@@ -40,8 +40,8 @@ const CARDS: Card[] = [
   {
     n: '02',
     label: 'The arena',
-    title: 'Six ways to fight.',
-    body: 'Knockout duels on one rolled coin, Coin clash, Draw the line, Royale, Bounty and Clan war. All on live prices.',
+    title: '150 ways to play.',
+    body: 'Knockout duels, Royale, races, snipes, streaks and more: 150 games on live prices, free with practice money.',
     bg: '#5B6CFF',
     ink: '#fff',
     ui: (

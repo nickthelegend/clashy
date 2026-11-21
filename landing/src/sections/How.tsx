@@ -9,9 +9,9 @@ import { MARKETS, useLivePrice } from '../components/arena/useLivePrice'
 // The phone's blank screen sits at 31.14% / 8.67% / 44.5% x 62.56% of phone-hand.webp.
 
 const STEPS = [
-  { k: 'Match', t: 'Get matched.', d: 'Sign in with email or Google, hit quick match and meet a stranger in seconds, or call out a friend from chat.' },
-  { k: 'Roll', t: 'One coin. Pick your side.', d: 'MagicBlock VRF rolls one coin for both of you. You each get ten seconds to go long or short and set your leverage.' },
-  { k: 'Battle', t: 'Sixty seconds. Best % wins.', d: 'One chart, both knockout lines. Hit yours and you are out. The USDC pot settles on Solana.' },
+  { k: 'Match', t: 'Get matched.', d: 'Sign in with email or Google and hit quick match. In the public beta your rival is Clashy Bot, and you play with practice money.' },
+  { k: 'Roll', t: 'One coin. Pick your side.', d: 'One coin is rolled for both of you. Go long or short and set your leverage.' },
+  { k: 'Battle', t: 'Sixty seconds. Best % wins.', d: 'One chart, both knockout lines. Hit yours and you are out. Best % at the bell takes the practice pot.' },
 ]
 
 export function How() {
@@ -27,7 +27,7 @@ export function How() {
           <br />
           Duel it out.
         </h2>
-        <p>Three moves, one minute. The screens below are the app design; prices are live.</p>
+        <p>Three moves, one minute. The screens below are the app design; prices are live. In the beta no duel uses real money.</p>
       </div>
       <div className="how-track" ref={ref}>
         <div className="how-sticky">

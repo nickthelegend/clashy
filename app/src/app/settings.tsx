@@ -1,7 +1,7 @@
 // Settings: one grouped page for everything about your account. Your profile up top (avatar, name, player number),
 // then Money (wallet balance, Stash balance), Play safe (your daily limit and break, as the program holds them), Squads,
-// Help, and Account (address, explorer, export key, sign out), with the app version at the foot. Every value is read
-// from the chain; rows without a real value say so instead of guessing.
+// Help, Account (address, explorer, export key, sign out) and Legal (shown signed out too), with the app version at
+// the foot. Every value is read from the chain; rows without a real value say so instead of guessing.
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PACKS } from '@/stickers';
@@ -202,6 +202,13 @@ export default function Settings() {
           {errs.map((e, i) => <ErrorLine key={i} msg={e.error} onRetry={e.reload} />)}
         </>
       )}
+
+      {/* signed in or out: the legal pages are always one tap away */}
+      <Group title="Legal" foot="Drafts for the public beta, to be reviewed by a lawyer before any real-money play.">
+        <SettingRow first label="Terms" sub="Practice money, the 18+ rule, playing fair" onPress={go('/legal/terms')} />
+        <SettingRow label="Privacy" sub="What we keep, where it lives, who sees it" onPress={go('/legal/privacy')} />
+        <SettingRow label="Responsible play" sub="Keeping it a game, and where to get help" onPress={go('/legal/responsible')} />
+      </Group>
 
       <View style={{ alignItems: 'center', marginTop: 30, gap: 4 }}>
         <Txt v="label" color={C.dim} style={{ ...FONT.semi, fontSize: 13 }}>Clashy {VERSION}</Txt>
