@@ -23,10 +23,22 @@ import streak from './streak';
 import survive from './survive';
 import touch from './touch';
 import updown from './updown';
+import candle from './candle';
+import mines from './mines';
+import path from './path';
+import picks from './picks';
+import rewind from './rewind';
+import roulette from './roulette';
+import sync from './sync';
+import tapgrid from './tapgrid';
+import timer from './timer';
+import tower from './tower';
+import whochart from './whochart';
 
 type Engine = ComponentType<{ g: GameApi }>;
 export const ENGINES: Record<EngineId, Engine> = {
   updown, race, range, touch, cashout, survive, guess, streak,
   podium, draft, snipe, compare, capguess, ko, royale,
   flip, addonce, bingo, bracket, elim, leader,
+  tapgrid, picks, tower, mines, roulette, rewind, whochart, candle, path, sync, timer,
 };

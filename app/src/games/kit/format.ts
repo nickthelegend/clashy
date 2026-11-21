@@ -20,7 +20,8 @@ export const lengthLabel = (secs: number) => (secs <= 0 ? 'Instant' : secs < 60 
 export const lengthOf = (d: Pick<GameDef, 'secs' | 'engine' | 'p'>) =>
   d.engine === 'streak' ? `${d.p?.roundSecs ?? 10} s calls`
     : d.engine === 'royale' ? `${d.p?.callSecs ?? 10} s calls`
-      : lengthLabel(d.secs);
+      : d.engine === 'tower' ? `${d.p?.floorSecs ?? 10} s floors`
+        : lengthLabel(d.secs);
 export const secsIn = (t: number, start: number) => `${Math.max(0, Math.round((t - start) / 1000))} s in`;
 
 /* ---------- moves ---------- */

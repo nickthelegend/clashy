@@ -131,16 +131,24 @@ export function PxChart({ g, sym, from, until, h = 200, entry, levels = [], band
 type Candle = { t: number; o: number; h: number; l: number; c: number };
 /** Real OHLC candles. `hidden` candles sit behind a curtain ("?") until `reveal`; then they fade in, so a replay game can
  *  show history and ask what came next. `levels` draws guesses and targets across it. No axis labels: `labels` false
- *  also hides the price tag (Who's That Chart). */
-export function CandleChart({ seen, hidden = [], reveal = false, w, h = 200, levels = [], labels = true, tint = C.brand }: {
-  seen: Candle[]; hidden?: Candle[]; reveal?: boolean; w: number; h?: number; levels?: Level[]; labels?: boolean; tint?: string;
+ *  also hides the price tag (Who's That Chart).
+ *  Nov 21 additions (all optional): `revealCount` brings the hidden candles in one by one while revealing (the scale
+ *  already fits them all, so nothing jumps); `markLast` draws a line from the last seen close across the curtain
+ *  ("higher or lower than here"); `domain` fixes the price range (a guess slider's range), so the chart doesn't rescale
+ *  while a level moves. Level labels step out of each other's way. */
+export function CandleChart({ seen, hidden = [], reveal = false, revealCount, w, h = 200, levels = [], labels = true, tint = C.brand, markLast = false, domain }: {
+  seen: Candle[]; hidden?: Candle[]; reveal?: boolean; revealCount?: number; w: number; h?: number; levels?: Level[]; labels?: boolean; tint?: string;
+  markLast?: boolean; domain?: { lo: number; hi: number };
 }) {
   const all = [...seen, ...hidden];
   if (!all.length) return <View style={{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }}><Txt v="small">Loading candles…</Txt></View>;
   const inView = reveal ? all : seen;
+  // how many hidden candles are drawn: none before the reveal, then `revealCount` of them (all when it's not set)
+  const open = !reveal ? 0 : revealCount === undefined ? hidden.length : Math.max(0, Math.min(hidden.length, Math.floor(revealCount)));
   let lo = Math.min(...inView.map((k) => k.l), ...levels.map((l) => l.p));
   let hi = Math.max(...inView.map((k) => k.h), ...levels.map((l) => l.p));
-  if (!reveal && hidden.length) { const span = hi - lo || hi * 0.001; lo -= span * 0.35; hi += span * 0.35; }
+  if (domain && Number.isFinite(domain.lo) && Number.isFinite(domain.hi)) { lo = Math.min(lo, domain.lo); hi = Math.max(hi, domain.hi); }
+  else if (!reveal && hidden.length) { const span = hi - lo || hi * 0.001; lo -= span * 0.35; hi += span * 0.35; }
   if (hi - lo < hi * 0.0005) { const m = (hi + lo) / 2; lo = m * 0.99975; hi = m * 1.00025; }
   const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
   const RG = labels ? 64 : 8;
@@ -150,15 +158,31 @@ export function CandleChart({ seen, hidden = [], reveal = false, w, h = 200, lev
   const X = (i: number) => slot * i + slot / 2;
   const Y = (v: number) => 6 + (1 - (v - lo) / (hi - lo)) * (h - 12);
   const curtainX = slot * seen.length;
-  const last = (reveal ? all : seen)[(reveal ? all : seen).length - 1]!;
+  // the curtain covers what's still hidden: everything before the reveal, the rest while candles come in
+  const coverX = slot * (seen.length + open);
+  const covered = hidden.length > 0 && open < hidden.length;
+  const visible = all.slice(0, seen.length + open);
+  const last = visible[visible.length - 1] ?? all[0]!;
+  const ref = seen[seen.length - 1];
+
+  // level labels sit above their line, or below it when another label is in the way
+  const tags: { y: number; text: string; color: string }[] = [];
+  for (const l of [...levels].filter((x) => x.label).sort((a, b) => Y(a.p) - Y(b.p))) {
+    let y = Y(l.p) - 17;
+    const prev = tags[tags.length - 1];
+    if (y < 2 || (prev && y - prev.y < 15)) y = Y(l.p) + 4;
+    if (prev && y - prev.y < 15) y = prev.y + 15;
+    tags.push({ y: Math.max(2, Math.min(h - 16, y)), text: l.label!, color: l.color });
+  }
+
   return (
     <View style={{ width: w, height: h }}>
       <Svg width={w} height={h}>
         {[0.25, 0.5, 0.75].map((f) => <Line key={f} x1={0} x2={w - RG + 4} y1={h * f} y2={h * f} stroke={GT.grid} />)}
-        {hidden.length && !reveal ? <Rect x={curtainX} y={0} width={w - RG - curtainX + 4} height={h} rx={12} fill={tint} fillOpacity={0.08} /> : null}
+        {covered ? <Rect x={coverX} y={0} width={Math.max(0, w - RG - coverX + 4)} height={h} rx={12} fill={tint} fillOpacity={0.08} /> : null}
         {levels.map((l, i) => <Line key={`l${i}`} x1={0} x2={w} y1={Y(l.p)} y2={Y(l.p)} stroke={l.color} strokeWidth={1.6} strokeDasharray={l.solid ? undefined : '6 5'} />)}
-        {all.map((k, i) => {
-          if (i >= seen.length && !reveal) return null;
+        {markLast && ref ? <Line x1={X(seen.length - 1)} x2={w - RG + 4} y1={Y(ref.c)} y2={Y(ref.c)} stroke={C.ink} strokeOpacity={0.55} strokeWidth={1.2} strokeDasharray="2 4" /> : null}
+        {visible.map((k, i) => {
           const up = k.c >= k.o;
           const col = up ? C.up : C.down;
           const y1 = Y(Math.max(k.o, k.c)), y2 = Y(Math.min(k.o, k.c));
@@ -169,6 +193,7 @@ export function CandleChart({ seen, hidden = [], reveal = false, w, h = 200, lev
             </G>
           );
         })}
+        {markLast && ref ? <Circle cx={X(seen.length - 1)} cy={Y(ref.c)} r={3.5} fill={C.ink} stroke="#000" strokeWidth={1.5} /> : null}
         {hidden.length ? <Line x1={curtainX} x2={curtainX} y1={0} y2={h} stroke={tint} strokeOpacity={0.7} strokeWidth={1.5} strokeDasharray="4 4" /> : null}
       </Svg>
       {hidden.length && !reveal ? (
@@ -181,8 +206,8 @@ export function CandleChart({ seen, hidden = [], reveal = false, w, h = 200, lev
           <Text style={{ ...FONT.bold, fontSize: 11, color: '#000' }}>{last.c >= 1000 ? last.c.toLocaleString('en-US', { maximumFractionDigits: 0 }) : last.c.toPrecision(5)}</Text>
         </View>
       ) : null}
-      {levels.filter((l) => l.label).map((l, i) => (
-        <Text key={`t${i}`} pointerEvents="none" numberOfLines={1} style={{ position: 'absolute', left: 6, top: Math.max(2, Math.min(h - 16, Y(l.p) - 17)), ...FONT.bold, fontSize: 10.5, color: l.color }}>{l.label}</Text>
+      {tags.map((l, i) => (
+        <Text key={`t${i}`} pointerEvents="none" numberOfLines={1} style={{ position: 'absolute', left: 6, top: l.y, maxWidth: w - RG - 10, ...FONT.bold, fontSize: 10.5, color: l.color }}>{l.text}</Text>
       ))}
     </View>
   );

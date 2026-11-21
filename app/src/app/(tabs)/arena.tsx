@@ -121,7 +121,7 @@ export default function Play() {
         </TourTarget>
       </Animated.View>
 
-      {/* the Games: 100 games on live prices */}
+      {/* the Games: 150 games on live prices */}
       <Animated.View entering={FadeInDown.delay(60).duration(380)}>
         <TourTarget id="arena-allgames">
           <Pressable onPress={go('/games')} accessibilityRole="button" accessibilityLabel={`${GAMES.length} games. Memes, perps, stocks and party games.`}

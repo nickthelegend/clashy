@@ -1,6 +1,6 @@
 // Tours for the Games page and every game (Nov 20). Each game's first visit gets its own short tour: what the game is,
 // the decision, the stake, the start, and where the rules live. The decision and start lines come from the game's
-// engine, so all 100 games get one without 500 hand-written lines.
+// engine, so all 150 games get one without 750 hand-written lines.
 import { GAMES } from '@/games/catalog';
 import type { EngineId, GameDef } from '@/games/types';
 import type { TourStep } from './steps';
@@ -28,6 +28,17 @@ const GUIDE: Record<EngineId, { pick: Two; go: Two }> = {
   bracket: { pick: { title: 'Call the bracket.', body: 'Pick a winner for every match.' }, go: { title: 'Lock it in.', body: 'More right calls than Clashy Bot wins.' } },
   elim: { pick: { title: 'Back one.', body: 'The worst market so far is cut on every beat.' }, go: { title: 'Outlast the bot.', body: 'Whose pick lasts longer wins.' } },
   leader: { pick: { title: 'Leader and laggard.', body: 'Ranked by the last five minutes.' }, go: { title: 'Chase or fade?', body: 'Clashy Bot takes the other side.' } },
+  tapgrid: { pick: { title: 'Tap the grid.', body: 'Each cell is a price and a moment. Further out pays more.' }, go: { title: 'Five chips.', body: 'A cell pays if the price line passes through it.' } },
+  picks: { pick: { title: 'More or Less?', body: 'Pick a side on two or more lines.' }, go: { title: 'Power or Flex.', body: 'Power: all must hit. Flex: one miss still pays.' } },
+  tower: { pick: { title: 'Pick your lane.', body: 'Up, flat or down: each lane is an even third.' }, go: { title: 'Climb.', body: 'Cash out between floors. One miss and you fall.' } },
+  mines: { pick: { title: 'Flip a market.', body: 'The day’s worst few are mines. The rest are safe.' }, go: { title: 'Bank it.', body: 'Cash out any time after a safe flip.' } },
+  roulette: { pick: { title: 'Place your chips.', body: 'Each slot is a range for the move. Rarer pays more.' }, go: { title: 'Spin.', body: 'The live move is the ball. It lands at the bell.' } },
+  rewind: { pick: { title: 'Real history.', body: 'A real chart, with what came next hidden.' }, go: { title: 'Call it.', body: 'Right grows the pot. Cash out any time.' } },
+  whochart: { pick: { title: 'No labels.', body: 'A real chart. Which market is it?' }, go: { title: 'Name it.', body: 'Right grows the pot. Cash out any time.' } },
+  candle: { pick: { title: 'One candle.', body: 'It forms live from the price. Call its shape.' }, go: { title: 'Make your call.', body: 'Clashy Bot takes the other side.' } },
+  path: { pick: { title: 'Draw the path.', body: 'Up or down on every leg, before it starts.' }, go: { title: 'Every leg counts.', body: 'All legs right pays the multiplier.' } },
+  sync: { pick: { title: 'Two markets.', body: 'Will they finish the same way, or split?' }, go: { title: 'Make your call.', body: 'Clashy Bot takes the other side.' } },
+  timer: { pick: { title: 'Set your exit.', body: 'Pick a side and the second you get out.' }, go: { title: 'Beat the bot.', body: 'It exits at a random second. The better P&L wins.' } },
 };
 
 function gameTour(g: GameDef): TourStep[] {
@@ -44,7 +55,7 @@ function gameTour(g: GameDef): TourStep[] {
 export const GAME_TOURS: Record<string, TourStep[]> = {
   games: [
     { target: 'games-hot', radius: 28, title: 'Hot right now.', body: 'The most played games. Swipe for more.' },
-    { target: 'games-cats', radius: 20, title: 'A hundred games.', body: 'Memes, perps, stocks, crypto and party games.' },
+    { target: 'games-cats', radius: 20, title: '150 games.', body: 'Memes, perps, stocks, crypto and party games.' },
     { target: 'games-search', radius: 14, title: 'Know what you want?', body: 'Search any game by name.' },
     { target: 'games-card', radius: 24, title: 'Tap to play.', body: 'Each game shows you around the first time.' },
     { target: 'games-balance', radius: 20, title: 'Practice money.', body: 'Shared with Practice. Tap to see your trades.' },

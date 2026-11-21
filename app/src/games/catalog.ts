@@ -1,5 +1,5 @@
-// The 100 games (Nov 20). Ideas from one Grok session (grokbot/research/clashy-games), judged and merged into the
-// engines in ./engines; see docs/GAMES.md. Each game is an engine with its own markets, clock, colour and settings.
+// The 150 games (100 on Nov 20, 50 more on Nov 21). Ideas from two Grok sessions and research on what ships today
+// (grokbot/research/clashy-games), judged and merged into the engines in ./engines; see docs/GAMES.md. Each game is an engine with its own markets, clock, colour and settings.
 // "How to play" is written from those settings by `rules()`, so it always matches what the game really does.
 // Leverage here is game leverage on practice money, sized to each market's volatility so a round can bust or pay in
 // seconds (a real 100× position on BTC barely moves in a minute); the real-money Perps clash stays at real venue caps.
@@ -19,6 +19,8 @@ const PAIRS = {
   memes: [['kBONK', 'WIF'], ['kPEPE', 'kSHIB'], ['FARTCOIN', 'PUMP'], ['PENGU', 'PIPPIN'], ['TRUMP', 'DOGE'], ['WIF', 'PENGU'], ['USELESS', 'FARTCOIN'], ['DOGE', 'kSHIB']],
   macro: [['GOLD', 'SILVER'], ['SPY', 'QQQ'], ['GOLD', 'BTC'], ['WTIOIL', 'GOLD'], ['EURUSD', 'GBPUSD'], ['COPPER', 'SILVER']],
 };
+/** Every symbol in a set of pairs, once. */
+const flat = (pp: string[][]) => [...new Set(pp.flat())];
 const MAG7 = ['AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL', 'NVDA', 'TSLA'];
 const MACRO = ['GOLD', 'SILVER', 'WTIOIL', 'COPPER', 'EURUSD', 'GBPUSD', 'USDJPY', 'SPY', 'QQQ'];
 const EVERYTHING: PoolKey[] = ['majors', 'alts', 'memes', 'stocks', 'commodities', 'fx'];
@@ -79,13 +81,40 @@ function rules(e: EngineId, secs: number, p: P, vs: GameDef['vs']): [string, str
     case 'bracket': return ['Eight markets, a knockout bracket.', `Call every match. ${bot} fills a random bracket.`, `Decided by the moves after ${len(secs)}. More right calls wins 2×.`];
     case 'elim': return [`${num(p, 'n', 8)} markets. Back one. ${bot} backs another.`, `Every ${num(p, 'every', 10)} seconds the worst one so far is knocked out.`, 'Whose market lasts longer wins 2×.'];
     case 'leader': return [`${num(p, 'n', 5)} markets, ranked by the last 5 minutes.`, `CHASE: the leader keeps beating the laggard. FADE: the laggard catches up. ${bot} takes the other side.`, `Right after ${len(secs)}: 2× your stake.`];
+    /* Nov 21 */
+    case 'tapgrid': return [`A grid runs ahead of the live price: ${num(p, 'cols', 5)} columns of ${num(p, 'colSecs', 5)} seconds, rows of price.`, `Tap up to ${num(p, 'chips', 5)} cells, at least 1.5 s before their moment. Each chip is 1/${num(p, 'chips', 5)} of your stake, and a cell's payout locks when you tap it.`, 'A cell pays if the price line passes through it in its moment. Unused chips come back.'];
+    case 'picks': return [`${num(p, 'n', 5)} lines: a market and a number each.`, p.flex === false ? `Pick More or Less on at least ${num(p, 'min', 2)}. Every pick must hit.` : `Pick More or Less on at least ${num(p, 'min', 2)}. Power: every pick must hit. Flex (3 or more): one miss still pays.`, `Every line settles after ${len(secs)}. A pick that lands exactly on its number is dropped.`];
+    case 'tower': {
+      const hard = p.mode === 'hard';
+      return [`${num(p, 'floors', 8)} floors. Each floor is a ${num(p, 'floorSecs', 10)}-second call on one market.`, hard ? 'Pick one of three lanes: UP, FLAT or DOWN. Each is an even third.' : 'Pick two of three lanes: UP, FLAT or DOWN. Each is an even third.', `Right climbs and grows the pot ${hard ? '2.91' : '1.46'}×. Cash out between floors. A miss and you fall.`];
+    }
+    case 'mines': {
+      const green = p.mines === 'green', n = num(p, 'tiles', 16), m = num(p, 'count', n === 9 ? 2 : 4);
+      return [`${n} real markets, ${p.faceUp === false ? 'face down' : 'face up'}. The ${m} ${green ? 'best' : 'worst'} on the day (24 h change) are mines.`, "Flip a safe one and the pot grows. Flip a mine and it's gone.", 'Cash out any time after a safe flip. The odds are exact, less 3%.'];
+    }
+    case 'roulette': return [`Six slots for where the move lands after ${len(secs)}, from a big drop to a big jump.`, `Place up to ${num(p, 'chips', 5)} chips. Rarer slots pay more, and the payouts show before you spin.`, 'The live move is the ball. Where it sits at the bell pays. Dead flat: chips back.'];
+    case 'rewind': return p.mode === 'target'
+      ? ['A real chart from the last few hours, with what came next hidden.', `Drag to where it closed ${num(p, 'hide', 10)} candles later. ${bot} guesses too.`, 'Closer wins 2×. Same distance: stake back.']
+      : ['A real chart from the last few hours, with what came next hidden.', `Call it: higher or lower than the last close, ${num(p, 'hide', 10)} candles later?`, `Right grows the pot ${num(p, 'step', 1.9)}×. Cash out any time. Wrong loses it.`];
+    case 'whochart': return [`A real chart of ${p.tf === '5m' ? '5-minute' : '1-minute'} candles, with no names and no prices.`, `Which of the ${num(p, 'choices', 4)} markets is it?`, `Right grows the pot ${num(p, 'step', 2.5)}×. Cash out any time. Wrong loses it.`];
+    case 'candle': {
+      const q = (p.q as string) ?? 'mix';
+      const call = q === 'wick' ? 'Call its longer wick: the top one or the bottom one.' : q === 'close' ? 'Call where it closes: the top half of its range or the bottom half.' : q === 'body' ? 'Call it: more body than wick, or more wick than body.' : q === 'range' ? "Call it: a bigger range than the minute before, or a smaller one." : 'You get a question about its shape: wicks, close or body.';
+      return [`One ${len(secs)} candle forms live from the price.`, `${call} ${bot} takes the other side.`, 'Right when it closes: 2×. A tie: stake back.'];
+    }
+    case 'path': {
+      const legs = num(p, 'legs', 2);
+      return [`${legs} legs of ${Math.round(secs / legs)} seconds on one market.`, 'Before it starts, call up or down for every leg.', `Every leg right pays ${(0.97 * 2 ** legs).toFixed(2)}×. A wrong leg loses. A flat leg and no wrong one: stake back.`];
+    }
+    case 'sync': return ['Two markets go at once.', `Call SAME (both finish up, or both down) or SPLIT. ${bot} takes the other.`, `Right after ${len(secs)}: 2×. Either one flat: stake back.`];
+    case 'timer': return [`Pick long or short at ${num(p, 'lev', 100)}× and the second you exit, before it starts.`, `${bot} opens the same side and exits at a random second. Liquidated before your exit: −100%.`, 'The better P&L at the exit wins 2×. A tie: stake back.'];
   }
 }
 
 type Spec = [id: string, name: string, hook: string, engine: EngineId, cat: Category, pool: GameDef['pool'], secs: number, tint: string, p?: P, extra?: Partial<GameDef>];
-const vsOf = (e: EngineId): GameDef['vs'] => (['touch', 'cashout', 'survive', 'streak', 'podium', 'compare', 'capguess', 'addonce', 'bingo'].includes(e) ? 'solo' : e === 'royale' ? 'bots' : 'bot');
+const vsOf = (e: EngineId): GameDef['vs'] => (['touch', 'cashout', 'survive', 'streak', 'podium', 'compare', 'capguess', 'addonce', 'bingo', 'tapgrid', 'picks', 'tower', 'mines', 'roulette', 'rewind', 'whochart', 'path'].includes(e) ? 'solo' : e === 'royale' ? 'bots' : 'bot');
 const make = ([id, name, hook, engine, cat, pool, secs, tint, p = {}, extra = {}]: Spec): GameDef => {
-  const vs = engine === 'cashout' && p.vsBot ? 'bot' : vsOf(engine);
+  const vs = (engine === 'cashout' && p.vsBot) || (engine === 'rewind' && p.mode === 'target') ? 'bot' : vsOf(engine);
   return { id, name, hook, engine, cat, pool, secs, tint, vs, p, how: rules(engine, secs, p, vs), ...extra };
 };
 
@@ -101,10 +130,10 @@ const SPECS: Spec[] = [
   ['meme-mix', 'Meme Mix', 'Build the best three-coin bag.', 'draft', 'memes', 'memes', 180, T.purple, { n: 8, k: 3 }],
   ['meme-podium', 'Meme Podium', 'Gold, silver, bronze. Call all three.', 'podium', 'memes', 'memes', 120, T.gold, { n: 3 }],
   ['vol-volley', 'Vol Volley', 'Calm or wild? Call the chaos.', 'range', 'memes', 'memes', 60, T.orange, { mode: 'bell' }],
-  ['cap-clash', 'Cap Clash', 'Which meme is worth more?', 'compare', 'memes', 'memes', 0, T.pink, { metric: 'mcap', step: 1.8 }, { badge: 'New' }],
+  ['cap-clash', 'Cap Clash', 'Which meme is worth more?', 'compare', 'memes', 'memes', 0, T.pink, { metric: 'mcap', step: 1.8 }],
   ['liquidity-lock', 'Liquidity Lock', 'Which pool runs deeper?', 'compare', 'memes', 'memes', 0, T.aqua, { metric: 'liquidity', step: 1.8 }],
   ['holder-high', 'Holder High', 'Which coin has the bigger crowd?', 'compare', 'memes', 'memes', 0, T.violet, { metric: 'holders', step: 1.8 }],
-  ['cap-or-no-cap', 'Cap or No Cap', 'Higher or lower than that market cap?', 'capguess', 'memes', 'memes', 0, T.yellow, { metric: 'mcap', step: 1.8 }, { badge: 'New' }],
+  ['cap-or-no-cap', 'Cap or No Cap', 'Higher or lower than that market cap?', 'capguess', 'memes', 'memes', 0, T.yellow, { metric: 'mcap', step: 1.8 }],
   ['holder-hunch', 'Holder Hunch', 'Guess the crowd behind the coin.', 'capguess', 'memes', 'memes', 0, T.rose, { metric: 'holders', step: 1.8 }],
   ['pump-or-dump', 'Pump or Dump', 'Thirty seconds. Which way?', 'updown', 'memes', 'memes', 30, T.green],
   ['mystery-meme', 'Mystery Meme', "You don't know the coin. Call it anyway.", 'updown', 'memes', 'memes', 60, T.purple, { blind: true }],
@@ -171,7 +200,7 @@ const SPECS: Spec[] = [
   ['peak-predict', 'Peak Predict', "Guess the high before it prints.", 'guess', 'crypto', 'alts', 60, T.yellow, { mode: 'peak' }],
   ['sniper', 'Sniper', 'Buy the bottom of the next 30 seconds.', 'snipe', 'crypto', 'majors', 30, T.mint, { side: 'buy' }],
   ['top-shot', 'Top Shot', 'Sell the top of the next 30 seconds.', 'snipe', 'crypto', 'alts', 30, T.rose, { side: 'sell' }],
-  ['better-day', 'Better Day', 'Which one did better today?', 'compare', 'crypto', ['majors', 'alts', 'memes', 'stocks'], 0, T.green, { metric: 'ch24', step: 1.8 }, { badge: 'New' }],
+  ['better-day', 'Better Day', 'Which one did better today?', 'compare', 'crypto', ['majors', 'alts', 'memes', 'stocks'], 0, T.green, { metric: 'ch24', step: 1.8 }],
   ['podium', 'Podium', 'Call first, second and third.', 'podium', 'crypto', ['majors', 'alts'], 60, T.gold, { n: 3 }],
   ['puzzle-path', 'Puzzle Path', 'Put four coins in order.', 'podium', 'crypto', 'alts', 120, T.violet, { n: 4 }],
   ['grand-slam', 'Grand Slam', 'Five coins, exact order, huge payout.', 'podium', 'crypto', 'alts', 180, T.pink, { n: 5 }],
@@ -184,7 +213,7 @@ const SPECS: Spec[] = [
   ['royale', 'Bot Royale', 'You and seven bots. Last one standing.', 'royale', 'party', 'majors', 0, T.gold, { hearts: 3, bots: 7, callSecs: 10 }, { badge: 'Hot' }],
   ['speed-royale', 'Speed Royale', 'Six-second calls. Two hearts.', 'royale', 'party', 'alts', 0, T.orange, { hearts: 2, bots: 7, callSecs: 6 }],
   ['meme-royale', 'Meme Royale', 'Eight degens. One meme.', 'royale', 'party', 'memes', 0, T.pink, { hearts: 3, bots: 7, callSecs: 8 }],
-  ['price-bingo', 'Price Bingo', 'Fill a line before the bell.', 'bingo', 'party', 'majors', 180, T.yellow, { markets: 3 }, { badge: 'New' }],
+  ['price-bingo', 'Price Bingo', 'Fill a line before the bell.', 'bingo', 'party', 'majors', 180, T.yellow, { markets: 3 }],
   ['bingo-blitz', 'Bingo Blitz', 'Ninety seconds. One line.', 'bingo', 'party', 'alts', 90, T.mint, { markets: 3 }],
   ['meme-bingo', 'Meme Bingo', 'Meme moves on a bingo card.', 'bingo', 'party', 'memes', 120, T.rose, { markets: 3 }],
   ['card-clash', 'Card Clash', 'Coins, memes and stocks on one card.', 'bingo', 'party', ['majors', 'memes', 'stocks'], 240, T.violet, { markets: 3 }],
@@ -199,6 +228,69 @@ const SPECS: Spec[] = [
   ['double-or-nothing', 'Double or Nothing', 'Fifteen-second calls at nearly 2×.', 'streak', 'party', 'majors', 0, T.pink, { roundSecs: 15, step: 1.95, mode: 'same' }],
   ['wildcard', 'Wildcard', 'Anything could come up. Call it.', 'updown', 'party', EVERYTHING, 45, T.lav],
   ['mystery-box', 'Mystery Box', 'A hidden market. Sixty seconds.', 'updown', 'party', EVERYTHING, 60, T.violet, { blind: true }],
+
+  /* ---------- Nov 21: 50 more, on 11 new engines ---------- */
+  // tap trading (Euphoria, BC.GAME): round = one lead column + the grid
+  ['tap-grid', 'Tap Grid', 'Tap where the price goes next.', 'tapgrid', 'crypto', 'majors', 30, T.cyan, { cols: 5, colSecs: 5, rows: 7, chips: 5 }, { badge: 'Hot' }],
+  ['meme-grid', 'Meme Grid', 'Tap the chaos before it happens.', 'tapgrid', 'memes', 'memes', 28, T.pink, { cols: 6, colSecs: 4, rows: 7, chips: 5 }, { badge: 'New' }],
+  ['grid-rush', 'Grid Rush', 'Three-second cells. Tap fast.', 'tapgrid', 'party', 'alts', 21, T.yellow, { cols: 6, colSecs: 3, rows: 7, chips: 5 }],
+  ['stock-grid', 'Stock Grid', 'Tap the tape on the big stocks.', 'tapgrid', 'stocks', 'stocks', 36, T.mint, { cols: 5, colSecs: 6, rows: 7, chips: 5 }],
+  ['perp-grid', 'Perp Grid', 'Wide cells on the big perps.', 'tapgrid', 'perps', ['majors', 'alts'], 48, T.violet, { cols: 5, colSecs: 8, rows: 7, chips: 5 }],
+  // More or Less (PrizePicks)
+  ['more-or-less', 'More or Less', 'Five lines. More or Less. Hit them all.', 'picks', 'crypto', ['majors', 'alts'], 60, T.green, { n: 5, min: 2 }, { badge: 'New' }],
+  ['meme-picks', 'Meme Picks', 'More or Less on the memes.', 'picks', 'memes', 'memes', 60, T.rose, { n: 5, min: 2 }],
+  ['stock-picks', 'Stock Picks', 'Five stocks. More or Less.', 'picks', 'stocks', 'stocks', 90, T.sky, { n: 5, min: 2 }],
+  ['macro-picks', 'Macro Picks', 'Gold, oil, FX and the indexes.', 'picks', 'perps', MACRO, 120, T.gold, { n: 5, min: 2 }],
+  ['power-play', 'Power Play', 'Three picks. All or nothing.', 'picks', 'party', EVERYTHING, 45, T.orange, { n: 4, min: 3, flex: false }],
+  // tower (Dragon Tower)
+  ['price-tower', 'Price Tower', 'Climb eight floors. Fall on a miss.', 'tower', 'crypto', 'majors', 80, T.lav, { floors: 8, floorSecs: 10, mode: 'easy' }, { badge: 'Hot' }],
+  ['meme-tower', 'Meme Tower', 'One lane per floor. Huge climbs.', 'tower', 'memes', 'memes', 64, T.coral, { floors: 8, floorSecs: 8, mode: 'hard' }],
+  ['stock-tower', 'Stock Tower', 'Climb the tape, six floors.', 'tower', 'stocks', 'stocks', 90, T.aqua, { floors: 6, floorSecs: 15, mode: 'easy' }],
+  ['perp-tower', 'Perp Tower', 'Twelve-second floors on the alts.', 'tower', 'perps', 'alts', 96, T.purple, { floors: 8, floorSecs: 12, mode: 'easy' }],
+  ['sky-tower', 'Sky Tower', 'Hard mode. One lane, ten floors.', 'tower', 'party', ['majors', 'alts'], 60, T.yellow, { floors: 10, floorSecs: 6, mode: 'hard' }],
+  // mines on the day's 24 h change
+  ['red-mines', 'Red Mines', "Sixteen coins. Today's four worst blow up.", 'mines', 'crypto', ['majors', 'alts'], 0, T.coral, { tiles: 16, mines: 'red', faceUp: true }, { badge: 'New' }],
+  ['meme-mines', 'Meme Mines', "Dodge the day's two worst memes.", 'mines', 'memes', 'memes', 0, T.mint, { tiles: 9, mines: 'red', faceUp: true }],
+  ['stock-mines', 'Stock Mines', "Nine stocks. Dodge the day's two worst.", 'mines', 'stocks', ['stocks', 'indexes'], 0, T.gold, { tiles: 9, mines: 'red', faceUp: true }],
+  ['blind-mines', 'Blind Mines', "Face down. The day's worst are mines.", 'mines', 'party', EVERYTHING, 0, T.violet, { tiles: 16, mines: 'red', faceUp: false }],
+  // roulette on the move
+  ['move-roulette', 'Move Roulette', 'Chips on where the move lands.', 'roulette', 'crypto', 'majors', 30, T.gold, { chips: 5 }, { badge: 'New' }],
+  ['meme-roulette', 'Meme Roulette', 'Spin the memes.', 'roulette', 'memes', 'memes', 30, T.pink, { chips: 5 }],
+  ['stock-roulette', 'Stock Roulette', 'One stock, six slots.', 'roulette', 'stocks', 'stocks', 60, T.green, { chips: 5 }],
+  ['gold-wheel', 'Gold Wheel', 'Gold, silver and oil on the wheel.', 'roulette', 'perps', 'commodities', 60, T.yellow, { chips: 5 }],
+  ['quick-spin', 'Quick Spin', 'Fifteen seconds. Place your chips.', 'roulette', 'party', 'alts', 15, T.orange, { chips: 5 }, { badge: 'Fast' }],
+  // replays of real candles
+  ['rewind', 'Rewind', 'A real chart. What happened next?', 'rewind', 'crypto', 'majors', 0, T.sky, { tf: '1m', show: 40, hide: 10, mode: 'dir', step: 1.9 }, { badge: 'New' }],
+  ['meme-rewind', 'Meme Rewind', 'Real meme charts. Call what came next.', 'rewind', 'memes', 'memes', 0, T.rose, { tf: '1m', show: 40, hide: 10, mode: 'dir', step: 1.9 }],
+  ['tape-rewind', 'Tape Rewind', 'Five-minute stock candles. Higher or lower?', 'rewind', 'stocks', 'stocks', 0, T.mint, { tf: '5m', show: 36, hide: 6, mode: 'dir', step: 1.9 }],
+  ['perp-rewind', 'Perp Rewind', 'Five-minute alt candles. Higher or lower?', 'rewind', 'perps', 'alts', 0, T.violet, { tf: '5m', show: 36, hide: 6, mode: 'dir', step: 1.9 }],
+  ['call-the-close', 'Call the Close', 'Drag to where it really closed.', 'rewind', 'party', ['majors', 'alts'], 0, T.aqua, { tf: '1m', show: 40, hide: 10, mode: 'target' }],
+  // who's that chart
+  ['whos-that-chart', "Who's That Chart", 'Name the coin from its chart.', 'whochart', 'crypto', ['majors', 'alts'], 0, T.purple, { tf: '1m', choices: 4, candles: 60, step: 2.5 }, { badge: 'New' }],
+  ['meme-lineup', 'Meme Lineup', 'Which meme drew this chart?', 'whochart', 'memes', 'memes', 0, T.yellow, { tf: '1m', choices: 4, candles: 60, step: 2.5 }],
+  ['ticker-detective', 'Ticker Detective', 'Spot the stock from its chart.', 'whochart', 'stocks', 'stocks', 0, T.sky, { tf: '5m', choices: 4, candles: 48, step: 2.5 }],
+  ['chart-detective', 'Chart Detective', 'Coin, meme, stock or gold?', 'whochart', 'party', EVERYTHING, 0, T.lav, { tf: '5m', choices: 4, candles: 48, step: 2.5 }],
+  // one live candle
+  ['candle-call', 'Candle Call', 'Watch one candle form. Call its shape.', 'candle', 'crypto', 'majors', 60, T.green, { q: 'mix' }, { badge: 'New' }],
+  ['wick-duel', 'Wick Duel', 'Top wick or bottom wick?', 'candle', 'memes', 'memes', 60, T.pink, { q: 'wick' }],
+  ['strong-close', 'Strong Close', 'Top half or bottom half?', 'candle', 'perps', 'alts', 60, T.cyan, { q: 'close' }],
+  ['body-or-wick', 'Body or Wick', 'All body, or all wick?', 'candle', 'stocks', 'stocks', 60, T.gold, { q: 'body' }],
+  ['bigger-candle', 'Bigger Candle', 'Bigger than the last minute, or smaller?', 'candle', 'party', ['majors', 'alts', 'memes'], 60, T.orange, { q: 'range' }],
+  // the whole path
+  ['path-pick', 'Path Pick', 'Up then down? Call the whole path.', 'path', 'crypto', 'majors', 60, T.violet, { legs: 2 }, { badge: 'New' }],
+  ['triple-path', 'Triple Path', 'Three legs. Every one right.', 'path', 'perps', 'alts', 60, T.coral, { legs: 3 }],
+  ['meme-path', 'Meme Path', 'Three meme legs, fifteen seconds each.', 'path', 'memes', 'memes', 45, T.mint, { legs: 3 }],
+  ['stock-path', 'Stock Path', 'Two legs of a minute each.', 'path', 'stocks', 'stocks', 120, T.sky, { legs: 2 }],
+  // same way or split
+  ['in-sync', 'In Sync', 'Same way or split?', 'sync', 'crypto', flat(PAIRS.crypto), 60, T.cyan, { pairs: PAIRS.crypto }, { badge: 'New' }],
+  ['meme-twins', 'Meme Twins', 'Two memes. Do they move together?', 'sync', 'memes', flat(PAIRS.memes), 60, T.pink, { pairs: PAIRS.memes }],
+  ['chip-sync', 'Chip Sync', 'Two chip stocks. Same way or split?', 'sync', 'stocks', flat(PAIRS.chips), 120, T.green, { pairs: PAIRS.chips }],
+  ['macro-sync', 'Macro Sync', 'Gold and silver, euro and pound.', 'sync', 'party', flat(PAIRS.macro), 120, T.gold, { pairs: PAIRS.macro }],
+  // set your exit
+  ['exit-plan', 'Exit Plan', "Set your exit second. Beat the bot's.", 'timer', 'perps', 'majors', 60, T.lav, { lev: 100 }, { badge: 'New' }],
+  ['meme-timer', 'Meme Timer', 'Pick the second to bail.', 'timer', 'memes', 'memes', 45, T.yellow, { lev: 50 }],
+  ['stock-timer', 'Stock Timer', 'Ninety seconds. One exit.', 'timer', 'stocks', 'stocks', 90, T.aqua, { lev: 100 }],
+  ['time-bomb', 'Time Bomb', 'Thirty seconds at 200×. When do you get out?', 'timer', 'party', 'alts', 30, T.orange, { lev: 200 }],
 ];
 
 export const GAMES: GameDef[] = SPECS.map(make);

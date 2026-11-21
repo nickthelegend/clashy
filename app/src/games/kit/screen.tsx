@@ -27,7 +27,7 @@ export const openGame = (g: Pick<GameDef, 'id'>) => router.push(`/games/${g.id}`
 export function Badge({ text }: { text: string }) {
   const color = text === 'Hot' ? GT.hot : text === 'New' ? C.brand : '#FFD60A';
   return (
-    <View style={{ backgroundColor: color, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+    <View style={{ alignSelf: 'flex-start', backgroundColor: color, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
       <Text style={{ ...FONT.bold, fontSize: 10.5, letterSpacing: 0.5, color: GT.onTint }}>{text.toUpperCase()}</Text>
     </View>
   );
@@ -131,7 +131,8 @@ export function GameHero({ def, record }: { def: GameDef; record?: { wins: numbe
       <Row style={{ gap: 14, alignItems: 'center' }}>
         <Image source={ENGINE_ART[def.engine]} style={{ width: 84, height: 84 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...FONT.displayB, fontSize: 32, letterSpacing: -1, color: def.tint, lineHeight: 38 }}>{def.name}</Text>
+          {/* web ignores adjustsFontSizeToFit, so long names step down a size instead of being cut off */}
+          <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...FONT.displayB, fontSize: def.name.length > 14 ? 26 : 32, letterSpacing: -1, color: def.tint, lineHeight: 38 }}>{def.name}</Text>
           <Txt v="small" color={GT.sub} style={{ ...FONT.semi, fontSize: 14, lineHeight: 19, marginTop: 2 }}>{def.hook}</Txt>
         </View>
       </Row>

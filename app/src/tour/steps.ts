@@ -54,7 +54,7 @@ const MAIN: TourStep[] = [
   { route: '/chats', chapter: 'Play', target: 'tab-play', radius: 18, title: 'The big button.', body: 'Tap it from anywhere to pick a game.' },
   { route: '/arena', chapter: 'Play', target: 'arena-wallet', radius: 20, title: 'Your fighting money.', body: 'Real USDC on Solana. Tap to add or cash out.' },
   { route: '/arena', chapter: 'Play', target: 'arena-clash', radius: 30, title: '1v1. Best call takes the pot.', body: 'Same coin, two sealed calls. From $5.' },
-  { route: '/arena', chapter: 'Play', target: 'arena-allgames', radius: 24, title: 'A hundred more games.', body: 'Memes, perps, stocks and party rooms. Free to play.' },
+  { route: '/arena', chapter: 'Play', target: 'arena-allgames', radius: 24, title: '150 more games.', body: 'Memes, perps, stocks and party rooms. Free to play.' },
   { route: '/arena', chapter: 'Play', target: 'arena-royale', radius: 26, title: 'Last one standing.', body: 'Up to 16 players, a call every 10 seconds. $2 in.' },
   { route: '/arena', chapter: 'Play', target: 'arena-war', radius: 26, title: 'Squad vs squad.', body: "Your squad's chest against theirs. Best trades win." },
   { route: '/arena', chapter: 'Play', target: 'arena-perps', radius: 26, title: 'Go up to 50×.', body: "Long or short for 60 seconds. Liquidated means you're out." },

@@ -5,12 +5,12 @@
 // p: { mode: 'bell' | 'peak' | 'price' }
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Row, Txt } from '@/ui/kit';
 import { C, FONT } from '@/ui/tokens';
 import { TourTarget } from '@/tour';
 import { tickerOf, type Tick } from '../feed';
-import { BotSays, Clock, Go, MarketHead, Note, Panel, PxChart, RolledPanel, Sides, absPct, bellPrice, fmtPx, mktLine, mv, pStr, roundPath, useClock, useRolled, type GameApi, type Line } from '../kit';
+import { BotSays, Clock, Go, MarketHead, Note, Panel, PxChart, RolledPanel, Ruler, Sides, Slider, absPct, bellPrice, fmtPx, mktLine, mv, pStr, roundPath, useClock, useRolled, type GameApi, type Line } from '../kit';
 import { evenMove, sigmaOf } from '../odds';
 
 type Mode = 'bell' | 'peak' | 'price';
@@ -185,72 +185,5 @@ function StepBtn({ label, onPress, disabled }: { label: string; onPress: () => v
       style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: pressed ? '#2A2A33' : '#1D1D24', alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : 1 })}>
       <Text style={{ ...FONT.bold, fontSize: 22, color: C.ink, lineHeight: 26 }}>{label}</Text>
     </Pressable>
-  );
-}
-
-/** A draggable slider: mouse (pointer events) on the web, touch (the responder) on a phone; tap anywhere to jump. */
-function Slider({ frac, min, onChange, disabled, label, text }: { frac: number; min: number; onChange: (f: number) => void; disabled?: boolean; label: string; text: string }) {
-  const [w, setW] = useState(0);
-  const drag = useRef(false);
-  const web = Platform.OS === 'web';
-  const at = (x: number) => { if (!disabled && w > 0 && Number.isFinite(x)) onChange(clamp(min + (x / w) * (1 - min), min, 1)); };
-  type PE = { nativeEvent: { offsetX: number; pointerId: number }; currentTarget: unknown };
-  const handlers = web
-    ? {
-      onPointerDown: (e: PE) => { drag.current = true; try { (e.currentTarget as { setPointerCapture?: (id: number) => void }).setPointerCapture?.(e.nativeEvent.pointerId); } catch { /* not every browser lets it */ } at(e.nativeEvent.offsetX); },
-      onPointerMove: (e: PE) => { if (drag.current) at(e.nativeEvent.offsetX); },
-      onPointerUp: () => { drag.current = false; },
-      onPointerCancel: () => { drag.current = false; },
-    }
-    : {
-      onStartShouldSetResponder: () => !disabled,
-      onMoveShouldSetResponder: () => !disabled,
-      onResponderGrant: (e: GestureResponderEvent) => { Haptics.selectionAsync().catch(() => {}); at(e.nativeEvent.locationX); },
-      onResponderMove: (e: GestureResponderEvent) => at(e.nativeEvent.locationX),
-      onResponderTerminationRequest: () => false,
-    };
-  const pos = ((frac - min) / (1 - min)) * w;
-  const zero = ((0 - min) / (1 - min)) * w;
-  const fill = frac > 0 ? C.up : frac < 0 ? C.down : C.ink;
-  const step = (1 - min) / STEPS;
-  return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text }}
-      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-      onAccessibilityAction={(e) => onChange(clamp(frac + (e.nativeEvent.actionName === 'increment' ? step : -step), min, 1))}
-      style={[{ height: 44, justifyContent: 'center', opacity: disabled ? 0.45 : 1 }, (web ? { touchAction: 'none', cursor: 'pointer', userSelect: 'none' } : null) as object]}
-      {...(handlers as object)}>
-      <View pointerEvents="none" style={{ height: 8, borderRadius: 4, backgroundColor: '#24242C' }} />
-      {w > 0 ? (
-        <>
-          <View pointerEvents="none" style={{ position: 'absolute', left: Math.min(zero, pos), width: Math.abs(pos - zero), height: 8, top: 18, borderRadius: 4, backgroundColor: fill }} />
-          {min < 0 ? <View pointerEvents="none" style={{ position: 'absolute', left: zero - 1, top: 12, width: 2, height: 20, borderRadius: 1, backgroundColor: '#5A5A66' }} /> : null}
-          <View pointerEvents="none" style={{ position: 'absolute', left: pos - 14, top: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: C.ink, borderWidth: 4, borderColor: fill === C.ink ? '#3A3A44' : fill }} />
-        </>
-      ) : null}
-    </View>
-  );
-}
-
-/** A number line from `min` to `max` with the guesses and the live (or final) value on it. */
-function Ruler({ min, max, marks }: { min: number; max: number; marks: { v: number; color: string; label: string; big?: boolean }[] }) {
-  const [w, setW] = useState(0);
-  const x = (v: number) => clamp((v - min) / (max - min || 1), 0, 1) * w;
-  return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 58, justifyContent: 'center', marginHorizontal: 6 }}>
-      <View style={{ height: 4, borderRadius: 2, backgroundColor: '#24242C' }} />
-      {min < 0 && w > 0 ? <View style={{ position: 'absolute', left: x(0) - 1, top: 21, width: 2, height: 16, backgroundColor: '#4A4A55' }} /> : null}
-      {w > 0 ? marks.map((k, i) => {
-        const cx = x(k.v);
-        const out = k.v < min ? '‹ ' : k.v > max ? ' ›' : '';
-        const below = i === 1; // the bot's tag sits under the line so the tags don't collide
-        return (
-          <View key={k.label} pointerEvents="none" style={{ position: 'absolute', left: Math.max(-6, Math.min(w - 44, cx - 22)), width: 44, alignItems: 'center', top: below ? 17 : 4 }}>
-            {!below ? <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 10, color: k.color, marginBottom: 2 }}>{k.v < min ? out + k.label : k.label + out}</Text> : null}
-            <View style={{ width: k.big ? 4 : 12, height: k.big ? 24 : 12, borderRadius: k.big ? 2 : 6, backgroundColor: k.color, borderWidth: k.big ? 0 : 2, borderColor: '#000', marginTop: k.big ? 0 : 6 }} />
-            {below ? <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 10, color: k.color, marginTop: 2 }}>{k.v < min ? out + k.label : k.label + out}</Text> : null}
-          </View>
-        );
-      }) : null}
-    </View>
   );
 }

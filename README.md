@@ -39,8 +39,12 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
     short title, one line on what to do, "3 of 37", Back, Next and Skip. It switches tabs and scrolls by itself, and
     skips anything that isn't on screen. 25 inner screens and every game get their own short tour on the first visit.
     Replay it from Settings → Take the tour again. Code: [app/src/tour/](app/src/tour/).
-  - **Games:** 100 games on live prices ([docs/GAMES.md](docs/GAMES.md)): memecoins, perps, US stocks, crypto and party
+  - **Games:** 150 games on live prices ([docs/GAMES.md](docs/GAMES.md)): memecoins, perps, US stocks, crypto and party
     games. Some examples:
+    - tap trading on a price grid (Tap Grid, Meme Grid), More or Less lines (More or Less, Power Play), a tower climb,
+      Mines on the day's red markets, roulette on the move;
+    - replays of real candles (Rewind, Call the Close, Who's That Chart), one live candle (Candle Call, Wick Duel),
+      whole-path calls (Path Pick), same-or-split pairs (In Sync), and a pre-set exit (Exit Plan);
     - races (Meme Sprint, Pair Pick, Chip War);
     - cash-outs (Rocket, Rug Radar, Leverage Ladder);
     - liquidation games (Knockout, Safe Zone);
@@ -48,11 +52,15 @@ Domain: clashy.fun. Entry for MagicBlock's Solana Blitz v10 (Entertainment Finan
     - instant quizzes (Cap or No Cap, Better Day);
     - brackets, bingo, drafts, and a royale against seven bots.
 
-    They run on 21 engines, all driven by one shared stream of Phoenix and Pacifica mark prices (about 110 markets), plus
+    They run on 32 engines, all driven by one shared stream of Phoenix and Pacifica mark prices (about 110 markets), plus
     Jupiter data for pump.fun coins. Fixed payouts are priced from each market's live volatility. All games use
     practice money against Clashy Bot (which picks at random) or solo, and each round ends on a receipt of real prices.
-    Ideas came from one Grok session (140 ideas, judged down to 100), and the game icons are new clay art. Code:
-    [app/src/games/](app/src/games/) and `app/games`.
+    Ideas came from two Grok sessions and research on what ships today (tap trading, PrizePicks, chart-replay
+    quizzes), and the game icons are new clay art. Code: [app/src/games/](app/src/games/) and `app/games`.
+  - **Game kit:** every piece the games are built from, in one import (`@/games/kit`): style tokens, the round API,
+    bell and market helpers, real past candles, the price and candle charts, the controls, and the screen pieces (game
+    cards, hero, result card). [docs/GAME-KIT.md](docs/GAME-KIT.md) lists them and how to add a game or an engine;
+    /games/kit shows them all live.
   - **Squads:** a squad podium, and squad search in the search drawer.
   - **Art:** Lottie onboarding and a squad war scene.
   - **Backend:** the social server ([server/](server/)) and the whole backend in Docker

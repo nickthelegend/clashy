@@ -1,8 +1,8 @@
-// Games: /games. All 100 games on live prices: the hot ones up top, then every game by category, with search. Each
+// Games: /games. All 150 games on live prices: the hot ones up top, then every game by category, with search. Each
 // card opens the game (/games/[id]). Practice money, so anyone can play straight away.
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePractice } from '@/chain/practice';
 import { GAMES } from '@/games/catalog';
@@ -15,6 +15,9 @@ import { C, FONT, S } from '@/ui/tokens';
 
 const back = () => (router.canGoBack() ? router.back() : router.replace('/arena' as Href));
 const HOT = GAMES.filter((g) => g.badge === 'Hot');
+const NEW = GAMES.filter((g) => g.badge === 'New');
+/** Dev builds and the local dev-wallet build link the game kit (/games/kit) for whoever builds the next game. */
+const BUILDER = __DEV__ || process.env.EXPO_PUBLIC_CLASHY_DEV_WALLET === '1';
 type Filter = 'all' | Category;
 
 export default function Games() {
@@ -71,6 +74,14 @@ export default function Games() {
           </ScrollView>
         </TourTarget>
 
+        {/* new ways to play */}
+        <View style={{ marginTop: 18 }}>
+          <Txt v="label" style={{ paddingHorizontal: S.gutter, fontSize: 18 }}>New ways to play</Txt>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: S.gutter, gap: 10, marginTop: 8 }}>
+            {NEW.map((g, i) => <HotCard key={g.id} g={g} i={i} w={Math.min(260, width * 0.64)} />)}
+          </ScrollView>
+        </View>
+
         {recent.length ? (
           <View style={{ marginTop: 18 }}>
             <Txt v="label" style={{ paddingHorizontal: S.gutter, fontSize: 18 }}>Jump back in</Txt>
@@ -84,7 +95,7 @@ export default function Games() {
           <TourTarget id="games-cats">
             <CategoryChips value={cat} onChange={setCat} items={[{ key: 'all' as Filter, label: 'All', n: GAMES.length }, ...CATEGORIES.map((c) => ({ key: c.key as Filter, label: c.label, n: GAMES.filter((g) => g.cat === c.key).length }))]} />
           </TourTarget>
-          <TourTarget id="games-search"><SearchBar value={q} onChange={setQ} placeholder="Search 100 games" /></TourTarget>
+          <TourTarget id="games-search"><SearchBar value={q} onChange={setQ} placeholder={`Search ${GAMES.length} games`} /></TourTarget>
         </View>
 
         <View style={{ paddingHorizontal: S.gutter, marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap }}>
@@ -92,6 +103,11 @@ export default function Games() {
           {!list.length ? <Txt v="small" style={{ paddingVertical: 24 }}>No game matches “{q}”.</Txt> : null}
         </View>
         <Txt v="small" style={{ textAlign: 'center', marginTop: 22, paddingHorizontal: S.gutter, color: C.dim }}>Practice money on live prices from Phoenix and Pacifica. Nothing is sent on chain.</Txt>
+        {BUILDER ? (
+          <Pressable onPress={() => router.push('/games/kit' as Href)} accessibilityRole="link" style={{ alignSelf: 'center', marginTop: 10, height: 44, justifyContent: 'center', paddingHorizontal: 16 }}>
+            <Txt v="small" color={C.brandSoft} style={{ ...FONT.semi }}>Game kit: every piece these games are built from</Txt>
+          </Pressable>
+        ) : null}
       </TourScroll>
     </ScrollView>
   );

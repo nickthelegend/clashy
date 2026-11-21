@@ -24,7 +24,19 @@ export type EngineId =
   | 'bingo' // a card of price events; complete a line before the bell (live odds)
   | 'bracket' // call every match of an eight-market bracket
   | 'elim' // the worst market is knocked out every few seconds; your pick has to last
-  | 'leader'; // the leader keeps leading, or the laggard catches up
+  | 'leader' // the leader keeps leading, or the laggard catches up
+  /* Nov 21 */
+  | 'tapgrid' // tap time × price cells ahead of the live line; a cell pays if the price passes through it
+  | 'picks' // More or Less on two to five lines; all must hit (or one miss on Flex)
+  | 'tower' // climb floors: one quick call on UP / FLAT / DOWN lanes per floor; cash out or fall
+  | 'mines' // sixteen real markets; today's red ones are the mines
+  | 'roulette' // chips on buckets of the move at the bell
+  | 'rewind' // real past candles; what happened next?
+  | 'whochart' // an unlabeled real chart; which market is it?
+  | 'candle' // one candle forms live; call its shape
+  | 'path' // commit to the whole path (up then down…) before the round
+  | 'sync' // two markets: same way or split?
+  | 'timer'; // set your exit second before the round; the better exit wins
 
 export type Category = 'memes' | 'perps' | 'stocks' | 'crypto' | 'party';
 export const CATEGORIES: { key: Category; label: string }[] = [

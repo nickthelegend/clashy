@@ -33,10 +33,11 @@ export function useRoll(pool: readonly string[], landed: readonly string[] | nul
 export function useRolled(g: GameApi) {
   const live = useLivePool(g.def.pool);
   const [sym, setSym] = useState<string | null>(null);
-  useEffect(() => { if (!sym && live.length) setSym(pick(live)); }, [sym, live.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // prefer a market that is really moving (US stocks sit still out of hours); feed.moving is true until it has history
+  useEffect(() => { if (!sym && live.length) { const mv = live.filter((s) => g.feed.moving(s)); setSym(pick(mv.length ? mv : live)); } }, [sym, live.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const all = useMemo(() => poolList(g.def.pool), [g.def.pool]);
   const shown = useRoll(all, sym ? [sym] : null, 800);
-  const reroll = () => { const o = live.filter((s) => s !== sym); if (o.length) setSym(pick(o)); };
+  const reroll = () => { const o = live.filter((s) => s !== sym); const mv = o.filter((s) => g.feed.moving(s)); if (o.length) setSym(pick(mv.length ? mv : o)); };
   return { sym, setSym, live, shown, reroll };
 }
 
