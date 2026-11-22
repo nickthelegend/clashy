@@ -247,7 +247,7 @@ export default function OnChainDuel() {
   // +3 s: the program needs its own clock strictly past the window, and the chain's clock can trail this device's by a second or two
   const setupLeft = duel && (duel.status === 1 || duel.status === 2) && !duel.onEr ? duel.matchedAt + DUEL_SETUP_SECS + 3 - Date.now() / 1000 : null;
   const me = duel && wallet ? (duel.creator.equals(wallet) ? 0 : duel.joiner.equals(wallet) ? 1 : -1) : -1;
-  const sym = duel && duel.coin < 3 ? COIN_SYMBOLS[duel.coin] : '…';
+  const sym = duel && duel.coin < COIN_SYMBOLS.length ? COIN_SYMBOLS[duel.coin] : '…';
   const ready = hasPlayer && (bal ?? 0) >= stake;
   const myPnl = duel && me >= 0 ? duel.pnlBps[me] / 100 : 0;
   const theirPnl = duel && me >= 0 ? duel.pnlBps[1 - me] / 100 : 0;

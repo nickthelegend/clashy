@@ -28,6 +28,8 @@ import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
 
 const ACTIVE = 'clashy:chain:tour';
 const NO_COIN = 255;
+/** A coin the VRF oracle has rolled: any of the config's markets (crypto or a tokenized stock), never NO_COIN. */
+const rolled = (coin: number) => coin !== NO_COIN && coin < COIN_SYMBOLS.length;
 /** Royale entry, in USDC. */
 const ENTRY_USDC = 2;
 const ROUND_SECS = 10;
@@ -108,7 +110,7 @@ export default function OnchainRoyale() {
       const t = await readTour(progs.base, active).catch(() => null);
       if (!alive || !t) return;
       setTour(t);
-      if (t.coin < 3) setPrice(await priceOf(progs.base, t.coin).catch(() => null));
+      if (rolled(t.coin)) setPrice(await priceOf(progs.base, t.coin).catch(() => null));
       const host = t.creator.equals(wallet);
       const me = t.players.findIndex((p) => p.equals(wallet));
       const once = async (tag: string, fn: () => Promise<unknown>) => {
@@ -169,7 +171,7 @@ export default function OnchainRoyale() {
 
   const me = tour && wallet ? tour.players.findIndex((p) => p.equals(wallet)) : -1;
   const isHost = !!(tour && wallet && tour.creator.equals(wallet));
-  const sym = tour && tour.coin < 3 ? COIN_SYMBOLS[tour.coin] : null;
+  const sym = tour && rolled(tour.coin) ? COIN_SYMBOLS[tour.coin] : null;
   const left = tour ? Math.max(0, tour.roundStartedAt + tour.roundSecs - now) : 0;
   const move = tour && price ? price - tour.roundPrice : 0;
   const movePct = tour && price && tour.roundPrice ? (move / tour.roundPrice) * 100 : 0;
@@ -284,8 +286,8 @@ export default function OnchainRoyale() {
                 {isHost && !tour.onEr ? (
                   <View style={{ alignSelf: 'stretch' }}>
                     <BigCta
-                      title={busy === 'live' ? 'Starting…' : tour.count < 2 ? 'Waiting for players' : tour.coin >= 3 ? 'Rolling the coin…' : `Start · ${tour.count} Players`}
-                      disabled={!!busy || tour.count < 2 || tour.coin >= 3} onPress={goLive} />
+                      title={busy === 'live' ? 'Starting…' : tour.count < 2 ? 'Waiting for players' : !rolled(tour.coin) ? 'Rolling the coin…' : `Start · ${tour.count} Players`}
+                      disabled={!!busy || tour.count < 2 || !rolled(tour.coin)} onPress={goLive} />
                     <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{tour.count < 2 ? 'Share the table: anyone with a Clashy wallet can join from the lobby.' : 'Start whenever you like. Empty seats just stay empty.'}</Txt>
                     <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 10, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                       <Txt v="label" color={C.muted}>{busy === 'cancel' ? 'Refunding…' : 'Cancel and refund everyone'}</Txt>
