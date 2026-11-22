@@ -87,6 +87,13 @@ export const sponsor = !holds('sponsor') ? noKey('sponsor')
 /** The stake currency. The local fork serves mainnet USDC's address with a local mint authority (scripts/usdc-mint.ts). */
 export const USDC_MINT = new PublicKey(process.env.CLASHY_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 export const USDC = 1_000_000;
+/** Mainnet never gets a test faucet, whatever the environment says. */
+export const IS_MAINNET = /mainnet/.test(BASE_HOST) || process.env.CLASHY_NET === 'mainnet';
+/** Devnet test-USDC: our own mint (CLASHY_USDC_MINT) whose mint authority is CLASHY_FAUCET (a keypair file path, never
+ *  printed). Circle's devnet USDC can't be minted by us, so the public beta uses this one and labels it test money. */
+export const faucetAuthority = !IS_LOCAL && !IS_MAINNET && process.env.CLASHY_FAUCET ? fromFile(process.env.CLASHY_FAUCET) : null;
+/** Whether this process can hand out test USDC: the local fork, or devnet with the test mint's authority. */
+export const TEST_FAUCET = IS_LOCAL || !!faucetAuthority;
 export const base = new Connection(BASE_URL, 'confirmed');
 export const er = new Connection(ER_URL, 'confirmed');
 const wallet = new anchor.Wallet(holds('admin') ? authority : ROLE === 'crank' ? crank : sponsor);
@@ -200,9 +207,9 @@ export const usdcOf = (owner: PublicKey) => tokenBalance(usdcAta(owner));
 
 /** Local fork only: mints test USDC (the local mint authority is the local admin key). The sponsor pays the account rent. */
 export async function giveUsdc(owner: PublicKey, amount: number) {
-  if (!IS_LOCAL) throw new Error(`Setup required: test USDC can only be minted on the local fork, not ${BASE_URL}`);
+  if (!TEST_FAUCET) throw new Error(`Setup required: test USDC is minted only on the local fork or on devnet with CLASHY_FAUCET (the test mint's authority), not ${BASE_URL}`);
   const ata = await createAssociatedTokenAccountIdempotent(base, sponsor, USDC_MINT, owner, { commitment: 'confirmed' });
-  await mintTo(base, sponsor, USDC_MINT, ata, authority, amount, [], { commitment: 'confirmed' });
+  await mintTo(base, sponsor, USDC_MINT, ata, IS_LOCAL ? authority : faucetAuthority!, amount, [], { commitment: 'confirmed' });
   return ata;
 }
 

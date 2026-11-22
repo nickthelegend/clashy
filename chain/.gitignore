@@ -4,3 +4,4 @@ node_modules/
 .localnet/
 test-ledger/
 .forknet/
+.devnet.env

@@ -48,9 +48,10 @@ ADMIN=$(solana-keygen pubkey "$CLASHY_AUTHORITY")
 [ -f "$CLASHY_CRANK" ] || { echo "Setup required: CLASHY_CRANK is not a file" >&2; exit 1; }
 [ "$(solana-keygen pubkey "$CLASHY_CRANK")" != "$ADMIN" ] || { echo "The crank key is the admin key: give the crank its own keypair (the program refuses this)" >&2; exit 1; }
 HAVE=$(solana balance "$ADMIN" --url "$URL" --lamports | awk '{print $1}')
-# a deploy holds the program twice for a moment (buffer + program data), plus fees and setup accounts
+# the CLI fills an upload buffer, then the loader drains it back to the payer and funds the program data, so the
+# peak is one program's rent plus fees and the setup accounts (measured on devnet, Nov 22 2026)
 RENT=$(solana rent "$SIZE" --url "$URL" --lamports | awk '/Rent-exempt minimum/ {print $3}')
-NEED=$(( RENT * 2 + 200000000 ))
+NEED=$(( RENT + 250000000 ))
 echo "cluster $CLUSTER · program $(solana-keygen pubkey target/deploy/clashy-keypair.json) · $SIZE bytes"
 echo "admin $ADMIN has $HAVE lamports; the deploy needs about $NEED"
 if [ "$HAVE" -lt "$NEED" ]; then

@@ -27,7 +27,7 @@ import { PrivyClient } from '@privy-io/server-auth';
 import { fileURLToPath } from 'node:url';
 try { process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url))); } catch { /* no chain/.env: Privy checks off */ }
 import { SAMPLE_EVERY_SECS, downsample, readSamples, type Sample } from './price-history.ts';
-import { BASE_URL, ER_URL, IS_LOCAL, USDC, USDC_MINT, base, er, giveUsdc, programId, sponsor, tokenBalance, usdcAta } from '../tests/common.ts';
+import { BASE_URL, ER_URL, IS_LOCAL, TEST_FAUCET, USDC, USDC_MINT, base, er, giveUsdc, programId, sponsor, tokenBalance, usdcAta } from '../tests/common.ts';
 
 const PORT = Number(process.env.CLASHY_SPONSOR_PORT ?? 8790);
 const ORIGIN = process.env.CLASHY_APP_ORIGIN ?? '*';
@@ -225,7 +225,7 @@ async function relay(body: { tx?: string; layer?: Layer }, token?: string) {
 }
 
 async function faucet(body: { owner?: string }) {
-  if (!IS_LOCAL) throw new Refused('the test-USDC faucet only runs on the local fork');
+  if (!TEST_FAUCET) throw new Refused('the test-USDC faucet only runs on the local fork or on devnet with the test mint');
   const owner = new PublicKey(body.owner ?? '');
   if ((await tokenBalance(usdcAta(owner))) >= 500 * USDC) throw new Refused('this wallet already has 500+ test USDC');
   await giveUsdc(owner, 100 * USDC);
@@ -397,7 +397,7 @@ const server = http.createServer(async (req, res) => {
   const send = (status: number, data: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(data)); };
   try {
     if (req.method === 'GET' && req.url === '/info') {
-      return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: IS_LOCAL, base: new URL(BASE_URL).host, er: new URL(ER_URL).host, privy: !!PRIVY, authRequired: AUTH_REQUIRED });
+      return send(200, { sponsor: sponsor.publicKey.toBase58(), usdcMint: USDC_MINT.toBase58(), faucet: TEST_FAUCET, base: new URL(BASE_URL).host, er: new URL(ER_URL).host, privy: !!PRIVY, authRequired: AUTH_REQUIRED });
     }
     if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/history') {
       return send(200, history(new URL(req.url ?? '/', 'http://relay').searchParams.get('range')));
@@ -428,7 +428,7 @@ const server = http.createServer(async (req, res) => {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()!)) {
   // loopback only unless a container sets CLASHY_RELAY_BIND=0.0.0.0 (its port is then published by docker-compose)
   server.listen(PORT, process.env.CLASHY_RELAY_BIND ?? '127.0.0.1', () => {
-    console.log(`sponsor relay on :${PORT} · sponsor ${sponsor.publicKey.toBase58()} · ${IS_LOCAL ? 'local fork, test-USDC faucet on' : BASE_URL} · Privy ${PRIVY ? 'checks on' : 'off'}${AUTH_REQUIRED ? ' (required)' : ''}`);
+    console.log(`sponsor relay on :${PORT} · sponsor ${sponsor.publicKey.toBase58()} · ${IS_LOCAL ? 'local fork, test-USDC faucet on' : `${BASE_URL}${TEST_FAUCET ? ', test-USDC faucet on' : ''}`} · Privy ${PRIVY ? 'checks on' : 'off'}${AUTH_REQUIRED ? ' (required)' : ''}`);
   });
 }
 export { server };
