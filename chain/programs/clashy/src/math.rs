@@ -111,9 +111,31 @@ pub fn payout_for_shares(redeem: u64, chest: u64, shares: u64) -> u64 {
     (redeem as u128 * chest as u128 / shares as u128) as u64
 }
 
+/// Whether a finished duel record may be closed: settled or cancelled, no VRF callback pending, and kept `keep` seconds
+/// past the latest of its bell, its challenge expiry and its match time (an aborted or cancelled duel may have no bell).
+pub fn duel_closable(status_done: bool, vrf_pending: bool, end_ts: i64, expires_at: i64, matched_at: i64, now: i64, keep: i64) -> bool {
+    status_done && !vrf_pending && now > end_ts.max(expires_at).max(matched_at).saturating_add(keep)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn duel_closes_only_after_the_keep_window() {
+        let keep = 14 * 86_400;
+        // settled at t=1000 (bell), challenge expired earlier
+        assert!(!duel_closable(true, false, 1_000, 500, 400, 1_000 + keep, keep), "not before the window ends");
+        assert!(duel_closable(true, false, 1_000, 500, 400, 1_001 + keep, keep));
+        // a cancelled open challenge has no bell: the window runs from its expiry
+        assert!(!duel_closable(true, false, 0, 9_000, 0, 1_001 + keep, keep));
+        assert!(duel_closable(true, false, 0, 9_000, 0, 9_001 + keep, keep));
+        // never while live, never with a VRF callback in flight
+        assert!(!duel_closable(false, false, 1_000, 500, 400, i64::MAX, keep));
+        assert!(!duel_closable(true, true, 1_000, 500, 400, i64::MAX, keep));
+        // no overflow at the edges
+        assert!(!duel_closable(true, false, i64::MAX, 0, 0, i64::MAX, keep));
+    }
 
     #[test]
     fn chest_shares_are_pro_rata() {

@@ -817,6 +817,57 @@ export type Clashy = {
       "args": []
     },
     {
+      "name": "closeDuel",
+      "docs": [
+        "Closes a settled or cancelled duel once it has been kept DUEL_KEEP_SECS, returning its rent to whoever paid it",
+        "(the sponsor). Anyone can call it (the crank sweeps them); the vault was already closed when the duel ended."
+      ],
+      "discriminator": [
+        206,
+        171,
+        112,
+        150,
+        214,
+        78,
+        213,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rentPayer",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closePosition",
       "docs": [
         "Captain closes a clan position at the oracle price; the P&L feeds the clan's score."

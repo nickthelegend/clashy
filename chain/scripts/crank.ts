@@ -6,7 +6,8 @@
 // prices it pushed to chain/.localnet/price-history.jsonl (last 7 days; served by the sponsor relay at GET /history).
 //
 //   npx tsx scripts/crank.ts          (Ctrl-C to stop)
-import { BASE_URL, COINS, IS_LOCAL, P, PRICE_SCALE, PublicKey, authority, baseProgram, crank, ensureSetup, erProgram, pushBasePrices, pushPrices, sendEr, sleep } from '../tests/common.ts';
+import { BASE_URL, COINS, IS_LOCAL, P, PRICE_SCALE, PublicKey, Transaction, authority, base, baseProgram, crank, ensureSetup, erProgram, pushBasePrices, pushPrices, sendEr, sleep } from '../tests/common.ts';
+import { sendAndConfirmTransaction } from '@solana/web3.js';
 import { HISTORY_FILE, SAMPLE_EVERY_SECS, appendSample, trimSamples } from './price-history.ts';
 
 // The rake goes to the USDC account of CLASHY_TREASURY (a wallet address); locally, the admin key's.
@@ -58,8 +59,28 @@ async function keep() {
   return acted;
 }
 
+/** Rent back for the sponsor: settled and cancelled duels older than DUEL_KEEP_SECS (14 days, kept for match pages,
+ *  history and the weekly cup) are closed, up to 8 per transaction, once an hour. The crank pays the fee (5,000
+ *  lamports a signature); each duel's rent (about 0.0028 SOL) goes to whoever paid it. */
+const DUEL_KEEP_SECS = 14 * 86_400;
+const SETTLED = 5, CANCELLED = 6;
+async function sweepDuels() {
+  const now = Date.now() / 1000;
+  const old = (await baseProgram.account.duel.all()).filter(({ account: d }) => (d.status === SETTLED || d.status === CANCELLED) && !d.vrfPending
+    && now > Math.max(Number(d.endTs), Number(d.expiresAt), Number(d.matchedAt)) + DUEL_KEEP_SECS + 60);
+  let closed = 0;
+  for (let i = 0; i < old.length; i += 8) {
+    const batch = old.slice(i, i + 8);
+    const ixs = await Promise.all(batch.map(({ publicKey: duel, account: d }) => baseProgram.methods.closeDuel().accountsPartial({ duel, rentPayer: d.rentPayer }).instruction()));
+    try { await sendAndConfirmTransaction(base, new Transaction().add(...ixs), [crank], { commitment: 'confirmed' }); closed += batch.length; }
+    catch (e) { console.error(`sweep: ${(e as Error).message.split('\n')[0]}`); }
+  }
+  if (closed) console.log(`${new Date().toISOString()} closed ${closed} old duels; their rent went back to the sponsor`);
+}
+
 let n = 0;
 let stop = false;
+let lastSweep = 0;
 let lastSample = 0;
 let lastTrim = Date.now();
 process.on('SIGINT', () => { stop = true; });
@@ -81,6 +102,7 @@ while (!stop) {
         keeperOff = msg;
       });
     }
+    if (Date.now() - lastSweep >= 3_600_000) { lastSweep = Date.now(); void sweepDuels().catch((e: Error) => console.error(`sweep: ${e.message.split('\n')[0]}`)); }
     if (n % 30 === 0) console.log(`${new Date().toISOString()} pushed ${px.map((p) => (Number(p) / 1e6).toFixed(2)).join(' / ')} · rollup every 1 s, Solana every 5 s`);
   } catch (e) {
     console.error(`${new Date().toISOString()} crank error: ${(e as Error).message.split('\n')[0]}`);

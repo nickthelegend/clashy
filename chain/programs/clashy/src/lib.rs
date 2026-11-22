@@ -1051,6 +1051,17 @@ pub mod clashy {
         Ok(())
     }
 
+    /// Closes a settled or cancelled duel once it has been kept DUEL_KEEP_SECS, returning its rent to whoever paid it
+    /// (the sponsor). Anyone can call it (the crank sweeps them); the vault was already closed when the duel ended.
+    pub fn close_duel(ctx: Context<CloseDuel>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let d = &ctx.accounts.duel;
+        let done = d.status == duel_status::SETTLED || d.status == duel_status::CANCELLED;
+        require!(done && !d.vrf_pending, ClashyError::WrongStatus);
+        require!(math::duel_closable(done, d.vrf_pending, d.end_ts, d.expires_at, d.matched_at, now, DUEL_KEEP_SECS), ClashyError::NotExpired);
+        Ok(())
+    }
+
     // ------------------------------------------------------------------ clans
 
     pub fn create_clan(ctx: Context<CreateClan>, name: String, crest: u8) -> Result<()> {
@@ -1975,6 +1986,15 @@ pub struct SettleDuel<'info> {
     #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
     pub rent_payer: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct CloseDuel<'info> {
+    #[account(mut, close = rent_payer, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Box<Account<'info, Duel>>,
+    /// CHECK: gets the duel's rent back; must be who paid it.
+    #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]

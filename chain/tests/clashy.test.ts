@@ -118,6 +118,10 @@ describe('knockout duel: quick match on one rolled coin', () => {
     assert.equal(pa.rating + pb.rating, 2000, 'Elo is zero-sum');
     console.log(`  duel on ${COINS[d.coin].symbol}: entry ${d.entryPrice} exit ${d.exitPrice} pnl ${d.pnlBps.map(String)} winner ${d.winner} · USDC ${na / USDC}/${nb / USDC} · ratings ${pa.rating}/${pb.rating}`);
     await assert.rejects(sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc(), /WrongStatus|AccountNotInitialized|3012/, 'cannot settle twice');
+    // the settled record stays for 14 days (history, match page, weekly cup), so closing it now is refused and it stays put
+    await assert.rejects(sponsorProgram.methods.closeDuel().accountsPartial({ duel, rentPayer: sponsor.publicKey }).rpc(), /NotExpired/, 'a fresh duel record is kept');
+    await assert.rejects(sponsorProgram.methods.closeDuel().accountsPartial({ duel, rentPayer: a.publicKey }).rpc(), /PayoutMismatch|ConstraintAddress|2012/, 'only the rent payer gets the rent');
+    assert.ok(await base.getAccountInfo(duel), 'the record is still there');
   });
 
   test('challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner', async () => {

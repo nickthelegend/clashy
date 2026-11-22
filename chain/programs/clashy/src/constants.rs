@@ -48,6 +48,9 @@ pub const DUEL_REVEAL_SECS: i64 = 300;
 /// A live duel or Royale round nobody could finish this long after its bell can be voided by anyone (audit M-H2):
 /// the duel refunds both stakes; the Royale ends with its current leaders.
 pub const VOID_GRACE_SECS: i64 = 120;
+/// A settled or cancelled duel stays on chain this long (match pages, history and the weekly cup read it), then anyone
+/// can close it and its rent goes back to whoever paid it (the sponsor).
+pub const DUEL_KEEP_SECS: i64 = 14 * 86_400;
 /// An unstarted tournament lobby can be cancelled by anyone after this.
 pub const TOUR_LOBBY_SECS: i64 = 3_600;
 /// A proposal the captain never executes can be closed by anyone this long after its deadline.
