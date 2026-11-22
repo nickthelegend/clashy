@@ -241,7 +241,9 @@ const sponsoredWallet = (kp?: Keypair) => ({
 export const programFor = (kp: Keypair, onEr = false) =>
   new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(onEr ? er : base, sponsoredWallet(kp) as unknown as anchor.Wallet, { commitment: 'confirmed' }));
 /** Permissionless instructions (settle, resolve): only the sponsor signs. */
-export const sponsorProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, sponsoredWallet() as unknown as anchor.Wallet, { commitment: 'confirmed' }));
+export const sponsorProgram = holds('sponsor')
+  ? new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, sponsoredWallet() as unknown as anchor.Wallet, { commitment: 'confirmed' }))
+  : (noKey('sponsor') as unknown as Program<Clashy>); // a crank process holds no sponsor key (audit C1)
 
 /** Waits until a delegated account is back on Solana and owned by the program again. */
 export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
@@ -373,4 +375,18 @@ export function runCrank() {
 
 export const lamports = (pk: PublicKey) => base.getBalance(pk, 'confirmed');
 export const randomSeed = () => randomBytes(32);
+
+/** Rolls a matched duel's coin the way this deployment allows: MagicBlock VRF where VRF is required (devnet, mainnet),
+ *  otherwise the two players' commit-reveal. `progOf` returns the program signed by that player. */
+export async function rollDuel(duel: PublicKey, a: Keypair, b: Keypair, seedA: Buffer, seedB: Buffer, progOf: (k: Keypair) => Program<Clashy>) {
+  const cfg = await baseProgram.account.config.fetch(P.config);
+  if (cfg.vrfRequired) {
+    await progOf(b).methods.requestCoinRoll([...randomSeed()]).accountsPartial({ player: b.publicKey, payer: sponsor.publicKey, duel, oracleQueue: cfg.vrfQueue }).rpc();
+    await until('MagicBlock VRF callback', 90_000, async () => ((await baseProgram.account.duel.fetch(duel)).status === 2 ? true : null));
+  } else {
+    await progOf(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
+    await progOf(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
+  }
+  return cfg.vrfRequired;
+}
 export { BN, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction };

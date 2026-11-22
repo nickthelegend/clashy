@@ -50,13 +50,20 @@ describe('knockout duel: quick match on one rolled coin', () => {
     assert.equal(await tokenBalance(vault), 2 * STAKE, 'both USDC stakes are escrowed in the vault');
     await noSol(a, b);
 
-    // local stack has no VRF oracle in this test: the two-party commit-reveal roll
-    await programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
-    await programFor(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
+    const cfg0 = await baseProgram.account.config.fetch(P.config);
+    if (cfg0.vrfRequired) {
+      // devnet and mainnet: MagicBlock's oracle answers the roll (the commit-reveal roll is refused there)
+      await programFor(b).methods.requestCoinRoll([...randomSeed()]).accountsPartial({ player: b.publicKey, ...pay, duel, oracleQueue: cfg0.vrfQueue }).rpc();
+      await until('MagicBlock VRF callback', 90_000, async () => ((await baseProgram.account.duel.fetch(duel)).status === 2 ? true : null));
+    } else {
+      // local stack without the oracle in this test: the two-party commit-reveal roll
+      await programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
+      await programFor(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
+    }
     let d = await baseProgram.account.duel.fetch(duel);
     assert.equal(d.status, 2, 'rolled');
     assert.ok(d.coin < COINS.length, `coin ${d.coin} is in the pool`);
-    assert.deepEqual(Buffer.from(d.randomness), sha256(seedA, seedB), 'randomness = sha256(seedA || seedB)');
+    if (!cfg0.vrfRequired) assert.deepEqual(Buffer.from(d.randomness), sha256(seedA, seedB), 'randomness = sha256(seedA || seedB)');
 
     // sealed picks: A long 50x, B short 50x
     const [saltA, saltB] = [randomSeed(), randomSeed()];
@@ -178,7 +185,8 @@ describe('knockout duel: quick match on one rolled coin', () => {
       await noSol(a, b);
       console.log(`  VRF roll: ${COINS[rolled.coin].symbol} in ${Date.now() - t0} ms via MagicBlock's oracle on queue ${queue.toBase58().slice(0, 6)}…`);
     } finally {
-      await baseProgram.methods.updateConfig(cfg.rakeBps, false, cfg.crank, cfg.treasury).accountsPartial({ authority: authority.publicKey }).rpc();
+      // put back what the deployment had (devnet and mainnet keep VRF required)
+      await baseProgram.methods.updateConfig(cfg.rakeBps, cfg.vrfRequired, cfg.crank, cfg.treasury).accountsPartial({ authority: authority.publicKey }).rpc();
     }
   });
 });
@@ -281,15 +289,23 @@ describe('tournament: an on-chain Royale', () => {
     const tour = P.tour(host.publicKey, nonce);
     const vault = P.vault(tour);
     const ENTRY = 2 * USDC;
-    await programFor(host).methods.createTournament(new BN(nonce), new BN(ENTRY), 3, 1, 1, 3, 6).accountsPartial({ creator: host.publicKey, ...pay, tournament: tour, vault, usdcMint: USDC_MINT }).rpc();
+    const tcfg = await baseProgram.account.config.fetch(P.config);
+    // where VRF is required the coin comes from MagicBlock's oracle (255 = not chosen yet); locally the host picks BTC
+    await programFor(host).methods.createTournament(new BN(nonce), new BN(ENTRY), 3, tcfg.vrfRequired ? 255 : 1, 1, 3, 6).accountsPartial({ creator: host.publicKey, ...pay, tournament: tour, vault, usdcMint: USDC_MINT }).rpc();
     const join = (p: Keypair) => programFor(p).methods.joinTournament().accountsPartial({ player: p.publicKey, tournament: tour, vault, playerUsdc: usdcAta(p.publicKey) }).rpc();
     for (const p of ps) await join(p);
     await assert.rejects(join(ps[0]), /AlreadyJoined|TourFull/);
     assert.equal(await tokenBalance(vault), 3 * ENTRY);
 
+    if (tcfg.vrfRequired) {
+      await programFor(host).methods.requestTournamentCoin([...randomSeed()]).accountsPartial({ creator: host.publicKey, ...pay, tournament: tour, oracleQueue: tcfg.vrfQueue }).rpc();
+      const coin = await until('MagicBlock VRF coin for the Royale', 90_000, async () => { const t = await baseProgram.account.tournament.fetch(tour); return t.coin !== 255 ? t.coin : null; });
+      console.log(`  Royale VRF coin: ${COINS[coin].symbol}`);
+    }
+    const tourCoin = (await baseProgram.account.tournament.fetch(tour)).coin;
     await programFor(host).methods.delegateTournament(host.publicKey, new BN(nonce)).accountsPartial({ host: host.publicKey, ...pay, tournament: tour }).remainingAccounts(validatorMeta).rpc();
     await until('tournament on the rollup', 30_000, () => er.getAccountInfo(tour));
-    await sendEr(programFor(host, true).methods.startTournament().accountsPartial({ signer: host.publicKey, tournament: tour, price: P.feed(1) }), host);
+    await sendEr(programFor(host, true).methods.startTournament().accountsPartial({ signer: host.publicKey, tournament: tour, price: P.feed(tourCoin) }), host);
 
     // every round: player 0 calls up, player 1 calls down, player 2 stays silent (always loses a life)
     for (let round = 0; round < 3; round++) {
@@ -298,7 +314,7 @@ describe('tournament: an on-chain Royale', () => {
       await sendEr(programFor(ps[0], true).methods.callRound(1).accountsPartial({ player: ps[0].publicKey, tournament: tour }), ps[0]).catch(() => {});
       await sendEr(programFor(ps[1], true).methods.callRound(2).accountsPartial({ player: ps[1].publicKey, tournament: tour }), ps[1]).catch(() => {});
       await sleep(7000);
-      await sendEr(programFor(host, true).methods.resolveRound().accountsPartial({ payer: sponsor.publicKey, tournament: tour, price: P.feed(1) }));
+      await sendEr(programFor(host, true).methods.resolveRound().accountsPartial({ payer: sponsor.publicKey, tournament: tour, price: P.feed(tourCoin) }));
     }
     await waitHome(tour, 90_000);
     const t = await baseProgram.account.tournament.fetch(tour);

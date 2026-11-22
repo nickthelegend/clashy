@@ -94,7 +94,10 @@ describe('sponsor relay: withdrawals and Privy sign-in', () => {
 });
 
 describe('sponsor relay: a real sponsored transaction', () => {
-  test('a wallet with zero SOL creates its player account through the relay; the faucet gives it test USDC', async () => {
+  test('a wallet with zero SOL creates its player account through the relay; the faucet gives it test USDC', async (ctx) => {
+    const info = await (await fetch(`${url}/info`)).json();
+    // off the local stack the relay sponsors only signed-in Privy users (the forged-token test covers the refusal)
+    if (info.authRequired) return ctx.skip('this relay requires Privy sign-in; covered on the local stack and by the app test');
     const p = Keypair.generate();
     const r0 = await fetch(`${url}/faucet`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ owner: p.publicKey.toBase58() }) });
     assert.equal(r0.status, 200, await r0.clone().text());

@@ -6,8 +6,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import {
   BN, COINS, Keypair, P, PublicKey, USDC, USDC_MINT, authority, baseProgram, ensureSetup, er, erProgram, lamports, LOCAL_ER_VALIDATOR,
-  programFor, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome,
-} from './common.ts';
+  crank as crankKey, programFor, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome, rollDuel } from './common.ts';
 
 const STAKE = 5 * USDC;
 const BPS = 10_000n;
@@ -62,8 +61,7 @@ async function liveDuel(lenSecs: number, picks: [{ side: number; lev: number }, 
   await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, lenSecs, new BN(600), [...sha256(seedA)])
     .accountsPartial({ creator: a.publicKey, ...pay, duel, vault, creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc();
   await programFor(b).methods.joinDuel([...sha256(seedB)]).accountsPartial({ joiner: b.publicKey, duel, vault, joinerUsdc: usdcAta(b.publicKey) }).rpc();
-  await programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
-  await programFor(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
+  await rollDuel(duel, a, b, seedA, seedB, (k) => programFor(k));
   let d = await baseProgram.account.duel.fetch(duel);
   assert.equal(d.status, 2, 'rolled');
   assert.ok(d.coin < 3, `a crypto coin (${COINS[d.coin].symbol})`);
@@ -140,9 +138,9 @@ describe('perps clash: leverage and liquidation', () => {
     // one atomic transaction, so nothing else on the stack ever reads the staged price.
     const now = (await erProgram.account.priceFeed.fetch(priceAcct)).price;
     const tx = erProgram.methods.checkDuel().accountsPartial({ payer: sponsor.publicKey, duel, price: priceAcct })
-      .preInstructions([await erProgram.methods.pushPrice(new BN(drop.toString())).accountsPartial({ crank: authority.publicKey, feed: priceAcct }).instruction()])
-      .postInstructions([await erProgram.methods.pushPrice(now).accountsPartial({ crank: authority.publicKey, feed: priceAcct }).instruction()]);
-    await sendEr(tx, authority);
+      .preInstructions([await erProgram.methods.pushPrice(new BN(drop.toString())).accountsPartial({ crank: crankKey.publicKey, feed: priceAcct }).instruction()])
+      .postInstructions([await erProgram.methods.pushPrice(now).accountsPartial({ crank: crankKey.publicKey, feed: priceAcct }).instruction()]);
+    await sendEr(tx, crankKey);
     await waitHome(duel);
     const d = await baseProgram.account.duel.fetch(duel);
     assert.equal(d.status, 4, 'the knockout finished the clash long before its 10 minutes');
@@ -173,8 +171,7 @@ describe('perps clash: leverage and liquidation', () => {
     await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, 60, new BN(600), [...sha256(seedA)])
       .accountsPartial({ creator: a.publicKey, ...pay, duel, vault, creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc();
     await programFor(b).methods.joinDuel([...sha256(seedB)]).accountsPartial({ joiner: b.publicKey, duel, vault, joinerUsdc: usdcAta(b.publicKey) }).rpc();
-    await programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
-    await programFor(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
+    await rollDuel(duel, a, b, seedA, seedB, (k) => programFor(k));
     const [saltA, saltB] = [randomSeed(), randomSeed()];
     await programFor(a).methods.commitPick(commitOf(duel, a, 1, 101, saltA)).accountsPartial({ signer: a.publicKey, duel }).rpc();
     await programFor(b).methods.commitPick(commitOf(duel, b, 2, 0, saltB)).accountsPartial({ signer: b.publicKey, duel }).rpc();

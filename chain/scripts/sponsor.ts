@@ -27,7 +27,7 @@ import { PrivyClient } from '@privy-io/server-auth';
 import { fileURLToPath } from 'node:url';
 try { process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url))); } catch { /* no chain/.env: Privy checks off */ }
 import { SAMPLE_EVERY_SECS, downsample, readSamples, type Sample } from './price-history.ts';
-import { BASE_URL, ER_URL, IS_LOCAL, TEST_FAUCET, USDC, USDC_MINT, base, er, giveUsdc, programId, sponsor, tokenBalance, usdcAta } from '../tests/common.ts';
+import { BASE_URL, ER_URL, IS_LOCAL, IS_MAINNET, TEST_FAUCET, USDC, USDC_MINT, base, er, giveUsdc, programId, sponsor, tokenBalance, usdcAta } from '../tests/common.ts';
 
 const PORT = Number(process.env.CLASHY_SPONSOR_PORT ?? 8790);
 const ORIGIN = process.env.CLASHY_APP_ORIGIN ?? '*';
@@ -58,7 +58,13 @@ const ER_IXS = new Set(['start_duel', 'check_duel', 'void_duel', 'start_tourname
 const SPONSOR_SLOTS = new Set(['payer', 'rent_payer']);
 const PRIVY = process.env.CLASHY_PRIVY_APP_ID && process.env.CLASHY_PRIVY_APP_SECRET
   ? new PrivyClient(process.env.CLASHY_PRIVY_APP_ID, process.env.CLASHY_PRIVY_APP_SECRET) : null;
-const AUTH_REQUIRED = !IS_LOCAL || process.env.CLASHY_RELAY_REQUIRE_AUTH === '1';
+/** Devnet test mode for automated browser tests with a device test wallet: no Privy sign-in, loopback only. It can
+ *  never be on for mainnet or for a relay that listens beyond this machine. */
+const DEV_OPEN = process.env.CLASHY_RELAY_DEV_OPEN === '1';
+if (DEV_OPEN && (IS_MAINNET || (process.env.CLASHY_RELAY_BIND ?? '127.0.0.1') !== '127.0.0.1')) {
+  throw new Error('CLASHY_RELAY_DEV_OPEN is for a loopback relay on devnet only');
+}
+const AUTH_REQUIRED = !DEV_OPEN && (!IS_LOCAL || process.env.CLASHY_RELAY_REQUIRE_AUTH === '1');
 const byDisc = new Map(idl.instructions.map((ix) => [Buffer.from(ix.discriminator).toString('hex'), { name: ix.name, accounts: flat(ix.accounts) }]));
 
 type Layer = 'base' | 'er';

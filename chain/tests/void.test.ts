@@ -7,8 +7,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import {
   BN, Keypair, P, USDC, USDC_MINT, authority, baseProgram, ensureSetup, er, LOCAL_ER_VALIDATOR, programFor, randomSeed, runCrank,
-  sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome,
-} from './common.ts';
+  sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome, rollDuel } from './common.ts';
 
 const STAKE = 5 * USDC;
 const GRACE = 120;
@@ -35,8 +34,7 @@ test('a live duel nobody finishes is voided after the grace and refunds both sta
   await programFor(a).methods.openDuel(new BN(nonce), new BN(STAKE), 0b111, 30, new BN(600), [...sha256(seedA)])
     .accountsPartial({ creator: a.publicKey, ...pay, duel, vault, creatorUsdc: usdcAta(a.publicKey), usdcMint: USDC_MINT }).rpc();
   await programFor(b).methods.joinDuel([...sha256(seedB)]).accountsPartial({ joiner: b.publicKey, duel, vault, joinerUsdc: usdcAta(b.publicKey) }).rpc();
-  await programFor(a).methods.revealSeed([...seedA]).accountsPartial({ signer: a.publicKey, duel }).rpc();
-  await programFor(b).methods.revealSeed([...seedB]).accountsPartial({ signer: b.publicKey, duel }).rpc();
+  await rollDuel(duel, a, b, seedA, seedB, (k) => programFor(k));
   const [saltA, saltB] = [randomSeed(), randomSeed()];
   const commit = (p: Keypair, side: number, lev: number, salt: Buffer) =>
     [...sha256(duel.toBuffer(), p.publicKey.toBuffer(), Buffer.from([side]), Buffer.from(new Uint16Array([lev]).buffer), salt)];
