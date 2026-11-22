@@ -8,7 +8,7 @@ bottom.
 | Area | State |
 |---|---|
 | App | 150 games, practice trading on real Phoenix and Pacifica prices, chats, squads, tours, profiles. Sign-in with Privy (email or Google, an embedded Solana wallet). Web build works. iOS and Android run through Expo but are not in any store. |
-| On-chain | The Anchor program handles escrowed duels, Royale, clans, clan wars, rake and Elo, on MagicBlock Ephemeral Rollups with VRF, USDC only and gasless. It has only ever run on a **local** chain. A devnet deploy needs about 19 devnet SOL (the program is 1.32 MB, so its rent is 9.18 SOL, and the upload buffer briefly needs the same again). The deployer wallet `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe` has 0 SOL. |
+| On-chain | The Anchor program handles escrowed duels, Royale, clans, clan wars, rake and Elo, on MagicBlock Ephemeral Rollups with VRF, USDC only and gasless. It has only ever run on a **local** chain. A devnet deploy needs about 14 devnet SOL (the program is 1.3 MB, so its rent is 6.7 SOL, and the buffer briefly doubles that). The deployer wallet `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe` has 0 SOL. |
 | Backend | A Docker stack (relay, crank, social server, web, and Caddy for HTTPS) built to run on one VM with `deploy/up.sh`. Not deployed. |
 | Domain | clashy.fun is bought, but it is a parked Hostinger page. Nothing points at our app yet. |
 | Hackathon | MagicBlock Solana Blitz v10 started Nov 20 and runs one week, so the deadline is about Nov 27 (not published yet). Prizes are $500 / $250 / $150 / $100 USDC. The submission form asks for a public repo, a demo, a website, and an explorer link that proves **devnet or mainnet** activity. Most of our code was written before Nov 20, and that eligibility risk is yours to call. |
@@ -190,7 +190,7 @@ current price on X.
 
 1. **Server.** Use the VPS that already runs our relay, or rent a new small VM. Tell me which.
 2. **DNS (Hostinger).** Point `clashy.fun` and `play.clashy.fun` at the VM's IP with two A records. About 5 minutes.
-3. **Devnet SOL.** About 21 SOL in total: about 19 for the deployer `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe` and
+3. **Devnet SOL.** About 16 SOL in total: about 14 for the deployer `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe` and
    about 2 for the sponsor.
    - From faucet.solana.com, signed in with GitHub; it takes several requests.
    - Or approve me trying the public faucets, which are rate-limited.

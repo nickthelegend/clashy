@@ -19,10 +19,9 @@ his accounts. The rest is me.
    | CNAME | `www` | `clashy.fun` | 300 |
 
    Delete any parking A or AAAA records for `@`. Caddy gets the HTTPS certificates by itself once DNS resolves.
-3. **Devnet SOL, about 21 in total.**
-   - About 19 for the deployer `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe`. The program is 1,318,744 bytes, so it
-     locks 9.18 SOL of rent for as long as it exists. `deploy.sh` also wants room for the upload buffer (another
-     9.18 SOL, refunded when the deploy ends) plus 0.2 SOL for fees and setup.
+3. **Devnet SOL, about 16 in total.**
+   - About 14 for the deployer `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe`. The program is 1.3 MB, so its rent is
+     6.7 SOL, and the upload buffer briefly needs the same again.
    - About 2 for the sponsor (its address comes in step 2).
    - Get it from faucet.solana.com, signed in with GitHub; repeat the requests as the limit allows.
 4. **Privy dashboard** → the Clashy app → Allowed origins: add `https://clashy.fun` and `https://play.clashy.fun`.
