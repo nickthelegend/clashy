@@ -156,8 +156,9 @@ export async function sendUsdc(signer: WalletSigner, to: PublicKey, amount: numb
   return sendSponsored(new Transaction().add(...usdcPayIxs(sponsor, signer.publicKey, to, units)), 'base', signer);
 }
 
-/** Local fork only: 100 test USDC from the relay's faucet. */
-export const faucetUsdc = (owner: PublicKey) => post<{ usdc: number }>('/faucet', { owner: owner.toBase58() });
+/** Test networks only: 100 test USDC from the relay's faucet (devnet: signed in, once a day per wallet). */
+export const faucetUsdc = async (owner: PublicKey, signer?: { authToken?: () => Promise<string | null> } | null) =>
+  post<{ usdc: number }>('/faucet', { owner: owner.toBase58() }, (await signer?.authToken?.()) ?? null); // devnet: signed-in users only
 /** True when this build plays on the local fork (test USDC from the faucet; no real money). */
 export const IS_LOCAL_NET = /127\.0\.0\.1|localhost/.test(NET.base);
 /** True on Solana mainnet. */

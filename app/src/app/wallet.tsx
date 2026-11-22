@@ -83,7 +83,7 @@ export default function Wallet() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-  const getTest = guard('faucet', async () => { await faucetUsdc(me!); refresh(); });
+  const getTest = guard('faucet', async () => { await faucetUsdc(me!, wallet.signer); refresh(); });
   const explorer = () => me && Linking.openURL(`https://explorer.solana.com/address/${me.toBase58()}${IS_LOCAL_NET ? `?cluster=custom&customUrl=${encodeURIComponent(NET.base)}` : ''}`);
 
   return (

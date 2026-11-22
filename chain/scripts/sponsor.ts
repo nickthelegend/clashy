@@ -230,9 +230,25 @@ async function relay(body: { tx?: string; layer?: Layer }, token?: string) {
   return { sig };
 }
 
-async function faucet(body: { owner?: string }) {
+/** One test-USDC claim per wallet a day, and a few per IP an hour: each first claim makes the sponsor pay a token
+ *  account's rent, so an open faucet would let a script drain the sponsor (found on devnet, Nov 22 2026). */
+const claims = new Map<string, number>();
+const faucetIps = new Map<string, { t: number; n: number }>();
+async function faucet(body: { owner?: string }, token: string | undefined, ip: string) {
   if (!TEST_FAUCET) throw new Refused('the test-USDC faucet only runs on the local fork or on devnet with the test mint');
-  const owner = new PublicKey(body.owner ?? '');
+  let owner: PublicKey;
+  try { owner = new PublicKey(body.owner ?? ''); } catch { throw new Refused('owner must be a wallet address'); }
+  if (!PublicKey.isOnCurve(owner.toBytes()) || owner.equals(PublicKey.default)) throw new Refused('owner must be a wallet, not a program address');
+  await authorize(token, [owner.toBase58()]); // off the local stack: a signed-in Privy user claiming for their own wallet
+  if (!IS_LOCAL) {
+    const now = Date.now();
+    const last = claims.get(owner.toBase58());
+    if (last && now - last < 86_400_000) throw Object.assign(new Refused('this wallet already got test USDC today'), { status: 429 });
+    const h = faucetIps.get(ip);
+    if (h && now - h.t < 3_600_000 && h.n >= 5) throw Object.assign(new Refused('too many faucet claims from here; try again in an hour'), { status: 429 });
+    faucetIps.set(ip, !h || now - h.t >= 3_600_000 ? { t: now, n: 1 } : { t: h.t, n: h.n + 1 });
+    claims.set(owner.toBase58(), now);
+  }
   if ((await tokenBalance(usdcAta(owner))) >= 500 * USDC) throw new Refused('this wallet already has 500+ test USDC');
   await giveUsdc(owner, 100 * USDC);
   return { usdc: (await tokenBalance(usdcAta(owner))) / USDC };
@@ -420,7 +436,7 @@ const server = http.createServer(async (req, res) => {
     const body = raw ? JSON.parse(raw) : {};
     const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1];
     if (req.url === '/relay') return send(200, await relay(body, token));
-    if (req.url === '/faucet') return send(200, await faucet(body));
+    if (req.url === '/faucet') return send(200, await faucet(body, token, String(req.socket.remoteAddress ?? '?')));
     return send(404, { error: 'not found' });
   } catch (e) {
     const err = e as Error & { status?: number; logs?: string[]; transactionLogs?: string[] };

@@ -107,7 +107,7 @@ export function useChain(foldLabels: string[] = []) {
     if (!me || !progs || !sponsor) return;
     if ((bal ?? 0) < need) {
       if (!sponsor.faucet) throw new Error(`Add at least ${need} USDC to ${me.toBase58()} to play`);
-      await faucetUsdc(me);
+      await faucetUsdc(me, signer);
     }
     if (!hasPlayer) await onBase('Create player account', () => progs.base.methods.initPlayer().accountsPartial({ owner: me, payer: sponsor.sponsor }).rpc());
     setTick((n) => n + 1);
@@ -119,7 +119,7 @@ export function useChain(foldLabels: string[] = []) {
     const handle = name.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,16}$/.test(handle)) throw new Error('Names are 3 to 16 characters: a-z, 0-9 and _');
     if (await base.getAccountInfo(P.handle(handle))) throw new Error(`@${handle} is taken`);
-    if ((bal ?? 0) < 1 && sponsor.faucet) await faucetUsdc(me);
+    if ((bal ?? 0) < 1 && sponsor.faucet) await faucetUsdc(me, signer);
     const pay = { payer: sponsor.sponsor };
     if (!hasPlayer) await onBase('Create player account', () => progs.base.methods.initPlayer().accountsPartial({ owner: me, ...pay }).rpc());
     if (!hasProfile) await onBase(`Claim @${handle}`, () => progs.base.methods.createProfile(handle, avatar).accountsPartial({ owner: me, ...pay, handle: P.handle(handle) }).rpc());
