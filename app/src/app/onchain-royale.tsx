@@ -10,7 +10,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, NET, P, PublicKey, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView, feedOf, feeVault, hasKeeper,
+  BN, COIN_SYMBOLS, NET, P, PublicKey, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView, ensureSession, feedOf, feeVault, hasKeeper,
 } from '@/chain/client';
 import { reader } from '@/chain/reads';
 import { useProfiles, type Profile } from '@/chain/social';
@@ -176,7 +176,13 @@ export default function OnchainRoyale() {
       .remainingAccounts(tour!.players.map((p) => ({ pubkey: usdcAta(p), isSigner: false, isWritable: true }))).rpc());
     await setActiveTour(null);
   });
-  const call = (dir: 1 | 2) => guard(`call-${dir}`, () => onEr(`Call ${dir === 1 ? 'up ▲' : 'down ▼'}`, progs!.er.methods.callRound(dir).accountsPartial({ player: wallet!, tournament: active! })))();
+  // each round's call is signed by this device's MagicBlock session key (one wallet signature for the session, none per round)
+  const call = (dir: 1 | 2) => guard(`call-${dir}`, async () => {
+    let created: string | undefined;
+    const sess = await ensureSession(chain.signer!, (sig) => { created = sig; });
+    if (created) await onBase('Create a MagicBlock session key (one signature)', async () => created!);
+    await onEr(`Call ${dir === 1 ? 'up ▲' : 'down ▼'} · session key`, progs!.er.methods.callRoundSession(dir).accountsPartial({ signer: sess.kp.publicKey, player: wallet!, sessionToken: sess.token, tournament: active! }), [sess.kp]);
+  })();
 
   const me = tour && wallet ? tour.players.findIndex((p) => p.equals(wallet)) : -1;
   const isHost = !!(tour && wallet && tour.creator.equals(wallet));

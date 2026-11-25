@@ -10,7 +10,7 @@ type Card = { n: string; label: string; title: string; body: string; bg: string;
 // tiles that have a clay animation loop in /video
 const LOOPS = new Set(['duel', 'royale', 'line'])
 
-const RANKS = ['Exit Liquidity', 'Paper Hands', 'Bagholder', 'Dip Buyer', 'Ape', 'Degen', 'Diamond Hands', 'Chad', 'Whale', 'The House']
+const RANKS = ['Rookie', 'Saver', 'Starter', 'Steady', 'Investor', 'Analyst', 'Long-Term', 'Strategist', 'Expert', 'Legend']
 
 const CARDS: Card[] = [
   {
@@ -31,8 +31,8 @@ const CARDS: Card[] = [
           <img src="/art/crest-bolt.webp" alt="" width="48" height="48" />
         </div>
         <div className="ui-tugn">
-          <span>Night Owls +14%</span>
-          <span>Degen Inc. +9%</span>
+          <span>Sample clan +14%</span>
+          <span>Rival clan +9%</span>
         </div>
       </div>
     ),
@@ -49,9 +49,9 @@ const CARDS: Card[] = [
         {[
           ['duel', 'Knockout duel'],
           ['clash', 'Coin clash'],
-          ['line', 'Draw the line'],
+          ['diamond', 'Diamond duel'],
           ['royale', 'Royale'],
-          ['bounty', 'Bounty'],
+          ['double', 'Double or nothing'],
           ['war', 'Clan war'],
         ].map(([t, n]) => (
           <div key={t} className="ui-mode">
@@ -95,7 +95,7 @@ const CARDS: Card[] = [
     n: '04',
     label: 'Your rank',
     title: 'Climb ten tiers.',
-    body: 'From Exit Liquidity to The House. Every duel moves your rank; it resets each season.',
+    body: 'From Rookie to Legend. Points come only from settled clashes.',
     bg: '#C9C2FF',
     ink: '#16123a',
     ui: (
@@ -113,7 +113,7 @@ const CARDS: Card[] = [
     n: '05',
     label: 'Chat',
     title: 'Talk trash. Settle it.',
-    body: 'Servers for every crew, a channel for every coin, and a duel button in every chat.',
+    body: 'Squad channels and DMs, with stickers and a Clash shortcut in every chat. Messages shown are samples.',
     bg: '#FFF3DF',
     ink: '#1b1a24',
     ui: (
@@ -142,7 +142,7 @@ const CARDS: Card[] = [
     n: '06',
     label: 'Leaderboard',
     title: 'Top the board.',
-    body: 'Traders and clans, ranked by wins and net P&L. Your row stays pinned.',
+    body: 'Ten ranks, points from settled clashes. The podium shown is a sample.',
     bg: '#16161a',
     ink: '#f5f5f7',
     ui: (

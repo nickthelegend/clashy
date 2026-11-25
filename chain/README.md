@@ -1,18 +1,20 @@
 # Clashy on-chain
 
-The Clashy Anchor program (`programs/clashy`, Anchor 0.32.1, MagicBlock `ephemeral-rollups-sdk` 0.17 with the
-`anchor-compat` and `vrf` features). It holds all the money logic: escrow, coin roll, sealed picks, live scoring on a
-MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tournaments.
+The Clashy Anchor program (`programs/clashy`, Anchor 0.32.1, MagicBlock `ephemeral-rollups-sdk` `=0.18.0` with the
+`anchor-compat`, `vrf`, `crank` and `access-control` features, and `session-keys` `=3.1.1`). It holds all the money
+logic: escrow, coin roll, sealed picks (commit-reveal or private picks on MagicBlock's TEE rollup), live scoring on a
+MagicBlock Ephemeral Rollup by a crank, settlement on Solana by a Magic Action, clans, clan wars and tournaments.
 
 | | |
 |---|---|
 | Program id | `FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS` (keypair in `.keys/`, gitignored) |
-| Rollup | MagicBlock Ephemeral Rollup: duels and tournaments are delegated, scored there every check, and committed back |
+| Rollup | MagicBlock Ephemeral Rollup: duels and tournaments are delegated, scored there every check, and committed back. On devnet: MagicBlock's Private Ephemeral Rollup (TEE) `https://devnet-tee.magicblock.app`, validator `MTEWGuqx…xzo` |
+| Cranks and keeper | `start_duel_cranked`, `start_tournament_cranked` and `start_private_duel` schedule `tick_duel` / `tick_round` every 1,000 ms on the rollup. The delegated `keeper` PDA signs the commits; a Magic Action runs `settle_duel` / `settle_tournament` on Solana in the same intent |
 | Randomness | MagicBlock VRF rolls the coin (queue in the config: base queue `Cuj97ggr…` on devnet and mainnet, MagicBlock's test queue `GKE6d7…` on the local stack, answered by their `vrf-oracle`). Callbacks need MagicBlock's VRF identity signature. With `vrf_required = true` the commit-reveal fallback is refused |
-| Prices | A crank pushes live Coinbase prices into delegated `PriceFeed` accounts on the rollup every second (duels, tournaments), and into never-delegated base feeds on Solana every 5 s (clan trades; one transaction for all coins). The program also accepts MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout) |
+| Prices | A crank pushes live Coinbase prices into delegated `PriceFeed` accounts on the rollup every second (duels, tournaments), and into never-delegated base feeds on Solana every 5 s (clan trades; one transaction for all coins). The program also reads MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout). On devnet SOL, BTC and ETH read MagicBlock's oracle; the crank's rollup feeds are used only for the five stocks |
 | Money | **USDC only.** Every stake, chest, war pot and entry is a USDC token account owned by the program's `auth` PDA. A player's wallet never needs SOL: the sponsor relay pays every fee and rent |
 | Wallets | Privy (web): email or Google sign-in makes a Solana wallet that holds USDC. Phones and automated tests use a device test key on the local stack |
-| Deployed | Local MagicBlock stack only. Devnet and mainnet: **not deployed** (see Status) |
+| Deployed | Solana devnet since Nov 22, 2026, upgraded three times on Nov 25 (see [docs/DEVNET.md](../docs/DEVNET.md)). Upgrade authority: one deployer key. Mainnet: **not deployed** |
 
 ## Money: USDC in, no SOL ever
 
@@ -30,7 +32,8 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
   wallet belongs to that user; off the local stack that check is mandatory. Per-wallet rate limit 40 tx / 10 s.
 - **Local fork USDC.** `scripts/usdc-mint.ts` loads mainnet USDC's mint address (`EPjF…Dt1v`, 6 decimals) into the
   local validator with the local admin key as mint authority, so the relay's `/faucet` can hand out 100 test USDC.
-  On devnet/mainnet there is no faucet: players bring USDC (or buy it through Privy's funding flow).
+  On devnet a separate test-USDC mint (`8Jb66C…iXEN`, no value) has a faucet limited to signed-in users, one claim per
+  wallet a day and five per IP an hour. Mainnet has no faucet: players bring USDC (or buy it through Privy's funding flow).
 
 ## What the program does
 
@@ -40,10 +43,14 @@ MagicBlock Ephemeral Rollup, settlement on Solana, clans, clan wars and tourname
 2. `request_coin_roll` asks MagicBlock VRF for randomness; `coin_roll_callback` (only the VRF program can call it)
    picks the coin from the duel's pool. Local fallback: `reveal_seed` from both players, coin = sha256(seed_a ‖ seed_b).
 3. `commit_pick` / `reveal_pick`: long or short and leverage, sealed by commit-reveal so neither player sees the other's
-   side first.
+   side first. Or the private path: `open_private_picks`, `delegate_private_duel`, then `lock_pick` on the TEE rollup
+   writes each pick into an account only its player can read (`lock_pick_session` does the same with a MagicBlock
+   session key).
 4. `delegate_duel` hands the duel to the rollup; `start_duel` records the entry price there; `check_duel` scores both
-   sides on every call and, on a knockout or at the bell, commits and undelegates back to Solana.
-5. `settle_duel` pays the winner in USDC minus the rake, closes the vault (its rent back to the sponsor) and updates Elo and RP.
+   sides on every call and, on a knockout or at the bell, commits and undelegates back to Solana. The cranked starts
+   (`start_duel_cranked`, `start_private_duel`) schedule `tick_duel` every second instead, so no player has to call.
+5. `settle_duel` pays the winner in USDC minus the rake, closes the vault (its rent back to the sponsor) and updates Elo
+   and RP. After a cranked game it runs as a Magic Action; if the action fails, anyone can call it by hand.
 
 **Clans.** `create_clan` / `join_clan` / `leave_clan`. The chest is held as shares: `deposit_chest` mints shares at
 the chest's current value and `withdraw_chest` redeems shares for their pro-rata part, so a war win or loss is shared
@@ -56,8 +63,10 @@ chests (at most half a chest), and when the window ends the clan with the better
 pot minus rake into its chest. A tie refunds both.
 
 **Tournaments (Royale).** Up to 16 players: `create` / `join` / `cancel_tournament`, a VRF coin
-(`request_tournament_coin`), then on the rollup `start_tournament`, `call_round` (each player calls up or down),
-`resolve_round` (wrong calls lose a life, commits each round). `settle_tournament` splits the pot among survivors.
+(`request_tournament_coin`), then on the rollup `start_tournament`, `call_round` (each player calls up or down;
+`call_round_session` with a session key), `resolve_round` (wrong calls lose a life, commits each round).
+`settle_tournament` splits the pot among survivors. `start_tournament_cranked` lets `tick_round` resolve each round at
+its bell.
 
 ## Run it
 
@@ -85,8 +94,8 @@ on :8911; `npx tsx scripts/fork-trade.ts 1` sells 1 SOL into the real resting bi
 
 ## Security
 
-An independent review of the fund paths (Nov 16) found three high, three medium and five low issues. Fixed, with
-attack tests where a test can reach them:
+A review of the fund paths (Nov 16) found three high, three medium and five low issues. Fixed, with attack tests where
+a test can reach them (the Nov 25 crank, keeper, Magic Action, TEE and session-key code has not been reviewed yet):
 
 - **Delegation lock (high).** Anyone could push any duel or tournament into the rollup, freezing its escrow. Now only a
   rolled duel with both picks revealed (by one of its players) or an open, coin-rolled tournament with 2+ players (by
@@ -102,36 +111,50 @@ attack tests where a test can reach them:
 - **Low:** pick hashes bind the duel and player (no copying a rival's hash), Solana-side trades read one price source,
   withdrawals wait for open votes (no voting twice with the same money), and unexecuted votes can be closed.
 
-**Trust that remains:** the crank key sets every price (bounded only by freshness checks); the closing price of a duel
-is the feed at the first check after the bell (up to 15 s old). The sponsor key pays fees and rent: the relay's
-filter, Privy check and rate limit bound what it pays for, and duel, player, proposal, vote and position accounts are
-not closed yet, so their rent (about 0.004 SOL per duel) stays spent. Mainnet should move duel pricing to MagicBlock's pricing oracle accounts, which `read_price` already
-accepts.
+**Trust that remains:**
+- The program is upgradeable by one deployer key (`6XdpT4…nYbe`), and `update_config` lets the admin change the rake
+  (up to 10%), the treasury and `vrf_required`. A Squads multisig is the mainnet plan; it is not done.
+- The crank key sets the stock prices (bounded only by freshness checks); SOL, BTC and ETH come from MagicBlock's oracle
+  on devnet. The closing price of a duel is the feed at the first tick or check after the bell (up to 15 s old).
+- The sponsor key pays fees and rent: the relay's filter, Privy check and rate limit bound what it pays for. Player,
+  proposal, vote and position accounts are not closed; `close_duel` returns a duel's rent 14 days after it ends.
+- Magic Actions are not atomic with the commit: a failed action leaves the game FINISHED on Solana until someone calls
+  settle by hand (the app does after 8 s).
 
 ## Status
 
-- **Local MagicBlock stack: works end to end, in USDC.** 5/5 end-to-end, 5/5 relay and 11/11 unit tests pass (see
-  [TESTING.md](TESTING.md)); every test player holds USDC and exactly 0 SOL. Browser players ran full duels, a clan
-  trade, a clan war and a three-player Royale through the app.
-- **Privy:** the Clashy app exists in Privy's dashboard; the web app signs in with it and the relay verifies its tokens
-  with the app secret. A real Privy sign-in needs a person (email code or Google), so automated runs use device keys.
-- **VRF: proven locally with MagicBlock's own oracle.** MagicBlock's validator CLI ships `vrf-oracle` and their test
-  queue; the local stack runs it, and duels and Royales get their coin from a real VRF callback (about 1.3 s). A forged
-  callback is refused. **BLOCKED:** the devnet deploy (against MagicBlock's hosted oracles) needs about 18.5 devnet SOL
-  now that the program is 1.29 MB (9.0 SOL rent, held twice during the deploy, plus fees) on the deployer
-  `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe`. The devnet faucet refused the CLI airdrop again on Nov 18 (rate
-  limit), and the web faucet needs a sign-in and a CAPTCHA, which only Nick can do.
-- **Practice clash against Clashy Bot (works now, no testnet needed):** the real 60-second clash with Practice money,
-  played on the same live rollup price feeds real clashes settle on (read only, nothing is sent). Clashy Bot takes the
-  other side of every call. When devnet is funded, practice clashes can move on chain there unchanged in rules.
-- **Mainnet: not deployed.** The 1.05 MB program needs 5.33 SOL rent-exempt (`solana rent 1049296`); a deploy briefly
-  holds about twice that (buffer plus program data) and returns the buffer. The sponsor also needs SOL for fees and rent. It needs real SOL and Nick's go-ahead.
-  Real money stays off until then.
-- **Why base feeds:** MagicBlock sponsors only 10 commits per delegated account ("sponsored commit limit exceeded …
-  current commit nonce 10 reached the limit of 10"), so committing the rollup feeds back to Solana every 30 s stopped
-  after 10 commits. Duels and tournaments commit once, when they finish, so they are not affected.
-- **Clan trades are paper.** They are scored at the oracle price. The Phoenix swap on the fork is a standalone script,
-  not called from the chest.
+- **Devnet: deployed.** Program `FQKy8f…wdS` since Nov 22, 2026; three upgrades on Nov 25 (cranks, keeper, Magic
+  Actions, private picks, oracle, `admin_undelegate`; session keys; the VRF callback fix and the 0.5% Stash trading
+  fee). Program data account 1,605,240 bytes; the last build is 1,580,168 bytes. Rollup: MagicBlock's TEE
+  (`devnet-tee.magicblock.app`); its transactions need an auth token (30 days), public reads need none. On Nov 25 all
+  four `tests/magicblock.test.ts` tests passed there over two runs, and two players played a private duel through the
+  app (`../docs/DEVNET.md`, `.localnet/devnet-proof.txt`).
+- **Local MagicBlock stack: works end to end, in USDC.** MagicBlock validator 1.1.1 over Agave 4.5.0-beta.0 with
+  devnet's feature set. Latest runs (Nov 25): magicblock 4/4, clashy 5/5 (the VRF test passed after its fix), perps
+  3/3, brief 9/9, void 1/1, 13/13 Rust unit tests (see [TESTING.md](TESTING.md)); every test player holds USDC and
+  exactly 0 SOL. Browser players ran full duels, a clan trade, a clan war and a three-player Royale through the app
+  (Nov 16, manual multi-tab runs).
+- **Privy:** the Clashy app exists in Privy's dashboard (owner's statement); the web app signs in with it and the relay
+  verifies its tokens with the app secret. A real Privy sign-in needs a person (email code or Google), so automated runs
+  use device keys.
+- **VRF: proven locally and on devnet.** MagicBlock's validator CLI ships `vrf-oracle` and their test queue; the local
+  stack runs it (last roll 1,083 ms). On devnet the hosted oracle answers through queue `Cuj97ggr…`. A forged callback
+  is refused. The Nov 25 local VRF failure came from SDK 0.18's `#[vrf_callback]` evaluating a const fn at run time
+  (over 200k compute units); a compile-time `VRF_IDENTITY` fixed it.
+- **Session keys:** `lock_pick_session` and `call_round_session` are deployed on devnet; the cranked Royale test made its
+  round calls with one. The app does not use them yet.
+- **Practice clash against Clashy Bot (no testnet needed):** the real 60-second clash with Practice money, played on
+  the same live rollup price feeds real clashes settle on (read only, nothing is sent). Clashy Bot takes the other side
+  of every call.
+- **Mainnet: not deployed.** The program data account is 1,605,240 bytes: 8.155 SOL rent-exempt; a deploy briefly
+  holds about twice that (buffer plus program data) and returns the buffer. The sponsor also needs SOL for fees and
+  rent. It needs real SOL and Nick's go-ahead. Real money stays off until then.
+- **Why base feeds:** on the local stack (Nov 18), MagicBlock sponsored only 10 commits per delegated account
+  ("sponsored commit limit exceeded … current commit nonce 10 reached the limit of 10"), so committing the rollup feeds
+  back to Solana every 30 s stopped after 10 commits. Duels and tournaments commit once, when they finish. This limit
+  has not been re-tested on the devnet TEE.
+- **Clan trades are paper.** They are scored at the Solana base-feed price. The Phoenix swap on the fork is a
+  standalone script, not called from the chest.
 - **Phoenix spot is too thin for duels.** On the fork, best bid 60.03 against a ~71 market; selling 1 SOL filled at
   54.66 USDC. Duels therefore settle on price, not on venue fills.
 

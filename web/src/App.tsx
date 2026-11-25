@@ -133,7 +133,7 @@ function Hero() {
           <W d={0.44}><span className="grad">not the house.</span></W>
         </h1>
         <motion.p className="lead" style={{ margin: '26px auto 0', textAlign: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8, ease }}>
-          Clashy is a PvP trading game on Solana. Quick match a rival, one coin gets rolled, you pick long or short, best move in 60 seconds wins. Duels, royales, rooms and week-long clan wars.
+          Clashy is a PvP trading game on Solana. Open a challenge or take someone's, one coin gets rolled, you pick long or short, best move in 60 seconds wins. Duels, Royales and clan wars.
         </motion.p>
         <motion.div className="hero-cta" style={{ justifyContent: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.8, ease }}>
           <a className="cta" href="#race">Race two coins now <span className="cta-arrow"><Arrow /></span></a>
@@ -175,10 +175,10 @@ function Ticker() {
 
 /* ───────── how a duel works: dark, pinned; step list fills as you scroll ───────── */
 const STEPS = [
-  { tab: 'Match', art: 'tile-duel.png', t: 'Quick match. One coin.', b: 'You get matched with a rival and MagicBlock VRF rolls one coin for both of you. Pick long or short and your leverage.', shot: 'match-pick', glow: '#5B6CFF' },
-  { tab: 'Duel', art: 'vs.png', t: 'Sixty seconds. Live.', b: 'Both lines race from 0% on the same clock. Your health bar drains as you get close to your knockout line.', shot: 'duel', glow: '#F0468C' },
+  { tab: 'Match', art: 'tile-duel.png', t: 'One challenge. One coin.', b: 'Take a rival\'s open challenge and MagicBlock VRF rolls one coin for both of you. Pick long or short and your leverage.', shot: 'match-pick', glow: '#5B6CFF' },
+  { tab: 'Duel', art: 'vs.png', t: 'Sixty seconds. Live.', b: 'Both lines race from 0% on the same clock. With leverage, a big enough move against you hits your knockout line.', shot: 'duel', glow: '#F0468C' },
   { tab: 'Win', art: 'win-trophy.png', t: 'Best % takes the pot.', b: 'Touch your knockout line and you are out. Survive and beat their move at the bell, and the pot is yours.', shot: 'result-win', glow: '#FFC94A' },
-  { tab: 'Climb', art: 'crown.png', t: 'Climb the season.', b: 'Every ranked win moves you up ten tiers, Exit Liquidity to The House, with medals for the top of every season.', shot: 'ranks', glow: '#30D158' },
+  { tab: 'Climb', art: 'crown.png', t: 'Climb the season.', b: 'Points from settled clashes move you up ten ranks, from Rookie to Legend.', shot: 'ranks', glow: '#30D158' },
 ];
 function How() {
   const wide = useIsWide();
@@ -258,18 +258,18 @@ function How() {
 /* ───────── games rail: every game, its clay piece and the real screen (or a clip) ───────── */
 type Game = { k: string; who: string; t: string; b: string; c: string; art: string; loop?: string; clip?: string; shot?: string; live: boolean };
 const RAIL: Game[] = [
-  { k: 'Knockout duel', who: '1 v 1 · quick match · 60 s', t: 'One coin. One winner.', b: 'Matched in seconds. VRF rolls one coin for both of you. Long or short, survive the knockout line.', c: '#5B6CFF', loop: 'tile-duel-loop', art: 'tile-duel.png', clip: 'duel', live: true },
-  { k: 'Double or Nothing', who: 'After any win', t: 'Let it ride.', b: 'Roll the whole pot into the next duel. ×2, ×4, ×8… one loss ends the streak.', c: '#FFC94A', art: 'tile-double.png', shot: 'result-win', live: true },
-  { k: 'Royale', who: '5–20 players · 10 s rounds', t: 'Last one standing.', b: 'Up or down every 10 seconds. The whole screen is the button. Wrong call costs a heart.', c: '#F0468C', loop: 'tile-royale-loop', art: 'tile-royale.png', clip: 'royale', live: true },
-  { k: 'Diamond Hands', who: 'Hold as long as you dare', t: 'Sell before it catches you.', b: 'Buy with leverage and hold. A knockout trails your peak. Your score is what you sell at.', c: '#5AC8FA', loop: 'tile-diamond-loop', art: 'tile-diamond.png', clip: 'diamond', live: true },
-  { k: 'Draw the line', who: '3–10 players', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#B49BFF', loop: 'tile-line-loop', art: 'tile-line.png', clip: 'line', live: true },
-  { k: 'Ranked', who: 'Any game · ten ranks', t: 'The queue picks the game.', b: 'The queue rolls Knockout, Draw the line or Royale. Climb from Exit Liquidity to The House.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: true },
-  { k: 'Daily Cup', who: 'Everyone · one run a day', t: 'One coin. One shot.', b: 'The coin of the day for everyone. One scored run. New cup at 00:00 UTC.', c: '#FF8A4C', loop: 'tile-cup-loop', art: 'tile-cup.png', shot: 'cup', live: true },
-  { k: 'Coin clash', who: '1 v 1 · each picks a coin', t: 'Your coin vs theirs.', b: 'You pick any coin, they pick theirs. Best % in 60 seconds takes the pot.', c: '#AEB6FF', art: 'ko-burst.png', shot: 'clash', live: true },
-  { k: 'Clan Skirmish', who: 'Clan vs clan · best of 5', t: 'Make the clan\'s call.', b: 'A coin is rolled each round. Your clan goes long or short. First clan to 3 rounds wins.', c: '#FF8A4C', art: 'crest-flame.png', shot: 'skirmish', live: true },
-  { k: 'Clan Chest', who: 'Trade as a group', t: 'The pot moves by vote.', b: 'Anyone proposes a trade on the clan pot. The clan votes. The captain executes it live.', c: '#FFD66B', art: 'crown.png', shot: 'chest', live: true },
-  { k: 'Clan war', who: 'Clan vs clan · one week', t: 'Bring the group chat.', b: 'Every coin is a tile on the map. Beat the other clan on it to own it.', c: '#30D158', art: 'clan-banner.png', shot: 'war', live: false },
-  { k: 'Bounty', who: 'Open · one week', t: 'Put a price on your head.', b: 'Stake a reward on your week. Hunters pay to try and beat it.', c: '#5AC8FA', art: 'tile-bounty.png', shot: 'bounty', live: false },
+  { k: 'Knockout duel', who: '1 v 1 · open challenge · 60 s', t: 'One coin. One winner.', b: 'Take an open challenge. VRF rolls one coin for both of you. Long or short, survive the knockout line.', c: '#5B6CFF', loop: 'tile-duel-loop', art: 'tile-duel.png', clip: 'duel', live: true },
+  { k: 'Double or Nothing', who: 'Practice game · 15 s calls', t: 'Let it ride.', b: 'Fifteen-second calls at nearly 2×. Keep calling right to keep the streak.', c: '#FFC94A', art: 'tile-double.png', shot: 'result-win', live: true },
+  { k: 'Royale', who: '2–16 players · 10 s rounds', t: 'Last one standing.', b: 'Up or down every 10 seconds. The whole screen is the button. Wrong call costs a heart.', c: '#F0468C', loop: 'tile-royale-loop', art: 'tile-royale.png', clip: 'royale', live: true },
+  { k: 'Diamond Duel', who: 'Practice game · vs Clashy Bot', t: 'Sell before it catches you.', b: 'Hold a leveraged long longer than the bot, and sell higher.', c: '#5AC8FA', loop: 'tile-diamond-loop', art: 'tile-diamond.png', clip: 'diamond', live: true },
+  { k: 'Draw the line', who: 'Planned · clip from an earlier build', t: 'Draw the next minute.', b: 'Trace where the price goes. The real price draws over everyone. Closest line wins.', c: '#B49BFF', loop: 'tile-line-loop', art: 'tile-line.png', clip: 'line', live: false },
+  { k: 'Ranked', who: 'Planned · clip from an earlier build', t: 'The queue picks the game.', b: 'A ranked queue that picks the mode for you. Today rank points come from settled clashes.', c: '#30D158', art: 'rank-10.png', clip: 'ranked', live: false },
+  { k: 'Weekly Cup', who: 'Everyone · resets Monday 00:00 UTC', t: 'Top three take the podium.', b: 'Ranked by stock profit plus clash winnings this week, read from the chain.', c: '#FF8A4C', loop: 'tile-cup-loop', art: 'tile-cup.png', shot: 'cup', live: true },
+  { k: 'Coin clash', who: 'Practice game · 60 s', t: 'Your coin vs theirs.', b: 'Two coins head to head for 60 seconds. Call the one that moves more.', c: '#AEB6FF', art: 'ko-burst.png', shot: 'clash', live: true },
+  { k: 'Clan Skirmish', who: 'Planned · screen from an earlier build', t: 'Make the clan\'s call.', b: 'A coin is rolled each round. Your clan goes long or short. First clan to 3 rounds wins.', c: '#FF8A4C', art: 'crest-flame.png', shot: 'skirmish', live: false },
+  { k: 'Clan Chest', who: 'Trade as a group · on devnet', t: 'The pot moves by vote.', b: 'Any member with shares proposes a trade on the clan pot. The clan votes. The captain executes it.', c: '#FFD66B', art: 'crown.png', shot: 'chest', live: true },
+  { k: 'Clan war', who: 'Clan vs clan · on devnet', t: 'Bring the group chat.', b: 'Both captains stake from their chests. The better return from closed trades in the window takes the pot.', c: '#30D158', art: 'clan-banner.png', shot: 'war', live: true },
+  { k: 'Bounty', who: 'Planned · screen from an earlier build', t: 'Put a price on your head.', b: 'Stake a reward on your week. Hunters pay to try and beat it.', c: '#5AC8FA', art: 'tile-bounty.png', shot: 'bounty', live: false },
 ];
 function RailCard({ c }: { c: Game }) {
   return (
@@ -279,7 +279,7 @@ function RailCard({ c }: { c: Game }) {
           {c.loop ? <ClayLoop name={c.loop} /> : <img src={A(c.art)} alt="" width={72} height={72} loading="lazy" decoding="async" />}
         </motion.div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span className={`pill ${c.live ? 'pill-live' : 'pill-soon'}`}>{c.live ? <><span className="dot" />Playable now</> : 'At launch'}</span>
+          <span className={`pill ${c.live ? 'pill-live' : 'pill-soon'}`}>{c.live ? <><span className="dot" />Playable now</> : 'Planned'}</span>
           <div className="gcard-k" style={{ marginTop: 6 }}>{c.k}</div>
         </div>
       </div>
@@ -307,7 +307,7 @@ function Rail() {
     <div className="rail-intro">
       <span className="kicker">The games</span>
       <h2 className="h-l" style={{ marginTop: 14 }}>Twelve ways to<br />beat someone.</h2>
-      <p className="lead" style={{ marginTop: 18 }}>Every card is the real app: clips recorded from it, playing on live prices. Ten are playable today as practice.</p>
+      <p className="lead" style={{ marginTop: 18 }}>Clips and screens were recorded from the app on live prices, some from earlier builds. Eight are playable today, as practice or on devnet in test USDC; four are planned.</p>
     </div>
   );
   if (!wide) {
@@ -335,7 +335,7 @@ function Gameplay() {
   const items = [
     { clip: 'duel', t: 'Knockout duel', s: 'Coin roll → VS → live race' },
     { clip: 'royale', t: 'Royale', s: 'The whole screen is the button' },
-    { clip: 'diamond', t: 'Diamond Hands', s: 'Hold, then sell before the knockout' },
+    { clip: 'diamond', t: 'Diamond Duel', s: 'Hold, then sell before the knockout' },
   ];
   return (
     <section className="sec" id="play" style={{ paddingTop: 110 }}>
@@ -343,7 +343,7 @@ function Gameplay() {
         <div className="sec-head" style={{ alignItems: 'center', textAlign: 'center' }}>
           <Reveal><span className="kicker">Recorded from the app</span></Reveal>
           <Reveal delay={0.05}><h2 className="h-l">No mockups.<br /><span className="grad">This is the game.</span></h2></Reveal>
-          <Reveal delay={0.1}><p className="lead" style={{ margin: '0 auto' }}>Every clip is the Clashy app running on live Coinbase prices. Practice is free today; real pots open on Solana mainnet at launch.</p></Reveal>
+          <Reveal delay={0.1}><p className="lead" style={{ margin: '0 auto' }}>Every clip was recorded from the Clashy app on live prices. Practice is free today; on-chain clashes run on Solana devnet in test USDC, and real pots wait for mainnet.</p></Reveal>
         </div>
         <div className="play-row">
           {items.map((it, k) => (
@@ -362,19 +362,19 @@ function Gameplay() {
 /* ───────── real fights: how a real-money game runs and settles ───────── */
 function RealFights() {
   const steps = [
-    { n: '01', t: 'Pick your pot', b: 'Set a pot range or go all in. Your stake goes into a Solana escrow before the game starts.', art: 'coins-pile.png' },
-    { n: '02', t: 'One coin, rolled', b: 'You get matched, and MagicBlock VRF rolls the coin for both of you. Nobody chooses it.', art: 'vs.png' },
+    { n: '01', t: 'Pick your stake', b: 'Open a challenge or take one. Your stake goes into a Solana escrow before the game starts.', art: 'coins-pile.png' },
+    { n: '02', t: 'One coin, rolled', b: 'Once both stakes are in, MagicBlock VRF rolls the coin for both of you. No player chooses it.', art: 'vs.png' },
     { n: '03', t: 'Sealed picks, live fight', b: 'Long or short stays sealed inside MagicBlock\'s private rollup until both of you lock. Then the rollup scores the duel live, every second.', art: 'ko-burst.png' },
-    { n: '04', t: 'Settled on Solana', b: 'The winner takes the pot minus 3%. The result is committed to Solana with a receipt anyone can check.', art: 'win-trophy.png' },
+    { n: '04', t: 'Settled on Solana', b: 'The winner takes the pot minus 3%. A Magic Action pays it on Solana as the result comes home, and every step is a transaction anyone can open.', art: 'win-trophy.png' },
   ];
-  const receipt = ['Entry fill', 'Exit fill', 'Size and leverage', 'Trading P&L', 'Venue fees', 'Funding', 'Pot (after 3% rake)', 'Net'];
+  const receipt = ['Coin (VRF roll)', 'Entry price', 'Exit price', 'Side and leverage', 'P&L %', 'Rake (3%)', 'Pot', 'Payout'];
   return (
     <section className="sec realf" id="real">
       <div className="wrap">
         <div className="sec-head">
           <Reveal><span className="kicker">Real fights</span></Reveal>
           <Reveal delay={0.05}><h2 className="h-l">Real pots.<br /><span className="grad">Real receipts.</span></h2></Reveal>
-          <Reveal delay={0.1}><p className="lead">How a money game runs once Clashy is live on Solana mainnet. Today the same games are free practice on live prices.</p></Reveal>
+          <Reveal delay={0.1}><p className="lead">How an on-chain clash runs today on Solana devnet, in test USDC with no value. Real money waits for mainnet.</p></Reveal>
         </div>
         <div className="realf-grid">
           <div className="realf-steps">
@@ -389,13 +389,13 @@ function RealFights() {
           </div>
           <Reveal delay={0.1}>
             <div className="receipt">
-              <div className="receipt-head"><span className="h-s">Game receipt</span><span className="pill pill-soon">On chain at launch</span></div>
-              <p className="xs" style={{ margin: '6px 0 14px' }}>Every game ends on a receipt built only from on-chain data. Fees, funding and rake are always shown, never folded into a nicer number.</p>
+              <div className="receipt-head"><span className="h-s">Game receipt</span><span className="pill pill-soon">Example layout</span></div>
+              <p className="xs" style={{ margin: '6px 0 14px' }}>A clash's result is built only from on-chain data: the coin, both prices, both calls, the rake and the payout, each with its transaction.</p>
               {receipt.map((r) => (
                 <div key={r} className="receipt-row"><span>{r}</span><span className="receipt-dash" /><span className="xs">tx link</span></div>
               ))}
               <div className="receipt-foot">
-                {['18+', 'Geofenced', 'Liquidation price shown before All-in', 'Daily loss limit', 'Free practice'].map((t) => <span key={t} className="chip-sm">{t}</span>)}
+                {['18+ at sign-in', 'Daily stake limit', 'Breaks you can\'t shorten', 'Ties refund, no fee', 'Free practice'].map((t) => <span key={t} className="chip-sm">{t}</span>)}
               </div>
             </div>
           </Reveal>
@@ -406,15 +406,15 @@ function RealFights() {
 }
 
 /* ───────── ranks: the ten degen tiers ───────── */
-const TIERS = ['Exit Liquidity', 'Paper Hands', 'Bagholder', 'Dip Buyer', 'Ape', 'Degen', 'Diamond Hands', 'Chad', 'Whale', 'The House'];
+const TIERS = ['Rookie', 'Saver', 'Starter', 'Steady', 'Investor', 'Analyst', 'Long-Term', 'Strategist', 'Expert', 'Legend'];
 function Ranks() {
   return (
     <section className="sec" id="ranks" style={{ paddingTop: 40 }}>
       <div className="wrap">
         <div className="sec-head" style={{ alignItems: 'center', textAlign: 'center' }}>
           <Reveal><span className="kicker">Ranked</span></Reveal>
-          <Reveal delay={0.05}><h2 className="h-l">From Exit Liquidity<br />to <span className="grad">The House.</span></h2></Reveal>
-          <Reveal delay={0.1}><p className="lead" style={{ margin: '0 auto' }}>Ten ranks. Ranked wins earn points, never bought. Reach the top and you are the house.</p></Reveal>
+          <Reveal delay={0.05}><h2 className="h-l">From Rookie<br />to <span className="grad">Legend.</span></h2></Reveal>
+          <Reveal delay={0.1}><p className="lead" style={{ margin: '0 auto' }}>Ten ranks. Points come only from settled clashes, never bought.</p></Reveal>
         </div>
         <div className="ranks">
           {TIERS.map((t, k) => (
@@ -499,7 +499,7 @@ function Race() {
               ) : null}
             </AnimatePresence>
             <motion.button className="btn btn-b" onClick={start} disabled={run === 'live'} whileTap={{ scale: 0.97 }} style={{ opacity: run === 'live' ? 0.5 : 1 }}>{run === 'live' ? 'Racing…' : run === 'done' ? 'Race again' : 'Start the race'}</motion.button>
-            {err ? <div className="xs" style={{ color: 'var(--dn)' }}>Price feed: {err}</div> : <div className="xs">Coinbase Exchange ticker, every second. No money, no sign-up. In the app, the other coin is picked by a real opponent.</div>}
+            {err ? <div className="xs" style={{ color: 'var(--dn)' }}>Price feed: {err}</div> : <div className="xs">Coinbase Exchange ticker, every second. No money, no sign-up. In an on-chain clash your rival is a real player; in practice it is Clashy Bot.</div>}
           </div>
           <div className="race-chart">
             <svg viewBox={`0 0 ${CW} ${CH}`} width="100%" height="100%" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0 }}>
@@ -547,10 +547,10 @@ function Statement() {
         <div>
           <Reveal><div className="clanwar-band"><ClayLoop name="clan-war-loop" /></div></Reveal>
           <Reveal><h2 className="statement-h">The house always wins.<br /><span className="grad">So we removed it.</span></h2></Reveal>
-          <Reveal delay={0.08}><p className="lead" style={{ marginTop: 24 }}>Casinos, perp exchanges and prediction apps put you against the house. In Clashy the other side is a person you can see: your friend, your rival, the other clan.</p></Reveal>
+          <Reveal delay={0.08}><p className="lead" style={{ marginTop: 24 }}>Casinos, perp exchanges and prediction apps put you against the house. In a Clashy duel, Royale or clan war the other side is a person: your friend, your rival, the other clan. Clashy only takes a 3% rake. Practice games are against Clashy Bot.</p></Reveal>
           <Reveal delay={0.14}>
             <ul className="vs-list">
-              {[['Who you play', 'A person, never the house'], ['Your coin', 'Any coin, on both sides'], ['Your crew', 'Duels, clans, wars and bounties built in'], ['Speed', 'Every tick on a MagicBlock Ephemeral Rollup']].map(([k, v]) => <li key={k}><span className="xs">{k}</span><span>{v}</span></li>)}
+              {[['Who you play', 'A person on chain; Clashy Bot in practice'], ['Your coin', 'Rolled by MagicBlock VRF, same for both'], ['Your crew', 'Duels, squads, clans and wars built in'], ['Speed', 'Every live tick of a clash on a MagicBlock rollup']].map(([k, v]) => <li key={k}><span className="xs">{k}</span><span>{v}</span></li>)}
             </ul>
           </Reveal>
         </div>
@@ -564,9 +564,9 @@ function Statement() {
 function Tech() {
   const t = [
     { t: 'Private picks in a TEE', b: 'Your long or short is locked inside MagicBlock\'s Private Ephemeral Rollup, readable only by you until your rival locks too. One free, instant move.' },
-    { t: 'Verifiable randomness', b: 'The coin in every duel and Royale comes from MagicBlock VRF, and only its oracle can answer, so nobody can rig a room.' },
-    { t: 'The rollup referees', b: 'A MagicBlock crank checks every live clash each second against MagicBlock\'s real-time oracle. Knockouts and bells land even if both of you close the app.' },
-    { t: 'Paid in the same step', b: 'When a clash ends, a Magic Action pays the winner on Solana in the same step that brings the result home. No settle button.' },
+    { t: 'Verifiable randomness', b: 'The coin in every duel and Royale comes from MagicBlock VRF, and only its oracle can answer, so no player can rig a room. One admin key can still upgrade the program; a multisig comes before mainnet.' },
+    { t: 'The rollup referees', b: 'A MagicBlock crank checks every live clash each second against the live price (MagicBlock\'s oracle for SOL, BTC and ETH). Knockouts and bells land even if both of you close the app.' },
+    { t: 'Paid in the same step', b: 'When a clash ends, a Magic Action pays the winner on Solana in the same step that brings the result home. If it ever fails, the app settles by hand.' },
     { t: 'USDC in, no SOL', b: 'Sign in with email or Google and Privy makes your wallet. It holds USDC only: Clashy pays every network fee, and nothing pops up mid-duel.' },
   ];
   return (
@@ -575,7 +575,7 @@ function Tech() {
         <div className="sec-head">
           <Reveal><span className="kicker">Under the hood</span></Reveal>
           <Reveal delay={0.05}><h2 className="h-l">Real time, on Solana.</h2></Reveal>
-          <Reveal delay={0.1}><p className="lead">Duels, Royales, clan chests and clan wars run on Solana devnet with MagicBlock's Ephemeral Rollups, VRF, cranks, oracle and Magic Actions, in test USDC. Mainnet comes next; the practice games run on live prices with no money.</p></Reveal>
+          <Reveal delay={0.1}><p className="lead">Duels and Royales run on Solana devnet with MagicBlock's Private Ephemeral Rollup, VRF, cranks, oracle and Magic Actions, in test USDC; clan chests and wars run on devnet too. Nothing is on mainnet yet; the practice games run on live prices with no money.</p></Reveal>
         </div>
         <div className="tech">
           {t.map((x, k) => <Reveal key={x.t} delay={k * 0.07}><div><span className="num">0{k + 1}</span><h3 className="h-s">{x.t}</h3><p className="sm">{x.b}</p></div></Reveal>)}

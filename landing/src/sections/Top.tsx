@@ -95,7 +95,7 @@ export function Hero() {
           the <Tile src="/art/crown.webp" bg="#FFC94A" delay={0.45} /> house.
         </h1>
         <motion.p className="hero-sub" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}>
-          Clashy turns trading into a game. The public beta has 150 games on live prices, free to play with practice money.
+          Clashy turns trading into a game. The beta has 150 games on live prices, free to play with practice money.
           Real-money duels against people come later.
         </motion.p>
         <motion.div className="hero-ctas" initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.6 }}>

@@ -37,12 +37,12 @@ export function ArenaSection() {
 // Banner art is clay on black; mix-blend lighten lets each card's tint show through the black.
 const MODES: { art: string; name: string; line: string; tint: string; tag: string; video?: string }[] = [
   { art: 'duel', name: 'Knockout duel', line: 'One rolled coin. Long or short. First KO loses.', tint: '#1a1c4a', tag: 'Free practice above' },
-  { art: 'royale', name: 'Royale', line: 'Up to 50 players. The worst P&L is out each round.', tint: '#3a1230', tag: 'Coming' },
-  { art: 'diamond', name: 'Diamond hands', line: 'Hold longer than everyone. Sell before the dump.', tint: '#10284a', tag: 'Coming' },
-  { art: 'double', name: 'Double or nothing', line: 'Won? Let the whole pot ride into the next duel.', tint: '#3a2a0c', tag: 'Coming' },
-  { art: 'war', name: 'Clan war', line: "Your clan's chest against theirs, all week.", tint: '#2a1440', tag: 'Coming', video: 'clan-war-loop' },
+  { art: 'royale', name: 'Royale', line: 'Up to 16 players. Call up or down each round; a wrong call costs a heart.', tint: '#3a1230', tag: 'On devnet' },
+  { art: 'diamond', name: 'Diamond duel', line: 'Hold longer than the bot. Sell higher.', tint: '#10284a', tag: 'Practice' },
+  { art: 'double', name: 'Double or nothing', line: 'Fifteen-second calls at nearly 2×.', tint: '#3a2a0c', tag: 'Practice' },
+  { art: 'war', name: 'Clan war', line: "Your clan's chest against theirs. The better return takes the pot.", tint: '#2a1440', tag: 'On devnet', video: 'clan-war-loop' },
   { art: 'line', name: 'Draw the line', line: 'Draw the next minute. The closest line wins.', tint: '#1a1c4a', tag: 'Coming' },
-  { art: 'cup', name: 'Daily cup', line: 'One run, any time today. Top 20% get paid.', tint: '#3a2a0c', tag: 'Coming' },
+  { art: 'cup', name: 'Weekly cup', line: 'Stock profit plus clash winnings this week. Top three take the podium.', tint: '#3a2a0c', tag: 'In the app' },
   { art: 'bounty', name: 'Bounty', line: "Beat a top player's week and take the bounty.", tint: '#3a1230', tag: 'Coming' },
 ]
 
@@ -76,9 +76,9 @@ export function Break() {
           <span>Fight your friends.</span>
         </h2>
         <p>
-          Trading arcades put you against a house pool that keeps your loss. Clashy's real-money duels, coming later, put a person
-          on the other side: the USDC pot sits in escrow on Solana and the winner takes it, minus a small rake. Until then the
-          public beta is free, on practice money.
+          Trading arcades put you against a house pool that keeps your loss. Clashy's duels put a person
+          on the other side: the USDC pot sits in escrow on Solana and the winner takes it, minus a 3% rake. They run on Solana
+          devnet today in test USDC; real money comes later. The beta is free, on practice money.
         </p>
       </div>
       <div className={`modes${reduce ? ' still' : ''}`}>
@@ -104,7 +104,7 @@ export function Join() {
           Make the first move.
         </motion.h2>
         <motion.div className="join-side" {...r}>
-          <p>The public beta is open at play.clashy.fun: 150 games on live prices, free with practice money. Real-money duels come later, and apps for iOS, Android and the Solana dApp Store are on the way.</p>
+          <p>The beta will open at play.clashy.fun (not live yet): 150 games on live prices, free with practice money. Real-money duels come later, and apps for iOS, Android and the Solana dApp Store are on the way.</p>
           <a className="btn btn-primary" href="https://play.clashy.fun">
             Play free
             <span className="arrow" aria-hidden="true">

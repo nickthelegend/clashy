@@ -2,11 +2,16 @@
 
 **Status:** pre-mainnet internal audit. **Not a substitute for a paid third-party audit before real money.**
 
+**Not covered (added after this audit, Nov 25):** MagicBlock cranks (`tick_duel`, `tick_round`), the keeper PDA, Magic
+Action settlement, private picks on the TEE rollup and their permissions, session-key instructions, MagicBlock oracle
+reads (including `oracle_exponent`, which infers the exponent's sign), `admin_undelegate` and the 0.5% Stash fee. None
+of these has an audit finding yet.
+
 **Scope:**
 
 | Area | Files |
 |---|---|
-| Anchor program (all 3,498 lines) | `chain/programs/clashy/src` |
+| Anchor program (all 3,498 lines on Nov 19; 4,546 lines on Nov 25, see Not covered) | `chain/programs/clashy/src` |
 | MagicBlock links (delegation, commits, VRF, price feeds, crank) | `chain/scripts/crank.ts`, `chain/tests/common.ts` |
 | Sponsor relay | `chain/scripts/sponsor.ts` |
 | Social server | `server/` |
@@ -24,8 +29,8 @@
 - **Reviewers:**
   - Three independent reviewers, read-only, with no access to keys or `.env` files: program money paths, MagicBlock links, and off-chain services.
   - Each finding was re-checked against the code before fixing.
-  - The MagicBlock reviewer also read the `ephemeral-rollups-sdk` 0.17 macro sources to confirm the VRF identity check.
-- **Tests after the fixes:**
+  - The MagicBlock reviewer also read the `ephemeral-rollups-sdk` 0.17 macro sources to confirm the VRF identity check. (The program moved to SDK `=0.18.0` on Nov 25.)
+- **Tests after the fixes (Nov 19):**
 
 | Suite | Result |
 |---|---|
@@ -41,7 +46,7 @@
 |---|---|---|---|---|
 | Critical | 4 | 4 | 0 | 0 |
 | High | 6 | 3 | 3 | 0 (the 3 mitigated have follow-ups) |
-| Medium | 13 | 6 | 1 | 6 |
+| Medium | 12 | 6 | 2 | 4 |
 | Low / Info | 20+ | 6 | 2 | the rest (listed) |
 
 **Gate for mainnet:** every row marked **Open** at High or Medium below is fixed and re-audited, plus a paid external audit.
@@ -56,7 +61,7 @@
 | P4 | Medium | An outsider with no shares could keep a 7-day proposal open and block withdrawals. | **Fixed (main path).**<br>• `propose` requires `member.shares > 0`.<br>• Open: a per-member vote lock instead of the clan-wide lock. |
 | P5 | Medium | A declared war that's never accepted freezes withdrawals. | **Open.** Add an `accept_by` deadline; anyone cancels after it. |
 | P6 | Medium | Breaks and daily limits aren't checked on chest deposits or wars. | **Open.** Call `check_stake` in `deposit_chest`, and in declare/accept. |
-| P7 | Medium | `start_duel` on Solana could strand a duel LIVE if a coin pointed at an oracle readable there. Latent today. | **Open.** Must be fixed before switching coins to oracle accounts: add a `delegated` flag and a LIVE-on-Solana timeout refund. |
+| P7 | Medium | `start_duel` on Solana could strand a duel LIVE if a coin pointed at an oracle readable there. | **Mitigated by delegation, not by code (Nov 25).** SOL, BTC and ETH were switched to MagicBlock oracle accounts on devnet on Nov 25. Those accounts are delegated on Solana (owner `DELeGG…`), so `read_price` there returns `FeedInvalid`. **Open:** a `delegated` flag and a LIVE-on-Solana timeout refund. |
 | P8–P12 | Low | Other issues, all **Open** (tracked):<br>• the treasury mint isn't validated;<br>• rake is read at settle, not at creation;<br>• the global `auth` signer is passed to Orca;<br>• `initialize` can be front-run;<br>• one closed USDC account blocks settlement. | **Open** |
 
 ## MagicBlock links
@@ -64,7 +69,7 @@
 | # | Severity | Finding | Status |
 |---|---|---|---|
 | M-C1 | **Critical** | **One key controlled everything.** The crank's always-online key was also the admin and program-upgrade key. Compromising the crank machine meant upgrading the program and draining every vault, or choosing every price. | **Fixed.**<br>• The program refuses `crank == authority` in `initialize` and `update_config` (`CrankIsAdmin`).<br>• The crank has its own key (`CLASHY_CRANK`; locally `.keys/local-crank.json`). Setup moved the live config onto it, verified on the local chain.<br>• Role-based key loading (`CLASHY_ROLE`): the crank process holds only the crank key and no longer runs admin setup; the relay holds only the sponsor key.<br>• `deploy.sh` refuses when the two keys are the same. |
-| M-H1 | **High** | **The caller picks the exit price.**<br>• `check_duel` and `resolve_round` score at whatever price is live when called.<br>• A modified client can skip knockout checks and call at a favourable second after the bell. | **Mitigated (Nov 19).**<br>• The crank runs a **keeper** that checks every live duel and resolves every due Royale round every 2 s with its own key, so knockouts and bells land on time whoever is online.<br>• Both devices also check from the bell.<br>• **Open, before mainnet:** a price sampled at the bell (ring of `(ts, price)` in `PriceFeed`). |
+| M-H1 | **High** | **The caller picks the exit price.**<br>• `check_duel` and `resolve_round` score at whatever price is live when called.<br>• A modified client can skip knockout checks and call at a favourable second after the bell. | **Mitigated (Nov 19).**<br>• Since Nov 25 the primary path is a MagicBlock crank on the rollup that ticks every live game every 1,000 ms (`TICK_MILLIS`). `chain/scripts/crank.ts` is the backup: it checks a cranked game only 10 s after its bell (`BACKUP_SECS`), and still checks games without a crank every 2 s with its own key.<br>• Both devices also check from the bell.<br>• **Open, before mainnet:** a price sampled at the bell (ring of `(ts, price)` in `PriceFeed`). |
 | M-H2 | **High** | **Funds can get stuck on the rollup** if the crank stalls past 15 s, if a lobby is never started, or if the validator changes. | **Fixed (Nov 19).**<br>• New permissionless rollup instructions `void_duel` and `void_tournament`. 120 s after a bell that nobody could finish (`VOID_GRACE_SECS`), anyone ends the game and commits it back to Solana.<br>• A voided duel settles as a draw: both stakes refunded, no rake (`tests/void.test.ts`). A voided Royale settles to the players on the most lives.<br>• The keeper and the duel screen both call it.<br>• The tournament lobby is fixed too (P3).<br>• **Open:** an admin `undelegate_feed` for a validator change. |
 | M-M1 | Medium | **Price feeds aren't sanity-checked.**<br>• Pushed prices have no per-update bound and no source timestamp.<br>• 15 s of staleness is tolerated on the rollup. | **Open.**<br>• `push_price(price, source_ts)`, monotonic and fresh.<br>• A move cap.<br>• A rollup age of about 3 s.<br>• For stocks, MagicBlock's oracle or a median of sources. |
 | M-M2 | Medium | **Royale calls can wait for the price.** They can be changed until the bell with the price visible. | **Open.** Close calls at mid-round, or use commit-reveal. |
@@ -117,7 +122,12 @@
 | On-chain end-to-end (`tests/clashy.test.ts`: duel, challenge board, VRF, squad chest and war, Royale) | **5/5** |
 | Relay (`tests/sponsor.test.ts`, with the new compute-budget, rent-farming and wrong-address cases) | **5/5** |
 | Social server, SQLite and Postgres 16 | **4/4 each** |
-| Stuck duel voided after the grace, both refunded, no rake (`tests/void.test.ts`) | **1/1** | On-chain, the end-to-end suite runs the full duel, VRF, squad chest and wars, and Royale flows. The fixes were checked in the following ways:
+| Stuck duel voided after the grace, both refunded, no rake (`tests/void.test.ts`) | **1/1** |
+
+Latest local runs (Nov 25, not an audit re-run): 13/13 unit tests, clashy 5/5, perps 3/3, brief 9/9, void 1/1,
+magicblock 4/4 (`chain/.localnet/run-all.log`, `suite-*.log`, `c-vrf.log`).
+
+On-chain, the end-to-end suite runs the full duel, VRF, squad chest and wars, and Royale flows. The fixes were checked in the following ways:
 - **Crank / admin separation:** the live config moved from the admin key to the crank key through `update_config`, and the crank pushes with its own key.
 - **Relay defences:** each has a test.
 - **Pick deadlines:** checked by code review only. A deadline test would have to wait out the real 10-minute window. Add a clock-warp test in the program unit tests before mainnet.

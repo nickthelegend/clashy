@@ -27,7 +27,7 @@ export function How() {
           <br />
           Duel it out.
         </h2>
-        <p>Three moves, one minute. The screens below are the app design; prices are live. In the beta no duel uses real money.</p>
+        <p>Three moves, one minute. The screens below are design samples with sample players; only the prices are live. In the beta no duel uses real money.</p>
       </div>
       <div className="how-track" ref={ref}>
         <div className="how-sticky">
@@ -90,14 +90,14 @@ export function How() {
 
 function ScreenPick() {
   const people = [
-    ['nova', 'nova', '61% win'],
-    ['shark', 'rexx', '49% win'],
-    ['panda', 'bao', '57% win'],
-    ['wizard', 'merl', '52% win'],
+    ['nova', 'nova', 'sample player'],
+    ['shark', 'rexx', 'sample player'],
+    ['panda', 'bao', 'sample player'],
+    ['wizard', 'merl', 'sample player'],
   ]
   return (
     <div className="ps-pad">
-      <div className="ps-h">Find a duel</div>
+      <div className="ps-h">Find a duel · sample</div>
       <div className="ps-q">⚡ Quick match</div>
       {people.map(([a, n, w]) => (
         <div className="ps-row" key={n}>
@@ -129,11 +129,11 @@ function ScreenDecide() {
         <span>▼ Short</span>
       </div>
       <div className="ps-lev">
-        <span>250×</span>
-        <span className="on">500×</span>
-        <span>1000×</span>
+        <span>10×</span>
+        <span className="on">25×</span>
+        <span>50×</span>
       </div>
-      <span className="ps-note">0:08 left to pick · no pick = long</span>
+      <span className="ps-note">0:08 left to pick · sample</span>
     </div>
   )
 }
