@@ -1,5 +1,8 @@
 # Clashy: the plan to go public (Nov 21, 2026)
 
+> **Planning document, not a status report.** What is built and tested is listed in the README, `chain/TESTING.md` and
+> `docs/MAGICBLOCK.md`; anything described here and not listed there is not built yet.
+
 Written for Nick by Claude, acting as CEO, CTO, CFO and CMO. Read it at 5 pm; the decisions you have to make are at the
 bottom.
 

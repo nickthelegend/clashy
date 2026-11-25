@@ -1,5 +1,8 @@
 # Clashy mini-games: high risk, real trades, real money
 
+> **Planning document, not a status report.** What is built and tested is listed in the README, `chain/TESTING.md` and
+> `docs/MAGICBLOCK.md`; anything described here and not listed there is not built yet.
+
 Status: design (Nov 15 2026), from Nick: high risk where you can lose everything ("go all in or don't go in"), the
 player picks the pot, every trade is real with real profit math, and the games are crazy addictive and built on
 what's trending (fresh launches). Venues and money layers: [REAL-TRADES.md](REAL-TRADES.md). Code starts Nov 20.

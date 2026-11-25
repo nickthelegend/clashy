@@ -1,5 +1,8 @@
 # Clashy game design
 
+> **Planning document, not a status report.** What is built and tested is listed in the README, `chain/TESTING.md` and
+> `docs/MAGICBLOCK.md`; anything described here and not listed there is not built yet.
+
 Status: design (Nov 15 2026), for Nick's ask: "the best game design possible, with cool matchmaking". Builds on
 [REAL-TRADES.md](REAL-TRADES.md) (venues and money) and [MINI-GAMES.md](MINI-GAMES.md) (the game list).
 Decided (Nick, Nov 15, clashy.md Q8): build and rehearse real trades on a mainnet fork, then deploy the program on

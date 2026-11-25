@@ -1,5 +1,8 @@
 # Clashy end-to-end test plan
 
+> **Planning document, not a status report.** What is built and tested is listed in the README, `chain/TESTING.md` and
+> `docs/MAGICBLOCK.md`; anything described here and not listed there is not built yet.
+
 Every item is run in a real browser against the **production web build** (`npx expo export -p web`, served by
 `app/scripts/serve-web.mjs` on :8099) on the local MagicBlock stack (Solana :8999, rollup :7799, MagicBlock VRF
 oracle), with the price crank and the sponsor relay running. The player is Nick's Privy wallet (email sign-in).

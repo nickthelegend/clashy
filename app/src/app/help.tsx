@@ -316,7 +316,7 @@ export default function Help() {
         facts={[{ text: 'Your own wallet' }, { text: 'USDC only', color: '#5AC8FA' }, { text: 'Clashy never sees your key', color: C.up }]}
         faqs={[
           { q: 'Where is my money?', a: <A>In your own wallet on Solana, made for you when you sign in with email or Google. No seed phrase to write down, and it only ever needs USDC.</A> },
-          { q: 'What happens to my stake during a game?', a: <A>It waits in the Clashy program's escrow until the game settles, then goes straight to the winner, or back to you on a tie or refund. Nobody can take it out early, Clashy included.</A> },
+          { q: 'What happens to my stake during a game?', a: <A>It waits in the Clashy program's escrow until the game settles, then goes straight to the winner, or back to you on a tie or refund. The program has no instruction that lets anyone take it out early. One honest caveat for this devnet beta: a single admin key can still upgrade the program; a multisig comes before real money.</A> },
           { q: 'Can Clashy see or use my key?', a: <A>No. Your key lives with Privy, the wallet provider, and signs inside its own secure window. You can export it any time from Settings and use your wallet anywhere else.</A> },
           { q: 'Can I check all this myself?', a: <A>Yes. Every stake, payout and fee is a public Solana transaction. Your wallet page links each one to Solana Explorer.</A> },
         ]} />

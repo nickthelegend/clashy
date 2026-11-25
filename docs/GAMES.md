@@ -2,7 +2,7 @@
 
 Status: 100 games built Nov 20, 2026; 50 more on 11 new engines Nov 21. Every game is played with **practice money** (the Practice paper balance) on **live prices**
 (Phoenix and Pacifica perps marks, about 110 markets: crypto, memecoins, US stocks, gold, oil, FX; plus Jupiter data
-for pump.fun launches). Nothing is sent on chain. Games are against **Clashy Bot** (it picks at random, said plainly),
+for pump.fun launches). Nothing is sent on chain. Games are against **Clashy Bot** (it picks at random, except in Up/Down-style games where it always takes the other side, said plainly),
 seven bots (party games), or solo with a fixed payout priced from live volatility.
 
 Ideas: two Grok sessions (Expert mode; 140 ideas on Nov 20, 38 more on Nov 21) and research on what ships today
@@ -16,7 +16,7 @@ Every piece the games are drawn with is in one kit: see [GAME-KIT.md](GAME-KIT.m
 | Path | What |
 |---|---|
 | `app/src/games/types.ts` | `GameDef`, `EngineId`, categories |
-| `app/src/games/catalog.ts` | the 100 games |
+| `app/src/games/catalog.ts` | the 150 games |
 | `app/src/games/feed.ts` | the shared live feed (`useFeed`, `feed.mark/fresh/since/moving`), pools, names and logos |
 | `app/src/games/odds.ts` | volatility from ticks (`sigmaOf`), touch / stay odds, `payoutFor` (97% of fair), helpers |
 | `app/src/games/kit/` | the game kit: tokens, `GameApi`, round and market helpers, real past candles, charts, UI and screen pieces ([GAME-KIT.md](GAME-KIT.md)) |

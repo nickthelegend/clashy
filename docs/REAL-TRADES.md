@@ -1,5 +1,8 @@
 # Clashy with real trades: where the liquidity comes from
 
+> **Planning document, not a status report.** What is built and tested is listed in the README, `chain/TESTING.md` and
+> `docs/MAGICBLOCK.md`; anything described here and not listed there is not built yet.
+
 Status: design (Nov 15 2026). Program code starts at the Blitz kickoff (Nov 20). Nick asked for real trades on real
 liquidity instead of only oracle-settled duels, so Clashy is a product and not just a game.
 

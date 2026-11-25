@@ -267,7 +267,7 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     console.log(`  private duel on ${COINS[coin].symbol}: long 25x vs short 25x, entry ${settled.entryPrice} exit ${settled.exitPrice} winner ${settled.winner}; picks private until the start`);
   });
 
-  test('the keeper cannot be abused: ticking a duel that is not live does nothing, and only the admin delegates it', async () => {
+  test('the keeper cannot be abused: only the admin can create or delegate it', async () => {
     const outsider = Keypair.generate();
     await assert.rejects(
       programFor(outsider).methods.delegateKeeper().accountsPartial({ authority: outsider.publicKey, keeper: KEEPER }).rpc(),

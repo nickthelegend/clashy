@@ -1,20 +1,23 @@
-//! Clashy: PvP trading games on Solana, run on MagicBlock Ephemeral Rollups.
+//! Clashy: PvP trading games on Solana, run on MagicBlock's stack.
 //!
-//! - **Knockout duel (quick match / challenge):** both stakes escrowed in a vault PDA on Solana;
-//!   MagicBlock VRF rolls one coin for both players; long/short picks are sealed by commit-reveal;
-//!   the duel is delegated to the ER where it is scored against a live price with knockout checks,
-//!   then committed back and settled on Solana (rake, Elo, rank points).
-//! - **Clans:** a chest vault, proposals voted by deposit weight, captain-executed positions scored
-//!   on the oracle price (group trading).
+//! - **Knockout duel (open challenge):** both stakes escrowed in a USDC vault PDA on Solana; MagicBlock VRF rolls one
+//!   coin for both players. Picks are sealed either privately on MagicBlock's Private Ephemeral Rollup (`lock_pick`,
+//!   a Pick account readable only by its player until `start_private_duel`) or by commit-reveal on Solana. The duel is
+//!   delegated to the rollup and scored against a live price (MagicBlock's oracle for crypto) with knockout checks.
+//! - **Cranks and the keeper:** `start_*_cranked` / `start_private_duel` schedule a MagicBlock crank that runs
+//!   `tick_duel` / `tick_round` every second; the keeper PDA (a delegated fee payer) commits and undelegates finished
+//!   games, and a post-undelegate **Magic Action** runs `settle_duel` / `settle_tournament` on Solana (rake, Elo).
+//! - **Session keys:** `lock_pick_session` / `call_round_session` accept a MagicBlock session token for the player.
+//! - **Clans:** a chest vault, proposals voted by deposit weight, captain-executed positions scored on a Solana price.
 //! - **Clan war:** both clans escrow a war pot from their chests; the better return over the window wins.
-//! - **Tournaments:** an on-chain Royale. Entries escrowed; up/down calls and round resolution run
-//!   on the ER; the last players standing split the pot.
+//! - **Royale:** entries escrowed; up/down calls and round resolution run on the rollup; survivors split the pot.
+//! - **Stash:** USDC savings and tokenized-stock buys through Orca, with a 0.5% protocol fee to the treasury.
 //!
 //! Money is USDC (an SPL token, 6 decimals): every escrow, chest and pot is a token account owned
 //! by the program's `auth` PDA. Rent and fees are paid by a separate `payer` signer (the sponsor),
 //! so a player's wallet only ever needs USDC; vault rent goes back to whoever paid it.
 //!
-//! Prices come from Clashy `PriceFeed` accounts (crank-pushed, delegated to the ER) or MagicBlock
+//! Prices come from Clashy `PriceFeed` accounts (crank-pushed, delegated to the rollup) or MagicBlock
 //! pricing-oracle accounts; see `price.rs`.
 
 use anchor_lang::prelude::*;
