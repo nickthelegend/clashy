@@ -364,7 +364,7 @@ function RealFights() {
   const steps = [
     { n: '01', t: 'Pick your pot', b: 'Set a pot range or go all in. Your stake goes into a Solana escrow before the game starts.', art: 'coins-pile.png' },
     { n: '02', t: 'One coin, rolled', b: 'You get matched, and MagicBlock VRF rolls the coin for both of you. Nobody chooses it.', art: 'vs.png' },
-    { n: '03', t: 'Sealed picks, live fight', b: 'Long or short stays sealed (commit-reveal) until both of you lock. Then the duel moves to a MagicBlock rollup and is scored live.', art: 'ko-burst.png' },
+    { n: '03', t: 'Sealed picks, live fight', b: 'Long or short stays sealed inside MagicBlock\'s private rollup until both of you lock. Then the rollup scores the duel live, every second.', art: 'ko-burst.png' },
     { n: '04', t: 'Settled on Solana', b: 'The winner takes the pot minus 3%. The result is committed to Solana with a receipt anyone can check.', art: 'win-trophy.png' },
   ];
   const receipt = ['Entry fill', 'Exit fill', 'Size and leverage', 'Trading P&L', 'Venue fees', 'Funding', 'Pot (after 3% rake)', 'Net'];
@@ -563,9 +563,10 @@ function Statement() {
 /* ───────── tech ───────── */
 function Tech() {
   const t = [
-    { t: 'Ephemeral Rollups', b: 'Every duel and Royale runs on a MagicBlock rollup: live checks and knockouts in about 10 ms, then committed back and settled on Solana.' },
-    { t: 'Sealed picks', b: 'Your long or short is a hash on chain until both players lock in, then both reveal. Nobody copies your call.' },
+    { t: 'Private picks in a TEE', b: 'Your long or short is locked inside MagicBlock\'s Private Ephemeral Rollup, readable only by you until your rival locks too. One free, instant move.' },
     { t: 'Verifiable randomness', b: 'The coin in every duel and Royale comes from MagicBlock VRF, and only its oracle can answer, so nobody can rig a room.' },
+    { t: 'The rollup referees', b: 'A MagicBlock crank checks every live clash each second against MagicBlock\'s real-time oracle. Knockouts and bells land even if both of you close the app.' },
+    { t: 'Paid in the same step', b: 'When a clash ends, a Magic Action pays the winner on Solana in the same step that brings the result home. No settle button.' },
     { t: 'USDC in, no SOL', b: 'Sign in with email or Google and Privy makes your wallet. It holds USDC only: Clashy pays every network fee, and nothing pops up mid-duel.' },
   ];
   return (
@@ -574,7 +575,7 @@ function Tech() {
         <div className="sec-head">
           <Reveal><span className="kicker">Under the hood</span></Reveal>
           <Reveal delay={0.05}><h2 className="h-l">Real time, on Solana.</h2></Reveal>
-          <Reveal delay={0.1}><p className="lead">The on-chain program already runs duels, Royales, clan chests and clan wars end to end on a local MagicBlock stack with VRF. Mainnet comes next; until then the practice games run on live prices with no money.</p></Reveal>
+          <Reveal delay={0.1}><p className="lead">Duels, Royales, clan chests and clan wars run on Solana devnet with MagicBlock's Ephemeral Rollups, VRF, cranks, oracle and Magic Actions, in test USDC. Mainnet comes next; the practice games run on live prices with no money.</p></Reveal>
         </div>
         <div className="tech">
           {t.map((x, k) => <Reveal key={x.t} delay={k * 0.07}><div><span className="num">0{k + 1}</span><h3 className="h-s">{x.t}</h3><p className="sm">{x.b}</p></div></Reveal>)}
