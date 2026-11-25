@@ -54,11 +54,20 @@ const PLAYER_IXS = new Set([
   'stash_invest', 'stash_sell', 'open_channel', 'delegate_channel', 'post_message', 'post', 'like',
   // MagicBlock: cranked starts (the crank and keeper then finish the game), private picks on the TEE rollup
   'start_duel_cranked', 'start_tournament_cranked', 'open_private_picks', 'delegate_private_duel', 'lock_pick',
-  'start_private_duel', 'abandon_private_duel', 'close_pick',
+  'start_private_duel', 'abandon_private_duel', 'close_pick', 'lock_pick_session', 'call_round_session',
 ]);
+/** MagicBlock session keys (gpl_session): the sponsor pays a session token's rent so a player's moves can be signed by a
+ *  short-lived key on their device. Only create_session_v2 for Clashy, no SOL top-up, at most a day. */
+const SESSION_PROGRAM = new PublicKey('KeyspM2ssCJbqUhQ4k7sveSiY4WjnYsrXkC8oDbwde5');
+const CREATE_SESSION_V2 = Buffer.from([223, 233, 108, 7, 65, 194, 235, 38]);
+const MAX_SESSION_SECS = 86_400;
+/** Moves signed by a session key: account 0 is the session key, account 1 the player it acts for (the program checks the
+ *  token); the relay authorizes them as that player and checks the token on chain before sponsoring. */
+const SESSION_IXS = new Set(['lock_pick_session', 'call_round_session']);
+const sessionChecks: { token: PublicKey; signer: PublicKey; player: PublicKey }[] = [];
 /** Instructions that may only run on the rollup (the rest only on Solana). */
 const ER_IXS = new Set(['start_duel', 'check_duel', 'void_duel', 'start_tournament', 'call_round', 'resolve_round', 'void_tournament', 'post_message', 'post', 'like',
-  'start_duel_cranked', 'start_tournament_cranked', 'lock_pick', 'start_private_duel', 'abandon_private_duel']);
+  'start_duel_cranked', 'start_tournament_cranked', 'lock_pick', 'start_private_duel', 'abandon_private_duel', 'lock_pick_session', 'call_round_session']);
 const SPONSOR_SLOTS = new Set(['payer', 'rent_payer']);
 const PRIVY = process.env.CLASHY_PRIVY_APP_ID && process.env.CLASHY_PRIVY_APP_SECRET
   ? new PrivyClient(process.env.CLASHY_PRIVY_APP_ID, process.env.CLASHY_PRIVY_APP_SECRET) : null;
@@ -83,6 +92,9 @@ const MAX_FEE = 250_000; // lamports, checked against the network's own quote be
 let creates: string[] = [];
 export function vet(tx: Transaction, layer: Layer): string[] {
   creates = [];
+  sessionChecks.length = 0;
+  const sessionKeys = new Set<string>(); // fresh session keys sign too, but they are not player wallets
+  const actingFor = new Set<string>(); // players a session-signed move acts for (authorized as them)
   const me = sponsor.publicKey;
   if (!tx.feePayer?.equals(me)) throw new Refused('the sponsor must be the fee payer');
   if (tx.instructions.length === 0 || tx.instructions.length > 6) throw new Refused('1 to 6 instructions');
@@ -125,6 +137,23 @@ export function vet(tx: Transaction, layer: Layer): string[] {
       atas.push({ ata: ix.keys[1].pubkey, owner });
       continue;
     }
+    if (ix.programId.equals(SESSION_PROGRAM)) {
+      if (layer !== 'base') throw new Refused('session keys are made on Solana');
+      if (ix.data.length < 8 || !ix.data.subarray(0, 8).equals(CREATE_SESSION_V2) || ix.keys.length !== 6) throw new Refused('only creating a session key');
+      const [, sessionSigner, feePayer, owner, target, sys] = ix.keys;
+      if (!feePayer.pubkey.equals(me) || !target.pubkey.equals(programId) || !sys.pubkey.equals(SystemProgram.programId)) throw new Refused('a session key only for Clashy, paid by the sponsor');
+      if (owner.pubkey.equals(me) || sessionSigner.pubkey.equals(me) || !owner.isSigner || !sessionSigner.isSigner) throw new Refused('the player and the new session key must sign');
+      // args: top_up Option<bool>, valid_until Option<i64>, lamports Option<u64>: no top-up, an explicit expiry within a day, no lamports
+      let o = 8;
+      if (ix.data[o] !== 0) throw new Refused('no session top-up'); o += 1;
+      if (ix.data[o] !== 1) throw new Refused('a session needs an expiry'); o += 1;
+      const until = Number(ix.data.readBigInt64LE(o)); o += 8;
+      if (until > Date.now() / 1000 + MAX_SESSION_SECS) throw new Refused('a session lasts at most a day');
+      if (ix.data[o] !== 0 || ix.data.length !== o + 1) throw new Refused('no lamports for the session key');
+      sessionKeys.add(sessionSigner.pubkey.toBase58());
+      creates.push('create_session');
+      continue;
+    }
     if (!ix.programId.equals(programId)) throw new Refused(`program ${ix.programId.toBase58()} is not sponsored`);
     const def = byDisc.get(ix.data.subarray(0, 8).toString('hex'));
     if (!def || !PLAYER_IXS.has(def.name)) throw new Refused(`instruction ${def?.name ?? 'unknown'} is not sponsored`);
@@ -134,6 +163,12 @@ export function vet(tx: Transaction, layer: Layer): string[] {
         throw new Refused(`the sponsor cannot be ${def.name}.${def.accounts[i]?.name ?? `account ${i}`}`);
       }
     });
+    if (SESSION_IXS.has(def.name)) {
+      const [sessionSigner, player, token] = ix.keys;
+      sessionKeys.add(sessionSigner.pubkey.toBase58());
+      actingFor.add(player.pubkey.toBase58());
+      sessionChecks.push({ token: token.pubkey, signer: sessionSigner.pubkey, player: player.pubkey });
+    }
     creates.push(def.name);
   }
   if (budget === tx.instructions.length) throw new Refused('nothing to sponsor');
@@ -142,7 +177,21 @@ export function vet(tx: Transaction, layer: Layer): string[] {
   for (const a of atas) {
     if (!signers.has(a.owner.toBase58()) && !funded.has(a.ata.toBase58())) throw new Refused('the account owner must sign, or receive USDC in the same transaction');
   }
+  for (const k of sessionKeys) signers.delete(k);
+  for (const p of actingFor) signers.add(p);
   return [...signers];
+}
+
+/** A session-signed move: the token on Solana must belong to that player and that session key, for Clashy, unexpired. */
+async function checkSessions() {
+  for (const c of sessionChecks) {
+    const info = await base.getAccountInfo(c.token, 'confirmed');
+    if (!info?.owner.equals(SESSION_PROGRAM) || info.data.length < 8 + 32 * 4 + 8) throw new Refused('no such session key');
+    const d = info.data;
+    const authority = new PublicKey(d.subarray(8, 40)), target = new PublicKey(d.subarray(40, 72)), signer = new PublicKey(d.subarray(72, 104));
+    const until = Number(d.readBigInt64LE(136));
+    if (!authority.equals(c.player) || !target.equals(programId) || !signer.equals(c.signer) || until <= Date.now() / 1000) throw new Refused('the session key is not valid for this player');
+  }
 }
 
 // ---- rate limit: 40 transactions per wallet per 10 s (a duel sends a few, a Royale round one per player)
@@ -158,7 +207,7 @@ function limit(wallets: string[]) {
 }
 
 /** Daily caps per player on what makes the sponsor pay lasting rent (audit H1/C2): new squads, channels, token accounts. */
-const QUOTA: Record<string, number> = { create_clan: 2, open_channel: 8, ata: 6 };
+const QUOTA: Record<string, number> = { create_clan: 2, open_channel: 8, ata: 6, create_session: 24 };
 const quotas = new Map<string, { day: number; n: Record<string, number> }>();
 function quota(who: string, names: string[], tx: Transaction) {
   const day = Math.floor(Date.now() / 86_400_000);
@@ -220,6 +269,7 @@ async function relay(body: { tx?: string; layer?: Layer }, token?: string) {
   const tx = Transaction.from(Buffer.from(body.tx, 'base64'));
   const signers = vet(tx, layer);
   const user = await authorize(token, signers);
+  await checkSessions();
   limit(user ? [user, ...signers] : signers);
   quota(user ?? signers[0] ?? '(none)', creates, tx);
   if (layer === 'base') {

@@ -130,6 +130,51 @@ export async function sendSponsored(tx: Transaction, layer: Layer, signer: Walle
   return sig;
 }
 
+/** MagicBlock session keys (gpl_session): one signature from the player's wallet lets a key kept on this device make
+ *  their in-game moves for a few hours (the sponsor pays the token's rent; the program checks the token). */
+export const SESSION_PROGRAM = new PublicKey('KeyspM2ssCJbqUhQ4k7sveSiY4WjnYsrXkC8oDbwde5');
+const CREATE_SESSION_V2 = [223, 233, 108, 7, 65, 194, 235, 38];
+const SESSION_SECS = 6 * 3600;
+export const sessionTokenOf = (signer: PublicKey, owner: PublicKey) =>
+  PublicKey.findProgramAddressSync([Buffer.from('session_token_v2'), PROGRAM_ID.toBuffer(), signer.toBuffer(), owner.toBuffer()], SESSION_PROGRAM)[0];
+export type Session = { kp: Keypair; token: PublicKey; until: number };
+/** This device's session key for `wallet`, made (one wallet signature, sponsored) when missing or about to expire. */
+export async function ensureSession(wallet: WalletSigner, onCreate?: (sig: string) => void): Promise<Session> {
+  const key = `clashy:session:${PROGRAM_ID.toBase58()}:${wallet.publicKey.toBase58()}`;
+  const raw = await AsyncStorage.getItem(key).catch(() => null);
+  if (raw) {
+    const s = JSON.parse(raw) as { secret: number[]; until: number };
+    const kp = Keypair.fromSecretKey(Uint8Array.from(s.secret));
+    const token = sessionTokenOf(kp.publicKey, wallet.publicKey);
+    if (s.until - Date.now() / 1000 > 600 && (await base.getAccountInfo(token).catch(() => null))) return { kp, token, until: s.until };
+  }
+  const { sponsor } = await getSponsor();
+  const kp = Keypair.generate();
+  const token = sessionTokenOf(kp.publicKey, wallet.publicKey);
+  const until = Math.floor(Date.now() / 1000) + SESSION_SECS;
+  const data = Buffer.alloc(8 + 1 + 1 + 8 + 1);
+  Buffer.from(CREATE_SESSION_V2).copy(data, 0);
+  data[8] = 0; // top_up: None
+  data[9] = 1; data.writeBigInt64LE(BigInt(until), 10); // valid_until: Some
+  data[18] = 0; // lamports: None
+  const ix = new TransactionInstruction({
+    programId: SESSION_PROGRAM,
+    keys: [
+      { pubkey: token, isSigner: false, isWritable: true },
+      { pubkey: kp.publicKey, isSigner: true, isWritable: true },
+      { pubkey: sponsor, isSigner: true, isWritable: true },
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
+      { pubkey: PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+  const sig = await sendSponsored(new Transaction().add(ix), 'base', wallet, [kp]);
+  onCreate?.(sig);
+  await AsyncStorage.setItem(key, JSON.stringify({ secret: [...kp.secretKey], until })).catch(() => {});
+  return { kp, token, until };
+}
+
 /** Paying someone in USDC: create their USDC account if needed (the sponsor pays its rent), then TransferChecked
  *  `units` out of the payer's own USDC account. Both instructions are the only token moves the relay sponsors. */
 export function usdcPayIxs(sponsor: PublicKey, from: PublicKey, to: PublicKey, units: bigint | number) {

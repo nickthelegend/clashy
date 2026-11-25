@@ -4,7 +4,7 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, TextInput, View } from 'react-native';
-import { PublicKey, type Transaction } from '@solana/web3.js';
+import { PublicKey, type Transaction, Keypair } from '@solana/web3.js';
 import { BN, IS_LOCAL_NET, NET, P, PROGRAM_ID, USDC_MINT, base, faucetUsdc, getSponsor, programs, sendSponsored, sendUsdc, usdcBalance } from './client';
 import { useWallet } from './wallet';
 import { Btn, Card, Row, Txt } from '@/ui/kit';
@@ -72,11 +72,11 @@ export function useChain(foldLabels: string[] = []) {
     return sig;
   }, [log]);
 
-  /** Rollup transaction, sponsored like every other one. */
-  const onEr = useCallback(async (label: string, builder: { transaction(): Promise<Transaction> }) => {
+  /** Rollup transaction, sponsored like every other one. `extra` co-signers (a MagicBlock session key) sign too. */
+  const onEr = useCallback(async (label: string, builder: { transaction(): Promise<Transaction> }, extra: Keypair[] = []) => {
     if (!signer) throw new Error('Sign in first');
     const t0 = Date.now();
-    const sig = await sendSponsored(await builder.transaction(), 'er', signer);
+    const sig = await sendSponsored(await builder.transaction(), 'er', signer, extra);
     log({ sig, layer: 'Rollup', label, ms: Date.now() - t0 });
     setTick((n) => n + 1);
     return sig;

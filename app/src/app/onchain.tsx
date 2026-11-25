@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, DUEL_STATUS, MB, NET, P, USDC, USDC_MINT, base, er, feeVault, feedOf, fmtUsdc, hasKeeper, openDuels, permissionOf, priceOf, random32, readDuel, sha256, usdcAta, type DuelView, PublicKey,
+  BN, COIN_SYMBOLS, DUEL_STATUS, MB, NET, P, USDC, USDC_MINT, base, ensureSession, er, feeVault, feedOf, fmtUsdc, hasKeeper, openDuels, permissionOf, priceOf, random32, readDuel, sha256, usdcAta, type DuelView, PublicKey,
 } from '@/chain/client';
 import { reader } from '@/chain/reads';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
@@ -187,7 +187,12 @@ export default function OnChainDuel() {
         if (sec?.side && !sec.locked) {
           const pick = P.pick(active, wallet);
           await once(`lock-${me}`, async () => {
-            await onEr('Lock my call in the TEE (private)', progs.er.methods.lockPick(sec.side!, sec.lev ?? 1).accountsPartial({ player: wallet, duel: active, pick, permission: permissionOf(pick) }));
+            // the call is signed by this device's MagicBlock session key (one wallet signature per few hours, none per move)
+            let created: string | undefined;
+            const sess = await ensureSession(chain.signer!, (sig) => { created = sig; });
+            if (created) await onBase('Create a MagicBlock session key (one signature)', async () => created!);
+            await onEr('Lock my call in the TEE · signed by session key', progs.er.methods.lockPickSession(sec.side!, sec.lev ?? 1)
+              .accountsPartial({ signer: sess.kp.publicKey, player: wallet, sessionToken: sess.token, duel: active, pick, permission: permissionOf(pick) }), [sess.kp]);
             await AsyncStorage.setItem(secretKey(active), JSON.stringify({ ...sec, locked: true } satisfies Secrets));
             setMyLock({ side: sec.side!, lev: sec.lev ?? 1, sent: true });
           });
