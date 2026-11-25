@@ -247,11 +247,10 @@ Kickoff: Nov 20, 2026 14:00 UTC. These are commit times in UTC (`TZ=UTC git log`
 | `93fa845..e833c62` | 15 | Nov 20 14:49 to Nov 22 04:47 (**after kickoff**) | The white tour card, the practice games and the game kit (the first three commits landed at 14:49 UTC, 49 minutes after kickoff, so part of that work was written before it); the beta legal pages; `close_duel` (45 lines in `lib.rs` and `math.rs`); the devnet test USDC and faucet; the first devnet deploy and test run; the Royale stock-coin fix; the faucet limits; docs/DEVNET.md |
 | `ddfa4da..e14e80f` | 10 | Nov 24 20:29 to Nov 25 11:37 (**after kickoff**) | README and this form; **MagicBlock cranks, the keeper PDA, Magic Action payouts, private picks on the TEE rollup and MagicBlock oracle prices** in the program, app and tests; the app's MagicBlock track and Live on MagicBlock screen; session keys (`lock_pick_session`, `call_round_session`); the VRF callback fix; the 0.5% Stash trading fee; TEE authentication; the TEE tests with a real privacy check; result Lottie animations; the sealed-in-TEE duel card; `scripts/devnet-proof.ts` |
 
-All commits are pushed (`origin/main` = `e14e80f` when this was written); the Nov 25 claims fixes are local edits on
-top. After kickoff the program grew by 1,011 lines and lost 64 (`git diff --shortstat 6431028 HEAD -- chain/programs`);
-`lib.rs` is now 3,467 lines. The program on devnet is the Nov 25 build: a `solana program dump` on Nov 25 gave a 1,605,240-byte
-program data account whose first 1,580,168 bytes match `chain/target/deploy/clashy.so` (sha256 `360553f9…c7f5`); the
-rest is zero padding. The event pages publish no rule on code written before kickoff, but Luma frames the week as building an MVP.
+All commits are pushed to the private repo's `main`. After kickoff the program grew by 1,039 lines and lost 74
+(`git diff --shortstat 6431028 HEAD -- chain/programs`); `lib.rs` is now 3,485 lines. The program on devnet is the last
+Nov 25 build (upgrade `3LJSPdfk…`): a `solana program dump` after it gave a 1,605,240-byte program data account whose
+first 1,583,160 bytes match `chain/target/deploy/clashy.so` (sha256 `707e9cb8…2dc9b7`); the rest is zero padding. The event pages publish no rule on code written before kickoff, but Luma frames the week as building an MVP.
 Whether to enter is Nick's call.
 
 ---

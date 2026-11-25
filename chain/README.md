@@ -123,11 +123,11 @@ a test can reach them (the Nov 25 crank, keeper, Magic Action, TEE and session-k
 
 ## Status
 
-- **Devnet: deployed.** Program `FQKy8f…wdS` since Nov 22, 2026; three upgrades on Nov 25 (cranks, keeper, Magic
+- **Devnet: deployed.** Program `FQKy8f…wdS` since Nov 22, 2026; four upgrades on Nov 25 (cranks, keeper, Magic
   Actions, private picks, oracle, `admin_undelegate`; session keys; the VRF callback fix and the 0.5% Stash trading
-  fee). Program data account 1,605,240 bytes; the last build is 1,580,168 bytes. Rollup: MagicBlock's TEE
+  fee; the finishing tick cancels its crank). Program data account 1,605,240 bytes; the last build is 1,583,160 bytes. Rollup: MagicBlock's TEE
   (`devnet-tee.magicblock.app`); its transactions need an auth token (30 days), public reads need none. On Nov 25 all
-  four `tests/magicblock.test.ts` tests passed there over two runs, and two players played a private duel through the
+  four `tests/magicblock.test.ts` tests passed there in one run (after the crank-cancel upgrade), and two players played a private duel through the
   app (`../docs/DEVNET.md`, `evidence/devnet-proof.txt`).
 - **Local MagicBlock stack: works end to end, in USDC.** MagicBlock validator 1.1.1 over Agave 4.5.0-beta.0 with
   devnet's feature set. Latest runs (Nov 25): magicblock 4/4, clashy 5/5 (the VRF test passed after its fix), perps
