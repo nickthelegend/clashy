@@ -52,9 +52,13 @@ const PLAYER_IXS = new Set([
   'request_tournament_coin', 'delegate_tournament', 'start_tournament', 'call_round', 'resolve_round', 'settle_tournament',
   'create_profile', 'set_avatar', 'set_limits', 'take_break', 'open_stash', 'set_goal', 'stash_save', 'stash_withdraw',
   'stash_invest', 'stash_sell', 'open_channel', 'delegate_channel', 'post_message', 'post', 'like',
+  // MagicBlock: cranked starts (the crank and keeper then finish the game), private picks on the TEE rollup
+  'start_duel_cranked', 'start_tournament_cranked', 'open_private_picks', 'delegate_private_duel', 'lock_pick',
+  'start_private_duel', 'abandon_private_duel', 'close_pick',
 ]);
 /** Instructions that may only run on the rollup (the rest only on Solana). */
-const ER_IXS = new Set(['start_duel', 'check_duel', 'void_duel', 'start_tournament', 'call_round', 'resolve_round', 'void_tournament', 'post_message', 'post', 'like']);
+const ER_IXS = new Set(['start_duel', 'check_duel', 'void_duel', 'start_tournament', 'call_round', 'resolve_round', 'void_tournament', 'post_message', 'post', 'like',
+  'start_duel_cranked', 'start_tournament_cranked', 'lock_pick', 'start_private_duel', 'abandon_private_duel']);
 const SPONSOR_SLOTS = new Set(['payer', 'rent_payer']);
 const PRIVY = process.env.CLASHY_PRIVY_APP_ID && process.env.CLASHY_PRIVY_APP_SECRET
   ? new PrivyClient(process.env.CLASHY_PRIVY_APP_ID, process.env.CLASHY_PRIVY_APP_SECRET) : null;

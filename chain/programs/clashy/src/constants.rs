@@ -86,6 +86,20 @@ pub const PRICE_UPDATE_DISCRIMINATOR: [u8; 8] = [234, 161, 14, 36, 172, 239, 15,
 pub const VRF_BASE_QUEUE: Pubkey = pubkey!("Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh");
 /// MagicBlock VRF program: owns every oracle queue.
 pub const VRF_PROGRAM_ID: Pubkey = pubkey!("Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz");
+/// The keeper: a program PDA delegated to the rollup. It signs the commits that MagicBlock cranks trigger (a scheduled
+/// instruction carries no wallet signature) and pays for the Magic Actions that settle games on Solana.
+pub const KEEPER_SEED: &[u8] = b"keeper";
+/// Escrow index of every Magic Action we schedule (`ActionArgs::new`'s default).
+pub const ACTION_ESCROW_INDEX: u8 = 255;
+/// Compute units requested for a settlement Magic Action (priced at 0.05 lamports a unit: 15,000 lamports).
+pub const SETTLE_ACTION_CU: u32 = 300_000;
+/// A MagicBlock crank checks a live duel or Royale this often.
+pub const TICK_MILLIS: i64 = 1_000;
+/// A player's sealed pick for a private duel, kept inside MagicBlock's TEE rollup: [PICK_SEED, duel, player].
+pub const PICK_SEED: &[u8] = b"pick";
+/// MagicBlock permission program PDA seed: [b"permission:", account].
+pub const PERMISSION_SEED: &[u8] = b"permission:";
+pub const ATA_PROGRAM_ID: Pubkey = pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 /// MagicBlock delegation program: owns delegated accounts on Solana while they live in a rollup.
 pub const DELEGATION_PROGRAM_ID: Pubkey = pubkey!("DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh");
 

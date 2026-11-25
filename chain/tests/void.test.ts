@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import {
   BN, Keypair, P, USDC, USDC_MINT, authority, baseProgram, ensureSetup, er, LOCAL_ER_VALIDATOR, programFor, randomSeed, runCrank,
-  sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome, rollDuel } from './common.ts';
+  sendEr, settledByAction, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome, rollDuel } from './common.ts';
 
 const STAKE = 5 * USDC;
 const GRACE = 120;
@@ -62,9 +62,10 @@ test('a live duel nobody finishes is voided after the grace and refunds both sta
   await sendEr(erA.methods.voidDuel().accountsPartial({ payer: sponsor.publicKey, duel }));
   await waitHome(duel);
   const d = await baseProgram.account.duel.fetch(duel);
-  assert.equal(d.status, 4, 'finished and back on Solana');
+  assert.ok(d.status === 4 || d.status === 5, 'finished and back on Solana');
   assert.equal(d.winner, 0, 'a void is a draw');
-  await sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc();
+  const by = await settledByAction(duel, 'duel', () => sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc());
+  console.log(`  void refunded ${by}`);
   const [na, nb, nt] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury)]);
   assert.equal(na - ca, STAKE, 'creator refunded in full');
   assert.equal(nb - cb, STAKE, 'joiner refunded in full');

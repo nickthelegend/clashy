@@ -26,9 +26,16 @@ if (process.argv.includes('--setup-only')) {
 }
 console.log(`crank up · treasury ${cfg.treasury.toBase58()} · crank ${crank.publicKey.toBase58()} · ${cfg.coinCount} coins`);
 console.log(`price history: ${trimSamples()} samples kept (last 7 days) in ${HISTORY_FILE}`);
-/** The keeper (audit M-H1/M-H2): every 2 s it checks every live duel and resolves every Royale round that is due, on the
- *  rollup with the crank's own key, so knockouts and bells land on time whoever is online and no player picks the
- *  closing moment. A game nobody could finish within VOID_GRACE_SECS of its bell is voided (refunds / current leaders). */
+/** The backup keeper (audit M-H1/M-H2). Games started with start_*_cranked are finished on chain by a MagicBlock crank
+ *  (tick_duel / tick_round every second, the keeper PDA sends them home with the payout), so this loop only steps in
+ *  BACKUP_SECS after a bell the crank missed; older games without a crank are checked every 2 s as before. A game nobody
+ *  could finish within VOID_GRACE_SECS of its bell is voided (refunds / current leaders). */
+const BACKUP_SECS = 10;
+const KEEPER = PublicKey.findProgramAddressSync([Buffer.from('keeper')], baseProgram.programId)[0];
+const cranked = !!(await erProgram.provider.connection.getAccountInfo(KEEPER).catch(() => null));
+/** Each coin's price account as the config names it (a Clashy feed, or MagicBlock's oracle for crypto). */
+const feedOf = (coin: number) => cfg.coins[coin]?.feed ?? P.feed(coin);
+console.log(`keeper: ${cranked ? `MagicBlock cranks finish games (keeper ${KEEPER.toBase58().slice(0, 6)}…); this loop is the backup after ${BACKUP_SECS} s` : 'no on-chain keeper; checking every live game'}`);
 const VOID_GRACE_SECS = 120;
 const LIVE_DUEL = 3, LIVE_TOUR = 1;
 let keeperOff = '';
@@ -40,19 +47,20 @@ async function keep() {
     if (d.status !== LIVE_DUEL) continue;
     const bell = Number(d.startTs) + d.lenSecs;
     const late = now > bell + VOID_GRACE_SECS;
+    if (cranked && now < bell + BACKUP_SECS) continue;
     try {
       await sendEr(late ? erProgram.methods.voidDuel().accountsPartial({ payer: crank.publicKey, duel })
-        : erProgram.methods.checkDuel().accountsPartial({ payer: crank.publicKey, duel, price: P.feed(d.coin) }), crank, crank);
+        : erProgram.methods.checkDuel().accountsPartial({ payer: crank.publicKey, duel, price: feedOf(d.coin) }), crank, crank);
       acted++;
     } catch (e) { if (now > bell) console.error(`keeper: duel ${duel.toBase58().slice(0, 6)}… ${(e as Error).message.split('\n')[0]}`); }
   }
   for (const { publicKey: tournament, account: t } of tours) {
     if (t.status !== LIVE_TOUR) continue;
     const bell = Number(t.roundStartedAt) + t.roundSecs;
-    if (now < bell) continue;
+    if (now < bell + (cranked ? BACKUP_SECS : 0)) continue;
     try {
       await sendEr(now > bell + VOID_GRACE_SECS ? erProgram.methods.voidTournament().accountsPartial({ payer: crank.publicKey, tournament })
-        : erProgram.methods.resolveRound().accountsPartial({ payer: crank.publicKey, tournament, price: P.feed(t.coin) }), crank, crank);
+        : erProgram.methods.resolveRound().accountsPartial({ payer: crank.publicKey, tournament, price: feedOf(t.coin) }), crank, crank);
       acted++;
     } catch (e) { console.error(`keeper: royale ${tournament.toBase58().slice(0, 6)}… ${(e as Error).message.split('\n')[0]}`); }
   }

@@ -253,6 +253,21 @@ export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
   });
 }
 
+/** A finished game comes home with a settlement Magic Action: MagicBlock runs settle_duel / settle_tournament on
+ *  Solana right after the undelegation. Waits for that, and only if it never lands (actions are not atomic) settles by
+ *  hand with `manual`. Returns who settled it. */
+export async function settledByAction(account: PublicKey, kind: 'duel' | 'tournament', manual: () => Promise<unknown>, waitMs = 30_000): Promise<'magic action' | 'by hand'> {
+  const done = kind === 'duel' ? 5 : 3;
+  const ok = await until(`${kind} settled by the Magic Action`, waitMs, async () => {
+    const info = await base.getAccountInfo(account, 'confirmed');
+    if (!info?.owner.equals(programId)) return null;
+    return baseProgram.coder.accounts.decode(kind, info.data).status === done ? true : null;
+  }).catch(() => false);
+  if (ok) return 'magic action';
+  await manual();
+  return 'by hand';
+}
+
 /** Sends on the rollup and polls for the result: its websocket confirmations are slow or absent,
  *  so Anchor's `.rpc()` would hang. Throws with the program logs when the transaction fails. */
 export async function sendEr(builder: { transaction(): Promise<Transaction> }, signer?: Keypair, feePayer: Keypair = sponsor): Promise<string> {

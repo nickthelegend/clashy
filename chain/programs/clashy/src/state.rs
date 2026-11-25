@@ -34,6 +34,30 @@ pub struct Config {
     pub auth_bump: u8,
 }
 
+/// The keeper PDA (seeds [KEEPER_SEED]). Delegated to the rollup once by the admin, with SOL for Magic Action fees.
+#[account]
+#[derive(InitSpace)]
+pub struct Keeper {
+    pub bump: u8,
+    /// Ticks run by MagicBlock cranks (duel checks and Royale rounds), for the explorer and the README.
+    pub ticks: u64,
+    /// Games the keeper finished and sent home with a settlement Magic Action.
+    pub finished: u64,
+}
+
+/// One player's pick for a private duel. It lives in MagicBlock's Private Ephemeral Rollup (TEE): while the duel is
+/// being set up only that player can read it; start_private_duel copies both picks into the duel and makes them public.
+#[account]
+#[derive(InitSpace)]
+pub struct Pick {
+    pub duel: Pubkey,
+    pub player: Pubkey,
+    pub side: u8,
+    pub lev: u16,
+    pub locked: bool,
+    pub bump: u8,
+}
+
 /// Clashy-owned price feed. Delegated to the ER and updated about every second by the crank;
 /// the crank commits it back to Solana periodically so base-layer reads stay fresh.
 #[account]

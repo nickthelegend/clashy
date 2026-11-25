@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import {
   BN, COINS, Keypair, P, PublicKey, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, lamports, LOCAL_ER_VALIDATOR,
-  programFor, pushBasePrices, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta,
+  programFor, pushBasePrices, randomSeed, runCrank, sendEr, settledByAction, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta,
   usdcOf, usdcPlayer, waitHome,
 } from './common.ts';
 
@@ -86,6 +86,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
     const priceAcct = P.feed(d.coin);
 
     const erA = programFor(a, true);
+    const [ca, cb, ct] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury)]);
     const startSig = await sendEr(erA.methods.startDuel().accountsPartial({ signer: a.publicKey, duel, price: priceAcct }), a);
     assert.ok(startSig, 'start_duel landed on the rollup');
     // the sponsor alone runs the checks (check_duel is permissionless) until the bell or a knockout
@@ -102,15 +103,14 @@ describe('knockout duel: quick match on one rolled coin', () => {
     }
     await waitHome(duel);
     d = await baseProgram.account.duel.fetch(duel);
-    assert.equal(d.status, 4, 'finished and back on Solana');
+    assert.ok(d.status === 4 || d.status === 5, `finished and back on Solana (status ${d.status})`);
     assert.ok(d.entryPrice.gtn(0) && d.exitPrice.gtn(0));
     assert.equal(d.pnlBps[0].toNumber() + d.pnlBps[1].toNumber(), 0, 'same coin, opposite sides, same leverage: mirrored P&L');
 
-    const [ca, cb, ct, rent0] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury), lamports(sponsor.publicKey)]);
-    await sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc();
-    const [na, nb, nt, rent1] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury), lamports(sponsor.publicKey)]);
-    assert.equal(await base.getAccountInfo(vault), null, 'the emptied vault is closed');
-    assert.ok(rent1 > rent0, 'its rent went back to the sponsor');
+    const settledBy = await settledByAction(duel, 'duel', () => sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc());
+    d = await baseProgram.account.duel.fetch(duel);
+    const [na, nb, nt] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury)]);
+    assert.equal(await base.getAccountInfo(vault), null, 'the emptied vault is closed (its rent goes back to the sponsor)');
     const pot = 2 * STAKE;
     const rake = Math.floor((pot * rakeBps) / 10_000);
     if (d.winner === 1) {
@@ -123,7 +123,7 @@ describe('knockout duel: quick match on one rolled coin', () => {
     await noSol(a, b);
     const [pa, pb] = await Promise.all([baseProgram.account.player.fetch(P.player(a.publicKey)), baseProgram.account.player.fetch(P.player(b.publicKey))]);
     assert.equal(pa.rating + pb.rating, 2000, 'Elo is zero-sum');
-    console.log(`  duel on ${COINS[d.coin].symbol}: entry ${d.entryPrice} exit ${d.exitPrice} pnl ${d.pnlBps.map(String)} winner ${d.winner} · USDC ${na / USDC}/${nb / USDC} · ratings ${pa.rating}/${pb.rating}`);
+    console.log(`  duel on ${COINS[d.coin].symbol} (settled ${settledBy}): entry ${d.entryPrice} exit ${d.exitPrice} pnl ${d.pnlBps.map(String)} winner ${d.winner} · USDC ${na / USDC}/${nb / USDC} · ratings ${pa.rating}/${pb.rating}`);
     await assert.rejects(sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc(), /WrongStatus|AccountNotInitialized|3012/, 'cannot settle twice');
     // the settled record stays for 14 days (history, match page, weekly cup), so closing it now is refused and it stays put
     await assert.rejects(sponsorProgram.methods.closeDuel().accountsPartial({ duel, rentPayer: sponsor.publicKey }).rpc(), /NotExpired/, 'a fresh duel record is kept');
@@ -305,6 +305,7 @@ describe('tournament: an on-chain Royale', () => {
     const tourCoin = (await baseProgram.account.tournament.fetch(tour)).coin;
     await programFor(host).methods.delegateTournament(host.publicKey, new BN(nonce)).accountsPartial({ host: host.publicKey, ...pay, tournament: tour }).remainingAccounts(validatorMeta).rpc();
     await until('tournament on the rollup', 30_000, () => er.getAccountInfo(tour));
+    const balances = await Promise.all(ps.map((p) => usdcOf(p.publicKey)));
     await sendEr(programFor(host, true).methods.startTournament().accountsPartial({ signer: host.publicKey, tournament: tour, price: P.feed(tourCoin) }), host);
 
     // every round: player 0 calls up, player 1 calls down, player 2 stays silent (always loses a life)
@@ -318,15 +319,16 @@ describe('tournament: an on-chain Royale', () => {
     }
     await waitHome(tour, 90_000);
     const t = await baseProgram.account.tournament.fetch(tour);
-    assert.equal(t.status, 2, 'finished and back on Solana');
+    assert.ok(t.status === 2 || t.status === 3, `finished and back on Solana (status ${t.status})`);
     assert.equal(t.lives[2], 0, 'the silent player is out');
     const usdcMeta = (owner: PublicKey) => ({ pubkey: usdcAta(owner), isSigner: false, isWritable: true });
-    // payouts must go to each player's own USDC account, in join order
-    await assert.rejects(sponsorProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury, rentPayer: sponsor.publicKey })
-      .remainingAccounts([usdcMeta(ps[0].publicKey), usdcMeta(ps[0].publicKey), usdcMeta(ps[2].publicKey)]).rpc(), /PayoutMismatch/);
-    const balances = await Promise.all(ps.map((p) => usdcOf(p.publicKey)));
-    await sponsorProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury, rentPayer: sponsor.publicKey })
-      .remainingAccounts(ps.map((p) => usdcMeta(p.publicKey))).rpc();
+    // payouts must go to each player's own USDC account, in join order (only checkable while it is still unsettled)
+    if (t.status === 2) {
+      await assert.rejects(sponsorProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury, rentPayer: sponsor.publicKey })
+        .remainingAccounts([usdcMeta(ps[0].publicKey), usdcMeta(ps[0].publicKey), usdcMeta(ps[2].publicKey)]).rpc(), /PayoutMismatch/);
+    }
+    const settledBy = await settledByAction(tour, 'tournament', () => sponsorProgram.methods.settleTournament().accountsPartial({ tournament: tour, vault, treasury, rentPayer: sponsor.publicKey })
+      .remainingAccounts(ps.map((p) => usdcMeta(p.publicKey))).rpc());
     const won = (await Promise.all(ps.map((p) => usdcOf(p.publicKey)))).map((v, i) => v - balances[i]);
     const pot = 3 * ENTRY;
     const rake = Math.floor((pot * rakeBps) / 10_000);
@@ -334,6 +336,6 @@ describe('tournament: an on-chain Royale', () => {
     assert.equal(won[2], 0, 'eliminated player gets nothing');
     assert.equal(await base.getAccountInfo(vault), null, 'vault closed');
     await noSol(host, ...ps);
-    console.log(`  royale on BTC: lives ${t.lives.slice(0, 3)} rounds ${t.round} → payouts ${won.map((v) => v / USDC)} USDC`);
+    console.log(`  royale (settled ${settledBy}): lives ${t.lives.slice(0, 3)} rounds ${t.round} → payouts ${won.map((v) => v / USDC)} USDC`);
   });
 });

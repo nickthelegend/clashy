@@ -18,12 +18,18 @@
 //! pricing-oracle accounts; see `price.rs`.
 
 use anchor_lang::prelude::*;
+use anchor_lang::Discriminator;
 use anchor_lang::solana_program::{instruction::{AccountMeta, Instruction}, program::invoke_signed};
 use solana_sha256_hasher::hashv;
 use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, Transfer as TokenTransfer};
 use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
-use ephemeral_rollups_sdk::ephem::MagicIntentBundleBuilder;
+use ephemeral_rollups_sdk::ephem::{CallHandler, MagicIntentBundleBuilder};
+#[allow(deprecated)]
+use ephemeral_rollups_sdk::crank::{ScheduleCrankCpi, ScheduleTaskArgs};
+use ephemeral_rollups_sdk::{ActionArgs, ShortAccountMeta};
+use ephemeral_rollups_sdk::access_control::instructions::{CreateEphemeralPermissionCpi, UpdateEphemeralPermissionCpi};
+use ephemeral_rollups_sdk::access_control::structs::{EphemeralMembersArgs, EphemeralPermission, Member as PermissionMember, AUTHORITY_FLAG, TX_BALANCES_FLAG, TX_LOGS_FLAG, TX_MESSAGE_FLAG};
 use ephemeral_rollups_sdk::vrf::anchor::{vrf, vrf_callback};
 use ephemeral_rollups_sdk::vrf::instructions::{create_request_randomness_ix, RequestRandomnessParams};
 use ephemeral_rollups_sdk::vrf::types::SerializableAccountMeta;
@@ -158,6 +164,128 @@ fn finish_duel(duel: &mut Duel, price: u64, now: i64) {
     } else {
         3
     };
+}
+
+/// Scores a live duel at `price`. Returns true when it just finished (a knockout or the bell).
+fn score_duel(d: &mut Duel, key: Pubkey, price: u64, now: i64) -> bool {
+    d.pnl_bps[0] = math::pnl_bps(d.entry_price, price, d.side[0], d.lev[0]);
+    d.pnl_bps[1] = math::pnl_bps(d.entry_price, price, d.side[1], d.lev[1]);
+    d.exit_price = price;
+    let ko = d.pnl_bps[0] <= -BPS || d.pnl_bps[1] <= -BPS;
+    if ko || now >= d.start_ts + d.len_secs as i64 {
+        finish_duel(d, price, now);
+        emit!(DuelFinished { duel: key, coin: d.coin, entry_price: d.entry_price, exit_price: price, pnl_bps: d.pnl_bps, ko: d.ko, winner: d.winner });
+        true
+    } else {
+        false
+    }
+}
+
+fn usdc_ata(owner: &Pubkey, mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[owner.as_ref(), anchor_spl::token::ID.as_ref(), mint.as_ref()], &ATA_PROGRAM_ID).0
+}
+
+fn short(key: Pubkey, writable: bool) -> ShortAccountMeta {
+    ShortAccountMeta { pubkey: key.to_bytes().into(), is_writable: writable }
+}
+
+/// The Magic Action that runs `settle_duel` on Solana right after the finished duel is undelegated, so the pot is paid
+/// in the same intent that brings the duel home. Its fees come from `escrow_auth`'s MagicBlock escrow. Actions are not
+/// atomic: if it fails, the duel still comes home FINISHED and anyone can call settle_duel (the app does).
+fn settle_duel_action<'info>(d: &Duel, duel: Pubkey, cfg: &Config, escrow_auth: AccountInfo<'info>) -> CallHandler<'info> {
+    let id = crate::ID;
+    let vault = Pubkey::find_program_address(&[VAULT_SEED, duel.as_ref()], &id).0;
+    let accounts = vec![
+        short(Pubkey::find_program_address(&[CONFIG_SEED], &id).0, false),
+        short(duel, true),
+        short(vault, true),
+        short(Pubkey::find_program_address(&[AUTH_SEED], &id).0, false),
+        short(usdc_ata(&d.creator, &cfg.usdc_mint), true),
+        short(usdc_ata(&d.joiner, &cfg.usdc_mint), true),
+        short(Pubkey::find_program_address(&[PLAYER_SEED, d.creator.as_ref()], &id).0, true),
+        short(Pubkey::find_program_address(&[PLAYER_SEED, d.joiner.as_ref()], &id).0, true),
+        short(cfg.treasury, true),
+        short(d.rent_payer, true),
+        short(anchor_spl::token::ID, false),
+    ];
+    CallHandler {
+        destination_program: id,
+        accounts,
+        args: ActionArgs::new(anchor_lang::InstructionData::data(&crate::instruction::SettleDuel {})),
+        escrow_authority: escrow_auth,
+        compute_units: SETTLE_ACTION_CU,
+    }
+}
+
+/// The Magic Action that runs `settle_tournament` on Solana after a finished Royale is undelegated: every player's USDC
+/// account in join order, as settle_tournament requires.
+fn settle_tournament_action<'info>(t: &Tournament, tournament: Pubkey, cfg: &Config, escrow_auth: AccountInfo<'info>) -> CallHandler<'info> {
+    let id = crate::ID;
+    let mut accounts = vec![
+        short(Pubkey::find_program_address(&[CONFIG_SEED], &id).0, false),
+        short(tournament, true),
+        short(Pubkey::find_program_address(&[VAULT_SEED, tournament.as_ref()], &id).0, true),
+        short(Pubkey::find_program_address(&[AUTH_SEED], &id).0, false),
+        short(cfg.treasury, true),
+        short(t.rent_payer, true),
+        short(anchor_spl::token::ID, false),
+    ];
+    for p in &t.players[..t.count as usize] {
+        accounts.push(short(usdc_ata(p, &cfg.usdc_mint), true));
+    }
+    CallHandler {
+        destination_program: id,
+        accounts,
+        args: ActionArgs::new(anchor_lang::InstructionData::data(&crate::instruction::SettleTournament {})),
+        escrow_authority: escrow_auth,
+        compute_units: SETTLE_ACTION_CU,
+    }
+}
+
+/// A crank task id unique to one game: the first 8 bytes of its address (task ids are shared by every program on a
+/// validator, and a collision is accepted but never runs).
+fn task_id(game: &Pubkey) -> i64 {
+    i64::from_le_bytes(game.to_bytes()[..8].try_into().unwrap()) & i64::MAX
+}
+
+/// Resolves a Royale round whose bell has rung: wrong or missing calls lose a life. Returns true when it just finished.
+fn resolve_round_at(t: &mut Tournament, key: Pubkey, price: u64, now: i64) -> bool {
+    let start = t.round_price;
+    let before = t.lives;
+    let mut alive = 0u8;
+    for i in 0..t.count as usize {
+        if t.lives[i] == 0 {
+            continue;
+        }
+        if !math::royale_call_ok(t.calls[i], start, price) {
+            t.lives[i] -= 1;
+        }
+        if t.lives[i] > 0 {
+            alive += 1;
+        }
+    }
+    emit!(RoundResolved { tournament: key, round: t.round, start_price: start, end_price: price, alive });
+    if alive == 0 {
+        // everyone fell in the same round: the survivors of the previous round share the win
+        t.lives = before;
+        for i in 0..t.count as usize {
+            if t.lives[i] > 0 {
+                t.lives[i] = 1;
+            }
+        }
+        alive = t.lives[..t.count as usize].iter().filter(|l| **l > 0).count() as u8;
+    }
+    t.alive = alive;
+    t.calls = [0; MAX_TOUR_PLAYERS];
+    if alive <= 1 || t.round >= t.max_rounds {
+        t.status = tour_status::FINISHED;
+        true
+    } else {
+        t.round += 1;
+        t.round_price = price;
+        t.round_started_at = now;
+        false
+    }
 }
 
 fn update_players(a: &mut Player, b: &mut Player, winner: u8) {
@@ -966,22 +1094,14 @@ pub mod clashy {
         let now = Clock::get()?.unix_timestamp;
         let feed = coin_feed(&ctx.accounts.config, ctx.accounts.duel.coin)?;
         let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE)?;
+        let duel_key = ctx.accounts.duel.key();
         let finished = {
             let d = &mut ctx.accounts.duel;
             require!(d.status == duel_status::LIVE, ClashyError::WrongStatus);
-            d.pnl_bps[0] = math::pnl_bps(d.entry_price, price, d.side[0], d.lev[0]);
-            d.pnl_bps[1] = math::pnl_bps(d.entry_price, price, d.side[1], d.lev[1]);
-            d.exit_price = price;
-            let ko = d.pnl_bps[0] <= -BPS || d.pnl_bps[1] <= -BPS;
-            if ko || now >= d.start_ts + d.len_secs as i64 {
-                finish_duel(d, price, now);
-                emit!(DuelFinished { duel: d.key(), coin: d.coin, entry_price: d.entry_price, exit_price: price, pnl_bps: d.pnl_bps, ko: d.ko, winner: d.winner });
-                true
-            } else {
-                false
-            }
+            score_duel(d, duel_key, price, now)
         };
         if finished {
+            let action = settle_duel_action(&ctx.accounts.duel, duel_key, &ctx.accounts.config, ctx.accounts.payer.to_account_info());
             ctx.accounts.duel.exit(&crate::ID)?;
             MagicIntentBundleBuilder::new(
                 ctx.accounts.payer.to_account_info(),
@@ -989,6 +1109,7 @@ pub mod clashy {
                 ctx.accounts.magic_program.to_account_info(),
             )
             .commit_and_undelegate(&[ctx.accounts.duel.to_account_info()])
+            .add_post_undelegate_actions([action])
             .build_and_invoke()?;
         }
         Ok(())
@@ -1009,6 +1130,8 @@ pub mod clashy {
             d.status = duel_status::FINISHED;
             emit!(DuelFinished { duel: d.key(), coin: d.coin, entry_price: d.entry_price, exit_price: d.exit_price, pnl_bps: d.pnl_bps, ko: 0, winner: 0 });
         }
+        // the refund runs as a Magic Action right after the duel is home (settle_duel refunds a draw, no rake)
+        let action = settle_duel_action(&ctx.accounts.duel, ctx.accounts.duel.key(), &ctx.accounts.config, ctx.accounts.payer.to_account_info());
         ctx.accounts.duel.exit(&crate::ID)?;
         MagicIntentBundleBuilder::new(
             ctx.accounts.payer.to_account_info(),
@@ -1016,6 +1139,7 @@ pub mod clashy {
             ctx.accounts.magic_program.to_account_info(),
         )
         .commit_and_undelegate(&[ctx.accounts.duel.to_account_info()])
+        .add_post_undelegate_actions([action])
         .build_and_invoke()?;
         Ok(())
     }
@@ -1582,48 +1706,16 @@ pub mod clashy {
         let coin = ctx.accounts.tournament.coin;
         let feed = coin_feed(&ctx.accounts.config, coin)?;
         let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE)?;
+        let key = ctx.accounts.tournament.key();
         let finished = {
             let t = &mut ctx.accounts.tournament;
             require!(t.status == tour_status::LIVE, ClashyError::WrongStatus);
             require!(now >= t.round_started_at + t.round_secs as i64, ClashyError::RoundRunning);
-            let start = t.round_price;
-            let before = t.lives;
-            let mut alive = 0u8;
-            for i in 0..t.count as usize {
-                if t.lives[i] == 0 {
-                    continue;
-                }
-                if !math::royale_call_ok(t.calls[i], start, price) {
-                    t.lives[i] -= 1;
-                }
-                if t.lives[i] > 0 {
-                    alive += 1;
-                }
-            }
-            emit!(RoundResolved { tournament: t.key(), round: t.round, start_price: start, end_price: price, alive });
-            if alive == 0 {
-                // everyone fell in the same round: the survivors of the previous round share the win
-                t.lives = before;
-                for i in 0..t.count as usize {
-                    if t.lives[i] > 0 {
-                        t.lives[i] = 1;
-                    }
-                }
-                alive = t.lives[..t.count as usize].iter().filter(|l| **l > 0).count() as u8;
-            }
-            t.alive = alive;
-            t.calls = [0; MAX_TOUR_PLAYERS];
-            if alive <= 1 || t.round >= t.max_rounds {
-                t.status = tour_status::FINISHED;
-                true
-            } else {
-                t.round += 1;
-                t.round_price = price;
-                t.round_started_at = now;
-                false
-            }
+            resolve_round_at(t, key, price, now)
         };
         if finished {
+            let key = ctx.accounts.tournament.key();
+            let action = settle_tournament_action(&ctx.accounts.tournament, key, &ctx.accounts.config, ctx.accounts.payer.to_account_info());
             ctx.accounts.tournament.exit(&crate::ID)?;
             MagicIntentBundleBuilder::new(
                 ctx.accounts.payer.to_account_info(),
@@ -1631,6 +1723,7 @@ pub mod clashy {
                 ctx.accounts.magic_program.to_account_info(),
             )
             .commit_and_undelegate(&[ctx.accounts.tournament.to_account_info()])
+            .add_post_undelegate_actions([action])
             .build_and_invoke()?;
         }
         Ok(())
@@ -1648,6 +1741,8 @@ pub mod clashy {
             require!(now > t.round_started_at + t.round_secs as i64 + VOID_GRACE_SECS, ClashyError::NotExpired);
             t.status = tour_status::FINISHED;
         }
+        let key = ctx.accounts.tournament.key();
+        let action = settle_tournament_action(&ctx.accounts.tournament, key, &ctx.accounts.config, ctx.accounts.payer.to_account_info());
         ctx.accounts.tournament.exit(&crate::ID)?;
         MagicIntentBundleBuilder::new(
             ctx.accounts.payer.to_account_info(),
@@ -1655,6 +1750,7 @@ pub mod clashy {
             ctx.accounts.magic_program.to_account_info(),
         )
         .commit_and_undelegate(&[ctx.accounts.tournament.to_account_info()])
+        .add_post_undelegate_actions([action])
         .build_and_invoke()?;
         Ok(())
     }
@@ -1662,14 +1758,15 @@ pub mod clashy {
     pub fn settle_tournament<'info>(ctx: Context<'_, '_, 'info, 'info, SettleTournament<'info>>) -> Result<()> {
         let t = &ctx.accounts.tournament;
         require!(t.status == tour_status::FINISHED, ClashyError::WrongStatus);
-        require!(ctx.remaining_accounts.len() == t.count as usize, ClashyError::PayoutMismatch);
+        // the players' USDC accounts come first; a Magic Action appends its own three accounts after them
         let n = t.count as usize;
+        require!(ctx.remaining_accounts.len() >= n, ClashyError::PayoutMismatch);
         let top = *t.lives[..n].iter().max().unwrap_or(&0);
         let winners: Vec<usize> = (0..n).filter(|i| top > 0 && t.lives[*i] == top).collect();
         let (bump, rake_bps, mint) = (ctx.accounts.config.auth_bump, ctx.accounts.config.rake_bps, ctx.accounts.config.usdc_mint);
         let (tp, vault, auth) = (ctx.accounts.token_program.to_account_info(), ctx.accounts.vault.to_account_info(), ctx.accounts.auth.to_account_info());
         // every account must be that player's own USDC account, winner or not, so the list cannot be shuffled
-        for (i, acc) in ctx.remaining_accounts.iter().enumerate() {
+        for (i, acc) in ctx.remaining_accounts[..n].iter().enumerate() {
             check_usdc_account(acc, &t.players[i], &mint)?;
         }
         let pot = token_amount(&vault)?;
@@ -1686,6 +1783,399 @@ pub mod clashy {
         ctx.accounts.tournament.status = tour_status::SETTLED;
         Ok(())
     }
+
+    // ------------------------------------------------------------------ MagicBlock keeper and cranks
+    //
+    // A MagicBlock crank (a task scheduled on the rollup) runs tick_duel or tick_round every second, so knockouts, bells
+    // and Royale rounds land on time with nobody online. A scheduled instruction carries no wallet signature, so the
+    // keeper PDA (delegated to the rollup) signs the final commit, and its escrow pays the settlement Magic Action.
+
+    /// Solana, admin: creates the keeper and funds it with `lamports` for Magic Action fees on the rollup.
+    pub fn init_keeper(ctx: Context<InitKeeper>, lamports: u64) -> Result<()> {
+        let k = &mut ctx.accounts.keeper;
+        k.bump = ctx.bumps.keeper;
+        if lamports > 0 {
+            anchor_lang::system_program::transfer(
+                CpiContext::new(ctx.accounts.system_program.to_account_info(), anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.authority.to_account_info(),
+                    to: ctx.accounts.keeper.to_account_info(),
+                }),
+                lamports,
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Solana, admin: delegates the keeper to the pinned rollup validator (once).
+    pub fn delegate_keeper(ctx: Context<DelegateKeeper>) -> Result<()> {
+        let validator = pinned_validator(&ctx.accounts.config)?;
+        ctx.accounts.delegate_keeper(
+            &ctx.accounts.authority,
+            &[KEEPER_SEED],
+            DelegateConfig { validator: Some(validator), ..Default::default() },
+        )?;
+        Ok(())
+    }
+
+    /// Rollup: start_duel, plus a MagicBlock crank that runs tick_duel every second until the bell and the void grace
+    /// have passed. Either player (or the sponsor) can send it.
+    pub fn start_duel_cranked<'info>(ctx: Context<'_, '_, '_, 'info, StartCranked<'info>>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let config = &ctx.accounts.config;
+        let d = Box::new(Duel::try_deserialize(&mut &ctx.accounts.game.try_borrow_data()?[..])?);
+        require_keys_eq!(ctx.accounts.game.key(), Pubkey::create_program_address(&[DUEL_SEED, d.creator.as_ref(), &d.nonce.to_le_bytes(), &[d.bump]], &crate::ID).map_err(|_| error!(ClashyError::WrongStatus))?);
+        require!(d.status == duel_status::ROLLED && d.picks_revealed == 0b11, ClashyError::WrongStatus);
+        let feed = coin_feed(config, d.coin)?;
+        let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE)?;
+        let mut d = d;
+        d.entry_price = price;
+        d.start_ts = now;
+        d.status = duel_status::LIVE;
+        {
+            let mut data = ctx.accounts.game.try_borrow_mut_data()?;
+            d.try_serialize(&mut &mut data[..])?;
+        }
+        let iterations = (d.len_secs as i64 + VOID_GRACE_SECS + 5) * 1000 / TICK_MILLIS;
+        let a = &ctx.accounts;
+        schedule_ticks(&a.keeper, a.config.to_account_info(), a.game.to_account_info(), a.price.to_account_info(), a.magic_fee_vault.to_account_info(), a.magic_program.to_account_info(), a.magic_context.to_account_info(), crate::instruction::TickDuel {}, iterations)
+    }
+
+    /// Rollup: start_tournament, plus a MagicBlock crank that runs tick_round every second until the last round could end.
+    pub fn start_tournament_cranked<'info>(ctx: Context<'_, '_, '_, 'info, StartCranked<'info>>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let t = Box::new(Tournament::try_deserialize(&mut &ctx.accounts.game.try_borrow_data()?[..])?);
+        require_keys_eq!(ctx.accounts.game.key(), Pubkey::create_program_address(&[TOUR_SEED, t.creator.as_ref(), &t.nonce.to_le_bytes(), &[t.bump]], &crate::ID).map_err(|_| error!(ClashyError::WrongStatus))?);
+        require!(t.status == tour_status::OPEN && t.coin != NO_COIN, ClashyError::WrongStatus);
+        require!(t.count >= 2, ClashyError::TooFewPlayers);
+        require!(ctx.accounts.signer.key() == t.creator || now > t.created_at + TOUR_LOBBY_SECS, ClashyError::Unauthorized);
+        let feed = coin_feed(&ctx.accounts.config, t.coin)?;
+        let price = price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE)?;
+        let mut t = t;
+        t.alive = t.count;
+        t.round = 1;
+        t.round_price = price;
+        t.round_started_at = now;
+        t.calls = [0; MAX_TOUR_PLAYERS];
+        t.status = tour_status::LIVE;
+        {
+            let mut data = ctx.accounts.game.try_borrow_mut_data()?;
+            t.try_serialize(&mut &mut data[..])?;
+        }
+        let iterations = (t.max_rounds as i64 * (t.round_secs as i64 + 2) + VOID_GRACE_SECS + 5) * 1000 / TICK_MILLIS;
+        let a = &ctx.accounts;
+        schedule_ticks(&a.keeper, a.config.to_account_info(), a.game.to_account_info(), a.price.to_account_info(), a.magic_fee_vault.to_account_info(), a.magic_program.to_account_info(), a.magic_context.to_account_info(), crate::instruction::TickRound {}, iterations)
+    }
+
+    /// Rollup, run by the MagicBlock crank (anyone may call it; it only acts when a duel is due). Scores the live duel;
+    /// on a knockout or the bell it commits and undelegates it, signed by the keeper, with the settle Magic Action. A duel
+    /// whose price stayed unreadable past the void grace ends as a draw and is refunded.
+    pub fn tick_duel(ctx: Context<TickDuel>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let duel_key = ctx.accounts.duel.key();
+        if ctx.accounts.duel.status != duel_status::LIVE {
+            return Ok(());
+        }
+        let feed = coin_feed(&ctx.accounts.config, ctx.accounts.duel.coin)?;
+        let finished = match price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE) {
+            Ok(price) => score_duel(&mut ctx.accounts.duel, duel_key, price, now),
+            Err(_) => {
+                let d = &mut ctx.accounts.duel;
+                if now > d.start_ts + d.len_secs as i64 + VOID_GRACE_SECS {
+                    d.end_ts = now;
+                    d.ko = 0;
+                    d.winner = 0;
+                    d.status = duel_status::FINISHED;
+                    emit!(DuelFinished { duel: duel_key, coin: d.coin, entry_price: d.entry_price, exit_price: d.exit_price, pnl_bps: d.pnl_bps, ko: 0, winner: 0 });
+                    true
+                } else {
+                    false
+                }
+            }
+        };
+        ctx.accounts.keeper.ticks += 1;
+        if finished {
+            ctx.accounts.keeper.finished += 1;
+            let keeper = ctx.accounts.keeper.to_account_info();
+            let action = settle_duel_action(&ctx.accounts.duel, duel_key, &ctx.accounts.config, keeper.clone());
+            ctx.accounts.duel.exit(&crate::ID)?;
+            ctx.accounts.keeper.exit(&crate::ID)?;
+            MagicIntentBundleBuilder::new(keeper, ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info())
+                .magic_fee_vault(ctx.accounts.magic_fee_vault.to_account_info())
+                .commit_and_undelegate(&[ctx.accounts.duel.to_account_info()])
+                .add_post_undelegate_actions([action])
+                .build_and_invoke_signed(&[&[KEEPER_SEED, &[ctx.accounts.keeper.bump]]])?;
+        }
+        Ok(())
+    }
+
+    /// Rollup, run by the MagicBlock crank: resolves the current Royale round once its bell has rung. When the Royale
+    /// ends it goes home signed by the keeper, with the settle Magic Action. A round nobody could price past the void
+    /// grace ends the Royale with the players on the most lives sharing the pot.
+    pub fn tick_round(ctx: Context<TickRound>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let t = &ctx.accounts.tournament;
+        if t.status != tour_status::LIVE || now < t.round_started_at + t.round_secs as i64 {
+            return Ok(());
+        }
+        let feed = coin_feed(&ctx.accounts.config, t.coin)?;
+        let key = t.key();
+        let finished = match price::read_price(&ctx.accounts.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE) {
+            Ok(price) => resolve_round_at(&mut ctx.accounts.tournament, key, price, now),
+            Err(_) => {
+                let t = &mut ctx.accounts.tournament;
+                if now > t.round_started_at + t.round_secs as i64 + VOID_GRACE_SECS {
+                    t.status = tour_status::FINISHED;
+                    true
+                } else {
+                    false
+                }
+            }
+        };
+        ctx.accounts.keeper.ticks += 1;
+        if finished {
+            ctx.accounts.keeper.finished += 1;
+            let keeper = ctx.accounts.keeper.to_account_info();
+            let action = settle_tournament_action(&ctx.accounts.tournament, key, &ctx.accounts.config, keeper.clone());
+            ctx.accounts.tournament.exit(&crate::ID)?;
+            ctx.accounts.keeper.exit(&crate::ID)?;
+            MagicIntentBundleBuilder::new(keeper, ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info())
+                .magic_fee_vault(ctx.accounts.magic_fee_vault.to_account_info())
+                .commit_and_undelegate(&[ctx.accounts.tournament.to_account_info()])
+                .add_post_undelegate_actions([action])
+                .build_and_invoke_signed(&[&[KEEPER_SEED, &[ctx.accounts.keeper.bump]]])?;
+        }
+        Ok(())
+    }
+
+    // ------------------------------------------------------------------ private duel (MagicBlock Private Ephemeral Rollup)
+    //
+    // Instead of commit-reveal on Solana (four transactions), each player locks their pick on MagicBlock's TEE rollup in
+    // a Pick account that only they can read. start_private_duel copies both picks into the duel, makes them public and
+    // starts the cranked clash. Each Pick is pre-funded with the rent of its permission, which it pays itself on the rollup.
+
+    /// Solana, sponsor: creates the two Pick accounts of a matched (or rolled) duel that will use private picks.
+    pub fn open_private_picks(ctx: Context<OpenPrivatePicks>) -> Result<()> {
+        let d = &ctx.accounts.duel;
+        require!(d.status == duel_status::MATCHED || d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+        require!(d.picks_committed == 0, ClashyError::WrongStatus);
+        let duel = d.key();
+        let rent = ephemeral_rollups_sdk::ephemeral_accounts::rent(EphemeralPermission::size_of(1) as u32);
+        for (pick, player, bump) in [
+            (&mut ctx.accounts.pick_a, d.creator, ctx.bumps.pick_a),
+            (&mut ctx.accounts.pick_b, d.joiner, ctx.bumps.pick_b),
+        ] {
+            pick.duel = duel;
+            pick.player = player;
+            pick.bump = bump;
+        }
+        for to in [ctx.accounts.pick_a.to_account_info(), ctx.accounts.pick_b.to_account_info()] {
+            anchor_lang::system_program::transfer(
+                CpiContext::new(ctx.accounts.system_program.to_account_info(), anchor_lang::system_program::Transfer { from: ctx.accounts.payer.to_account_info(), to }),
+                rent,
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Solana, a player: hands a rolled duel and both Pick accounts to the pinned (TEE) rollup validator.
+    pub fn delegate_private_duel(ctx: Context<DelegatePrivateDuel>, creator: Pubkey, nonce: u64) -> Result<()> {
+        let d = Duel::try_deserialize(&mut &ctx.accounts.duel.try_borrow_data()?[..])?;
+        require!(d.status == duel_status::ROLLED && d.picks_committed == 0, ClashyError::WrongStatus);
+        let who = ctx.accounts.player.key();
+        require!(who == d.creator || who == d.joiner, ClashyError::NotPlayer);
+        let duel = ctx.accounts.duel.key();
+        let validator = pinned_validator(&ctx.accounts.config)?;
+        let cfg = || DelegateConfig { validator: Some(validator), ..Default::default() };
+        ctx.accounts.delegate_duel(&ctx.accounts.payer, &[DUEL_SEED, creator.as_ref(), &nonce.to_le_bytes()], cfg())?;
+        ctx.accounts.delegate_pick_a(&ctx.accounts.payer, &[PICK_SEED, duel.as_ref(), d.creator.as_ref()], cfg())?;
+        ctx.accounts.delegate_pick_b(&ctx.accounts.payer, &[PICK_SEED, duel.as_ref(), d.joiner.as_ref()], cfg())?;
+        Ok(())
+    }
+
+    /// TEE rollup, the player: locks their side and leverage. The first lock makes the Pick private to that player
+    /// (a MagicBlock ephemeral permission), so the other player cannot read it until the duel starts.
+    pub fn lock_pick(ctx: Context<LockPick>, dir: u8, lev: u16) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let d = &ctx.accounts.duel;
+        require!(d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+        require!(now <= d.matched_at + DUEL_SETUP_SECS + DUEL_REVEAL_SECS, ClashyError::StepClosed);
+        require!(dir == side::LONG || dir == side::SHORT, ClashyError::BadSide);
+        require!(lev >= 1 && lev <= MAX_LEVERAGE, ClashyError::BadLeverage);
+        let me = ctx.accounts.player.key();
+        player_index(d, &me)?;
+        require!(!ctx.accounts.pick.locked, ClashyError::AlreadyDone);
+        let duel = d.key();
+        let bump = ctx.accounts.pick.bump;
+        if ctx.accounts.permission.lamports() == 0 {
+            CreateEphemeralPermissionCpi {
+                payer: ctx.accounts.pick.to_account_info(),
+                permissioned_account: ctx.accounts.pick.to_account_info(),
+                permission: ctx.accounts.permission.to_account_info(),
+                vault: ctx.accounts.ephemeral_vault.to_account_info(),
+                magic_program: ctx.accounts.magic_program.to_account_info(),
+                permission_program: ctx.accounts.permission_program.to_account_info(),
+                args: EphemeralMembersArgs {
+                    is_private: true,
+                    members: vec![PermissionMember { flags: AUTHORITY_FLAG | TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG, pubkey: me.to_bytes().into() }],
+                },
+            }
+            .invoke_signed(&[&[PICK_SEED, duel.as_ref(), me.as_ref(), &[bump]]])?;
+        }
+        let pick = &mut ctx.accounts.pick;
+        pick.side = dir;
+        pick.lev = lev;
+        pick.locked = true;
+        Ok(())
+    }
+
+    /// TEE rollup, either player (or the sponsor): once both picks are locked, copies them into the duel, makes both
+    /// picks public, sets the entry price, starts the clock, schedules the MagicBlock crank that runs tick_duel every
+    /// second, and sends the two Picks home (the keeper signs).
+    pub fn start_private_duel<'info>(ctx: Context<'_, '_, '_, 'info, StartPrivateDuel<'info>>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let a = &ctx.accounts;
+        require!(a.duel.status == duel_status::ROLLED && a.duel.picks_committed == 0, ClashyError::WrongStatus);
+        require!(a.pick_a.locked && a.pick_b.locked, ClashyError::CommitsPending);
+        let feed = coin_feed(&a.config, a.duel.coin)?;
+        let price = price::read_price(&a.price.to_account_info(), &feed, now, MAX_ER_PRICE_AGE)?;
+        let duel_key = a.duel.key();
+        for (pick, permission) in [(&a.pick_a, &a.permission_a), (&a.pick_b, &a.permission_b)] {
+            UpdateEphemeralPermissionCpi {
+                payer: pick.to_account_info(),
+                permissioned_account: pick.to_account_info(),
+                permission: permission.to_account_info(),
+                vault: a.ephemeral_vault.to_account_info(),
+                magic_program: a.magic_program.to_account_info(),
+                permission_program: a.permission_program.to_account_info(),
+                authority: pick.to_account_info(),
+                authority_is_signer: false,
+                args: EphemeralMembersArgs { is_private: false, members: vec![] },
+            }
+            .invoke_signed(&[&[PICK_SEED, duel_key.as_ref(), pick.player.as_ref(), &[pick.bump]]])?;
+        }
+        let (sa, la, sb, lb) = (a.pick_a.side, a.pick_a.lev, a.pick_b.side, a.pick_b.lev);
+        let d = &mut ctx.accounts.duel;
+        d.side = [sa, sb];
+        d.lev = [la, lb];
+        d.picks_revealed = 0b11;
+        d.entry_price = price;
+        d.start_ts = now;
+        d.status = duel_status::LIVE;
+        let iterations = (d.len_secs as i64 + VOID_GRACE_SECS + 5) * 1000 / TICK_MILLIS;
+        d.exit(&crate::ID)?;
+        let a = &ctx.accounts;
+        schedule_ticks(&a.keeper, a.config.to_account_info(), a.duel.to_account_info(), a.price.to_account_info(), a.magic_fee_vault.to_account_info(), a.magic_program.to_account_info(), a.magic_context.to_account_info(), crate::instruction::TickDuel {}, iterations)?;
+        a.pick_a.exit(&crate::ID)?;
+        a.pick_b.exit(&crate::ID)?;
+        MagicIntentBundleBuilder::new(a.keeper.to_account_info(), a.magic_context.to_account_info(), a.magic_program.to_account_info())
+            .magic_fee_vault(a.magic_fee_vault.to_account_info())
+            .commit_and_undelegate(&[a.pick_a.to_account_info(), a.pick_b.to_account_info()])
+            .build_and_invoke_signed(&[&[KEEPER_SEED, &[a.keeper.bump]]])?;
+        Ok(())
+    }
+
+    /// TEE rollup, anyone: a private duel whose picks were never both locked (the setup and reveal windows are over)
+    /// ends as a draw and goes home with its Picks; the settle Magic Action refunds both stakes, no rake.
+    pub fn abandon_private_duel(ctx: Context<AbandonPrivateDuel>) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let duel_key = ctx.accounts.duel.key();
+        {
+            let d = &mut ctx.accounts.duel;
+            require!(d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+            require!(now > d.matched_at + DUEL_SETUP_SECS + DUEL_REVEAL_SECS, ClashyError::NotExpired);
+            d.end_ts = now;
+            d.ko = 0;
+            d.winner = 0;
+            d.status = duel_status::FINISHED;
+            emit!(DuelFinished { duel: duel_key, coin: d.coin, entry_price: 0, exit_price: 0, pnl_bps: [0, 0], ko: 0, winner: 0 });
+        }
+        let action = settle_duel_action(&ctx.accounts.duel, duel_key, &ctx.accounts.config, ctx.accounts.payer.to_account_info());
+        ctx.accounts.duel.exit(&crate::ID)?;
+        MagicIntentBundleBuilder::new(ctx.accounts.payer.to_account_info(), ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info())
+            .commit_and_undelegate(&[ctx.accounts.duel.to_account_info(), ctx.accounts.pick_a.to_account_info(), ctx.accounts.pick_b.to_account_info()])
+            .add_post_undelegate_actions([action])
+            .build_and_invoke()?;
+        Ok(())
+    }
+
+    /// Rollup, admin: brings a delegated price feed, calls board or squad channel home to Solana, so a deployment can move
+    /// them to another rollup validator (for example from a regional rollup to MagicBlock's TEE rollup). Games and
+    /// money accounts are refused: only the program's own flows send those home.
+    pub fn admin_undelegate(ctx: Context<AdminUndelegate>) -> Result<()> {
+        let info = ctx.accounts.target.to_account_info();
+        {
+            let data = info.try_borrow_data()?;
+            require!(data.len() >= 8, ClashyError::WrongStatus);
+            let disc = &data[..8];
+            require!(
+                disc == PriceFeed::DISCRIMINATOR || disc == Board::DISCRIMINATOR || disc == Channel::DISCRIMINATOR,
+                ClashyError::WrongStatus
+            );
+        }
+        MagicIntentBundleBuilder::new(ctx.accounts.authority.to_account_info(), ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info())
+            .commit_and_undelegate(&[info])
+            .build_and_invoke()?;
+        Ok(())
+    }
+
+    /// Solana, anyone: closes a Pick once its duel is settled or cancelled; the rent goes back to whoever paid the duel's.
+    pub fn close_pick(ctx: Context<ClosePick>) -> Result<()> {
+        let d = &ctx.accounts.duel;
+        require!(d.status == duel_status::SETTLED || d.status == duel_status::CANCELLED, ClashyError::WrongStatus);
+        Ok(())
+    }
+}
+
+/// Schedules a MagicBlock crank on the rollup that runs `tick` (tick_duel or tick_round) on this game every TICK_MILLIS,
+/// paid and signed by the keeper PDA. The scheduled instruction's accounts are exactly TickDuel / TickRound's.
+#[allow(deprecated)]
+fn schedule_ticks<'info, T: anchor_lang::InstructionData>(
+    keeper: &Account<'info, Keeper>,
+    config: AccountInfo<'info>,
+    game: AccountInfo<'info>,
+    price: AccountInfo<'info>,
+    fee_vault: AccountInfo<'info>,
+    magic_program: AccountInfo<'info>,
+    magic_context: AccountInfo<'info>,
+    tick: T,
+    iterations: i64,
+) -> Result<()> {
+    let accounts = vec![
+        AccountMeta::new(keeper.key(), false),
+        AccountMeta::new_readonly(config.key(), false),
+        AccountMeta::new(game.key(), false),
+        AccountMeta::new_readonly(price.key(), false),
+        AccountMeta::new(fee_vault.key(), false),
+        // #[commit] appends magic_program, then magic_context
+        AccountMeta::new_readonly(magic_program.key(), false),
+        AccountMeta::new(magic_context.key(), false),
+    ];
+    let ix = Instruction { program_id: crate::ID, accounts, data: tick.data() };
+    let task = task_id(&game.key());
+    // ScheduleCrankCpi borrows its AccountInfos for the whole 'info lifetime; leaking these few (on the per-transaction
+    // heap) gives it that.
+    let payer: &'info AccountInfo<'info> = Box::leak(Box::new(keeper.to_account_info()));
+    let magic: &'info AccountInfo<'info> = Box::leak(Box::new(magic_program.clone()));
+    let infos: &'info [AccountInfo<'info>] =
+        Box::leak(vec![keeper.to_account_info(), config, game, price, fee_vault, magic_program, magic_context].into_boxed_slice());
+    ScheduleCrankCpi {
+        payer,
+        magic_program: magic,
+        instruction_accounts: infos,
+        args: ScheduleTaskArgs { task_id: task, execution_interval_millis: TICK_MILLIS, iterations, instructions: vec![ix] },
+    }
+    .invoke_signed(&[&[KEEPER_SEED, &[keeper.bump]]])
+    .map_err(Into::into)
+}
+
+/// The pinned rollup validator's magic fee vault ([b"magic-fee-vault", validator] under the delegation program): the
+/// keeper is a delegated fee payer, and MagicBlock bills a delegated payer's commits and actions through this vault.
+fn fee_vault_of(config: &Config) -> Pubkey {
+    Pubkey::find_program_address(&[b"magic-fee-vault", config.er_validator.as_ref()], &DELEGATION_PROGRAM_ID).0
+}
+
+fn permission_of(account: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[PERMISSION_SEED, account.as_ref()], &ephemeral_rollups_sdk::consts::PERMISSION_PROGRAM_ID).0
 }
 
 // ====================================================================== accounts
@@ -1986,6 +2476,217 @@ pub struct SettleDuel<'info> {
     #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
     pub rent_payer: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct InitKeeper<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Account<'info, Config>,
+    #[account(init, payer = authority, space = 8 + Keeper::INIT_SPACE, seeds = [KEEPER_SEED], bump)]
+    pub keeper: Account<'info, Keeper>,
+    pub system_program: Program<'info, System>,
+}
+
+#[delegate]
+#[derive(Accounts)]
+pub struct DelegateKeeper<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Account<'info, Config>,
+    /// CHECK: the keeper PDA, checked by seeds.
+    #[account(mut, del, seeds = [KEEPER_SEED], bump)]
+    pub keeper: AccountInfo<'info>,
+}
+
+/// Rollup: start a duel or a Royale (`game`) and schedule its MagicBlock crank.
+#[derive(Accounts)]
+pub struct StartCranked<'info> {
+    pub signer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    /// CHECK: the duel or tournament; its seeds are checked in the handler.
+    #[account(mut, owner = crate::ID)]
+    pub game: UncheckedAccount<'info>,
+    /// CHECK: validated against the configured feed for the game's coin.
+    pub price: UncheckedAccount<'info>,
+    /// CHECK: the pinned validator's magic fee vault (the keeper is a delegated fee payer).
+    #[account(mut, address = fee_vault_of(&config))]
+    pub magic_fee_vault: UncheckedAccount<'info>,
+    #[account(mut, seeds = [KEEPER_SEED], bump = keeper.bump)]
+    pub keeper: Box<Account<'info, Keeper>>,
+    /// CHECK: MagicBlock's magic context (the scheduled ticks commit through it).
+    #[account(mut, address = ephemeral_rollups_sdk::consts::MAGIC_CONTEXT_ID)]
+    pub magic_context: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock's magic program (schedules the crank).
+    #[account(address = ephemeral_rollups_sdk::consts::MAGIC_PROGRAM_ID)]
+    pub magic_program: UncheckedAccount<'info>,
+}
+
+/// The crank's duel tick. Account order is the order schedule_ticks writes.
+#[commit]
+#[derive(Accounts)]
+pub struct TickDuel<'info> {
+    #[account(mut, seeds = [KEEPER_SEED], bump = keeper.bump)]
+    pub keeper: Box<Account<'info, Keeper>>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Box<Account<'info, Duel>>,
+    /// CHECK: validated against the configured feed for the duel's coin.
+    pub price: UncheckedAccount<'info>,
+    /// CHECK: the pinned validator's magic fee vault (the keeper is a delegated fee payer).
+    #[account(mut, address = fee_vault_of(&config))]
+    pub magic_fee_vault: UncheckedAccount<'info>,
+}
+
+/// The crank's Royale tick. Account order is the order schedule_ticks writes.
+#[commit]
+#[derive(Accounts)]
+pub struct TickRound<'info> {
+    #[account(mut, seeds = [KEEPER_SEED], bump = keeper.bump)]
+    pub keeper: Box<Account<'info, Keeper>>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
+    pub tournament: Box<Account<'info, Tournament>>,
+    /// CHECK: validated against the configured feed for the tournament coin.
+    pub price: UncheckedAccount<'info>,
+    /// CHECK: the pinned validator's magic fee vault (the keeper is a delegated fee payer).
+    #[account(mut, address = fee_vault_of(&config))]
+    pub magic_fee_vault: UncheckedAccount<'info>,
+}
+
+#[derive(Accounts)]
+pub struct OpenPrivatePicks<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Box<Account<'info, Duel>>,
+    #[account(init, payer = payer, space = 8 + Pick::INIT_SPACE, seeds = [PICK_SEED, duel.key().as_ref(), duel.creator.as_ref()], bump)]
+    pub pick_a: Box<Account<'info, Pick>>,
+    #[account(init, payer = payer, space = 8 + Pick::INIT_SPACE, seeds = [PICK_SEED, duel.key().as_ref(), duel.joiner.as_ref()], bump)]
+    pub pick_b: Box<Account<'info, Pick>>,
+    pub system_program: Program<'info, System>,
+}
+
+#[delegate]
+#[derive(Accounts)]
+#[instruction(creator: Pubkey, nonce: u64)]
+pub struct DelegatePrivateDuel<'info> {
+    /// One of the duel's two players.
+    pub player: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
+    /// CHECK: the duel PDA, checked by seeds.
+    #[account(mut, del, seeds = [DUEL_SEED, creator.as_ref(), &nonce.to_le_bytes()], bump)]
+    pub duel: AccountInfo<'info>,
+    /// CHECK: the creator's Pick, checked by seeds in the handler's delegation.
+    #[account(mut, del)]
+    pub pick_a: AccountInfo<'info>,
+    /// CHECK: the joiner's Pick.
+    #[account(mut, del)]
+    pub pick_b: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+pub struct LockPick<'info> {
+    pub player: Signer<'info>,
+    #[account(seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Account<'info, Duel>,
+    #[account(mut, seeds = [PICK_SEED, duel.key().as_ref(), player.key().as_ref()], bump = pick.bump)]
+    pub pick: Account<'info, Pick>,
+    /// CHECK: the Pick's MagicBlock permission PDA.
+    #[account(mut, address = permission_of(&pick.key()))]
+    pub permission: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock permission program.
+    #[account(address = ephemeral_rollups_sdk::consts::PERMISSION_PROGRAM_ID)]
+    pub permission_program: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock ephemeral vault.
+    #[account(mut, address = ephemeral_rollups_sdk::consts::EPHEMERAL_VAULT_ID)]
+    pub ephemeral_vault: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock magic program.
+    #[account(address = ephemeral_rollups_sdk::consts::MAGIC_PROGRAM_ID)]
+    pub magic_program: UncheckedAccount<'info>,
+}
+
+#[derive(Accounts)]
+pub struct StartPrivateDuel<'info> {
+    pub signer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Box<Account<'info, Duel>>,
+    #[account(mut, seeds = [PICK_SEED, duel.key().as_ref(), duel.creator.as_ref()], bump = pick_a.bump)]
+    pub pick_a: Box<Account<'info, Pick>>,
+    #[account(mut, seeds = [PICK_SEED, duel.key().as_ref(), duel.joiner.as_ref()], bump = pick_b.bump)]
+    pub pick_b: Box<Account<'info, Pick>>,
+    /// CHECK: pick_a's permission PDA.
+    #[account(mut, address = permission_of(&pick_a.key()))]
+    pub permission_a: UncheckedAccount<'info>,
+    /// CHECK: pick_b's permission PDA.
+    #[account(mut, address = permission_of(&pick_b.key()))]
+    pub permission_b: UncheckedAccount<'info>,
+    /// CHECK: validated against the configured feed for the duel's coin.
+    pub price: UncheckedAccount<'info>,
+    /// CHECK: the pinned validator's magic fee vault (the keeper is a delegated fee payer).
+    #[account(mut, address = fee_vault_of(&config))]
+    pub magic_fee_vault: UncheckedAccount<'info>,
+    #[account(mut, seeds = [KEEPER_SEED], bump = keeper.bump)]
+    pub keeper: Box<Account<'info, Keeper>>,
+    /// CHECK: MagicBlock permission program.
+    #[account(address = ephemeral_rollups_sdk::consts::PERMISSION_PROGRAM_ID)]
+    pub permission_program: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock ephemeral vault.
+    #[account(mut, address = ephemeral_rollups_sdk::consts::EPHEMERAL_VAULT_ID)]
+    pub ephemeral_vault: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock magic context.
+    #[account(mut, address = ephemeral_rollups_sdk::consts::MAGIC_CONTEXT_ID)]
+    pub magic_context: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock magic program.
+    #[account(address = ephemeral_rollups_sdk::consts::MAGIC_PROGRAM_ID)]
+    pub magic_program: UncheckedAccount<'info>,
+}
+
+#[commit]
+#[derive(Accounts)]
+pub struct AbandonPrivateDuel<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+    #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Box<Account<'info, Duel>>,
+    #[account(mut, seeds = [PICK_SEED, duel.key().as_ref(), duel.creator.as_ref()], bump = pick_a.bump)]
+    pub pick_a: Box<Account<'info, Pick>>,
+    #[account(mut, seeds = [PICK_SEED, duel.key().as_ref(), duel.joiner.as_ref()], bump = pick_b.bump)]
+    pub pick_b: Box<Account<'info, Pick>>,
+}
+
+#[derive(Accounts)]
+pub struct ClosePick<'info> {
+    #[account(mut, close = rent_payer, seeds = [PICK_SEED, duel.key().as_ref(), pick.player.as_ref()], bump = pick.bump, has_one = duel @ ClashyError::WrongStatus)]
+    pub pick: Account<'info, Pick>,
+    pub duel: Box<Account<'info, Duel>>,
+    /// CHECK: gets the Pick's rent back; must be whoever paid the duel's.
+    #[account(mut, address = duel.rent_payer @ ClashyError::PayoutMismatch)]
+    pub rent_payer: UncheckedAccount<'info>,
+}
+
+#[commit]
+#[derive(Accounts)]
+pub struct AdminUndelegate<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump, has_one = authority @ ClashyError::Unauthorized)]
+    pub config: Box<Account<'info, Config>>,
+    /// CHECK: a delegated PriceFeed, Board or Channel of this program (checked by discriminator in the handler).
+    #[account(mut, owner = crate::ID)]
+    pub target: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]
@@ -2373,6 +3074,8 @@ pub struct CallRound<'info> {
 pub struct VoidTournament<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
     pub tournament: Account<'info, Tournament>,
 }
@@ -2382,6 +3085,8 @@ pub struct VoidTournament<'info> {
 pub struct VoidDuel<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, Config>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
     pub duel: Account<'info, Duel>,
 }

@@ -60,9 +60,24 @@ FORK="$DIR/fork"
 [ -s "$FORK/stocks.json" ] || npx tsx scripts/fork-stocks.ts
 for f in "$FORK"/accounts/*.json; do EXTRA+=(--account "$(basename "$f" .json)" "$f"); done
 for so in "$FORK"/programs/*.so; do EXTRA+=(--bpf-program "$(basename "$so" .so)" "$so"); done
+# MagicBlock's 1.1.1 package ships its local VRF test queue (GKE6d7…) already full of 52 stale requests, so local rolls
+# fail with "account data too small"; .localnet/vrf/ holds the 0.14.10 package's snapshot of the same queue, which has room.
+VRF_QUEUE_OVERRIDE="$DIR/vrf/GKE6d7iv8kCBrsxr78W3xVdjGLLLJnxsGiuzrsZCGEvb.json"
+[ -s "$VRF_QUEUE_OVERRIDE" ] && EXTRA+=(--account GKE6d7iv8kCBrsxr78W3xVdjGLLLJnxsGiuzrsZCGEvb "$VRF_QUEUE_OVERRIDE")
 # The sponsor pays every fee and rent so players only ever hold USDC. Made once, never printed.
 SPONSOR=.keys/local-sponsor.json
 [ -s "$SPONSOR" ] || solana-keygen new --no-bip39-passphrase --silent --outfile "$SPONSOR" >/dev/null 2>&1
+
+# MagicBlock's validator 1.1.1 (the version mainnet and the devnet TEE run) is built on Solana 4.0, and its committor's
+# transactions don't deserialize on an Agave 3.x base. Devnet runs Agave 4.5, so the local base uses an Agave 4.0
+# test validator when one is unpacked under .localnet/agave-*/ (the global CLI that builds the program stays as it is).
+AGAVE_BIN=${CLASHY_AGAVE_BIN:-$(ls -d "$DIR"/agave-*/solana-release/bin 2>/dev/null | tail -1)}
+if [ -n "$AGAVE_BIN" ]; then
+  export PATH="$AGAVE_BIN:$PATH"; echo "base layer: $(solana-test-validator --version)"
+  # A test validator turns every feature on; devnet still runs SBPF v0 programs (v3 deployment is off there), so copy
+  # devnet's own feature set into genesis and rehearse against exactly the rules the devnet upgrade will meet.
+  EXTRA+=(--clone-feature-set --url "${CLASHY_FEATURES_FROM:-https://api.devnet.solana.com}")
+fi
 
 if up "$BASE_PORT"; then echo "base already up on :$BASE_PORT"; else
   echo "starting base on :$BASE_PORT"
@@ -81,7 +96,7 @@ solana program deploy target/deploy/clashy.so --program-id target/deploy/clashy-
 
 if up "$ER_PORT"; then echo "rollup already up on :$ER_PORT"; else
   echo "starting rollup on :$ER_PORT"
-  ephemeral-validator --no-tui --storage "$DIR/er" --listen "$HOST:$ER_PORT" \
+  RUST_LOG=${CLASHY_ER_LOG:-info,magicblock_task_scheduler=debug} ephemeral-validator --no-tui --storage "$DIR/er" --listen "$HOST:$ER_PORT" \
     --remotes "http://$HOST:$BASE_PORT" --remotes "ws://$HOST:$((BASE_PORT + 1))" >"$DIR/er.log" 2>&1 &
   wait_rpc "$ER_PORT" rollup
 fi

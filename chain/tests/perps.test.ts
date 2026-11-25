@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import {
   BN, COINS, Keypair, P, PublicKey, USDC, USDC_MINT, authority, baseProgram, ensureSetup, er, erProgram, lamports, LOCAL_ER_VALIDATOR,
-  crank as crankKey, programFor, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome, rollDuel } from './common.ts';
+  crank as crankKey, programFor, randomSeed, runCrank, sendEr, settledByAction, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome, rollDuel } from './common.ts';
 
 const STAKE = 5 * USDC;
 const BPS = 10_000n;
@@ -81,16 +81,21 @@ async function liveDuel(lenSecs: number, picks: [{ side: number; lev: number }, 
   await programFor(a).methods.delegateDuel(a.publicKey, new BN(nonce)).accountsPartial({ player: a.publicKey, ...pay, duel }).remainingAccounts(validatorMeta).rpc();
   await until('duel on the rollup', 30_000, () => er.getAccountInfo(duel));
   const priceAcct = P.feed(d.coin);
+  // balances before the clash: the settle Magic Action may pay out the moment the duel comes home
+  pre.set(duel.toBase58(), await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury)]));
   await sendEr(programFor(a, true).methods.startDuel().accountsPartial({ signer: a.publicKey, duel, price: priceAcct }), a);
   return { a, b, duel, vault, coin: d.coin, priceAcct };
 }
 
 const readEr = async (duel: PublicKey) => erProgram.coder.accounts.decode('duel', (await er.getAccountInfo(duel))!.data);
 
+const pre = new Map<string, number[]>();
+
 async function settle(a: Keypair, b: Keypair, duel: PublicKey, vault: PublicKey) {
-  const [ca, cb, ct] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury)]);
-  await sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc();
+  const [ca, cb, ct] = pre.get(duel.toBase58())!;
+  const by = await settledByAction(duel, 'duel', () => sponsorProgram.methods.settleDuel().accountsPartial({ duel, vault, creatorUsdc: usdcAta(a.publicKey), joinerUsdc: usdcAta(b.publicKey), creatorPlayer: P.player(a.publicKey), joinerPlayer: P.player(b.publicKey), treasury, rentPayer: sponsor.publicKey }).rpc());
   const [na, nb, nt] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey), tokenBalance(treasury)]);
+  console.log(`  settled ${by}`);
   return { da: na - ca, db: nb - cb, dt: nt - ct };
 }
 
@@ -109,7 +114,7 @@ describe('perps clash: leverage and liquidation', () => {
     }
     await waitHome(duel);
     const d = await baseProgram.account.duel.fetch(duel);
-    assert.equal(d.status, 4, 'finished and back on Solana');
+    assert.ok(d.status === 4 || d.status === 5, 'finished and back on Solana');
     assert.deepEqual([...d.lev], [25, 25]);
     const [entry, exit] = [BigInt(d.entryPrice.toString()), BigInt(d.exitPrice.toString())];
     assert.equal(BigInt(d.pnlBps[0].toString()), expectedPnl(entry, exit, 1, 25), 'the long side earns 25x the move');
@@ -143,7 +148,7 @@ describe('perps clash: leverage and liquidation', () => {
     await sendEr(tx, crankKey);
     await waitHome(duel);
     const d = await baseProgram.account.duel.fetch(duel);
-    assert.equal(d.status, 4, 'the knockout finished the clash long before its 10 minutes');
+    assert.ok(d.status === 4 || d.status === 5, 'the knockout finished the clash long before its 10 minutes');
     assert.ok(d.endTs.toNumber() < d.startTs.toNumber() + 600);
     assert.deepEqual([...d.lev], [50, 10]);
     assert.equal(BigInt(d.exitPrice.toString()), drop);

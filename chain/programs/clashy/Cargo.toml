@@ -23,9 +23,14 @@ custom-panic = []
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = { version = "0.32.1", default-features = false, features = ["token", "token_2022"] }
-ephemeral-rollups-sdk = { version = "0.17.0", features = ["anchor-compat", "vrf"] }
+# 0.18.0 is the last release that keeps anchor-compat (Anchor 0.32) and runs on both validator 1.x (mainnet, the
+# devnet TEE) and 2.0; 0.20 needs Anchor 1.2 and drops anchor-compat.
+ephemeral-rollups-sdk = { version = "=0.18.0", features = ["anchor-compat", "vrf", "crank", "access-control"] }
 solana-sha256-hasher = "3.1"
 bytemuck = { version = "1.20", features = ["derive", "min_const_generics"] }
+
+[dev-dependencies]
+base64 = "0.22"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
