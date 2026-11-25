@@ -206,7 +206,8 @@ export default function OnChainDuel() {
             permissionA: permissionOf(P.pick(active, d.creator)), permissionB: permissionOf(P.pick(active, d.joiner)), price, magicFeeVault: feeVault(),
           })).catch(async (e) => {
             // a rival not locked yet (CommitsPending) is tried again; the other device starting it first is not an error
-            if (/CommitsPending|0x1782/.test(String(e))) return;
+            // (the TEE reports it by name, as hex 0x1782 or as {"Custom":6018})
+            if (/CommitsPending|0x1782|"Custom":\s*6018\b/.test(String(e))) return;
             const now = await readDuel(progs.base, active).catch(() => null);
             if (now && now.status !== 2) return;
             setErr(errText(e));
