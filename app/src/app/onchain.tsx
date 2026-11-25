@@ -204,7 +204,13 @@ export default function OnChainDuel() {
           await onEr('Start the clash · MagicBlock crank scheduled', progs.er.methods.startPrivateDuel().accountsPartial({
             signer: wallet, duel: active, pickA: P.pick(active, d.creator), pickB: P.pick(active, d.joiner),
             permissionA: permissionOf(P.pick(active, d.creator)), permissionB: permissionOf(P.pick(active, d.joiner)), price, magicFeeVault: feeVault(),
-          })).catch((e) => { if (!/CommitsPending|0x1782/.test(String(e))) setErr(errText(e)); }).finally(() => inflight.current.delete('start-private'));
+          })).catch(async (e) => {
+            // a rival not locked yet (CommitsPending) is tried again; the other device starting it first is not an error
+            if (/CommitsPending|0x1782/.test(String(e))) return;
+            const now = await readDuel(progs.base, active).catch(() => null);
+            if (now && now.status !== 2) return;
+            setErr(errText(e));
+          }).finally(() => inflight.current.delete('start-private'));
         }
       }
       // SEALED ON SOLANA (commit-reveal): once both picks are committed, reveal mine
