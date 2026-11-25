@@ -25,8 +25,8 @@ git was not touched (so commit ranges and "pushed/private repo" claims are marke
 | Instruction counts in the form's table (OpenDuel 35, JoinDuel 26, RequestCoinRoll 21, CommitPick 28, RevealPick 24, DelegateDuel 12, SettleDuel 9, CreateClan 12, DeclareWar 4, SettleWar 4, tournaments 4/3/4/4, InitPlayer 112) | counted over all 1,520 pre-Nov-23 txs | All match exactly. |
 | Mainnet | `getAccountInfo` on `api.mainnet-beta.solana.com` | Program does not exist there. "Nothing on mainnet" is true. |
 | Sponsor `AjdLmw…EP4Hz` balance | `getBalance` | 0.646 SOL (docs say about 0.26). Crank `GGeCjD…` 0.296 SOL. Deployer 8.54 SOL. |
-| Latest devnet attempt | `chain/.localnet/devnet-mb-test.log` (Nov 25 16:45 IST) | `crank: rollup rejected the transaction: 401 {"error":"Missing token query param"}` repeated, and "a cranked duel finishes and pays out" **failed** on devnet-tee. |
-| Latest local runs | `.localnet/run-all.log` (13:46 IST), `suite-*.log` | magicblock 4/4, perps 3/3, brief 9 pass, void 1/1, **clashy 4 of 5 (the VRF test failed)**; a clashy rerun was in progress at 16:44 IST (tests 1 and 2 ok). `c-vrf.log`: `RequestCoinRoll` "account data too small for instruction". |
+| Latest devnet attempt | `chain/evidence/devnet-mb-test.log` (Nov 25 16:45 IST) | `crank: rollup rejected the transaction: 401 {"error":"Missing token query param"}` repeated, and "a cranked duel finishes and pays out" **failed** on devnet-tee. |
+| Latest local runs | `evidence/run-all.log` (13:46 IST), `suite-*.log` | magicblock 4/4, perps 3/3, brief 9 pass, void 1/1, **clashy 4 of 5 (the VRF test failed)**; a clashy rerun was in progress at 16:44 IST (tests 1 and 2 ok). `c-vrf.log`: `RequestCoinRoll` "account data too small for instruction". |
 | clashy.fun / play.clashy.fun / repo | `dig`, `curl`, GitHub API | `clashy.fun` still the Hostinger parked page (`2.57.91.91`); `play.clashy.fun` has no record; `api.github.com/repos/nickthelegend/clashy` returns 404 (private or missing). |
 | Event | `build.magicblock.app/api/events` id 17, `luma.com/hedv5sgh` | Kickoff `2026-11-20T14:00Z`, `submitEndDate 2026-11-27T14:00Z`, theme Entertainment Finance, prizes $500 / $250 / $150 / $100 USDC all as written. |
 
@@ -36,7 +36,7 @@ git was not touched (so commit ranges and "pushed/private repo" claims are marke
 
 | # | Where | Claim | Why it is false |
 |---|---|---|---|
-| F1 | `chain/TESTING.md:11` | "5 pass on a fresh stack ... log `.localnet/e2e-last.log`" | That log shows `tests 5, pass 4, fail 1`: the Royale test failed. The latest completed full run (`run-all.log`) is also 4 of 5 (VRF test failed). |
+| F1 | `chain/TESTING.md:11` | "5 pass on a fresh stack ... log `evidence/e2e-last.log`" | That log shows `tests 5, pass 4, fail 1`: the Royale test failed. The latest completed full run (`run-all.log`) is also 4 of 5 (VRF test failed). |
 | F2 | `README.md:81` | "Locally, 5/5 end-to-end, 5/5 relay and 11/11 unit tests pass" | Latest completed local run is 4/5 end-to-end; source has 12 `#[test]` fns and the last run printed 13 passed. |
 | F3 | `README.md:152` | `app/` = "duels, 9 practice games" | The app has 150 games on 32 engines (`app/src/games/catalog.ts`). |
 | F4 | `README.md:161-182` (Website section) | "Arena ... `web/src/components/arena/`", six feature cards, "honest comparison with house-pool apps such as REKT", component list (ArenaWidget, LeaderboardStrip, CompareStrip ...) | `web/` is one file, `web/src/App.tsx` (633 lines), with no `components/` folder, no Arena widget, no REKT comparison. The described files live in `landing/src/`, and `CompareStrip` and the REKT strip do not exist anywhere. |

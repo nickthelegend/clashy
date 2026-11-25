@@ -183,7 +183,7 @@ All of these are paid by the sponsor in SOL; players only ever hold USDC.
 ## 6. MagicBlock, end to end
 
 Status as of Nov 25, 2026. "Devnet" means proven on Solana devnet with MagicBlock's TEE rollup, with logs in
-`chain/.localnet/` (see [docs/MAGICBLOCK.md](MAGICBLOCK.md) and [docs/DEVNET.md](DEVNET.md)).
+`chain/evidence/` (see [docs/MAGICBLOCK.md](MAGICBLOCK.md) and [docs/DEVNET.md](DEVNET.md)).
 
 | MagicBlock part | Clashy uses it for | Status |
 |---|---|---|

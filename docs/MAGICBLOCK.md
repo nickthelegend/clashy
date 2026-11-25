@@ -4,10 +4,10 @@ Clashy is a PvP trading game. Two players stake USDC and call the same coin; the
 a clash runs on a different piece of MagicBlock's stack. This page names each piece, where it is in the code and the
 test that proves it.
 
-**Where it is proven:** on the local MagicBlock stack (validator 1.1.1, `chain/.localnet/suite-magicblock.log`) and on
+**Where it is proven:** on the local MagicBlock stack (validator 1.1.1, `chain/evidence/suite-magicblock.log`) and on
 Solana devnet with MagicBlock's Private Ephemeral Rollup `https://devnet-tee.magicblock.app`, validator
-`MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` (Nov 25, `chain/.localnet/devnet-mb-test.log`,
-`chain/.localnet/devnet-private.log`, and one private duel played through the app, `chain/.localnet/devnet-proof.txt`).
+`MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` (Nov 25, `chain/evidence/devnet-mb-test.log`,
+`chain/evidence/devnet-private.log`, and one private duel played through the app, `chain/evidence/devnet-proof.txt`).
 All of this code was written after the Nov 20 kickoff and has not been security-audited yet.
 
 ## One clash, end to end
@@ -25,8 +25,9 @@ All of this code was written after the Nov 20 kickoff and has not been security-
 
 After step 5 nobody sends another transaction: the rollup finishes the game and pays it out by itself. In the Nov 25
 in-app devnet duel the crank sent one `TickDuel` per second for 60 s, then the result came home and was settled.
-After that, MagicBlock's scheduler tried the remaining ticks 11 more times; they failed because the duel had left the
-rollup, and then the task was dropped.
+The tick that finishes a game also cancels its crank, so the scheduler stops there. Before that fix (devnet upgrade
+`3LJSPdfk…`, Nov 25 evening) the scheduler tried the remaining ticks 11 more times after the duel had gone home; they
+failed because the duel had left the rollup.
 
 ## The pieces
 
@@ -41,7 +42,7 @@ rollup, and then the task was dropped.
 - The TEE rollup accepts transactions only with an auth token (a signed challenge, valid 30 days;
   `chain/tests/common.ts`). Public reads need none.
 - On Nov 25 the feeds, boards and squad channel were brought home from devnet-as with `admin_undelegate` and
-  re-delegated to the TEE (`chain/.localnet/devnet-migrate.log`, `devnet-migrate2.log`).
+  re-delegated to the TEE (`chain/evidence/devnet-migrate.log`, `devnet-migrate2.log`).
 
 ### VRF
 - `request_coin_roll` / `request_tournament_coin` ask MagicBlock VRF for the coin; only the VRF program's
@@ -50,7 +51,7 @@ rollup, and then the task was dropped.
   (`tests/clashy.test.ts`, "MagicBlock VRF rolls the coin").
 - SDK 0.18's `#[vrf_callback]` evaluated a const fn at run time, which cost over 200k compute units and made the
   callback fail. A compile-time `VRF_IDENTITY` fixed it (devnet upgrade `jKQqVjuN…`, Nov 25). The local VRF test then
-  rolled in 1,083 ms (`chain/.localnet/c-vrf.log`).
+  rolled in 1,083 ms (`chain/evidence/c-vrf.log`).
 
 ### Private Ephemeral Rollup (TEE) for sealed picks
 - `open_private_picks` creates one `Pick` account per player and pre-funds each with the rent of its permission.
@@ -65,13 +66,18 @@ rollup, and then the task was dropped.
   constraint), there is no start before both locks, a locked pick cannot change, the picks are copied into the duel at
   the start, the clash settles itself, and the picks are closed for their rent. On the TEE it also reads each pick
   through each player's authenticated connection: on Nov 25 player A saw side 1 and player B saw nothing
-  (`chain/.localnet/devnet-private.log`). The local validator is not a TEE, so locally it only checks that the
+  (`chain/evidence/devnet-private.log`). The local validator is not a TEE, so locally it only checks that the
   permission account exists.
 
 ### Cranks (scheduled tasks on the rollup)
 - `start_duel_cranked` / `start_tournament_cranked` / `start_private_duel` schedule a task (`ScheduleCrankCpi`, signed
   by the keeper PDA) that runs `tick_duel` / `tick_round` every 1,000 ms until the bell plus the void grace.
 - Ticks are idempotent: a tick on a game that is not due returns OK. A finished tick commits through the keeper.
+- The finishing tick cancels the game's crank (`cancel_ticks`: MagicBlock's `CancelTask`, signed by the keeper, which
+  is the task's authority). Validator 1.1.1 reads only the authority account. On devnet the finishing tick logs
+  `Successfully added cancel request for task …` ([example](https://explorer.solana.com/tx/5XckXUfdGfgS3iNWzBR5oa9Uw6SKFLTJ4xwbykXPtA3dUxsPtx2ZCzKRbLoP7ZQaitVN45CY14ebCHwUaS411abN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)), and the tests check that no failed tick follows it.
+  A game finished another way (a player's backup `check_duel`) still leaves its crank to fail its remaining ticks
+  quietly until the scheduler drops it.
 - Validator 1.1.1 runs these with its built-in scheduler: mainnet and MagicBlock's devnet TEE run 1.1.1, and so does
   the local stack used for the tests. Task ids are derived from the game's address, so two games never collide.
 
@@ -138,13 +144,16 @@ npx tsx --test --test-concurrency=1 tests/magicblock.test.ts
 | a cranked duel finishes and pays out on Solana with no transaction after the start | crank ticks score the duel, the keeper commits, the Magic Action pays, Elo moves (about 30 s after start for a 30 s duel) |
 | a cranked Royale resolves every round and pays the survivors with no resolve or settle call | tick_round resolves each round at its bell; the payout is split by the Magic Action |
 | private duel: picks locked inside the MagicBlock Private Ephemeral Rollup … | the PER flow above |
-| the keeper cannot be abused | only the admin delegates or creates the keeper (the title also mentions ticking a duel that is not live; the body does not test that yet) |
+| the keeper cannot be abused | only the admin delegates or creates the keeper |
+| (in tests 1 to 3) | the finishing tick cancelled the crank and no failed tick followed in the next 8 s |
 
 Results (Nov 25):
 
 | Where | Result | Log |
 |---|---|---|
-| Local stack | 4/4 pass; cranked duel settled 30.6 s after the start, keeper ticks 63 → 94; cranked Royale paid 5.82 USDC | `chain/.localnet/suite-magicblock.log` |
-| Devnet TEE, run 1 | 3/4 pass; cranked duel on BTC, 31 ticks, settled by the Magic Action 31.8 s after the start; cranked Royale paid 5.82 USDC with round calls by session key; keeper abuse. The private duel failed on a devnet mint timeout while funding a test player | `chain/.localnet/devnet-mb-test.log` |
-| Devnet TEE, run 2 | private duel passed; A sees side 1, B sees nothing | `chain/.localnet/devnet-private.log` |
-| Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 97 transactions, 85 on the rollup | `chain/.localnet/devnet-proof.txt` |
+| Local stack | 4/4 pass; cranked duel settled 30.6 s after the start, keeper ticks 63 → 94; cranked Royale paid 5.82 USDC | `chain/evidence/suite-magicblock.log` |
+| Devnet TEE, run 1 | 3/4 pass; cranked duel on BTC, 31 ticks, settled by the Magic Action 31.8 s after the start; cranked Royale paid 5.82 USDC with round calls by session key; keeper abuse. The private duel failed on a devnet mint timeout while funding a test player | `chain/evidence/devnet-mb-test.log` |
+| Devnet TEE, run 2 | private duel passed; A sees side 1, B sees nothing | `chain/evidence/devnet-private.log` |
+| Local stack, after the crank-cancel fix | 4/4 pass, crank cancelled after each game | `chain/evidence/suite-magicblock-cancel.log` |
+| Devnet TEE, after the crank-cancel fix (upgrade `3LJSPdfk…`) | 4/4 pass in one run: cranked BTC duel settled 31.6 s after the start; cranked Royale paid 5.82 USDC; private duel, A sees side 1, B sees nothing; no failed tick after any finish | `chain/evidence/devnet-mb-cancel.log`, trail `chain/evidence/devnet-proof3.txt` |
+| Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 97 transactions, 85 on the rollup | `chain/evidence/devnet-proof.txt` |

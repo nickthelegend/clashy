@@ -19,7 +19,7 @@ Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (En
 |---|---|---|
 | Program `clashy` | [`FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS`](https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS?cluster=devnet) | Anchor. [Initialized](https://explorer.solana.com/tx/4p3J8MfGMNSBjhiyjTLpA9T1CcnC1ewXb6bjgVBvawMuokZJCyQeF2jjJY4AxyY568CWYxKthMLPkiBvMJdsfD7o?cluster=devnet) Nov 22 02:27 UTC. Upgraded three times on Nov 25: [cranks, keeper, Magic Actions, private picks, oracle](https://explorer.solana.com/tx/4VJAbxj2mqY962jYCXSRhdrf86p3bGuyAkuGuhVFh8adfPC4XW32iNm7Tme8aWWdHyPXuJABskug16qnKQhGbwZw?cluster=devnet), [session keys](https://explorer.solana.com/tx/2bfRV8kMn2X3PWXwz7fxRamt1Akd1MhSQjWTviTvc6B3ydiyXh5Z6mLbgsgXVdoNQU8CpgHCv1sYnHbXbheydEJZ?cluster=devnet), [VRF callback fix and 0.5% Stash fee](https://explorer.solana.com/tx/jKQqVjuN48xpkFaKwkAwkwui86jg3nnKEx6L6CYYPLReu8zBEwQ4WVmfJMVVREFFz9vGfhaVNriYSHo6axhqSnt?cluster=devnet). Program data account: 1,605,240 bytes. Its first 1,580,168 bytes match `chain/target/deploy/clashy.so` (sha256 `360553f9…c7f5`) and the rest is zero padding (checked Nov 25 with `solana program dump`). Upgrade authority: one deployer key, `6XdpT4…nYbe`. |
 | Test USDC (stake currency) | [`8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN`](https://explorer.solana.com/address/8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN?cluster=devnet) | SPL token, 6 decimals. It has no value and exists only on devnet. |
-| Ephemeral Rollup | `https://devnet-tee.magicblock.app` | MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator version 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. The Nov 22 runs used `devnet-as.magicblock.app` (validator `MAS1Dt9…`); feeds, boards and the squad channel were moved home from there with `admin_undelegate` and re-delegated to the TEE on Nov 25 (`chain/.localnet/devnet-migrate.log`, `devnet-migrate2.log`). |
+| Ephemeral Rollup | `https://devnet-tee.magicblock.app` | MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator version 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. The Nov 22 runs used `devnet-as.magicblock.app` (validator `MAS1Dt9…`); feeds, boards and the squad channel were moved home from there with `admin_undelegate` and re-delegated to the TEE on Nov 25 (`chain/evidence/devnet-migrate.log`, `devnet-migrate2.log`). |
 | Prices | SOL `ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu`, BTC `71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr`, ETH `5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG` | SOL, BTC and ETH read MagicBlock's oracle accounts. The five stocks (NVDA, TSLA, AAPL, SPY, GOOGL) keep Clashy's own crank-pushed feeds. |
 | Keeper | `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK` | A PDA delegated to the rollup. It signs the crank's commits; its action escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` pays for Magic Actions. |
 | VRF | queue [`Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh`](https://explorer.solana.com/address/Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh?cluster=devnet) | MagicBlock VRF program `Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz`. The callbacks are signed by their oracle `vrfkfM4uoisXZQPrFiS2brY4oMkU9EWjyvmvqaFd5AS`. `vrf_required = true`, so the commit-reveal fallback is refused. |
@@ -28,7 +28,7 @@ Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (En
 
 **One private duel through the app, start to finish** (Nov 25, 11:33–11:35 UTC, duel `3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4`,
 two device-wallet players with 0 SOL; full trail of 97 transactions, 85 on the rollup, in
-[`chain/.localnet/devnet-proof.txt`](chain/.localnet/devnet-proof.txt)):
+[`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt)):
 [open](https://explorer.solana.com/tx/4eQDRFpkCtejM51giwd8MRPcoEgeKHmQLdRHhw7ThyNo8VpPGdNWnEu5NgcEARGqdCNnxp364hZQVySLQWMw2F6k?cluster=devnet) →
 [join](https://explorer.solana.com/tx/2zh5WqipZtcJ3ciuQoLhLXtasJc8fVZkxA3RuyyG2GB7GHRiKHj7RYQMvzBrMqjyPyvF4B1Nd9WimThBDYnfY8gd?cluster=devnet) →
 [VRF request](https://explorer.solana.com/tx/4iyNPdpSNGCtNocH52ouFeWPZWQbApD2ptWPvRKrzDm2TZeM7uwmFFzurqJJhfuhnw9Gh8XcaxJeVNkKJSgghaom?cluster=devnet) →
@@ -42,7 +42,8 @@ one crank `TickDuel` per second for 60 s ([first](https://explorer.solana.com/tx
 commit and settle on Solana at 11:35:04 ([Solana](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet), [rollup](https://explorer.solana.com/tx/mWYjHRgP7gacpxzJmHT9o1UP1qmfB5nptMisS1MeDt8qupje4KaCLMxKY3x2yM7FM8Ss6MrvsJKQgkLDpj9Te2B?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)).
 ETH went 1,639.80 → 1,638.63; player B called down and won +9.70 USDC, player A lost 5 USDC. After the duel went
 home, MagicBlock's scheduler tried the remaining ticks 11 more times; they failed because the duel had left the rollup,
-and then the task was dropped. Four failed VRF-oracle transactions also appear in the trail before the callback landed.
+and then the task was dropped. Since the devnet upgrade that evening, the finishing tick cancels its crank and no
+failed tick follows (`docs/MAGICBLOCK.md`). Four failed VRF-oracle transactions also appear in the trail before the callback landed.
 
 **One duel on the first deployment** (Nov 22, 04:43–04:45 UTC, on `devnet-as`, duel account `H6GpASV8…DG8t`):
 [open](https://explorer.solana.com/tx/QX8XN8N8sYrNF4DQw12SyDzfP82eJwVLpTxeahJqahdXiMcmja7R7rBoHXURgr6J2LDJRrw4DwLGfG5Xq4oc8X2?cluster=devnet) →
@@ -58,7 +59,7 @@ More, including a Royale, are in [HACKATHON_SUBMISSION_FORM.md](HACKATHON_SUBMIS
 
 ### What was tested on devnet
 
-**Nov 25, on the TEE rollup** (`chain/.localnet/devnet-mb-test.log`, `chain/.localnet/devnet-private.log`). All four
+**Nov 25, on the TEE rollup** (`chain/evidence/devnet-mb-test.log`, `chain/evidence/devnet-private.log`). All four
 tests in `chain/tests/magicblock.test.ts` passed, over two runs: the first run passed three and the private duel failed
 on a devnet mint timeout while funding a test player; a second run passed the private duel.
 - **Cranked duel:** VRF rolled BTC; 31 crank ticks; settled by a Magic Action 31.8 s after the start, with no
@@ -70,7 +71,7 @@ on a devnet mint timeout while funding a test player; a second run passed the pr
 - **Keeper abuse:** an outsider cannot create or delegate the keeper.
 - **Through the web app:** the private ETH duel above, played by two device-wallet players with 0 SOL.
 
-**Nov 22, on devnet-as** (logs `chain/.localnet/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`,
+**Nov 22, on devnet-as** (logs `chain/evidence/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`,
 `devnet-test-4.log`, `devnet-test-clashy.log`). No single run was all green: each test below passed in at least one
 run, several only after reruns.
 - **Knockout duel:** open, join, VRF coin roll, sealed picks, live scoring on the rollup, then settlement with rake and
@@ -124,7 +125,7 @@ After kickoff the program grew by 1,011 lines and lost 64 (`git diff --shortstat
   and on devnet: escrowed knockout duels, sealed picks (commit-reveal or private TEE picks), live scoring on the
   rollup, settlement with rake and Elo, clans with vote-run chest trades, clan wars and Royale tournaments. **Money is
   USDC only**: players never hold SOL, a sponsor relay pays every fee and rent. Latest local runs (Nov 25, MagicBlock
-  validator 1.1.1 over Agave 4.5.0-beta.0): magicblock 4/4, clashy 5/5 (four in `chain/.localnet/suite-clashy.log`,
+  validator 1.1.1 over Agave 4.5.0-beta.0): magicblock 4/4, clashy 5/5 (four in `chain/evidence/suite-clashy.log`,
   the VRF test after its fix in `c-vrf.log`), perps 3/3, brief 9/9, void 1/1 and 13/13 Rust unit tests, every test
   player at 0 SOL. See [chain/README.md](chain/README.md), [chain/TESTING.md](chain/TESTING.md) and
   [docs/DEVNET.md](docs/DEVNET.md).

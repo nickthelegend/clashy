@@ -128,7 +128,7 @@ a test can reach them (the Nov 25 crank, keeper, Magic Action, TEE and session-k
   fee). Program data account 1,605,240 bytes; the last build is 1,580,168 bytes. Rollup: MagicBlock's TEE
   (`devnet-tee.magicblock.app`); its transactions need an auth token (30 days), public reads need none. On Nov 25 all
   four `tests/magicblock.test.ts` tests passed there over two runs, and two players played a private duel through the
-  app (`../docs/DEVNET.md`, `.localnet/devnet-proof.txt`).
+  app (`../docs/DEVNET.md`, `evidence/devnet-proof.txt`).
 - **Local MagicBlock stack: works end to end, in USDC.** MagicBlock validator 1.1.1 over Agave 4.5.0-beta.0 with
   devnet's feature set. Latest runs (Nov 25): magicblock 4/4, clashy 5/5 (the VRF test passed after its fix), perps
   3/3, brief 9/9, void 1/1, 13/13 Rust unit tests (see [TESTING.md](TESTING.md)); every test player holds USDC and

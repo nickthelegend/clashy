@@ -125,7 +125,7 @@ of these has an audit finding yet.
 | Stuck duel voided after the grace, both refunded, no rake (`tests/void.test.ts`) | **1/1** |
 
 Latest local runs (Nov 25, not an audit re-run): 13/13 unit tests, clashy 5/5, perps 3/3, brief 9/9, void 1/1,
-magicblock 4/4 (`chain/.localnet/run-all.log`, `suite-*.log`, `c-vrf.log`).
+magicblock 4/4 (`chain/evidence/run-all.log`, `suite-*.log`, `c-vrf.log`).
 
 On-chain, the end-to-end suite runs the full duel, VRF, squad chest and wars, and Royale flows. The fixes were checked in the following ways:
 - **Crank / admin separation:** the live config moved from the admin key to the crank key through `update_config`, and the crank pushes with its own key.

@@ -29,7 +29,7 @@ use ephemeral_rollups_sdk::anchor::{commit, delegate, ephemeral};
 use ephemeral_rollups_sdk::cpi::DelegateConfig;
 use ephemeral_rollups_sdk::ephem::{CallHandler, MagicIntentBundleBuilder};
 #[allow(deprecated)]
-use ephemeral_rollups_sdk::crank::{ScheduleCrankCpi, ScheduleTaskArgs};
+use ephemeral_rollups_sdk::crank::{CancelCrankCpi, ScheduleCrankCpi, ScheduleTaskArgs};
 use ephemeral_rollups_sdk::{ActionArgs, ShortAccountMeta};
 use session_keys::SessionTokenV2;
 use ephemeral_rollups_sdk::access_control::instructions::{CreateEphemeralPermissionCpi, UpdateEphemeralPermissionCpi};
@@ -1991,6 +1991,7 @@ pub mod clashy {
             let action = settle_duel_action(&ctx.accounts.duel, duel_key, &ctx.accounts.config, keeper.clone());
             ctx.accounts.duel.exit(&crate::ID)?;
             ctx.accounts.keeper.exit(&crate::ID)?;
+            cancel_ticks(&ctx.accounts.keeper, ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info(), &duel_key)?;
             MagicIntentBundleBuilder::new(keeper, ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info())
                 .magic_fee_vault(ctx.accounts.magic_fee_vault.to_account_info())
                 .commit_and_undelegate(&[ctx.accounts.duel.to_account_info()])
@@ -2030,6 +2031,7 @@ pub mod clashy {
             let action = settle_tournament_action(&ctx.accounts.tournament, key, &ctx.accounts.config, keeper.clone());
             ctx.accounts.tournament.exit(&crate::ID)?;
             ctx.accounts.keeper.exit(&crate::ID)?;
+            cancel_ticks(&ctx.accounts.keeper, ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info(), &key)?;
             MagicIntentBundleBuilder::new(keeper, ctx.accounts.magic_context.to_account_info(), ctx.accounts.magic_program.to_account_info())
                 .magic_fee_vault(ctx.accounts.magic_fee_vault.to_account_info())
                 .commit_and_undelegate(&[ctx.accounts.tournament.to_account_info()])
@@ -2204,6 +2206,19 @@ pub mod clashy {
         require!(d.status == duel_status::SETTLED || d.status == duel_status::CANCELLED, ClashyError::WrongStatus);
         Ok(())
     }
+}
+
+/// Cancels a game's crank once the tick that finished it has run, so MagicBlock's scheduler stops ticking a game that
+/// has gone home (each later tick would fail on the undelegated account). Only the task's authority, the keeper, can
+/// cancel it. Validator 1.1.1 reads just the authority; the SDK's second account slot gets the magic context.
+#[allow(deprecated)]
+fn cancel_ticks<'info>(keeper: &Account<'info, Keeper>, magic_context: AccountInfo<'info>, magic_program: AccountInfo<'info>, game: &Pubkey) -> Result<()> {
+    let authority: &'info AccountInfo<'info> = Box::leak(Box::new(keeper.to_account_info()));
+    let task_context: &'info AccountInfo<'info> = Box::leak(Box::new(magic_context));
+    let magic: &'info AccountInfo<'info> = Box::leak(Box::new(magic_program));
+    CancelCrankCpi { authority, task_context, magic_program: magic, crank_id: task_id(game) }
+        .invoke_signed(&[&[KEEPER_SEED, &[keeper.bump]]])
+        .map_err(Into::into)
 }
 
 /// Schedules a MagicBlock crank on the rollup that runs `tick` (tick_duel or tick_round) on this game every TICK_MILLIS,

@@ -5,9 +5,9 @@
 | Piece | Value |
 |---|---|
 | Program | [`FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS`](https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS?cluster=devnet): program data account 1,605,240 bytes, upgrade authority `6XdpT4…nYbe` (the deployer key, kept on the Mac; one key, no multisig) |
-| Upgrades (Nov 25) | [`4VJAbxj2…`](https://explorer.solana.com/tx/4VJAbxj2mqY962jYCXSRhdrf86p3bGuyAkuGuhVFh8adfPC4XW32iNm7Tme8aWWdHyPXuJABskug16qnKQhGbwZw?cluster=devnet) cranks, keeper, Magic Actions, private picks, oracle, `admin_undelegate`; [`2bfRV8kM…`](https://explorer.solana.com/tx/2bfRV8kMn2X3PWXwz7fxRamt1Akd1MhSQjWTviTvc6B3ydiyXh5Z6mLbgsgXVdoNQU8CpgHCv1sYnHbXbheydEJZ?cluster=devnet) session keys (`lock_pick_session`, `call_round_session`); [`jKQqVjuN…`](https://explorer.solana.com/tx/jKQqVjuN48xpkFaKwkAwkwui86jg3nnKEx6L6CYYPLReu8zBEwQ4WVmfJMVVREFFz9vGfhaVNriYSHo6axhqSnt?cluster=devnet) VRF callback fix and the 0.5% Stash trading fee. A `solana program dump` on Nov 25 matches `chain/target/deploy/clashy.so` (1,580,168 bytes, sha256 `360553f9…c7f5`) plus zero padding. Logs: `chain/.localnet/devnet-upgrade*.log` |
+| Upgrades (Nov 25) | [`4VJAbxj2…`](https://explorer.solana.com/tx/4VJAbxj2mqY962jYCXSRhdrf86p3bGuyAkuGuhVFh8adfPC4XW32iNm7Tme8aWWdHyPXuJABskug16qnKQhGbwZw?cluster=devnet) cranks, keeper, Magic Actions, private picks, oracle, `admin_undelegate`; [`2bfRV8kM…`](https://explorer.solana.com/tx/2bfRV8kMn2X3PWXwz7fxRamt1Akd1MhSQjWTviTvc6B3ydiyXh5Z6mLbgsgXVdoNQU8CpgHCv1sYnHbXbheydEJZ?cluster=devnet) session keys (`lock_pick_session`, `call_round_session`); [`jKQqVjuN…`](https://explorer.solana.com/tx/jKQqVjuN48xpkFaKwkAwkwui86jg3nnKEx6L6CYYPLReu8zBEwQ4WVmfJMVVREFFz9vGfhaVNriYSHo6axhqSnt?cluster=devnet) VRF callback fix and the 0.5% Stash trading fee, then [`3LJSPdfk…`](https://explorer.solana.com/tx/3LJSPdfkpULiu9HnWVaJxHh3rhLTew6rpRPwvS1NVwDZvHsnKejPYj5Fv8dMDEycfNH6sVrXZV3SXyfymyU944k6?cluster=devnet) the finishing tick cancels its crank. A `solana program dump` after that upgrade matches `chain/target/deploy/clashy.so` built from this commit's source (1,583,160 bytes, sha256 `707e9cb8…2dc9b7`) plus zero padding. Logs: `chain/evidence/devnet-upgrade*.log` |
 | Base RPC | `https://rpc.magicblock.app/devnet` (MagicBlock's devnet RPC; the public `api.devnet.solana.com` returned 429s during setup) |
-| Ephemeral Rollup | `https://devnet-tee.magicblock.app`, MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. Until Nov 25: `https://devnet-as.magicblock.app`, validator `MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57`. Feeds, boards and the squad channel were brought home from devnet-as with `admin_undelegate` and re-delegated to the TEE (`chain/.localnet/devnet-migrate.log`; the first attempt timed out while pinning the validator, `devnet-migrate2.log` finished it) |
+| Ephemeral Rollup | `https://devnet-tee.magicblock.app`, MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. Until Nov 25: `https://devnet-as.magicblock.app`, validator `MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57`. Feeds, boards and the squad channel were brought home from devnet-as with `admin_undelegate` and re-delegated to the TEE (`chain/evidence/devnet-migrate.log`; the first attempt timed out while pinning the validator, `devnet-migrate2.log` finished it) |
 | Prices | SOL, BTC and ETH read MagicBlock's oracle accounts `ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu`, `71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr`, `5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG`. NVDA, TSLA, AAPL, SPY and GOOGL keep Clashy's crank-pushed feeds (crank `GGeCjD…`) |
 | Keeper | PDA `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK`, delegated to the TEE; action escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` (0.0507 SOL before the Nov 25 runs) |
 | VRF | Required (`vrf_required = true`). Coin rolls use MagicBlock's base-layer queue `Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh`; their devnet oracle answers in about 1 to 2 s (block-time granularity). |
@@ -17,8 +17,8 @@
 
 ## What was tested on devnet, Nov 25 (TEE rollup, upgraded program)
 
-`tests/magicblock.test.ts`, all four tests passed over two runs (`chain/.localnet/devnet-mb-test.log`,
-`chain/.localnet/devnet-private.log`):
+`tests/magicblock.test.ts`, all four tests passed over two runs (`chain/evidence/devnet-mb-test.log`,
+`chain/evidence/devnet-private.log`):
 
 | Test | Result |
 |---|---|
@@ -31,13 +31,15 @@
 ETH (duel `3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4`). VRF rolled ETH, both picks locked in the TEE, the crank
 ticked once a second for 60 s, and the result came home and was settled: ETH 1,639.80 → 1,638.63, B (down) won
 +9.70 USDC, A lost 5 USDC. 97 transactions, 85 on the rollup, each with an explorer link in
-`chain/.localnet/devnet-proof.txt` (printed by `chain/scripts/devnet-proof.ts`). Two things show in the trail: four
+`chain/evidence/devnet-proof.txt` (printed by `chain/scripts/devnet-proof.ts`). Two things show in the trail: four
 failed VRF-oracle transactions before the callback landed, and 11 failed `TickDuel` retries by MagicBlock's scheduler
-after the duel had gone home, after which the task was dropped.
+after the duel had gone home, after which the task was dropped. The second is fixed: since upgrade `3LJSPdfk…` (Nov 25
+evening) the finishing tick cancels its crank (`chain/evidence/devnet-proof3.txt`: no failed tick after the last
+`TickDuel`).
 
 ## What was tested on devnet, Nov 22 (devnet-as rollup, first program)
 
-Logs: `chain/.localnet/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`, `devnet-test-4.log`,
+Logs: `chain/evidence/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`, `devnet-test-4.log`,
 `devnet-test-clashy.log`. No single run was all green; the results below are the best result per test, several after
 reruns.
 

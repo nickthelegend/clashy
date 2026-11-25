@@ -164,7 +164,7 @@ Kickoff disclosure: the first app, website and program predate the Nov 20 14:00 
 **Private duel through the web app, Nov 25 2026 (UTC)**, duel `3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4` on the
 TEE rollup. Two device-wallet players with 0 SOL; ETH 1,639.80 → 1,638.63; B called down and won +9.70 USDC, A lost
 5 USDC. The full trail (97 transactions, 85 on the rollup, each with an explorer link) is
-[`chain/.localnet/devnet-proof.txt`](chain/.localnet/devnet-proof.txt), printed by `chain/scripts/devnet-proof.ts`.
+[`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt), printed by `chain/scripts/devnet-proof.ts`.
 
 | Step | Time | Layer | Transaction |
 |---|---|---|---|
@@ -181,8 +181,9 @@ TEE rollup. Two device-wallet players with 0 SOL; ETH 1,639.80 → 1,638.63; B c
 | Commit and settle (Solana, rollup) | 11:35:04 / 11:35:05 | Solana devnet / TEE rollup | [3TRqj5wU…L9vfCMC5](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet) / [mWYjHRgP…Dpj9Te2B](https://explorer.solana.com/tx/mWYjHRgP7gacpxzJmHT9o1UP1qmfB5nptMisS1MeDt8qupje4KaCLMxKY3x2yM7FM8Ss6MrvsJKQgkLDpj9Te2B?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) |
 
 After the duel went home, MagicBlock's scheduler tried the remaining ticks 11 more times (11:35:04 to 11:35:31); they
-failed because the duel had left the rollup, and then the task was dropped. Four failed VRF-oracle transactions also
-appear before the callback landed.
+failed because the duel had left the rollup, and then the task was dropped. Since the devnet upgrade that evening
+(`3LJSPdfk…`), the finishing tick cancels its crank and no failed tick follows (`docs/MAGICBLOCK.md`). Four failed
+VRF-oracle transactions also appear before the callback landed.
 
 **First deployment, Nov 22 2026, on devnet-as** (read from devnet on Nov 24). How they were found: `getSignaturesForAddress` on the program through `https://rpc.magicblock.app/devnet`, and on the
 duel and Royale accounts through `https://devnet-as.magicblock.app`, then `getTransaction` for each one, read-only.

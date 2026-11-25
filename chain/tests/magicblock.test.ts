@@ -45,6 +45,10 @@ before(async () => {
   treasury = cfg.treasury;
   rakeBps = cfg.rakeBps;
   crank = runCrank(); // pushes prices only: the MagicBlock crank, not ours, must finish these games
+  // Solana's clock comes from its slots, the rollup's from the wall: a local validator starved of CPU falls behind and
+  // makes the rollup see the pick deadlines as already passed (StepClosed). Fail loudly rather than flake.
+  const clockLag = Math.floor(Date.now() / 1000) - (await base.getBlockTime(await base.getSlot()) ?? 0);
+  assert.ok(clockLag < 120, `Solana's clock is ${clockLag} s behind the wall clock: restart the local stack (CLASHY_RESET=1)`);
   const escrow = await ensureKeeper();
   console.log(`  keeper ${KEEPER.toBase58()} · action escrow ${escrow.toBase58()} holds ${(await base.getBalance(escrow)) / 1e9} SOL`);
 });
@@ -95,6 +99,20 @@ const cranked = async (signer: Keypair, game: PublicKey, coin: number) => ({
 });
 const pickOf = (duel: PublicKey, player: PublicKey) => PublicKey.findProgramAddressSync([Buffer.from('pick'), duel.toBuffer(), player.toBuffer()], programId)[0];
 
+/** The tick that finished a game also cancelled its crank: its logs show the cancel request, and in the next 8 s the
+ *  scheduler sends no further (failing) tick for the game, which has left the rollup. */
+async function assertCrankCancelled(game: PublicKey) {
+  const ticksOf = async () => {
+    const sigs = await er.getSignaturesForAddress(game, { limit: 100 });
+    return Promise.all(sigs.map(async (s) => ({ s, logs: (await er.getTransaction(s.signature, { maxSupportedTransactionVersion: 0 }))?.meta?.logMessages ?? [] })));
+  };
+  const cancelled = await until('the finishing tick cancelled the crank', 30_000, async () => (await ticksOf()).find((t) => t.logs.some((l) => /cancel request for task/.test(l))) ?? null);
+  await sleep(8_000);
+  const later = (await ticksOf()).filter((t) => (t.s.slot ?? 0) > (cancelled.s.slot ?? 0));
+  assert.equal(later.filter((t) => t.s.err).length, 0, `no failed tick after the cancel (${later.length} later transactions)`);
+  return later.length;
+}
+
 describe('MagicBlock crank + keeper + Magic Action settlement', () => {
   test('a cranked duel finishes and pays out on Solana with no transaction after the start', async () => {
     const [a, b] = [await newPlayer(), await newPlayer()];
@@ -131,6 +149,8 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     else { assert.equal(na - ca, STAKE); assert.equal(nb - cb, STAKE); assert.equal(nt, ct); }
     const [pa, pb] = await Promise.all([baseProgram.account.player.fetch(P.player(a.publicKey)), baseProgram.account.player.fetch(P.player(b.publicKey))]);
     assert.equal(pa.rating + pb.rating, 2000, 'Elo moved in the same Magic Action, zero-sum');
+    const afterCancel = await assertCrankCancelled(duel);
+    console.log(`  crank cancelled by the finishing tick; ${afterCancel} transactions on the duel after it, none failed`);
     console.log(`  cranked duel on ${COINS[coin].symbol}: entry ${settled.entryPrice} exit ${settled.exitPrice} winner ${settled.winner} · settled ${secs.toFixed(1)} s after start · keeper ticks ${keeper0.ticks}→${keeper1.ticks}`);
   });
 
@@ -187,6 +207,7 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     assert.equal(won.reduce((s, v) => s + v, 0), pot - rake, 'the survivors split the pot minus rake');
     assert.equal(won[2], 0);
     assert.equal(await base.getAccountInfo(vault), null, 'vault closed by the Magic Action');
+    await assertCrankCancelled(tour);
     console.log(`  cranked Royale on ${COINS[coin].symbol}: ${t.round} rounds, lives ${t.lives.slice(0, 3)} → payouts ${won.map((v) => v / USDC)} USDC, nobody resolved or settled by hand`);
   });
 
@@ -264,6 +285,7 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     // the picks' rent goes back to the sponsor once the duel is settled
     for (const pick of [pickA, pickB]) await sponsorProgramFor().methods.closePick().accountsPartial({ pick, duel, rentPayer: sponsor.publicKey }).rpc();
     assert.equal(await base.getAccountInfo(pickA), null, 'pick closed');
+    await assertCrankCancelled(duel);
     console.log(`  private duel on ${COINS[coin].symbol}: long 25x vs short 25x, entry ${settled.entryPrice} exit ${settled.exitPrice} winner ${settled.winner}; picks private until the start`);
   });
 
