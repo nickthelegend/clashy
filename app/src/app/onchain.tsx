@@ -494,7 +494,10 @@ export default function OnChainDuel() {
                 <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2)}</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>{perps ? `Long or short at ${duelLev}× for ${duel.lenSecs} seconds. A ${(100 / duelLev).toFixed(duelLev >= 25 ? 1 : 0)}% move against you and you're liquidated.` : duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
                 <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
-                  {me >= 0 && !(duel.picksCommitted & (1 << me)) && !(mbMode.private && myLock) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : (
+                  {me >= 0 && !(duel.picksCommitted & (1 << me)) && !(mbMode.private && myLock) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : mbMode.private ? (
+                    <SealedPick label={`${myLock?.side === 1 ? (perps ? 'Long' : 'Up') : (perps ? 'Short' : 'Down')} · ${myLock?.sent ? 'sealed' : 'sealing…'}`}
+                      note={myLock?.sent ? `Locked inside MagicBlock's private rollup (TEE). Only you can read it until ${rivalProf?.name ?? 'your rival'} locks too.` : 'Sending it to MagicBlock\'s private rollup (TEE)…'} />
+                  ) : (
                     <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
                       <Text style={{ ...FONT.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>
                       <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
