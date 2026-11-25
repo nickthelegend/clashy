@@ -11,7 +11,7 @@ import { after, before, describe, test } from 'node:test';
 import { Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { createTopUpEscrowInstruction, escrowPdaFromEscrowAuthority, MAGIC_CONTEXT_ID, MAGIC_PROGRAM_ID, permissionPdaFromAccount } from '@magicblock-labs/ephemeral-rollups-sdk';
 import {
-  BN, COINS, Keypair, P, PublicKey, createSession, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, erProgram, lamports, LOCAL_ER_VALIDATOR,
+  BN, COINS, IS_TEE, Keypair, P, PublicKey, createSession, feedOf, rollupAs, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, erProgram, lamports, LOCAL_ER_VALIDATOR,
   programFor, programId, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome,
 } from './common.ts';
 
@@ -90,8 +90,8 @@ async function rolledDuelOnRollup(a: Keypair, b: Keypair, lenSecs: number, sides
 const DELEGATION = new PublicKey('DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh');
 /** The rollup validator's magic fee vault: the keeper is a delegated fee payer billed through it. */
 const FEE_VAULT = PublicKey.findProgramAddressSync([Buffer.from('magic-fee-vault'), LOCAL_ER_VALIDATOR.toBuffer()], DELEGATION)[0];
-const cranked = (signer: Keypair, game: PublicKey, coin: number) => ({
-  signer: signer.publicKey, game, price: P.feed(coin), keeper: KEEPER, magicFeeVault: FEE_VAULT, magicContext: MAGIC_CONTEXT_ID, magicProgram: MAGIC_PROGRAM_ID,
+const cranked = async (signer: Keypair, game: PublicKey, coin: number) => ({
+  signer: signer.publicKey, game, price: await feedOf(coin), keeper: KEEPER, magicFeeVault: FEE_VAULT, magicContext: MAGIC_CONTEXT_ID, magicProgram: MAGIC_PROGRAM_ID,
 });
 const pickOf = (duel: PublicKey, player: PublicKey) => PublicKey.findProgramAddressSync([Buffer.from('pick'), duel.toBuffer(), player.toBuffer()], programId)[0];
 
@@ -103,7 +103,7 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     const keeper0 = erProgram.coder.accounts.decode('keeper', (await er.getAccountInfo(KEEPER))!.data);
 
     const t0 = Date.now();
-    await sendEr(programFor(a, true).methods.startDuelCranked().accountsPartial(cranked(a, duel, coin)), a);
+    await sendEr(programFor(a, true).methods.startDuelCranked().accountsPartial(await cranked(a, duel, coin)), a);
     // nobody calls check_duel or settle_duel from here on: only MagicBlock's crank and the Magic Action run
     let liveTicksSeen = 0;
     const settled = await until('the cranked duel settled on Solana by the Magic Action', 120_000, async () => {
@@ -153,7 +153,7 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     await programFor(host).methods.delegateTournament(host.publicKey, new BN(nonce)).accountsPartial({ host: host.publicKey, ...pay, tournament: tour }).remainingAccounts(validatorMeta).rpc();
     await until('Royale on the rollup', 30_000, () => er.getAccountInfo(tour));
     const balances = await Promise.all(ps.map((p) => usdcOf(p.publicKey)));
-    await sendEr(programFor(host, true).methods.startTournamentCranked().accountsPartial(cranked(host, tour, coin)), host);
+    await sendEr(programFor(host, true).methods.startTournamentCranked().accountsPartial(await cranked(host, tour, coin)), host);
     // players only call (up / down / silent); the crank resolves the rounds, the keeper and the Magic Action settle
     const sess1 = await createSession(ps[1]);
     let sessionErr = '';
@@ -220,9 +220,10 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
       .accountsPartial({ player: p.publicKey, duel, pick, permission: permissionPdaFromAccount(pick), magicProgram: MAGIC_PROGRAM_ID }), p);
     // a player cannot write the other player's pick
     await assert.rejects(lock(b, pickA, 2, 10), /ConstraintSeeds|2006|0x7d6|seeds/i, 'no writing the rival pick');
+    const coinFeed = await feedOf(coin);
     const start = () => sendEr(programFor(a, true).methods.startPrivateDuel().accountsPartial({
       signer: a.publicKey, duel, pickA, pickB, permissionA: permissionPdaFromAccount(pickA), permissionB: permissionPdaFromAccount(pickB),
-      price: P.feed(coin), keeper: KEEPER, magicFeeVault: FEE_VAULT, magicContext: MAGIC_CONTEXT_ID, magicProgram: MAGIC_PROGRAM_ID,
+      price: coinFeed, keeper: KEEPER, magicFeeVault: FEE_VAULT, magicContext: MAGIC_CONTEXT_ID, magicProgram: MAGIC_PROGRAM_ID,
     }), a);
     await lock(a, pickA, 1, 25);
     await assert.rejects(start(), /CommitsPending|0x1782/, 'no start until both picks are locked');
@@ -233,8 +234,18 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
       .accountsPartial({ signer: sess.signer.publicKey, player: as.publicKey, sessionToken: sess.token, duel, pick, permission: permissionPdaFromAccount(pick), magicProgram: MAGIC_PROGRAM_ID }), sess.signer);
     await assert.rejects(lockSession(a, sessB, pickA), /BadSession|0x17|custom program error/, "B's session key cannot act for A");
     await lockSession(b, sessB, pickB);
-    const permA = await er.getAccountInfo(permissionPdaFromAccount(pickA));
-    assert.ok(permA && permA.data.length > 0, 'pick A has its own MagicBlock permission (private to player A)');
+    if (IS_TEE) {
+      // the TEE enforces the permission: player A reads their own locked pick, player B (signed in as B) cannot
+      const [asA, asB] = await Promise.all([rollupAs(a), rollupAs(b)]);
+      const [seenByA, seenByB] = await Promise.all([asA.getAccountInfo(pickA).catch(() => null), asB.getAccountInfo(pickA).catch(() => null)]);
+      assert.ok(seenByA && erProgram.coder.accounts.decode('pick', seenByA.data).locked, 'player A can read their own locked pick');
+      const leaked = seenByB ? erProgram.coder.accounts.decode('pick', seenByB.data) : null;
+      assert.ok(!leaked || (leaked.side === 0 && !leaked.locked), `player B cannot read player A's pick (got ${leaked ? `side ${leaked.side}` : 'nothing'})`);
+      console.log(`  TEE privacy: A sees side ${erProgram.coder.accounts.decode('pick', seenByA!.data).side}; B sees ${seenByB ? 'a hidden account' : 'nothing'}`);
+    } else {
+      const permA = await er.getAccountInfo(permissionPdaFromAccount(pickA));
+      assert.ok(permA && permA.data.length > 0, 'pick A has its own MagicBlock permission (private to player A)');
+    }
 
     const [ca, cb] = await Promise.all([usdcOf(a.publicKey), usdcOf(b.publicKey)]);
     await start();

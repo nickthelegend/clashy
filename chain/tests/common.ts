@@ -97,14 +97,18 @@ export const TEST_FAUCET = IS_LOCAL || !!faucetAuthority;
 export const base = new Connection(BASE_URL, 'confirmed');
 /** MagicBlock's Private Ephemeral Rollup (TEE) only accepts requests that carry an auth token: a signed challenge from a
  *  key this process holds (tokens last 30 days). Regional and local rollups need none. */
-async function rollupUrl(url: string): Promise<string> {
+async function rollupUrl(url: string, as?: Keypair): Promise<string> {
   if (!/tee\./.test(url) || /[?&]token=/.test(url)) return url;
   const { getAuthToken } = await import('@magicblock-labs/ephemeral-rollups-sdk');
   const nacl = (await import('tweetnacl')).default;
-  const kp = [() => sponsor, () => crank, () => authority].map((f) => { try { const k = f(); void k.publicKey; return k; } catch { return null; } }).find(Boolean) ?? Keypair.generate();
+  const kp = as ?? [() => sponsor, () => crank, () => authority].map((f) => { try { const k = f(); void k.publicKey; return k; } catch { return null; } }).find(Boolean) ?? Keypair.generate();
   const { token } = await getAuthToken(url, kp.publicKey, async (m: Uint8Array) => nacl.sign.detached(m, kp.secretKey));
   return `${url}${url.includes('?') ? '&' : '?'}token=${token}`;
 }
+/** True when the rollup is MagicBlock's Private Ephemeral Rollup (TEE): reads are filtered by each account's permission. */
+export const IS_TEE = /tee\./.test(ER_URL);
+/** A rollup connection authenticated as `kp`: on the TEE it sees exactly what that key's permissions allow. */
+export const rollupAs = async (kp: Keypair) => new Connection(await rollupUrl(ER_URL, kp), 'confirmed');
 export const er = new Connection(await rollupUrl(ER_URL), 'confirmed');
 const wallet = new anchor.Wallet(holds('admin') ? authority : ROLE === 'crank' ? crank : sponsor);
 export const baseProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, wallet, { commitment: 'confirmed' }));
@@ -261,6 +265,13 @@ export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
     const info = await base.getAccountInfo(account, 'confirmed');
     return info?.owner.equals(programId) ? info : null;
   });
+}
+
+/** Each coin's price account as the config names it (a Clashy feed, or MagicBlock's oracle on devnet and mainnet). */
+let feedCache: PublicKey[] | null = null;
+export async function feedOf(coin: number): Promise<PublicKey> {
+  feedCache ??= (await baseProgram.account.config.fetch(P.config)).coins.map((c) => c.feed);
+  return feedCache[coin] ?? P.feed(coin);
 }
 
 /** MagicBlock session keys (gpl_session, KeyspM2…): `owner` signs once to let a fresh session key act for them in Clashy
