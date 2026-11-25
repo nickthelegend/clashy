@@ -393,8 +393,8 @@ async function call(name: Name) {
   const amt = pickOf([5, 5, 10]);
   if ((await usdcOf(kp.publicKey)) < (amt + 5) * USDC) await giveUsdc(kp.publicKey, 50 * USDC);
   const raw = BigInt(amt * USDC);
-  await prog.methods.stashInvest(new BN(raw.toString()), new BN((await minShares(base, st, raw)).toString()))
-    .accountsPartial({ owner: kp.publicKey, ...pay, holding: P.holding(kp.publicKey, new PublicKey(st.mint)), sw: await swapAccounts(base, kp.publicKey, USDC_MINT, st, true) })
+  await prog.methods.stashInvest(new BN(raw.toString()), new BN((await minShares(base, st, raw - (raw * 50n) / 10_000n)).toString()))
+    .accountsPartial({ owner: kp.publicKey, ...pay, treasury: (await baseProgram.account.config.fetch(P.config)).treasury, holding: P.holding(kp.publicKey, new PublicKey(st.mint)), sw: await swapAccounts(base, kp.publicKey, USDC_MINT, st, true) })
     .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), createStockAtaIx(sponsor.publicKey, kp.publicKey, st),
       await prog.methods.stashSave(new BN(raw.toString()), 0).accountsPartial({ owner: kp.publicKey, ownerUsdc: usdcAta(kp.publicKey) }).instruction()]).rpc();
   const h = await baseProgram.account.holding.fetch(P.holding(kp.publicKey, new PublicKey(st.mint)));

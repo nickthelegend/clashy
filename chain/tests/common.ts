@@ -95,7 +95,17 @@ export const faucetAuthority = !IS_LOCAL && !IS_MAINNET && process.env.CLASHY_FA
 /** Whether this process can hand out test USDC: the local fork, or devnet with the test mint's authority. */
 export const TEST_FAUCET = IS_LOCAL || !!faucetAuthority;
 export const base = new Connection(BASE_URL, 'confirmed');
-export const er = new Connection(ER_URL, 'confirmed');
+/** MagicBlock's Private Ephemeral Rollup (TEE) only accepts requests that carry an auth token: a signed challenge from a
+ *  key this process holds (tokens last 30 days). Regional and local rollups need none. */
+async function rollupUrl(url: string): Promise<string> {
+  if (!/tee\./.test(url) || /[?&]token=/.test(url)) return url;
+  const { getAuthToken } = await import('@magicblock-labs/ephemeral-rollups-sdk');
+  const nacl = (await import('tweetnacl')).default;
+  const kp = [() => sponsor, () => crank, () => authority].map((f) => { try { const k = f(); void k.publicKey; return k; } catch { return null; } }).find(Boolean) ?? Keypair.generate();
+  const { token } = await getAuthToken(url, kp.publicKey, async (m: Uint8Array) => nacl.sign.detached(m, kp.secretKey));
+  return `${url}${url.includes('?') ? '&' : '?'}token=${token}`;
+}
+export const er = new Connection(await rollupUrl(ER_URL), 'confirmed');
 const wallet = new anchor.Wallet(holds('admin') ? authority : ROLE === 'crank' ? crank : sponsor);
 export const baseProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(base, wallet, { commitment: 'confirmed' }));
 export const erProgram = new Program<Clashy>(idl as Clashy, new anchor.AnchorProvider(er, wallet, { commitment: 'confirmed' }));

@@ -550,6 +550,67 @@ export type Clashy = {
       ]
     },
     {
+      "name": "callRoundSession",
+      "docs": [
+        "Rollup: call_round signed by the player's MagicBlock session key."
+      ],
+      "discriminator": [
+        4,
+        130,
+        16,
+        216,
+        52,
+        44,
+        217,
+        61
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "player"
+        },
+        {
+          "name": "sessionToken"
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "tournament"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "dir",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "cancelDuel",
       "docs": [
         "Refunds an unmatched duel: the creator any time, anyone after expiry. No rake."
@@ -4860,6 +4921,113 @@ export type Clashy = {
       ]
     },
     {
+      "name": "lockPickSession",
+      "docs": [
+        "TEE rollup: lock_pick signed by the player's MagicBlock session key instead of their wallet (no wallet prompt mid",
+        "clash). The session token must be the player's, for this program and this signer, and unexpired."
+      ],
+      "discriminator": [
+        131,
+        24,
+        232,
+        72,
+        93,
+        243,
+        245,
+        89
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "player"
+        },
+        {
+          "name": "sessionToken"
+        },
+        {
+          "name": "duel",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "permission",
+          "writable": true
+        },
+        {
+          "name": "permissionProgram",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        },
+        {
+          "name": "ephemeralVault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magicProgram",
+          "address": "Magic11111111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "dir",
+          "type": "u8"
+        },
+        {
+          "name": "lev",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "openBoard",
       "discriminator": [
         78,
@@ -7816,6 +7984,13 @@ export type Clashy = {
           }
         },
         {
+          "name": "treasury",
+          "docs": [
+            "The treasury's USDC account: receives the protocol fee on every Stash trade."
+          ],
+          "writable": true
+        },
+        {
           "name": "sw",
           "accounts": [
             {
@@ -8194,6 +8369,13 @@ export type Clashy = {
               }
             ]
           }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "The treasury's USDC account: receives the protocol fee on every Stash trade."
+          ],
+          "writable": true
         },
         {
           "name": "sw",
@@ -9402,6 +9584,19 @@ export type Clashy = {
       ]
     },
     {
+      "name": "sessionTokenV2",
+      "discriminator": [
+        178,
+        3,
+        85,
+        254,
+        13,
+        116,
+        128,
+        41
+      ]
+    },
+    {
       "name": "stash",
       "discriminator": [
         154,
@@ -9492,6 +9687,19 @@ export type Clashy = {
         61,
         75,
         29
+      ]
+    },
+    {
+      "name": "tradeFee",
+      "discriminator": [
+        61,
+        42,
+        219,
+        191,
+        171,
+        251,
+        41,
+        208
       ]
     }
   ],
@@ -9865,6 +10073,11 @@ export type Clashy = {
       "code": 6073,
       "name": "needsMajority",
       "msg": "Only a captain who holds most of the chest can stake it in a war"
+    },
+    {
+      "code": 6074,
+      "name": "badSession",
+      "msg": "The session key is not valid for this player"
     }
   ],
   "types": [
@@ -11086,6 +11299,34 @@ export type Clashy = {
       }
     },
     {
+      "name": "sessionTokenV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "targetProgram",
+            "type": "pubkey"
+          },
+          {
+            "name": "sessionSigner",
+            "type": "pubkey"
+          },
+          {
+            "name": "feePayer",
+            "type": "pubkey"
+          },
+          {
+            "name": "validUntil",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "stash",
       "docs": [
         "The savings jar: USDC in a vault only its owner can take out, with a goal and a record of where",
@@ -11269,6 +11510,37 @@ export type Clashy = {
               "Paid the tournament vault's rent; gets it back when the vault closes."
             ],
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tradeFee",
+      "docs": [
+        "A protocol fee taken on a trade (kind 1 = Stash stock buy, 2 = Stash stock sell), paid to the treasury."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "kind",
+            "type": "u8"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "notional",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
           }
         ]
       }

@@ -129,6 +129,8 @@ pub const BOARD_POSTS: usize = 24;
 pub const POST_TEXT: usize = 140;
 /// Players who can like posts: one bit each (profile numbers below this).
 pub const LIKE_BITS: usize = 1024;
+/// Protocol fee on every Stash stock trade (buy and sell through Orca), in basis points: 0.5%, paid to the treasury.
+pub const STASH_FEE_BPS: u64 = 50;
 /// Orca Whirlpool: the AMM the Stash buys and sells tokenized stocks through.
 pub const WHIRLPOOL_PROGRAM_ID: Pubkey = pubkey!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");
 pub const MEMO_PROGRAM_ID: Pubkey = pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");

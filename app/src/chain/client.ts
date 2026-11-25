@@ -240,6 +240,12 @@ export function feedsOf(prog: Program<Clashy>): Promise<PublicKey[]> {
   return coinFeeds;
 }
 export const feedOf = async (prog: Program<Clashy>, coin: number) => (await feedsOf(prog))[coin] ?? P.feed(coin);
+/** The program's protocol fee on every Stash stock trade (STASH_FEE_BPS in the program): 0.5% to the treasury. */
+export const STASH_FEE_BPS = 50;
+/** The treasury's USDC account (receives the rake and the trading fees), from the config. */
+let treasuryAcc: Promise<PublicKey> | null = null;
+export const treasuryOf = (prog: Program<Clashy>) =>
+  (treasuryAcc ??= prog.account.config.fetch(P.config).then((c) => c.treasury).catch((e) => { treasuryAcc = null; throw e; }));
 /** Whether the keeper exists (it is what lets MagicBlock cranks finish games on their own). */
 let keeperUp: Promise<boolean> | null = null;
 export const hasKeeper = () => (keeperUp ??= er.getAccountInfo(P.keeper).then((i) => !!i).catch(() => false));

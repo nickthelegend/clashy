@@ -10,7 +10,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ComputeBudgetProgram, PublicKey } from '@solana/web3.js';
-import { BN, FEED_BOARD, P, USDC, usdcAta } from '@/chain/client';
+import { BN, FEED_BOARD, P, STASH_FEE_BPS, USDC, treasuryOf, usdcAta } from '@/chain/client';
 import { errText, useChain } from '@/chain/useChain';
 import {
   holdingKey, isTestAccount, readHoldings, readPortfolio, readStash, useBoard, usePoll, usePrices, useProfiles,
@@ -187,10 +187,11 @@ function StockPage({ st }: { st: Stock }) {
       if ((bal ?? 0) * USDC < raw - inStash) throw new Error(`Add ${((raw - inStash) / USDC).toFixed(2)} USDC first`);
       pre.push(await progs.base.methods.stashSave(new BN(raw - inStash), 0).accountsPartial({ owner: me, ownerUsdc: usdcAta(me) }).instruction());
     }
-    const min = await minSharesFor(st, raw);
+    const min = await minSharesFor(st, raw - Math.floor((raw * STASH_FEE_BPS) / 10_000));
     const sw = await swapAccounts(me, st, true);
+    const treasury = await treasuryOf(progs.base);
     await onBase(`Buy ${usdc} USDC of ${st.symbol}`, () => progs.base.methods.stashInvest(new BN(raw), new BN(min))
-      .accountsPartial({ owner: me, payer: sponsor, holding: P.holding(me, mint), sw }).preInstructions(pre).rpc());
+      .accountsPartial({ treasury, owner: me, payer: sponsor, holding: P.holding(me, mint), sw }).preInstructions(pre).rpc());
   };
   // the same sell-all as the Stash: every share back to USDC, into the Stash
   const sellAll = async () => {
@@ -198,10 +199,11 @@ function StockPage({ st }: { st: Stock }) {
     setBusy('sell'); setErr(undefined);
     try {
       const raw = Math.floor(pos.shares * SHARE);
-      const min = await minUsdcFor(st, raw);
+      const min = Math.floor(((await minUsdcFor(st, raw)) * (10_000 - STASH_FEE_BPS)) / 10_000);
       const sw = await swapAccounts(me, st, false);
+      const treasury = await treasuryOf(progs.base);
       await onBase(`Sell ${st.symbol}`, () => progs.base.methods.stashSell(new BN(raw), new BN(min))
-        .accountsPartial({ owner: me, payer: sponsor, holding: P.holding(me, mint), sw })
+        .accountsPartial({ treasury, owner: me, payer: sponsor, holding: P.holding(me, mint), sw })
         .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 })]).rpc());
       after();
       setSelling(false);

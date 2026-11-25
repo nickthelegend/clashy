@@ -109,32 +109,41 @@ describe('Stash: savings, round-ups, real stocks', () => {
     await prog.methods.openStash(new BN(0), '').accountsPartial({ owner: a.publicKey, ...pay, usdcMint: USDC_MINT }).rpc();
     await prog.methods.stashSave(new BN(20 * USDC), 0).accountsPartial({ owner: a.publicKey, ownerUsdc: usdcAta(a.publicKey) }).rpc();
     const spend = 10n * BigInt(USDC);
-    const min = await minShares(base, nvda, spend);
+    const FEE_BPS = 50n; // the program's STASH_FEE_BPS: 0.5% of every Stash trade goes to the treasury
+    const fee = (spend * FEE_BPS) / 10_000n;
+    const min = await minShares(base, nvda, spend - fee);
+    const treasury = (await baseProgram.account.config.fetch(P.config)).treasury;
+    const t0 = await tokenBalance(treasury);
     const buy = await prog.methods.stashInvest(new BN(spend.toString()), new BN(min.toString()))
-      .accountsPartial({ owner: a.publicKey, ...pay, holding: P.holding(a.publicKey, new PublicKey(nvda.mint)), sw: await swapAccounts(base, a.publicKey, USDC_MINT, nvda, true) })
+      .accountsPartial({ owner: a.publicKey, ...pay, treasury, holding: P.holding(a.publicKey, new PublicKey(nvda.mint)), sw: await swapAccounts(base, a.publicKey, USDC_MINT, nvda, true) })
       .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), createStockAtaIx(sponsor.publicKey, a.publicKey, nvda)]).rpc();
     assert.ok(buy);
     const h = await baseProgram.account.holding.fetch(P.holding(a.publicKey, new PublicKey(nvda.mint)));
     const shares = await tokenBalance(stockAta(a.publicKey, nvda));
     assert.ok(shares > 0 && BigInt(shares) >= min, `got ${shares} raw NVDAx (min ${min})`);
     assert.equal(h.shares.toNumber(), shares, 'the holding matches the shares in the player\'s own account');
-    assert.equal(h.cost.toNumber(), Number(spend), 'the cost basis is what left the Stash');
+    assert.equal(await tokenBalance(treasury) - t0, Number(fee), 'the 0.5% protocol fee went to the treasury');
+    assert.equal(h.cost.toNumber(), Number(spend - fee), 'the cost basis is what bought the stock (after the fee)');
     assert.equal(await tokenBalance(P.stashVault(a.publicKey)), 10 * USDC);
 
     const half = BigInt(Math.floor(shares / 2));
-    await prog.methods.stashSell(new BN(half.toString()), new BN((await minUsdc(base, nvda, half)).toString()))
-      .accountsPartial({ owner: a.publicKey, ...pay, holding: P.holding(a.publicKey, new PublicKey(nvda.mint)), sw: await swapAccounts(base, a.publicKey, USDC_MINT, nvda, false) })
+    const t1 = await tokenBalance(treasury);
+    await prog.methods.stashSell(new BN(half.toString()), new BN(((await minUsdc(base, nvda, half)) * 99n / 100n).toString()))
+      .accountsPartial({ owner: a.publicKey, ...pay, treasury, holding: P.holding(a.publicKey, new PublicKey(nvda.mint)), sw: await swapAccounts(base, a.publicKey, USDC_MINT, nvda, false) })
       .preInstructions([ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 })]).rpc();
     const h2 = await baseProgram.account.holding.fetch(P.holding(a.publicKey, new PublicKey(nvda.mint)));
     assert.equal(h2.shares.toNumber(), shares - Number(half));
     const back = (await tokenBalance(P.stashVault(a.publicKey))) - 10 * USDC;
-    assert.ok(back > 4.8 * USDC && back < 5.05 * USDC, `selling half returned ${back / USDC} USDC to the Stash`);
+    assert.ok(back > 4.7 * USDC && back < 5.05 * USDC, `selling half returned ${back / USDC} USDC to the Stash`);
     assert.equal(h2.soldUsdc.toNumber(), back);
+    const sellFee = (await tokenBalance(treasury)) - t1;
+    assert.equal(sellFee, Math.floor(((back + sellFee) * 50) / 10_000), 'the sell paid 0.5% of its proceeds to the treasury');
+    console.log(`  Stash fees: buy ${Number(fee) / USDC} USDC, sell ${sellFee / USDC} USDC → treasury`);
     assert.equal(await lamports(a.publicKey), 0);
     // someone else's shares cannot be sold through your holding
     const b = await newProfile(0);
     await assert.rejects(programFor(b).methods.stashSell(new BN(1), new BN(0))
-      .accountsPartial({ owner: b.publicKey, ...pay, stash: P.stash(a.publicKey), vault: P.stashVault(a.publicKey), holding: P.holding(a.publicKey, new PublicKey(nvda.mint)), sw: await swapAccounts(base, a.publicKey, USDC_MINT, nvda, false) }).rpc());
+      .accountsPartial({ owner: b.publicKey, ...pay, treasury, stash: P.stash(a.publicKey), vault: P.stashVault(a.publicKey), holding: P.holding(a.publicKey, new PublicKey(nvda.mint)), sw: await swapAccounts(base, a.publicKey, USDC_MINT, nvda, false) }).rpc());
   });
 });
 

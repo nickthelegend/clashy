@@ -6,7 +6,7 @@ import { router, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Share as RNShare, TextInput, View } from 'react-native';
 import { ComputeBudgetProgram, PublicKey } from '@solana/web3.js';
-import { BN, COIN_SYMBOLS, NO_REPLY, P, USDC, readDuel, usdcAta, FEED_BOARD } from '@/chain/client';
+import { BN, COIN_SYMBOLS, NO_REPLY, P, STASH_FEE_BPS, USDC, readDuel, treasuryOf, usdcAta, FEED_BOARD } from '@/chain/client';
 import { errText, type useChain } from '@/chain/useChain';
 import { ago, holdingKey, likedBy, reader, usePoll, type Holding, type Post, type Profile } from '@/chain/social';
 import { STOCKS, createStockAtaIx, minSharesFor, stockByMint, swapAccounts, type Stock } from '@/chain/stocks';
@@ -211,10 +211,11 @@ export function Composer({ chain, me, replyTo, start, onCancelReply, onPosted, s
         const need = Math.max(0, raw - Math.round((stashBalance ?? 0) * USDC));
         const pre = [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), createStockAtaIx(sponsor, owner, stock)];
         if (need > 0) pre.push(await progs.base.methods.stashSave(new BN(need), 0).accountsPartial({ owner, ownerUsdc: usdcAta(owner) }).instruction());
-        const min = await minSharesFor(stock, raw);
+        const min = await minSharesFor(stock, raw - Math.floor((raw * STASH_FEE_BPS) / 10_000));
         const sw = await swapAccounts(owner, stock, true);
+        const treasury = await treasuryOf(progs.base);
         await onBase(`Buy ${back} USDC of ${stock.symbol} from the Stash`, () => progs.base.methods.stashInvest(new BN(raw), new BN(min))
-          .accountsPartial({ owner, payer: sponsor, holding: P.holding(owner, new PublicKey(stock.mint)), sw })
+          .accountsPartial({ treasury, owner, payer: sponsor, holding: P.holding(owner, new PublicKey(stock.mint)), sw })
           .preInstructions(pre).rpc());
       }
       setStep(replyTo ? 'Replying…' : 'Posting…');

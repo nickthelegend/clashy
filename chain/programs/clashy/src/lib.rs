@@ -47,6 +47,12 @@ use state::*;
 
 declare_id!("FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS");
 
+/// MagicBlock VRF's scoped identity for this program (PDA [b"identity", crate::ID] under the VRF program). Only the VRF
+/// program can sign as it, so it authenticates every coin-roll callback. Computed at compile time: SDK 0.18's
+/// `#[vrf_callback]` evaluates the same const fn inside the account check at runtime, which costs over 200,000 compute
+/// units and made every callback fail (found on devnet, Nov 25 2026), so the callbacks declare it themselves.
+pub const VRF_IDENTITY: Pubkey = Pubkey::new_from_array(ephemeral_rollups_sdk::vrf::consts::scoped_vrf_identity_const(&crate::ID).0);
+
 #[event]
 pub struct DuelFinished {
     pub duel: Pubkey,
@@ -56,6 +62,16 @@ pub struct DuelFinished {
     pub pnl_bps: [i64; 2],
     pub ko: u8,
     pub winner: u8,
+}
+
+/// A protocol fee taken on a trade (kind 1 = Stash stock buy, 2 = Stash stock sell), paid to the treasury.
+#[event]
+pub struct TradeFee {
+    pub owner: Pubkey,
+    pub kind: u8,
+    pub mint: Pubkey,
+    pub notional: u64,
+    pub fee: u64,
 }
 
 #[event]
@@ -764,8 +780,14 @@ pub mod clashy {
         let (m, o) = token_mint_owner(&ctx.accounts.sw.owner_stock)?;
         require!(m == stock && o == ctx.accounts.owner.key(), ClashyError::PayoutMismatch);
         let stash_vault = ctx.accounts.vault.to_account_info();
+        require!(raw_amount(&stash_vault)? >= usdc_in, ClashyError::StashLow);
+        // protocol fee: STASH_FEE_BPS of the order goes to the treasury, the rest buys the stock
+        let fee = usdc_in * STASH_FEE_BPS / BPS as u64;
+        let usdc_in = usdc_in - fee;
+        let (tp, treasury) = (ctx.accounts.sw.token_program.to_account_info(), ctx.accounts.treasury.to_account_info());
+        pay_out(&tp, &stash_vault, &treasury, &ctx.accounts.auth.to_account_info(), ctx.accounts.config.auth_bump, fee)?;
+        emit!(TradeFee { owner: ctx.accounts.owner.key(), kind: 1, mint: stock, notional: usdc_in + fee, fee });
         let usdc_before = raw_amount(&stash_vault)?;
-        require!(usdc_before >= usdc_in, ClashyError::StashLow);
         let shares_before = raw_amount(&ctx.accounts.sw.owner_stock)?;
         let a_to_b = mint_a == usdc; // selling USDC
         let sw = &ctx.accounts.sw;
@@ -822,7 +844,13 @@ pub mod clashy {
         } else {
             whirlpool_swap(sw, false, shares, min_usdc, &owner, &stash_vault, &stock_acc, &usdc_prog, &stock_prog, &usdc_mint, &stock_mint, &[])?;
         }
-        let got = raw_amount(&stash_vault)? - usdc_before;
+        let gross = raw_amount(&stash_vault)? - usdc_before;
+        // protocol fee: STASH_FEE_BPS of the proceeds goes to the treasury
+        let fee = gross * STASH_FEE_BPS / BPS as u64;
+        let (tp, treasury) = (ctx.accounts.sw.token_program.to_account_info(), ctx.accounts.treasury.to_account_info());
+        pay_out(&tp, &stash_vault, &treasury, &ctx.accounts.auth.to_account_info(), ctx.accounts.config.auth_bump, fee)?;
+        emit!(TradeFee { owner: ctx.accounts.owner.key(), kind: 2, mint: stock, notional: gross, fee });
+        let got = gross - fee;
         require!(got >= min_usdc, ClashyError::Slippage);
         let h = &mut ctx.accounts.holding;
         let cost_part = ((h.cost as u128) * (shares as u128) / (h.shares as u128)) as u64;
@@ -2445,6 +2473,9 @@ pub struct RequestCoinRoll<'info> {
 #[vrf_callback]
 #[derive(Accounts)]
 pub struct CoinRollCallback<'info> {
+    /// MagicBlock VRF's scoped identity for this program: only the VRF program can sign as it.
+    #[account(address = VRF_IDENTITY)]
+    pub vrf_program_identity: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
     #[account(mut, seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
@@ -3117,6 +3148,9 @@ pub struct RequestTournamentCoin<'info> {
 #[vrf_callback]
 #[derive(Accounts)]
 pub struct TournamentCoinCallback<'info> {
+    /// MagicBlock VRF's scoped identity for this program: only the VRF program can sign as it.
+    #[account(address = VRF_IDENTITY)]
+    pub vrf_program_identity: Signer<'info>,
     #[account(seeds = [CONFIG_SEED], bump = config.bump)]
     pub config: Account<'info, Config>,
     #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
@@ -3382,6 +3416,9 @@ pub struct StashInvest<'info> {
     pub auth: UncheckedAccount<'info>,
     #[account(init_if_needed, payer = payer, space = 8 + Holding::INIT_SPACE, seeds = [HOLDING_SEED, owner.key().as_ref(), sw.stock_mint.key().as_ref()], bump)]
     pub holding: Box<Account<'info, Holding>>,
+    /// The treasury's USDC account: receives the protocol fee on every Stash trade.
+    #[account(mut, address = config.treasury @ ClashyError::PayoutMismatch)]
+    pub treasury: Box<Account<'info, TokenAccount>>,
     pub sw: StockSwap<'info>,
     pub system_program: Program<'info, System>,
 }
