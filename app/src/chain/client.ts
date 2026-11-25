@@ -25,6 +25,18 @@ export const NET = {
   /** The sponsor relay that pays fees and rent (chain/scripts/sponsor.ts). */
   sponsor: process.env.EXPO_PUBLIC_CLASHY_SPONSOR ?? 'http://127.0.0.1:8790',
 };
+/** MagicBlock pieces the app passes explicitly (the IDL resolves the rest: magic program, context, vault). */
+export const MB = {
+  delegation: new PublicKey('DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh'),
+  permissionProgram: new PublicKey('ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1'),
+  oracle: new PublicKey('PriCems5tHihc6UDXDjzjeawomAwBduWMGAi8ZUjppd'),
+  /** True where the rollup is MagicBlock's Private Ephemeral Rollup (a TEE): duels use private picks there. */
+  private: process.env.EXPO_PUBLIC_CLASHY_PRIVATE_PICKS === '1' || /tee/.test(process.env.EXPO_PUBLIC_CLASHY_ER ?? ''),
+};
+/** The rollup validator's magic fee vault: the keeper PDA is a delegated fee payer billed through it. */
+export const feeVault = () => PublicKey.findProgramAddressSync([Buffer.from('magic-fee-vault'), NET.erValidator.toBuffer()], MB.delegation)[0];
+/** A MagicBlock permission PDA (who may read a delegated account on the TEE rollup). */
+export const permissionOf = (account: PublicKey) => PublicKey.findProgramAddressSync([Buffer.from('permission:'), account.toBuffer()], MB.permissionProgram)[0];
 /** The stake currency. The local fork serves mainnet USDC's address with a local mint authority. */
 export const USDC_MINT = new PublicKey(process.env.EXPO_PUBLIC_CLASHY_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 export const USDC = 1_000_000;
@@ -215,7 +227,22 @@ export const P = {
   holding: (owner: PublicKey, mint: PublicKey) => pda(Buffer.from('hold'), owner.toBuffer(), mint.toBuffer()),
   channel: (clan: PublicKey, id: number) => pda(Buffer.from('chan'), clan.toBuffer(), Buffer.from([id])),
   board: (id: number) => pda(Buffer.from('board'), Buffer.from([id])),
+  keeper: pda(Buffer.from('keeper')),
+  /** A player's private pick for a duel (lives on MagicBlock's TEE rollup until the clash starts). */
+  pick: (duel: PublicKey, player: PublicKey) => pda(Buffer.from('pick'), duel.toBuffer(), player.toBuffer()),
 };
+
+/** Each coin's price account as the program config names it: a Clashy feed, or MagicBlock's real-time oracle
+ *  (Pyth Lazer on the rollup) for SOL, BTC and ETH on devnet and mainnet. Read once, then cached. */
+let coinFeeds: Promise<PublicKey[]> | null = null;
+export function feedsOf(prog: Program<Clashy>): Promise<PublicKey[]> {
+  coinFeeds ??= prog.account.config.fetch(P.config).then((c) => c.coins.slice(0, c.coinCount).map((x) => x.feed)).catch((e) => { coinFeeds = null; throw e; });
+  return coinFeeds;
+}
+export const feedOf = async (prog: Program<Clashy>, coin: number) => (await feedsOf(prog))[coin] ?? P.feed(coin);
+/** Whether the keeper exists (it is what lets MagicBlock cranks finish games on their own). */
+let keeperUp: Promise<boolean> | null = null;
+export const hasKeeper = () => (keeperUp ??= er.getAccountInfo(P.keeper).then((i) => !!i).catch(() => false));
 /** The public calls feed (board 0 held end-to-end test posts from before tests got their own board). */
 export const FEED_BOARD = 1;
 /** u64::MAX: a post that is not a reply. */
@@ -313,8 +340,18 @@ export async function basePriceOf(prog: Program<Clashy>, coin: number): Promise<
 }
 
 export async function priceOf(prog: Program<Clashy>, coin: number): Promise<number | null> {
-  const info = (await er.getAccountInfo(P.feed(coin)).catch(() => null)) ?? (await base.getAccountInfo(P.feed(coin)));
+  const feed = await feedOf(prog, coin).catch(() => P.feed(coin));
+  const info = (await er.getAccountInfo(feed).catch(() => null)) ?? (await base.getAccountInfo(feed));
   if (!info) return null;
+  if (info.owner.equals(MB.oracle)) {
+    // MagicBlock oracle (PriceUpdateV2 layout): price i64 at byte 73; the exponent field holds the decimal count (8)
+    const d = Buffer.from(info.data);
+    const verif = d[40] === 0 ? 2 : 1;
+    const o = 40 + verif + 32;
+    const raw = Number(d.readBigInt64LE(o));
+    const exp = d.readInt32LE(o + 16);
+    return raw / 10 ** Math.abs(exp);
+  }
   const f = prog.coder.accounts.decode('priceFeed', info.data);
   return Number(f.price) / 1e6;
 }

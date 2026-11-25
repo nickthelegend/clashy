@@ -10,7 +10,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, NET, P, PublicKey, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView,
+  BN, COIN_SYMBOLS, NET, P, PublicKey, USDC, USDC_MINT, priceOf, random32, readTour, usdcAta, type TourView, feedOf, feeVault, hasKeeper,
 } from '@/chain/client';
 import { reader } from '@/chain/reads';
 import { useProfiles, type Profile } from '@/chain/social';
@@ -102,6 +102,8 @@ export default function OnchainRoyale() {
     return () => { alive = false; clearInterval(h); };
   }, [progs]);
 
+  /** When this device first saw the finished Royale back on Solana (the settle Magic Action normally pays at once). */
+  const homeAt = useRef<number | null>(null);
   // the active tournament's state machine, polled every second
   useEffect(() => {
     if (!active || !progs || !wallet || !sponsor) return;
@@ -123,16 +125,23 @@ export default function OnchainRoyale() {
           setErr(errText(e));
         }
       };
-      // host: once delegated, start on the rollup
+      const cranked = await hasKeeper();
+      // host: once delegated, start on the rollup. With MagicBlock cranks the start also schedules tick_round every
+      // second: the rollup resolves each round at its bell and the keeper sends the Royale home with the payout.
       if (t.status === 0 && t.onEr && host) {
-        await once('start', () => onEr('Start on the rollup', progs.er.methods.startTournament().accountsPartial({ signer: wallet, tournament: active, price: P.feed(t.coin) })));
+        const price = await feedOf(progs.base, t.coin);
+        await once('start', () => cranked
+          ? onEr('Start · MagicBlock crank resolves every round', progs.er.methods.startTournamentCranked().accountsPartial({ signer: wallet, game: active, price, magicFeeVault: feeVault() }))
+          : onEr('Start on the rollup', progs.er.methods.startTournament().accountsPartial({ signer: wallet, tournament: active, price })));
       }
-      // any player: resolve the round when its timer is up
-      if (t.status === 1 && t.onEr && (me >= 0 || host) && Date.now() / 1000 >= t.roundStartedAt + t.roundSecs + 0.5) {
-        await once(`resolve-${t.round}`, () => onEr('Resolve round', progs.er.methods.resolveRound().accountsPartial({ payer: sponsor, tournament: active, price: P.feed(t.coin) })));
+      // any player resolves a round whose timer is up (with cranks only as a backup, 8 s after a bell the crank missed)
+      if (t.status === 1 && t.onEr && (me >= 0 || host) && Date.now() / 1000 >= t.roundStartedAt + t.roundSecs + (cranked ? 8 : 0.5)) {
+        const price = await feedOf(progs.base, t.coin);
+        await once(`resolve-${t.round}`, () => onEr('Resolve round', progs.er.methods.resolveRound().accountsPartial({ payer: sponsor, tournament: active, price })));
       }
-      // finished and home on Solana: anyone settles
-      if (t.status === 2 && !t.onEr && (me >= 0 || host)) {
+      // finished and home on Solana: the settle Magic Action pays out as it lands; by hand only if it is still unsettled
+      if (t.status === 2 && !t.onEr) homeAt.current ??= Date.now(); else homeAt.current = null;
+      if (t.status === 2 && !t.onEr && (me >= 0 || host) && Date.now() - (homeAt.current ?? Date.now()) > (host ? 8000 : 14000)) {
         await once('settle', () => onBase('Settle · pay the survivors', async () => {
           const cfg = await progs.base.account.config.fetch(P.config);
           return progs.base.methods.settleTournament().accountsPartial({ tournament: active, vault: P.vault(active), treasury: cfg.treasury, rentPayer: sponsor })

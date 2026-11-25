@@ -8,6 +8,137 @@
   },
   "instructions": [
     {
+      "name": "abandon_private_duel",
+      "docs": [
+        "TEE rollup, anyone: a private duel whose picks were never both locked (the setup and reveal windows are over)",
+        "ends as a draw and goes home with its Picks; the settle Magic Action refunds both stakes, no rake."
+      ],
+      "discriminator": [
+        198,
+        48,
+        72,
+        202,
+        126,
+        34,
+        147,
+        79
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.joiner",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "abort_duel",
       "docs": [
         "Anyone can end a duel that matched but never reached the rollup within DUEL_SETUP_SECS (a seed,",
@@ -293,6 +424,66 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "admin_undelegate",
+      "docs": [
+        "Rollup, admin: brings a delegated price feed, calls board or squad channel home to Solana, so a deployment can move",
+        "them to another rollup validator (for example from a regional rollup to MagicBlock's TEE rollup). Games and",
+        "money accounts are refused: only the program's own flows send those home."
+      ],
+      "discriminator": [
+        65,
+        251,
+        115,
+        130,
+        115,
+        221,
+        64,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "target",
+          "writable": true
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
         }
       ],
       "args": []
@@ -853,6 +1044,61 @@
               }
             ]
           }
+        },
+        {
+          "name": "rent_payer",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_pick",
+      "docs": [
+        "Solana, anyone: closes a Pick once its duel is settled or cancelled; the rent goes back to whoever paid the duel's."
+      ],
+      "discriminator": [
+        177,
+        71,
+        108,
+        97,
+        57,
+        61,
+        187,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "pick",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "pick.player",
+                "account": "Pick"
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "relations": [
+            "pick"
+          ]
         },
         {
           "name": "rent_payer",
@@ -2544,6 +2790,709 @@
       ]
     },
     {
+      "name": "delegate_keeper",
+      "docs": [
+        "Solana, admin: delegates the keeper to the pinned rollup validator (once)."
+      ],
+      "discriminator": [
+        208,
+        215,
+        134,
+        240,
+        255,
+        250,
+        119,
+        185
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "buffer_keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "keeper"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "keeper"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "keeper"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "delegate_private_duel",
+      "docs": [
+        "Solana, a player: hands a rolled duel and both Pick accounts to the pinned (TEE) rollup validator."
+      ],
+      "discriminator": [
+        52,
+        80,
+        184,
+        36,
+        172,
+        254,
+        63,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "docs": [
+            "One of the duel's two players."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "buffer_duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "buffer_pick_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pick_a"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_pick_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pick_a"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_pick_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pick_a"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "pick_a",
+          "writable": true
+        },
+        {
+          "name": "buffer_pick_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  117,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pick_b"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                213,
+                253,
+                108,
+                43,
+                15,
+                63,
+                226,
+                137,
+                8,
+                37,
+                73,
+                9,
+                225,
+                160,
+                13,
+                102,
+                203,
+                201,
+                247,
+                230,
+                228,
+                244,
+                61,
+                118,
+                101,
+                154,
+                89,
+                169,
+                166,
+                46,
+                47,
+                233
+              ]
+            }
+          }
+        },
+        {
+          "name": "delegation_record_pick_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pick_b"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "delegation_metadata_pick_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pick_b"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "delegation_program"
+            }
+          }
+        },
+        {
+          "name": "pick_b",
+          "writable": true
+        },
+        {
+          "name": "owner_program",
+          "address": "FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS"
+        },
+        {
+          "name": "delegation_program",
+          "address": "DELeGGvXpWV2fqJUhqcF5ZSYMS4JTLjteaAMARRSaeSh"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "creator",
+          "type": "pubkey"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "delegate_tournament",
       "discriminator": [
         7,
@@ -3100,6 +4049,79 @@
         {
           "name": "coin",
           "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "init_keeper",
+      "docs": [
+        "Solana, admin: creates the keeper and funds it with `lamports` for Magic Action fees on the rollup."
+      ],
+      "discriminator": [
+        157,
+        247,
+        141,
+        221,
+        166,
+        211,
+        227,
+        101
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lamports",
+          "type": "u64"
         }
       ]
     },
@@ -3731,6 +4753,107 @@
       ]
     },
     {
+      "name": "lock_pick",
+      "docs": [
+        "TEE rollup, the player: locks their side and leverage. The first lock makes the Pick private to that player",
+        "(a MagicBlock ephemeral permission), so the other player cannot read it until the duel starts."
+      ],
+      "discriminator": [
+        38,
+        128,
+        138,
+        34,
+        42,
+        49,
+        116,
+        22
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "permission",
+          "writable": true
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        },
+        {
+          "name": "ephemeral_vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "dir",
+          "type": "u8"
+        },
+        {
+          "name": "lev",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "open_board",
       "discriminator": [
         78,
@@ -4052,6 +5175,112 @@
           }
         }
       ]
+    },
+    {
+      "name": "open_private_picks",
+      "docs": [
+        "Solana, sponsor: creates the two Pick accounts of a matched (or rolled) duel that will use private picks."
+      ],
+      "discriminator": [
+        67,
+        203,
+        152,
+        58,
+        43,
+        45,
+        53,
+        9
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "duel",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.joiner",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "open_stash",
@@ -6017,6 +7246,261 @@
       "args": []
     },
     {
+      "name": "start_duel_cranked",
+      "docs": [
+        "Rollup: start_duel, plus a MagicBlock crank that runs tick_duel every second until the bell and the void grace",
+        "have passed. Either player (or the sponsor) can send it."
+      ],
+      "discriminator": [
+        211,
+        208,
+        4,
+        16,
+        202,
+        113,
+        197,
+        252
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_private_duel",
+      "docs": [
+        "TEE rollup, either player (or the sponsor): once both picks are locked, copies them into the duel, makes both",
+        "picks public, sets the entry price, starts the clock, schedules the MagicBlock crank that runs tick_duel every",
+        "second, and sends the two Picks home (the keeper signs)."
+      ],
+      "discriminator": [
+        129,
+        157,
+        56,
+        157,
+        35,
+        158,
+        72,
+        74
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick_a",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pick_b",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.joiner",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "permission_a",
+          "writable": true
+        },
+        {
+          "name": "permission_b",
+          "writable": true
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "permission_program",
+          "address": "ACLseoPoyC3cBqoUtkbjZ4aDrkurZW86v19pXz2XQnp1"
+        },
+        {
+          "name": "ephemeral_vault",
+          "writable": true,
+          "address": "MagicVau1t999999999999999999999999999999999"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "start_tournament",
       "docs": [
         "ER, creator: starts round 1 at the live price."
@@ -6083,6 +7567,86 @@
         },
         {
           "name": "price"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_tournament_cranked",
+      "docs": [
+        "Rollup: start_tournament, plus a MagicBlock crank that runs tick_round every second until the last round could end."
+      ],
+      "discriminator": [
+        15,
+        78,
+        113,
+        79,
+        2,
+        250,
+        14,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "game",
+          "writable": true
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
         }
       ],
       "args": []
@@ -6899,6 +8463,208 @@
       ]
     },
     {
+      "name": "tick_duel",
+      "docs": [
+        "Rollup, run by the MagicBlock crank (anyone may call it; it only acts when a duel is due). Scores the live duel;",
+        "on a knockout or the bell it commits and undelegates it, signed by the keeper, with the settle Magic Action. A duel",
+        "whose price stayed unreadable past the void grace ends as a draw and is refunded."
+      ],
+      "discriminator": [
+        185,
+        85,
+        156,
+        137,
+        1,
+        28,
+        51,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "duel",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  117,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "duel.creator",
+                "account": "Duel"
+              },
+              {
+                "kind": "account",
+                "path": "duel.nonce",
+                "account": "Duel"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "tick_round",
+      "docs": [
+        "Rollup, run by the MagicBlock crank: resolves the current Royale round once its bell has rung. When the Royale",
+        "ends it goes home signed by the keeper, with the settle Magic Action. A round nobody could price past the void",
+        "grace ends the Royale with the players on the most lives sharing the pot."
+      ],
+      "discriminator": [
+        64,
+        128,
+        41,
+        16,
+        98,
+        222,
+        193,
+        74
+      ],
+      "accounts": [
+        {
+          "name": "keeper",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  107,
+                  101,
+                  101,
+                  112,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tournament",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  117,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tournament.creator",
+                "account": "Tournament"
+              },
+              {
+                "kind": "account",
+                "path": "tournament.nonce",
+                "account": "Tournament"
+              }
+            ]
+          }
+        },
+        {
+          "name": "price"
+        },
+        {
+          "name": "magic_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "magic_program",
+          "address": "Magic11111111111111111111111111111111111111"
+        },
+        {
+          "name": "magic_context",
+          "writable": true,
+          "address": "MagicContext1111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "tournament_coin_callback",
       "discriminator": [
         234,
@@ -7060,6 +8826,24 @@
           "signer": true
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "duel",
           "writable": true,
           "pda": {
@@ -7121,6 +8905,24 @@
           "name": "payer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "tournament",
@@ -7490,6 +9292,19 @@
       ]
     },
     {
+      "name": "Keeper",
+      "discriminator": [
+        127,
+        221,
+        194,
+        46,
+        120,
+        73,
+        144,
+        77
+      ]
+    },
+    {
       "name": "Member",
       "discriminator": [
         54,
@@ -7500,6 +9315,19 @@
         166,
         17,
         198
+      ]
+    },
+    {
+      "name": "Pick",
+      "discriminator": [
+        240,
+        89,
+        147,
+        71,
+        106,
+        143,
+        252,
+        174
       ]
     },
     {
@@ -8780,6 +10608,35 @@
       }
     },
     {
+      "name": "Keeper",
+      "docs": [
+        "The keeper PDA (seeds [KEEPER_SEED]). Delegated to the rollup once by the admin, with SOL for Magic Action fees."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "ticks",
+            "docs": [
+              "Ticks run by MagicBlock cranks (duel checks and Royale rounds), for the explorer and the README."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "finished",
+            "docs": [
+              "Games the keeper finished and sent home with a settlement Magic Action."
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "Member",
       "type": {
         "kind": "struct",
@@ -8820,6 +10677,42 @@
               "Paid the member account's rent; gets it back when the member leaves."
             ],
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pick",
+      "docs": [
+        "One player's pick for a private duel. It lives in MagicBlock's Private Ephemeral Rollup (TEE): while the duel is",
+        "being set up only that player can read it; start_private_duel copies both picks into the duel and makes them public."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "duel",
+            "type": "pubkey"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "lev",
+            "type": "u16"
+          },
+          {
+            "name": "locked",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

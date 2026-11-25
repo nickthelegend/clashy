@@ -2,14 +2,14 @@
 // Two devices (or two browser tabs) are two real players. Every step is a signed transaction; the strip at
 // the bottom shows each signature, which layer it ran on, how long it took, and an explorer link.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BN, COIN_SYMBOLS, DUEL_STATUS, NET, P, USDC, USDC_MINT, fmtUsdc, openDuels, priceOf, random32, readDuel, sha256, usdcAta, type DuelView, PublicKey,
+  BN, COIN_SYMBOLS, DUEL_STATUS, MB, NET, P, USDC, USDC_MINT, base, er, feeVault, feedOf, fmtUsdc, hasKeeper, openDuels, permissionOf, priceOf, random32, readDuel, sha256, usdcAta, type DuelView, PublicKey,
 } from '@/chain/client';
 import { reader } from '@/chain/reads';
 import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain';
@@ -22,12 +22,13 @@ import { useProfiles } from '@/chain/social';
 import { Taunts } from '@/ui/taunts';
 import { CallButtons, CoinRoll, CoinToken, FaceOff, LiveBoard, ModeRow, OpenClash, PERPS_LEVERAGE, Searching, clashLev, coinName, perpsNonce, symbolsIn } from '@/ui/clash';
 import { Lottie } from '@/ui/lottie';
+import { CrankBeat, MagicBlockTrack, SealedPick, type MbStep } from '@/ui/magicblock';
 import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
 import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 
-type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number };
+type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number; locked?: boolean };
 /** The program's DUEL_SETUP_SECS: after this a matched duel that never reached the rollup can be aborted. */
 const DUEL_SETUP_SECS = 600;
 /** Each player's stake, in USDC. */
@@ -78,6 +79,14 @@ export default function OnChainDuel() {
   const names = profiles.status === 'ready' ? profiles.data : new Map();
   /** The roll lands for a beat before the call buttons take over. */
   const [rolledSeen, setRolledSeen] = useState(false);
+  /** MagicBlock mode of this deployment: cranked (a keeper exists, so MagicBlock cranks finish every clash) and private
+   *  picks (the rollup is MagicBlock's TEE: each call is locked on the rollup, readable only by its player). */
+  const [mbMode, setMbMode] = useState<{ cranked: boolean; private: boolean }>({ cranked: false, private: false });
+  useEffect(() => { hasKeeper().then((k) => setMbMode({ cranked: k, private: k && MB.private })).catch(() => {}); }, []);
+  /** My call, locked on the rollup (private picks) or committed on Solana. */
+  const [myLock, setMyLock] = useState<{ side: number; lev: number } | null>(null);
+  /** MagicBlock crank ticks seen while this clash is live (read from the keeper on the rollup). */
+  const [ticks, setTicks] = useState<{ start: number; now: number } | null>(null);
 
   // the challenge board
   // the board is public: shown whether or not this device has signed in
@@ -94,6 +103,23 @@ export default function OnChainDuel() {
   }, [progs]);
   useEffect(() => { AsyncStorage.getItem('clashy:chain:active').then((v) => v && setActive(new PublicKey(v))).catch(() => {}); }, []);
 
+  const mbModeRef = useRef(mbMode);
+  mbModeRef.current = mbMode;
+  // MagicBlock crank ticks while live: the keeper on the rollup counts every tick the crank runs
+  useEffect(() => {
+    if (!duel || duel.status !== 3 || !mbMode.cranked) { if (!duel || duel.status < 3) setTicks(null); return; }
+    let alive = true;
+    const read = async () => {
+      const info = await er.getAccountInfo(P.keeper).catch(() => null);
+      if (!alive || !info) return;
+      const n = Number(new DataView(info.data.buffer, info.data.byteOffset, info.data.byteLength).getBigUint64(9, true));
+      setTicks((t) => ({ start: t?.start ?? n, now: n }));
+    };
+    read();
+    const h = setInterval(read, 1000);
+    return () => { alive = false; clearInterval(h); };
+  }, [duel?.status, mbMode.cranked]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // the active duel's state machine, polled every second
   useEffect(() => {
     if (!active || !progs || !wallet || !sponsor) return;
@@ -108,6 +134,7 @@ export default function OnChainDuel() {
       if (me < 0) { setActiveDuel(null); return; }
       const raw = await AsyncStorage.getItem(secretKey(active));
       const sec: Secrets | null = raw ? JSON.parse(raw) : null;
+      if (sec?.side && mbModeRef.current.private) setMyLock((m) => m ?? { side: sec.side!, lev: sec.lev ?? 1 });
       const stepKey = `${d.status}:${d.picksRevealed}:${d.onEr}:${d.vrfPending}`;
       if (stepSeen.current.key !== stepKey) stepSeen.current = { key: stepKey, at: Date.now() };
       // the creator's device drives each step; if it stalls 8 s (closed tab, lost connection), the joiner's device does it
@@ -142,8 +169,40 @@ export default function OnChainDuel() {
       } else {
         matchedAt.current = null;
       }
-      // ROLLED: once both picks are committed, reveal mine
-      if (d.status === 2 && sec?.salt && d.picksCommitted === 0b11 && !(d.picksRevealed & (1 << me))) {
+      const mode = mbModeRef.current;
+      // PRIVATE PICKS (MagicBlock TEE rollup): the sponsor opens the two Pick accounts, a player hands the duel and both
+      // picks to the rollup, each player locks their call there (only they can read it), then the cranked start.
+      if (mode.private && (d.status === 1 || d.status === 2) && !d.onEr && d.picksCommitted === 0) {
+        const opened = !!(await base.getAccountInfo(P.pick(active, d.creator)).catch(() => null));
+        if (!opened && driver) {
+          await once('picks', () => onBase('Open private picks (MagicBlock TEE)', () => progs.base.methods.openPrivatePicks().accountsPartial({ payer: sponsor, duel: active, pickA: P.pick(active, d.creator), pickB: P.pick(active, d.joiner) }).rpc()));
+        }
+        if (opened && d.status === 2 && driver) {
+          await once('delegate-private', () => onBase('Hand the duel and both picks to the TEE rollup', () => progs.base.methods.delegatePrivateDuel(d.creator, new BN(d.nonce))
+            .accountsPartial({ player: wallet, payer: sponsor, duel: active, pickA: P.pick(active, d.creator), pickB: P.pick(active, d.joiner) })
+            .remainingAccounts([{ pubkey: NET.erValidator, isSigner: false, isWritable: false }]).rpc()));
+        }
+      }
+      if (mode.private && d.status === 2 && d.onEr) {
+        if (sec?.side && !sec.locked) {
+          const pick = P.pick(active, wallet);
+          await once(`lock-${me}`, async () => {
+            await onEr('Lock my call in the TEE (private)', progs.er.methods.lockPick(sec.side!, sec.lev ?? 1).accountsPartial({ player: wallet, duel: active, pick, permission: permissionOf(pick) }));
+            await AsyncStorage.setItem(secretKey(active), JSON.stringify({ ...sec, locked: true } satisfies Secrets));
+          });
+        }
+        // both locked → start (a not-yet-locked rival just makes this fail with CommitsPending; it is tried again)
+        if (sec?.locked && (me === 0 || Date.now() - stepSeen.current.at > 8_000) && Date.now() % 3000 < 1000 && !inflight.current.has('start-private')) {
+          inflight.current.add('start-private');
+          const price = await feedOf(progs.base, d.coin);
+          await onEr('Start the clash · MagicBlock crank scheduled', progs.er.methods.startPrivateDuel().accountsPartial({
+            signer: wallet, duel: active, pickA: P.pick(active, d.creator), pickB: P.pick(active, d.joiner),
+            permissionA: permissionOf(P.pick(active, d.creator)), permissionB: permissionOf(P.pick(active, d.joiner)), price, magicFeeVault: feeVault(),
+          })).catch((e) => { if (!/CommitsPending|0x1782/.test(String(e))) setErr(errText(e)); }).finally(() => inflight.current.delete('start-private'));
+        }
+      }
+      // SEALED ON SOLANA (commit-reveal): once both picks are committed, reveal mine
+      if (!mode.private && d.status === 2 && sec?.salt && d.picksCommitted === 0b11 && !(d.picksRevealed & (1 << me))) {
         await once(`reveal-${me}`, () => onBase('Reveal sealed pick', () => progs.base.methods.revealPick(sec.side!, sec.lev!, sec.salt!).accountsPartial({ signer: wallet, duel: active }).rpc()));
       }
       // both revealed: the creator hands the duel to the rollup, then starts it there
@@ -151,23 +210,29 @@ export default function OnChainDuel() {
         await once('delegate', () => onBase('Delegate duel to the rollup', () => progs.base.methods.delegateDuel(d.creator, new BN(d.nonce)).accountsPartial({ player: wallet, payer: sponsor, duel: active }).remainingAccounts([{ pubkey: NET.erValidator, isSigner: false, isWritable: false }]).rpc()));
       }
       if (d.status === 2 && d.picksRevealed === 0b11 && driver && d.onEr) {
-        await once('start', () => onEr('Start duel on the rollup', progs.er.methods.startDuel().accountsPartial({ signer: wallet, duel: active, price: P.feed(d.coin) })));
+        const price = await feedOf(progs.base, d.coin);
+        await once('start', () => mode.cranked
+          ? onEr('Start the clash · MagicBlock crank scheduled', progs.er.methods.startDuelCranked().accountsPartial({ signer: wallet, game: active, price, magicFeeVault: feeVault() }))
+          : onEr('Start duel on the rollup', progs.er.methods.startDuel().accountsPartial({ signer: wallet, duel: active, price })));
       }
-      // LIVE: both devices ask for a check every 2 s (idempotent, signed by the sponsor alone); the finishing check commits and undelegates
-      // the creator's device checks; at the bell the joiner's checks too, so neither side alone picks the closing moment
-      // (audit H1; the full fix, a price sampled at the bell, is in docs/AUDIT.md)
-      const backup = me === 1 && Date.now() / 1000 >= d.startTs + d.lenSecs;
+      // LIVE: with MagicBlock cranks the rollup checks the clash every second by itself and the keeper sends it home with
+      // the payout attached; this device only steps in as a backup 10 s after the bell. Without cranks both devices check.
+      const bell = d.startTs + d.lenSecs;
+      const backup = me === 1 && Date.now() / 1000 >= bell;
       // nobody could finish it two minutes after the bell (prices stopped, the keeper is down): void it, both stakes come back
-      if (d.status === 3 && d.onEr && Date.now() / 1000 > d.startTs + d.lenSecs + 120) {
+      if (d.status === 3 && d.onEr && Date.now() / 1000 > bell + 120) {
         await once('void', () => onEr('Refund a stuck duel', progs.er.methods.voidDuel().accountsPartial({ payer: sponsor, duel: active })));
       }
-      if (d.status === 3 && d.onEr && (me === 0 || backup) && Date.now() % 2000 < 1000) {
-        await onEr('Check duel', progs.er.methods.checkDuel().accountsPartial({ payer: sponsor, duel: active, price: P.feed(d.coin) })).catch((e) => setErr(`Checking the duel failed: ${errText(e)}`));
+      const checkNow = mode.cranked ? Date.now() / 1000 > bell + 10 : (me === 0 || backup);
+      if (d.status === 3 && d.onEr && checkNow && Date.now() % 2000 < 1000) {
+        const price = await feedOf(progs.base, d.coin);
+        await onEr('Check duel', progs.er.methods.checkDuel().accountsPartial({ payer: sponsor, duel: active, price })).catch((e) => setErr(`Checking the duel failed: ${errText(e)}`));
       }
       // FINISHED and home on Solana: either player settles
       // FINISHED and home: the creator settles; the joiner settles only if it is still unsettled 6 s later
       if (d.status === 4 && !d.onEr) homeAt.current ??= Date.now(); else homeAt.current = null;
-      if (d.status === 4 && !d.onEr && (me === 0 || Date.now() - (homeAt.current ?? Date.now()) > 6000)) {
+      // (the settle Magic Action normally pays out as the duel lands, so by hand only if it is still unsettled after 8 s)
+      if (d.status === 4 && !d.onEr && Date.now() - (homeAt.current ?? Date.now()) > (me === 0 ? 8000 : 14000)) {
         await once('settle', () => onBase('Settle on Solana', async () => {
           const cfg = await progs.base.account.config.fetch(P.config);
           return progs.base.methods.settleDuel().accountsPartial({ duel: active, vault: P.vault(active), creatorUsdc: usdcAta(d.creator), joinerUsdc: usdcAta(d.joiner), creatorPlayer: P.player(d.creator), joinerPlayer: P.player(d.joiner), treasury: cfg.treasury, rentPayer: sponsor }).rpc();
@@ -224,6 +289,12 @@ export default function OnChainDuel() {
     if (!progs || !wallet || !active) return;
     const raw = await AsyncStorage.getItem(secretKey(active));
     const sec: Secrets = raw ? JSON.parse(raw) : { seed: [] };
+    setMyLock({ side, lev });
+    if (mbModeRef.current.private) {
+      // locked on MagicBlock's TEE rollup as soon as the duel is there (see the step machine): private, free, instant
+      await AsyncStorage.setItem(secretKey(active), JSON.stringify({ ...sec, side, lev } satisfies Secrets));
+      return;
+    }
     const salt = random32();
     // the program binds the hash to this duel and this player, so a rival cannot copy it
     const hash = await sha256(active.toBytes(), wallet.toBytes(), new Uint8Array([side]), new Uint8Array(new Uint16Array([lev]).buffer), salt);
@@ -266,6 +337,13 @@ export default function OnChainDuel() {
   const koMe = !!duel && me >= 0 && !!(duel.ko & (1 << me));
   const koThem = !!duel && me >= 0 && !!(duel.ko & (1 << (1 - me)));
   const pot = (stake * 2 * 0.97).toFixed(2);
+  /** What MagicBlock is doing for this clash right now (from the duel account and the keeper; nothing simulated). */
+  const mbSteps: MbStep[] = duel && duel.status >= 1 && duel.status <= 5 ? [
+    { key: 'vrf', label: 'Coin rolled by MagicBlock VRF', detail: duel.status >= 2 ? `${coinName(sym2)}, picked by verifiable randomness for both of you` : 'Waiting for the VRF oracle…', state: duel.status >= 2 ? 'done' : 'active' },
+    { key: 'seal', label: mbMode.private ? 'Calls sealed in MagicBlock\'s private rollup (TEE)' : 'Calls sealed', detail: duel.status >= 3 ? 'Both calls opened at the start' : mbMode.private ? (myLock ? 'Yours is locked. Only you can read it.' : 'Tap your call: it is locked inside the TEE, free and instant') : 'Sealed until both lock', state: duel.status >= 3 ? 'done' : duel.status === 2 && rolledSeen ? 'active' : 'todo' },
+    { key: 'live', label: 'Live on the MagicBlock rollup', detail: duel.status >= 4 ? (duel.ko ? 'Ended by a knockout' : 'The bell rang') : mbMode.cranked ? 'A MagicBlock crank checks the price every second' : 'Checked every 2 seconds', state: duel.status >= 4 ? 'done' : duel.status === 3 ? 'active' : 'todo' },
+    { key: 'pay', label: 'Paid on Solana by a Magic Action', detail: duel.status === 5 ? 'The pot moved in the same step that brought the duel home' : 'Settling…', state: duel.status === 5 ? 'done' : duel.status === 4 ? 'active' : 'todo' },
+  ] : [];
   // first visit: a short tour of the setup (modes, stake, find a rival, open clashes, the proof strip)
   const ts = useTourScroll<React.ComponentRef<typeof ScrollView>>();
   useScreenTour('clash', !duel || duel.status === 6 || !active);
@@ -299,6 +377,7 @@ export default function OnChainDuel() {
                 <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{coinName(sym2)} {duel.entryPrice.toFixed(2)} → {duel.exitPrice.toFixed(2)} · you {koMe ? 'liquidated' : `${myPnl >= 0 ? '+' : ''}${myPnl.toFixed(2)}%`}{duel.lev[me] > 1 ? ` at ${duel.lev[me]}×` : ''} · {rivalProf?.name ?? 'rival'} {koThem ? 'liquidated' : `${theirPnl >= 0 ? '+' : ''}${theirPnl.toFixed(2)}%`}{duel.lev[1 - me] > 1 ? ` at ${duel.lev[1 - me]}×` : ''}</Txt>
                 {won && active ? <WinExtras chain={chain} duel={active} winnings={(duel.stake * 2 - Math.floor((duel.stake * 2 * 300) / 10_000)) / USDC} /> : null}
                 <Btn title="Clash again" kind="white" h={56} style={{ marginTop: 14, alignSelf: 'stretch', borderRadius: 20 }} onPress={() => setActiveDuel(null)} />
+                {mbSteps.length ? <View style={{ alignSelf: 'stretch', marginTop: 16 }}><MagicBlockTrack steps={mbSteps} title="How this clash ran" /></View> : null}
               </Animated.View>
             ) : duel && duel.status === 6 ? (
               <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 26, padding: 18, marginBottom: 6 }}>
@@ -414,7 +493,7 @@ export default function OnChainDuel() {
                 <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: C.ink, marginTop: 8 }}>{coinName(sym2)}</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>{perps ? `Long or short at ${duelLev}× for ${duel.lenSecs} seconds. A ${(100 / duelLev).toFixed(duelLev >= 25 ? 1 : 0)}% move against you and you're liquidated.` : duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
                 <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
-                  {me >= 0 && !(duel.picksCommitted & (1 << me)) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : (
+                  {me >= 0 && !(duel.picksCommitted & (1 << me)) && !(mbMode.private && myLock) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : (
                     <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
                       <Text style={{ ...FONT.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>
                       <Txt v="small" style={{ marginTop: 4, textAlign: 'center' }}>{duel.picksCommitted === 0b11 ? (duel.picksRevealed === 0b11 ? 'Both calls in. Going live…' : 'Both calls in. Revealing…') : `Sealed. Waiting for ${rivalProf?.name ?? 'your rival'} to call it…`}</Txt>
@@ -443,6 +522,12 @@ export default function OnChainDuel() {
                 ? <Btn title={busy === 'abort' ? 'Getting your money back…' : `${rivalProf?.name ?? 'Your rival'} went quiet · get your ${STAKE_USDC} USDC back`} kind="white" style={{ marginTop: 18 }} disabled={!!busy} onPress={abort} />
                 : <Txt v="small" style={{ marginTop: 14, textAlign: 'center' }}>If it never starts, your money comes back: unlocks in {Math.floor(setupLeft / 60)}:{String(Math.floor(setupLeft % 60)).padStart(2, '0')}.</Txt>
             ) : null}
+            {mbSteps.length ? (
+              <View style={{ marginTop: 18 }}>
+                <MagicBlockTrack steps={mbSteps} />
+                {duel.status === 3 && ticks && ticks.now > ticks.start ? <View style={{ marginTop: 10, alignItems: 'center' }}><CrankBeat ticks={ticks.now - ticks.start} /></View> : null}
+              </View>
+            ) : null}
             <Hit k={duel.status === 4 && duel.ko ? 1 : 0} src={FX.ko} />
           </Animated.View>
         )}
@@ -453,6 +538,9 @@ export default function OnChainDuel() {
         <WalletCard chain={chain} note={`${STAKE_USDC} USDC each · 3% rake`} need={STAKE_USDC} />
         <Txt v="small" style={{ marginTop: 10 }}>Every step of a clash is a real transaction: stakes in a Solana escrow, the coin from MagicBlock VRF, the live scoring on a MagicBlock rollup, the payout back on Solana.</Txt>
         <TxStrip txs={txs} />
+        <Pressable onPress={() => { setProof(false); router.push('/magicblock' as Href); }} style={{ marginTop: 12, alignItems: 'center', paddingVertical: 10 }}>
+          <Txt v="label" color={C.brandSoft}>Live on MagicBlock: cranks, oracle and VRF →</Txt>
+        </Pressable>
       </Sheet>
     </View>
   );
