@@ -4,7 +4,7 @@
 // (tokenized stocks: the xStocks themselves, which trade on Solana around the clock) and pushes them on chain.
 import * as anchor from '@coral-xyz/anchor';
 import { BN, Program } from '@coral-xyz/anchor';
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, TransactionInstruction, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { createAssociatedTokenAccountIdempotent, getAssociatedTokenAddressSync, mintTo } from '@solana/spl-token';
 import { createHash, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -251,6 +251,31 @@ export async function waitHome(account: PublicKey, timeoutMs = 60_000) {
     const info = await base.getAccountInfo(account, 'confirmed');
     return info?.owner.equals(programId) ? info : null;
   });
+}
+
+/** MagicBlock session keys (gpl_session, KeyspM2…): `owner` signs once to let a fresh session key act for them in Clashy
+ *  for `secs`; the sponsor pays the token's rent. Returns the session key and its token. */
+export const SESSION_PROGRAM = new PublicKey('KeyspM2ssCJbqUhQ4k7sveSiY4WjnYsrXkC8oDbwde5');
+export async function createSession(owner: Keypair, secs = 3600) {
+  const signer = Keypair.generate();
+  const [token] = PublicKey.findProgramAddressSync([Buffer.from('session_token_v2'), programId.toBuffer(), signer.publicKey.toBuffer(), owner.publicKey.toBuffer()], SESSION_PROGRAM);
+  const disc = createHash('sha256').update('global:create_session_v2').digest().subarray(0, 8);
+  const validUntil = Buffer.alloc(8); validUntil.writeBigInt64LE(BigInt(Math.floor(Date.now() / 1000) + secs));
+  const data = Buffer.concat([disc, Buffer.from([0]), Buffer.from([1]), validUntil, Buffer.from([0])]); // top_up None, valid_until Some, lamports None
+  const ix = new TransactionInstruction({
+    programId: SESSION_PROGRAM,
+    keys: [
+      { pubkey: token, isSigner: false, isWritable: true },
+      { pubkey: signer.publicKey, isSigner: true, isWritable: true },
+      { pubkey: sponsor.publicKey, isSigner: true, isWritable: true },
+      { pubkey: owner.publicKey, isSigner: true, isWritable: false },
+      { pubkey: programId, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+  await sendAndConfirmTransaction(base, new Transaction().add(ix), [sponsor, signer, owner], { commitment: 'confirmed' });
+  return { signer, token };
 }
 
 /** A finished game comes home with a settlement Magic Action: MagicBlock runs settle_duel / settle_tournament on

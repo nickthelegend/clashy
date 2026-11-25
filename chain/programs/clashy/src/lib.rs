@@ -28,6 +28,7 @@ use ephemeral_rollups_sdk::ephem::{CallHandler, MagicIntentBundleBuilder};
 #[allow(deprecated)]
 use ephemeral_rollups_sdk::crank::{ScheduleCrankCpi, ScheduleTaskArgs};
 use ephemeral_rollups_sdk::{ActionArgs, ShortAccountMeta};
+use session_keys::SessionTokenV2;
 use ephemeral_rollups_sdk::access_control::instructions::{CreateEphemeralPermissionCpi, UpdateEphemeralPermissionCpi};
 use ephemeral_rollups_sdk::access_control::structs::{EphemeralMembersArgs, EphemeralPermission, Member as PermissionMember, AUTHORITY_FLAG, TX_BALANCES_FLAG, TX_LOGS_FLAG, TX_MESSAGE_FLAG};
 use ephemeral_rollups_sdk::vrf::anchor::{vrf, vrf_callback};
@@ -286,6 +287,74 @@ fn resolve_round_at(t: &mut Tournament, key: Pubkey, price: u64, now: i64) -> bo
         t.round_started_at = now;
         false
     }
+}
+
+/// Locks one player's private pick (see lock_pick): the first lock creates the Pick's MagicBlock permission, private to
+/// that player, then side and leverage are written once.
+#[allow(clippy::too_many_arguments)]
+fn lock_pick_inner<'info>(
+    d: &Account<'info, Duel>,
+    pick: &mut Account<'info, Pick>,
+    permission: &UncheckedAccount<'info>,
+    permission_program: &UncheckedAccount<'info>,
+    ephemeral_vault: &UncheckedAccount<'info>,
+    magic_program: &UncheckedAccount<'info>,
+    me: Pubkey,
+    dir: u8,
+    lev: u16,
+) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
+    require!(d.status == duel_status::ROLLED, ClashyError::WrongStatus);
+    require!(now <= d.matched_at + DUEL_SETUP_SECS + DUEL_REVEAL_SECS, ClashyError::StepClosed);
+    require!(dir == side::LONG || dir == side::SHORT, ClashyError::BadSide);
+    require!(lev >= 1 && lev <= MAX_LEVERAGE, ClashyError::BadLeverage);
+    player_index(d, &me)?;
+    require!(!pick.locked, ClashyError::AlreadyDone);
+    let duel = d.key();
+    if permission.lamports() == 0 {
+        CreateEphemeralPermissionCpi {
+            payer: pick.to_account_info(),
+            permissioned_account: pick.to_account_info(),
+            permission: permission.to_account_info(),
+            vault: ephemeral_vault.to_account_info(),
+            magic_program: magic_program.to_account_info(),
+            permission_program: permission_program.to_account_info(),
+            args: EphemeralMembersArgs {
+                is_private: true,
+                members: vec![PermissionMember { flags: AUTHORITY_FLAG | TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG, pubkey: me.to_bytes().into() }],
+            },
+        }
+        .invoke_signed(&[&[PICK_SEED, duel.as_ref(), me.as_ref(), &[pick.bump]]])?;
+    }
+    pick.side = dir;
+    pick.lev = lev;
+    pick.locked = true;
+    Ok(())
+}
+
+/// A Royale call for the current round (see call_round).
+fn call_round_inner(t: &mut Tournament, me: Pubkey, dir: u8) -> Result<()> {
+    require!(dir == 1 || dir == 2, ClashyError::BadSide);
+    let now = Clock::get()?.unix_timestamp;
+    require!(t.status == tour_status::LIVE, ClashyError::WrongStatus);
+    require!(now < t.round_started_at + t.round_secs as i64, ClashyError::RoundOver);
+    let i = t.players[..t.count as usize].iter().position(|p| *p == me).ok_or(ClashyError::NotPlayer)?;
+    require!(t.lives[i] > 0, ClashyError::Eliminated);
+    t.calls[i] = dir;
+    Ok(())
+}
+
+/// A MagicBlock session token (gpl_session V2) lets `signer` act for `player` in this program until it expires. The token
+/// must be the canonical PDA for (this program, signer, player), and every field must match.
+fn check_session(token: &SessionTokenV2, token_key: &Pubkey, player: &Pubkey, signer: &Pubkey) -> Result<()> {
+    let (expected, _) = Pubkey::find_program_address(
+        &[SessionTokenV2::SEED_PREFIX.as_bytes(), crate::ID.as_ref(), signer.as_ref(), player.as_ref()],
+        &session_keys::ID,
+    );
+    require_keys_eq!(*token_key, expected, ClashyError::BadSession);
+    require!(token.authority == *player && token.target_program == crate::ID && token.session_signer == *signer, ClashyError::BadSession);
+    require!(Clock::get()?.unix_timestamp < token.valid_until, ClashyError::BadSession);
+    Ok(())
 }
 
 fn update_players(a: &mut Player, b: &mut Player, winner: u8) {
@@ -1687,16 +1756,8 @@ pub mod clashy {
 
     /// ER, player: calls up (1) or down (2) for the current round. Can be changed until the bell.
     pub fn call_round(ctx: Context<CallRound>, dir: u8) -> Result<()> {
-        require!(dir == 1 || dir == 2, ClashyError::BadSide);
-        let now = Clock::get()?.unix_timestamp;
-        let t = &mut ctx.accounts.tournament;
-        require!(t.status == tour_status::LIVE, ClashyError::WrongStatus);
-        require!(now < t.round_started_at + t.round_secs as i64, ClashyError::RoundOver);
         let me = ctx.accounts.player.key();
-        let i = t.players[..t.count as usize].iter().position(|p| *p == me).ok_or(ClashyError::NotPlayer)?;
-        require!(t.lives[i] > 0, ClashyError::Eliminated);
-        t.calls[i] = dir;
-        Ok(())
+        call_round_inner(&mut ctx.accounts.tournament, me, dir)
     }
 
     /// ER, permissionless after the bell: wrong or missing calls lose a life. When one player (or
@@ -1995,37 +2056,25 @@ pub mod clashy {
     /// TEE rollup, the player: locks their side and leverage. The first lock makes the Pick private to that player
     /// (a MagicBlock ephemeral permission), so the other player cannot read it until the duel starts.
     pub fn lock_pick(ctx: Context<LockPick>, dir: u8, lev: u16) -> Result<()> {
-        let now = Clock::get()?.unix_timestamp;
-        let d = &ctx.accounts.duel;
-        require!(d.status == duel_status::ROLLED, ClashyError::WrongStatus);
-        require!(now <= d.matched_at + DUEL_SETUP_SECS + DUEL_REVEAL_SECS, ClashyError::StepClosed);
-        require!(dir == side::LONG || dir == side::SHORT, ClashyError::BadSide);
-        require!(lev >= 1 && lev <= MAX_LEVERAGE, ClashyError::BadLeverage);
+        let a = ctx.accounts;
+        let me = a.player.key();
+        lock_pick_inner(&a.duel, &mut a.pick, &a.permission, &a.permission_program, &a.ephemeral_vault, &a.magic_program, me, dir, lev)
+    }
+
+    /// TEE rollup: lock_pick signed by the player's MagicBlock session key instead of their wallet (no wallet prompt mid
+    /// clash). The session token must be the player's, for this program and this signer, and unexpired.
+    pub fn lock_pick_session(ctx: Context<LockPickSession>, dir: u8, lev: u16) -> Result<()> {
+        let a = ctx.accounts;
+        let me = a.player.key();
+        check_session(&a.session_token, &a.session_token.key(), &me, &a.signer.key())?;
+        lock_pick_inner(&a.duel, &mut a.pick, &a.permission, &a.permission_program, &a.ephemeral_vault, &a.magic_program, me, dir, lev)
+    }
+
+    /// Rollup: call_round signed by the player's MagicBlock session key.
+    pub fn call_round_session(ctx: Context<CallRoundSession>, dir: u8) -> Result<()> {
         let me = ctx.accounts.player.key();
-        player_index(d, &me)?;
-        require!(!ctx.accounts.pick.locked, ClashyError::AlreadyDone);
-        let duel = d.key();
-        let bump = ctx.accounts.pick.bump;
-        if ctx.accounts.permission.lamports() == 0 {
-            CreateEphemeralPermissionCpi {
-                payer: ctx.accounts.pick.to_account_info(),
-                permissioned_account: ctx.accounts.pick.to_account_info(),
-                permission: ctx.accounts.permission.to_account_info(),
-                vault: ctx.accounts.ephemeral_vault.to_account_info(),
-                magic_program: ctx.accounts.magic_program.to_account_info(),
-                permission_program: ctx.accounts.permission_program.to_account_info(),
-                args: EphemeralMembersArgs {
-                    is_private: true,
-                    members: vec![PermissionMember { flags: AUTHORITY_FLAG | TX_LOGS_FLAG | TX_BALANCES_FLAG | TX_MESSAGE_FLAG, pubkey: me.to_bytes().into() }],
-                },
-            }
-            .invoke_signed(&[&[PICK_SEED, duel.as_ref(), me.as_ref(), &[bump]]])?;
-        }
-        let pick = &mut ctx.accounts.pick;
-        pick.side = dir;
-        pick.lev = lev;
-        pick.locked = true;
-        Ok(())
+        check_session(&ctx.accounts.session_token, &ctx.accounts.session_token.key(), &me, &ctx.accounts.signer.key())?;
+        call_round_inner(&mut ctx.accounts.tournament, me, dir)
     }
 
     /// TEE rollup, either player (or the sponsor): once both picks are locked, copies them into the duel, makes both
@@ -2687,6 +2736,44 @@ pub struct AdminUndelegate<'info> {
     /// CHECK: a delegated PriceFeed, Board or Channel of this program (checked by discriminator in the handler).
     #[account(mut, owner = crate::ID)]
     pub target: UncheckedAccount<'info>,
+}
+
+/// lock_pick signed by a MagicBlock session key: `signer` is the session key, `player` the wallet it acts for.
+#[derive(Accounts)]
+pub struct LockPickSession<'info> {
+    pub signer: Signer<'info>,
+    /// CHECK: the player the session acts for; bound by the session token and the Pick's seeds.
+    pub player: UncheckedAccount<'info>,
+    #[account(owner = session_keys::ID)]
+    pub session_token: Account<'info, SessionTokenV2>,
+    #[account(seeds = [DUEL_SEED, duel.creator.as_ref(), &duel.nonce.to_le_bytes()], bump = duel.bump)]
+    pub duel: Account<'info, Duel>,
+    #[account(mut, seeds = [PICK_SEED, duel.key().as_ref(), player.key().as_ref()], bump = pick.bump)]
+    pub pick: Account<'info, Pick>,
+    /// CHECK: the Pick's MagicBlock permission PDA.
+    #[account(mut, address = permission_of(&pick.key()))]
+    pub permission: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock permission program.
+    #[account(address = ephemeral_rollups_sdk::consts::PERMISSION_PROGRAM_ID)]
+    pub permission_program: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock ephemeral vault.
+    #[account(mut, address = ephemeral_rollups_sdk::consts::EPHEMERAL_VAULT_ID)]
+    pub ephemeral_vault: UncheckedAccount<'info>,
+    /// CHECK: MagicBlock magic program.
+    #[account(address = ephemeral_rollups_sdk::consts::MAGIC_PROGRAM_ID)]
+    pub magic_program: UncheckedAccount<'info>,
+}
+
+/// call_round signed by a MagicBlock session key.
+#[derive(Accounts)]
+pub struct CallRoundSession<'info> {
+    pub signer: Signer<'info>,
+    /// CHECK: the player the session acts for; bound by the session token.
+    pub player: UncheckedAccount<'info>,
+    #[account(owner = session_keys::ID)]
+    pub session_token: Account<'info, SessionTokenV2>,
+    #[account(mut, seeds = [TOUR_SEED, tournament.creator.as_ref(), &tournament.nonce.to_le_bytes()], bump = tournament.bump)]
+    pub tournament: Box<Account<'info, Tournament>>,
 }
 
 #[derive(Accounts)]

@@ -151,4 +151,6 @@ pub enum ClashyError {
     NoShares,
     #[msg("Only a captain who holds most of the chest can stake it in a war")]
     NeedsMajority,
+    #[msg("The session key is not valid for this player")]
+    BadSession,
 }

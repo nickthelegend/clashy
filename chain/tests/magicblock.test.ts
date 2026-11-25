@@ -11,7 +11,7 @@ import { after, before, describe, test } from 'node:test';
 import { Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { createTopUpEscrowInstruction, escrowPdaFromEscrowAuthority, MAGIC_CONTEXT_ID, MAGIC_PROGRAM_ID, permissionPdaFromAccount } from '@magicblock-labs/ephemeral-rollups-sdk';
 import {
-  BN, COINS, Keypair, P, PublicKey, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, erProgram, lamports, LOCAL_ER_VALIDATOR,
+  BN, COINS, Keypair, P, PublicKey, createSession, USDC, USDC_MINT, authority, base, baseProgram, ensureSetup, er, erProgram, lamports, LOCAL_ER_VALIDATOR,
   programFor, programId, randomSeed, runCrank, sendEr, sha256, sleep, sponsor, sponsorProgram, tokenBalance, until, usdcAta, usdcOf, usdcPlayer, waitHome,
 } from './common.ts';
 
@@ -155,6 +155,8 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     const balances = await Promise.all(ps.map((p) => usdcOf(p.publicKey)));
     await sendEr(programFor(host, true).methods.startTournamentCranked().accountsPartial(cranked(host, tour, coin)), host);
     // players only call (up / down / silent); the crank resolves the rounds, the keeper and the Magic Action settle
+    const sess1 = await createSession(ps[1]);
+    let sessionErr = '';
     const deadline = Date.now() + 90_000;
     let lastRound = 0;
     while (Date.now() < deadline) {
@@ -165,7 +167,8 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
       if (t.round !== lastRound) {
         lastRound = t.round;
         await sendEr(programFor(ps[0], true).methods.callRound(1).accountsPartial({ player: ps[0].publicKey, tournament: tour }), ps[0]).catch(() => {});
-        await sendEr(programFor(ps[1], true).methods.callRound(2).accountsPartial({ player: ps[1].publicKey, tournament: tour }), ps[1]).catch(() => {});
+        // player 1 calls through a MagicBlock session key (no wallet signature per round)
+        await sendEr(programFor(sess1.signer, true).methods.callRoundSession(2).accountsPartial({ signer: sess1.signer.publicKey, player: ps[1].publicKey, sessionToken: sess1.token, tournament: tour }), sess1.signer).catch((e) => { if (!/RoundOver|WrongStatus/.test(String(e))) sessionErr = String(e).split('\n')[0]; });
       }
       await sleep(1000);
     }
@@ -180,6 +183,7 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     const rake = Math.floor((pot * rakeBps) / 10_000);
     assert.ok(t.round >= 1, 'rounds ran');
     assert.equal(t.lives[2], 0, 'the silent player is out');
+    assert.equal(sessionErr, '', 'player 1 called every round through the session key');
     assert.equal(won.reduce((s, v) => s + v, 0), pot - rake, 'the survivors split the pot minus rake');
     assert.equal(won[2], 0);
     assert.equal(await base.getAccountInfo(vault), null, 'vault closed by the Magic Action');
@@ -223,7 +227,12 @@ describe('MagicBlock crank + keeper + Magic Action settlement', () => {
     await lock(a, pickA, 1, 25);
     await assert.rejects(start(), /CommitsPending|0x1782/, 'no start until both picks are locked');
     await assert.rejects(lock(a, pickA, 2, 25), /AlreadyDone|0x1780/, 'a locked pick cannot change');
-    await lock(b, pickB, 2, 25);
+    // player B locks through a MagicBlock session key: one wallet signature for the session, none for the move
+    const sessB = await createSession(b);
+    const lockSession = (as: Keypair, sess: { signer: Keypair; token: PublicKey }, pick: PublicKey) => sendEr(programFor(sess.signer, true).methods.lockPickSession(2, 25)
+      .accountsPartial({ signer: sess.signer.publicKey, player: as.publicKey, sessionToken: sess.token, duel, pick, permission: permissionPdaFromAccount(pick), magicProgram: MAGIC_PROGRAM_ID }), sess.signer);
+    await assert.rejects(lockSession(a, sessB, pickA), /BadSession|0x17|custom program error/, "B's session key cannot act for A");
+    await lockSession(b, sessB, pickB);
     const permA = await er.getAccountInfo(permissionPdaFromAccount(pickA));
     assert.ok(permA && permA.data.length > 0, 'pick A has its own MagicBlock permission (private to player A)');
 
