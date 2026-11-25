@@ -42,3 +42,7 @@ example
 /ios
 /android
 .claude/
+
+# ChatGPT sprite sheet originals (12 MB): kept on disk for scripts/make-sprites.py, not in git
+/assets/sprites/src/
+__pycache__/

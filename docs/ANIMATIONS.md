@@ -79,9 +79,37 @@ the end state rather than playing.
 `app/src/ui/lottie.native.tsx` plays the same JSON files and markers with `lottie-react-native` (~7.5.0, the version
 `expo install` picks for this Expo SDK): the intro once, then the `loop` segment; the `still` frame under reduced motion.
 The JSON list is shared in `app/src/ui/lottie-files.ts`. The squad war scene now uses the Lottie on phones too, not the
-still tile. Checked so far: the iOS JS bundle includes the native player and not lottie-web, and the web bundle includes
-lottie-web and not the native player. Not checked yet: a run on a phone or simulator. That needs a new native build, because
-the native module is compiled into the app.
+still tile. Checked: the iOS JS bundle includes the native player and not lottie-web, and the web bundle includes lottie-web and
+not the native player. On Nov 25 a native debug build (`npx expo run:ios`, Xcode 26.5, iPhone 17 simulator) played the
+squad war Lottie on the Play tab: the crests slide in and the VS burst lands, then it loops.
+
+## Sprites: the mascot and LASER (added Nov 25)
+
+Twelve clay sprite animations, six per character, made with ChatGPT's image model from the approved mascot sheet and
+the LASER film still (one 3 × 2 sheet of six frames per animation, same chat so the characters stay on model):
+
+| Mascot (you) | LASER (the rival) |
+|---|---|
+| `bo-idle` fight stance (loop) | `laser-idle` trash talk into the megaphone (loop) |
+| `bo-punch` | `laser-attack` laser eyes |
+| `bo-hit` | `laser-hit` |
+| `bo-ko` falls, X eyes, circling stars | `laser-ko` falls, glasses fly off |
+| `bo-win` victory jump (loop) | `laser-win` gloats, coins (loop) |
+| `bo-lose` | `laser-lose` |
+
+- **Cut:** `python3 -I app/scripts/make-sprites.py` slices each sheet, removes the white background with an edge flood
+  fill (the cream belly stays), sizes every sheet of a character by the area of its body colour so all its animations
+  match, and lines every frame up on the feet. Output: `app/assets/sprites/<name>.webp` (one row of frames, 971 KB for
+  all twelve), `sprites.json` (frames, frame size, fps, loop mode) and animated previews in `assets/sprites/preview/`.
+  The ChatGPT originals stay on disk in `assets/sprites/src/` (12 MB, not in git).
+- **Player:** `app/src/ui/sprite.tsx` steps through a strip on web and on phones. One-shots hold their last frame, and
+  reduced motion shows a still frame.
+- **Where they play:** `app/src/ui/fight.tsx`, the fight stage at the top of every live clash's board (on-chain and
+  practice). It only acts out the real scores: when the lead swings to you, the mascot punches and LASER takes the hit,
+  and the other way round. At the bell the leader celebrates and the other loses; a liquidation is a knockout.
+- **Review page:** `/sprites` plays all twelve and has a fight stage driven by buttons. Checked on the iOS simulator
+  (native build) on Nov 25: all twelve play; "You gain" then "Bell" ends with the mascot's victory jump and LASER
+  slumped.
 
 ## Known gaps
 

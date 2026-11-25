@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import type { Profile } from '@/chain/social';
 import { COIN_SYMBOLS } from '@/chain/client';
+import { FightStage } from './fight';
 import { ProfileAvatar, STOCK_ART } from './feed';
 import { ART, Txt } from './kit';
 import { C, F, FONT, fmtUsd } from './tokens';
@@ -109,7 +110,7 @@ export function CallButtons({ onUp, onDown, disabled, upLabel = 'UP', downLabel 
   );
 }
 
-/** Live tug-of-war: both scores, a bar that leans to whoever is ahead, the clock. */
+/** Live tug-of-war: the clock, the clay fight stage acting out the scores, a bar that leans to whoever is ahead, both scores. */
 export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirCall, sym, price, entry, left, onRollup, perps }: {
   me?: Profile; rival?: Profile; /** A picture for the rival instead of a player avatar (Clashy Bot). */ rivalPic?: ReactNode; myPnl: number; theirPnl: number; myCall: number; theirCall: number; sym: string; price: number | null; entry: number; left: number | null; onRollup: boolean;
   /** A perps clash: each side's leverage and whether the chain knocked it out. */
@@ -129,6 +130,7 @@ export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirC
         <Text style={{ ...FONT.display, fontSize: 64, color: C.ink, marginTop: 10, letterSpacing: -1 }}>{left !== null ? (left >= 60 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : `${Math.ceil(left)}`) : '…'}</Text>
         <Txt v="small">{coinName(sym)} {price ? fmtUsd(price) : '…'} · {move >= 0 ? '+' : ''}{move.toFixed(3)}% since the start</Txt>
       </View>
+      <FightStage myPnl={myPnl} theirPnl={theirPnl} over={!onRollup} myKo={perps?.myKo || (perps ? myPnl <= -100 : false)} theirKo={perps?.theirKo || (perps ? theirPnl <= -100 : false)} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <ProfileAvatar p={me} size={46} />
         <View style={{ flex: 1, height: 22, borderRadius: 11, backgroundColor: C.opp, overflow: 'hidden' }}>
