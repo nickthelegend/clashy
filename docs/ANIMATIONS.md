@@ -74,15 +74,20 @@ the end state rather than playing.
 |---|---|---|
 | `win-loop`, `ko-moment`, `tile-duel-loop` under the result | **Keep** | This is the approved clay art. It shows the webp poster until the first frame and under reduced motion, which is correct. The Lotties now frame it instead of competing with it. |
 
-## Known gaps (not fixed here)
+## Phones (added Nov 25)
 
-1. **Native shows no Lottie.** `Lottie` renders nothing on iOS and Android because `lottie-react-native` isn't
-   installed. On a phone the result moment is only the clay video. The fix is to add `lottie-react-native`, branch
-   on `Platform.OS` in `lottie.tsx` and pass the same JSON and markers. That needs a dependency change and a
-   dev-client rebuild, so it's the main session's call. The JSON files need no changes for it.
-2. The old `confetti.json` is still bundled (27 KB) but no screen uses it. Drop it from `FILES` and `assets/lottie`
-   when convenient.
-3. `coin-drop.json`, `flame.json` and `squad-war.json` still embed raster PNGs (see the scorecard).
+`app/src/ui/lottie.native.tsx` plays the same JSON files and markers with `lottie-react-native` (~7.5.0, the version
+`expo install` picks for this Expo SDK): the intro once, then the `loop` segment; the `still` frame under reduced motion.
+The JSON list is shared in `app/src/ui/lottie-files.ts`. The squad war scene now uses the Lottie on phones too, not the
+still tile. Checked so far: the iOS JS bundle includes the native player and not lottie-web, and the web bundle includes
+lottie-web and not the native player. Not checked yet: a run on a phone or simulator. That needs a new native build, because
+the native module is compiled into the app.
+
+## Known gaps
+
+1. `coin-drop.json`, `flame.json` and `squad-war.json` still embed raster PNGs (see the scorecard).
+
+The unused `confetti.json` was removed on Nov 25.
 
 ## Regenerate
 
