@@ -84,7 +84,7 @@ export default function OnChainDuel() {
   const [mbMode, setMbMode] = useState<{ cranked: boolean; private: boolean }>({ cranked: false, private: false });
   useEffect(() => { hasKeeper().then((k) => setMbMode({ cranked: k, private: k && MB.private })).catch(() => {}); }, []);
   /** My call, locked on the rollup (private picks) or committed on Solana. */
-  const [myLock, setMyLock] = useState<{ side: number; lev: number } | null>(null);
+  const [myLock, setMyLock] = useState<{ side: number; lev: number; sent: boolean } | null>(null);
   /** MagicBlock crank ticks seen while this clash is live (read from the keeper on the rollup). */
   const [ticks, setTicks] = useState<{ start: number; now: number } | null>(null);
 
@@ -134,7 +134,7 @@ export default function OnChainDuel() {
       if (me < 0) { setActiveDuel(null); return; }
       const raw = await AsyncStorage.getItem(secretKey(active));
       const sec: Secrets | null = raw ? JSON.parse(raw) : null;
-      if (sec?.side && mbModeRef.current.private) setMyLock((m) => m ?? { side: sec.side!, lev: sec.lev ?? 1 });
+      if (sec?.side && mbModeRef.current.private) setMyLock((m) => (m && m.sent === !!sec.locked ? m : { side: sec.side!, lev: sec.lev ?? 1, sent: !!sec.locked }));
       const stepKey = `${d.status}:${d.picksRevealed}:${d.onEr}:${d.vrfPending}`;
       if (stepSeen.current.key !== stepKey) stepSeen.current = { key: stepKey, at: Date.now() };
       // the creator's device drives each step; if it stalls 8 s (closed tab, lost connection), the joiner's device does it
@@ -189,6 +189,7 @@ export default function OnChainDuel() {
           await once(`lock-${me}`, async () => {
             await onEr('Lock my call in the TEE (private)', progs.er.methods.lockPick(sec.side!, sec.lev ?? 1).accountsPartial({ player: wallet, duel: active, pick, permission: permissionOf(pick) }));
             await AsyncStorage.setItem(secretKey(active), JSON.stringify({ ...sec, locked: true } satisfies Secrets));
+            setMyLock({ side: sec.side!, lev: sec.lev ?? 1, sent: true });
           });
         }
         // both locked → start (a not-yet-locked rival just makes this fail with CommitsPending; it is tried again)
@@ -289,7 +290,7 @@ export default function OnChainDuel() {
     if (!progs || !wallet || !active) return;
     const raw = await AsyncStorage.getItem(secretKey(active));
     const sec: Secrets = raw ? JSON.parse(raw) : { seed: [] };
-    setMyLock({ side, lev });
+    setMyLock({ side, lev, sent: false });
     if (mbModeRef.current.private) {
       // locked on MagicBlock's TEE rollup as soon as the duel is there (see the step machine): private, free, instant
       await AsyncStorage.setItem(secretKey(active), JSON.stringify({ ...sec, side, lev } satisfies Secrets));
@@ -340,7 +341,7 @@ export default function OnChainDuel() {
   /** What MagicBlock is doing for this clash right now (from the duel account and the keeper; nothing simulated). */
   const mbSteps: MbStep[] = duel && duel.status >= 1 && duel.status <= 5 ? [
     { key: 'vrf', label: 'Coin rolled by MagicBlock VRF', detail: duel.status >= 2 ? `${coinName(sym2)}, picked by verifiable randomness for both of you` : 'Waiting for the VRF oracle…', state: duel.status >= 2 ? 'done' : 'active' },
-    { key: 'seal', label: mbMode.private ? 'Calls sealed in MagicBlock\'s private rollup (TEE)' : 'Calls sealed', detail: duel.status >= 3 ? 'Both calls opened at the start' : mbMode.private ? (myLock ? 'Yours is locked. Only you can read it.' : 'Tap your call: it is locked inside the TEE, free and instant') : 'Sealed until both lock', state: duel.status >= 3 ? 'done' : duel.status === 2 && rolledSeen ? 'active' : 'todo' },
+    { key: 'seal', label: mbMode.private ? 'Calls sealed in MagicBlock\'s private rollup (TEE)' : 'Calls sealed', detail: duel.status >= 3 ? 'Both calls opened at the start' : mbMode.private ? (myLock?.sent ? 'Yours is locked. Only you can read it.' : myLock ? 'Locking yours in the TEE…' : 'Tap your call: it is locked inside the TEE, free and instant') : 'Sealed until both lock', state: duel.status >= 3 ? 'done' : duel.status === 2 && rolledSeen ? 'active' : 'todo' },
     { key: 'live', label: 'Live on the MagicBlock rollup', detail: duel.status >= 4 ? (duel.ko ? 'Ended by a knockout' : 'The bell rang') : mbMode.cranked ? 'A MagicBlock crank checks the price every second' : 'Checked every 2 seconds', state: duel.status >= 4 ? 'done' : duel.status === 3 ? 'active' : 'todo' },
     { key: 'pay', label: 'Paid on Solana by a Magic Action', detail: duel.status === 5 ? 'The pot moved in the same step that brought the duel home' : 'Settling…', state: duel.status === 5 ? 'done' : duel.status === 4 ? 'active' : 'todo' },
   ] : [];
@@ -369,7 +370,7 @@ export default function OnChainDuel() {
               <Animated.View entering={FadeInDown.springify()} style={{ alignItems: 'center', paddingTop: 6 }}>
                 <View>
                   <ClayLoop name={won ? 'win' : tie ? 'duel' : 'ko'} size={170} loop={!!won} style={{ borderRadius: 36 }} />
-                  {won ? <Lottie name="confetti" size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
+                  <Lottie name={won ? 'win' : koMe && !koThem ? 'knockout' : tie ? 'deadHeat' : 'lose'} size={300} style={{ position: 'absolute', left: -65, top: -70 }} />
                 </View>
                 <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : koMe && !koThem ? 'Liquidated' : tie ? 'Dead heat' : 'You lost'}</Text>
                 {duel.ko ? <Txt v="label" color={koMe && !koThem ? C.down : koThem && !koMe ? C.up : C.ink} style={{ textAlign: 'center' }}>{koMe && koThem ? 'Both sides liquidated' : koMe ? `Liquidated · your ${duel.lev[me]}× position lost its whole stake` : `Liquidated · ${rivalProf?.name ?? 'your rival'} lost it all at ${duel.lev[1 - me]}×`}</Txt> : null}
