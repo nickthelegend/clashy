@@ -1,0 +1,17 @@
+
+> clashy-server@2.0.0 test
+> node --test --test-concurrency=1 test/api.test.ts
+
+✔ sign-in accepts the wallet’s own signature and refuses forgeries (163.849333ms)
+✔ public follow is instant; a private account gets a request it can accept (14.925167ms)
+✔ messages: requests until you reply, unread counts and read receipts (21.546333ms)
+✔ archive: only the indexer writes; posts are public; squad history is for members only (33.534625ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 360.590916
+EXIT 0

@@ -1,0 +1,18 @@
+running 13 tests
+test math::tests::duel_closes_only_after_the_keep_window ... ok
+test math::tests::elo_moves_symmetrically ... ok
+test math::tests::pick_coin_respects_mask ... ok
+test math::tests::pnl_floors_at_knockout ... ok
+test math::tests::pnl_keeps_small_moves_at_high_leverage ... ok
+test math::tests::pnl_long_and_short ... ok
+test math::tests::chest_shares_are_pro_rata ... ok
+test math::tests::rake_split ... ok
+test math::tests::royale_calls ... ok
+test math::tests::war_return ... ok
+test price::tests::scales_pyth_exponents ... ok
+test test_id ... ok
+test price::tests::reads_a_real_magicblock_oracle_account ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+EXIT 0

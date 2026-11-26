@@ -1,0 +1,77 @@
+TAP version 13
+# (node:61719) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: relay market proxy
+    # Subtest: passes only the listed public reads
+    ok 1 - passes only the listed public reads
+      ---
+      duration_ms: 36.89325
+      type: 'test'
+      ...
+    # Subtest: Jupiter prices are shared per mint: a burst of overlapping reads all answer with real prices
+    ok 2 - Jupiter prices are shared per mint: a burst of overlapping reads all answer with real prices
+      ---
+      duration_ms: 2270.81925
+      type: 'test'
+      ...
+    1..2
+ok 1 - relay market proxy
+  ---
+  duration_ms: 2308.305709
+  type: 'suite'
+  ...
+# Subtest: Phoenix (on-chain order book)
+    # Subtest: lists active markets with leverage caps and fees
+    ok 1 - lists active markets with leverage caps and fees
+      ---
+      duration_ms: 667.062916
+      type: 'test'
+      ...
+#   Phoenix SOL: mid 71.17500000000001, $5,000 buys 70.244 at 71.1800 over 1 levels, sells back at 71.1627
+    # Subtest: a $5,000 SOL order fills level by level on the live book
+    ok 2 - a $5,000 SOL order fills level by level on the live book
+      ---
+      duration_ms: 892.889709
+      type: 'test'
+      ...
+    # Subtest: funding and candles are real numbers
+    ok 3 - funding and candles are real numbers
+      ---
+      duration_ms: 869.028208
+      type: 'test'
+      ...
+    1..3
+ok 2 - Phoenix (on-chain order book)
+  ---
+  duration_ms: 2429.33075
+  type: 'suite'
+  ...
+# Subtest: Pacifica (order book, Solana settlement)
+    # Subtest: lists perps and its fee schedule
+    ok 1 - lists perps and its fee schedule
+      ---
+      duration_ms: 685.330959
+      type: 'test'
+      ...
+#   Pacifica BTC: mid 61004.5, $20,000 buys 0.32783 at 61006.88 over 3 levels, sells back at 61004.00
+    # Subtest: a $20,000 BTC order fills level by level on the live book
+    ok 2 - a $20,000 BTC order fills level by level on the live book
+      ---
+      duration_ms: 164.87725
+      type: 'test'
+      ...
+    1..2
+ok 3 - Pacifica (order book, Solana settlement)
+  ---
+  duration_ms: 850.573708
+  type: 'suite'
+  ...
+1..3
+# tests 7
+# suites 3
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5790.566833

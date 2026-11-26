@@ -1,0 +1,48 @@
+TAP version 13
+# (node:35676) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+#   keeper TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK · action escrow FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE holds 0.10089088 SOL
+#   crank cancelled by the finishing tick; 1 transactions on the duel after it, none failed
+#   cranked duel on ETH: entry 1702510000 exit 1702720000 winner 1 · settled 30.8 s after start · keeper ticks 0→31
+# Subtest: MagicBlock crank + keeper + Magic Action settlement
+    # Subtest: a cranked duel finishes and pays out on Solana with no transaction after the start
+    ok 1 - a cranked duel finishes and pays out on Solana with no transaction after the start
+      ---
+      duration_ms: 43701.773833
+      type: 'test'
+      ...
+#   cranked Royale on SOL: 3 rounds, lives 1,0,0 → payouts 5.82,0,0 USDC, nobody resolved or settled by hand
+    # Subtest: a cranked Royale resolves every round and pays the survivors with no resolve or settle call
+    ok 2 - a cranked Royale resolves every round and pays the survivors with no resolve or settle call
+      ---
+      duration_ms: 32390.719
+      type: 'test'
+      ...
+#   private duel on ETH: long 25x vs short 25x, entry 1704030000 exit 1704150000 winner 1; picks private until the start
+    # Subtest: private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself
+    ok 3 - private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself
+      ---
+      duration_ms: 43996.717708
+      type: 'test'
+      ...
+    # Subtest: the keeper cannot be abused: only the admin can create or delegate it
+    ok 4 - the keeper cannot be abused: only the admin can create or delegate it
+      ---
+      duration_ms: 30.436125
+      type: 'test'
+      ...
+    1..4
+ok 1 - MagicBlock crank + keeper + Magic Action settlement
+  ---
+  duration_ms: 135251.404625
+  type: 'suite'
+  ...
+1..1
+# tests 4
+# suites 1
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 137333.350334

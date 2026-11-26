@@ -1,0 +1,56 @@
+TAP version 13
+# (node:62376) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: practice clash rules
+    # Subtest: classic: the right call takes the stake; same calls or no move are a dead heat
+    ok 1 - classic: the right call takes the stake; same calls or no move are a dead heat
+      ---
+      duration_ms: 0.631708
+      type: 'test'
+      ...
+    # Subtest: perps: leverage × the move of the stake changes hands, capped at the stake
+    ok 2 - perps: leverage × the move of the stake changes hands, capped at the stake
+      ---
+      duration_ms: 0.108291
+      type: 'test'
+      ...
+    # Subtest: perps knockout: a side is out when its loss reaches its stake
+    ok 3 - perps knockout: a side is out when its loss reaches its stake
+      ---
+      duration_ms: 0.096167
+      type: 'test'
+      ...
+    # Subtest: the bot takes the other side, so any move has a winner
+    ok 4 - the bot takes the other side, so any move has a winner
+      ---
+      duration_ms: 0.070625
+      type: 'test'
+      ...
+    1..4
+ok 1 - practice clash rules
+  ---
+  duration_ms: 1.400292
+  type: 'suite'
+  ...
+# Subtest: the live price a practice clash plays on
+    # Subtest: the rollup feeds for SOL, BTC and ETH are live and moving with the clock
+    ok 1 - the rollup feeds for SOL, BTC and ETH are live and moving with the clock
+      ---
+      duration_ms: 2553.395167
+      type: 'test'
+      ...
+    1..1
+ok 2 - the live price a practice clash plays on
+  ---
+  duration_ms: 2553.502459
+  type: 'suite'
+  ...
+1..2
+# tests 5
+# suites 2
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3532.298292

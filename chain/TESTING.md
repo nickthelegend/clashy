@@ -11,6 +11,9 @@ The test runs write their logs to `.localnet/` (gitignored). Every log cited in 
 from stripped colour codes and home paths, to [`evidence/`](evidence/): local `run-all.log` and `suite-*.log` (from
 `run-all.sh`), devnet `devnet-*.log` and the on-chain trails `devnet-proof*.txt`.
 
+All of the local suites below, plus the social server, were re-run on Nov 26, 2026 and passed (56 tests, 0 failures);
+see [../TESTING.md](../TESTING.md) and the `evidence/*-nov26.log` files. The table keeps the earlier results.
+
 | Suite | Command | Count | Last result |
 |---|---|---|---|
 | Program unit tests (math, chest shares, price scaling, a real MagicBlock oracle account) | `cargo test -p clashy --lib` | 13 (12 `#[test]` in `math.rs` and `price.rs`, plus the id check `declare_id!` generates) | 13 pass (Nov 25, 2026; `run-all.log`) |
