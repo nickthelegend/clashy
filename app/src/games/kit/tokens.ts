@@ -10,7 +10,7 @@ export const GT = {
   panel: '#111116',
   /** A game card while pressed. */
   panelPressed: '#16161D',
-  /** The hero and hot-card base (with the tint glow on top). */
+  /** The hero and hot-card base. */
   hero: '#100F15',
   /** The result card. */
   result: '#0F0F14',
@@ -58,8 +58,6 @@ export const GT = {
 export const GS = {
   radius: { hero: 28, card: 24, tile: 20, stat: 16, chip: 10, tag: 7 },
   h: { go: 58, pill: 44, stake: 44, choice: 96, tile: 104, result: 52 },
-  /** The tint glow behind heroes and cards: a big soft circle of `def.tint`. */
-  glow: { hero: 0.14, hot: 0.18, card: 0.12 },
 } as const;
 
 /** The game colours the catalog picks from (`def.tint`). */

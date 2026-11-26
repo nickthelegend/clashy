@@ -1,5 +1,6 @@
-// Play: every game, real USDC first, then Practice on paper money. Clash is the hero; Royale, the squad war and the Weekly Cup
-// sit under it, then what is happening on chain right now (open challenges, clashes live on the rollup, results).
+// Play: the real-USDC PvP modes first, practice last. The 1v1 Clash is the hero, the squad war (squad chest vs squad chest,
+// calls voted by the members) is second, then Royale, the perps clash and the Weekly Cup, then what is happening on chain
+// right now (clashes live on the rollup, top players, results). Practice (vs the bot, and the 150 practice games) closes it.
 import type React from 'react';
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
@@ -102,9 +103,7 @@ export default function Play() {
       <Animated.View entering={FadeInDown.duration(380)}>
         <TourTarget id="arena-clash">
         <Pressable onPress={go('/clash')} style={({ pressed }) => ({ marginTop: 16, borderRadius: 30, overflow: 'hidden', backgroundColor: '#14101C', borderWidth: 1.5, borderColor: '#3A2340', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-          <View style={{ position: 'absolute', right: -40, top: -40, width: 260, height: 260, borderRadius: 130, backgroundColor: C.opp, opacity: 0.16 }} />
-          <View style={{ position: 'absolute', left: -60, bottom: -80, width: 240, height: 240, borderRadius: 120, backgroundColor: C.brand, opacity: 0.18 }} />
-          <View style={{ position: 'absolute', right: 6, top: 10 }}><ClayLoop name="duel" size={118} style={{ borderRadius: 28 }} /></View>
+          <View style={{ position: 'absolute', right: 6, top: 10 }}><ClayLoop name="duel" size={118} blend /></View>
           <View style={{ padding: 18, paddingBottom: 0 }}>
             <View>
               <Row style={{ gap: 6 }}>
@@ -121,46 +120,45 @@ export default function Play() {
         </TourTarget>
       </Animated.View>
 
-      {/* the Games: 150 games on live prices */}
+      {/* the squad war: squad vs squad, chest vs chest */}
       <Animated.View entering={FadeInDown.delay(60).duration(380)}>
-        <TourTarget id="arena-allgames">
-          <Pressable onPress={go('/games')} accessibilityRole="button" accessibilityLabel={`${GAMES.length} games. Memes, perps, stocks and party games.`}
-            style={({ pressed }) => ({ marginTop: 10, borderRadius: 26, overflow: 'hidden', backgroundColor: '#12101A', borderWidth: 1.5, borderColor: '#2E2645', padding: 16, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
-            <View style={{ position: 'absolute', left: -50, top: -70, width: 200, height: 200, borderRadius: 100, backgroundColor: '#FFC94A', opacity: 0.12 }} />
-            <View style={{ position: 'absolute', right: -40, bottom: -90, width: 220, height: 220, borderRadius: 110, backgroundColor: C.brand, opacity: 0.16 }} />
-            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Txt v="small" color="#FFC94A" style={{ ...FONT.bold, letterSpacing: 0.6 }}>NEW · PRACTICE MONEY</Txt>
-                <Text style={{ ...FONT.bold, fontSize: 32, letterSpacing: -1, color: '#fff', marginTop: 2, lineHeight: 40 }}>{GAMES.length} Games</Text>
-                <Txt v="small" color="#C9C3D6" style={{ marginTop: 2, lineHeight: 18 }}>Memes, perps, stocks and party games on live prices.</Txt>
+        <TourTarget id="arena-war">
+          <Pressable onPress={go('/clans')} accessibilityRole="button" accessibilityLabel="Squad war. Pool USDC in your squad chest, vote every call, the better return takes both stakes."
+            style={({ pressed }) => ({ marginTop: 10, borderRadius: 30, overflow: 'hidden', backgroundColor: '#0F1020', borderWidth: 1.5, borderColor: '#2A2F55', transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+            <View style={{ position: 'absolute', right: 10, top: 14 }}><WarScene width={136} height={88} /></View>
+            <View style={{ padding: 18, paddingBottom: 0 }}>
+              <Txt v="small" color={C.brandSoft} style={{ ...FONT.bold, letterSpacing: 0.6 }}>SQUAD VS SQUAD</Txt>
+              <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 36, letterSpacing: -1.2, color: '#fff', marginTop: 4, lineHeight: 50, maxWidth: '58%' }}>Squad war</Text>
+              <View style={{ gap: 7, marginTop: 8 }}>
+                {[
+                  ['1', 'Pool USDC in your squad chest'],
+                  ['2', 'Members vote every call, up or down'],
+                  ['3', 'Better return takes both stakes'],
+                ].map(([n, t]) => (
+                  <Row key={n} style={{ gap: 10 }}>
+                    <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#22264A', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ ...FONT.bold, fontSize: 12, color: C.brandSoft }}>{n}</Text>
+                    </View>
+                    <Txt v="small" color="#C9C3D6" style={{ flex: 1 }}>{t}</Txt>
+                  </Row>
+                ))}
               </View>
-              <Txt v="label" color={C.brandSoft} style={{ fontSize: 22 }}>›</Txt>
-            </Row>
-            <Row style={{ marginTop: 12 }}>
-              {(['royale', 'cashout', 'race', 'bingo', 'compare', 'snipe', 'flip'] as const).map((e) => ENGINE_ART[e]).map((src, i) => (
-                <Image key={i} source={src} style={{ width: 54, height: 54, marginLeft: i ? -10 : 0 }} contentFit="contain" />
-              ))}
-            </Row>
+            </View>
+            <View style={{ margin: 14, marginTop: 16, height: 52, borderRadius: 18, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ ...FONT.semi, fontSize: 18, letterSpacing: -0.3, color: '#0B0A12' }}>Find your squad</Text>
+            </View>
           </Pressable>
         </TourTarget>
       </Animated.View>
 
-      {/* Royale and the squad war */}
+      {/* Royale and the perps clash */}
       <TourTarget id="arena-games">
       <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
         <TourTarget id="arena-royale" style={{ flex: 1 }}>
         <GameTile title="Royale" sub="Up to 16 players" line="$2 in · last one standing" loop="royale" tint="#FFC94A" onPress={go('/onchain-royale')} />
         </TourTarget>
-        <TourTarget id="arena-war" style={{ flex: 1 }}>
-        <GameTile title="Squad war" sub="Squad vs squad" line="Chest vs chest · best trades win" art={<WarScene width={150} height={96} />} tint={C.brandSoft} onPress={go('/clans')} />
-        </TourTarget>
-      </Row>
-      <Row style={{ gap: 10, marginTop: 10, alignItems: 'stretch' }}>
         <TourTarget id="arena-perps" style={{ flex: 1 }}>
-        <GameTile title="Perps clash" sub="Long or short · up to 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
-        </TourTarget>
-        <TourTarget id="arena-practice" style={{ flex: 1 }}>
-        <GameTile title="Practice clash" sub="vs Clashy Bot · free" line="Practice money, live prices" art={<BotPic size={56} />} tint={C.brandSoft} onPress={go('/practice/clash')} />
+        <GameTile title="Perps clash" sub="Long or short, 50×" line="60 s · liquidated means out" art={<Row><Image source={ART.logoSOL} style={{ width: 52, height: 52 }} /><Image source={ART.logoBTC} style={{ width: 52, height: 52, marginLeft: -16 }} /><Image source={ART.logoETH} style={{ width: 52, height: 52, marginLeft: -16 }} /></Row>} tint="#B79BFF" onPress={go('/clash?mode=perps')} />
         </TourTarget>
       </Row>
       </TourTarget>
@@ -216,6 +214,20 @@ export default function Play() {
         <Badge text="Real USDC" color={C.up} />
         <Txt v="small">Every fee paid by Clashy · settled on Solana</Txt>
       </Row>
+
+      {/* practice: free, on practice money */}
+      <Head title="Practice" />
+      <Row style={{ gap: 10, alignItems: 'stretch' }}>
+        <TourTarget id="arena-practice" style={{ flex: 1 }}>
+        <GameTile title="vs Clashy Bot" sub="A free practice clash" line="Practice money, live prices" art={<BotPic size={56} />} tint={C.brandSoft} onPress={go('/practice/clash')} />
+        </TourTarget>
+        <TourTarget id="arena-allgames" style={{ flex: 1 }}>
+        <GameTile title={`${GAMES.length} games`} sub="Memes, perps, stocks" line="Practice money, live prices"
+          art={<Row>{(['royale', 'cashout', 'race'] as const).map((e, i) => <Image key={e} source={ENGINE_ART[e]} style={{ width: 54, height: 54, marginLeft: i ? -14 : 0 }} contentFit="contain" />)}</Row>}
+          tint="#FFC94A" onPress={go('/games')} />
+        </TourTarget>
+      </Row>
+
       </TourScroll>
     </ScrollView>
   );
@@ -224,7 +236,7 @@ export default function Play() {
 function GameTile({ title, sub, line, loop, art, tint, onPress }: { title: string; sub: string; line: string; loop?: 'royale' | 'war' | 'line'; art?: React.ReactNode; tint: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ flex: 1, borderRadius: 26, padding: 14, backgroundColor: '#111116', transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      {loop ? <ClayLoop name={loop} size={96} style={{ borderRadius: 22, alignSelf: 'center' }} /> : <View style={{ height: 96, alignItems: 'center', justifyContent: 'center' }}>{art}</View>}
+      {loop ? <ClayLoop name={loop} size={96} blend style={{ alignSelf: 'center' }} /> : <View style={{ height: 96, alignItems: 'center', justifyContent: 'center' }}>{art}</View>}
       <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 20, color: tint, marginTop: 10 }}>{title}</Text>
       <Txt v="small" color={C.ink} style={{ ...FONT.semi, marginTop: 2 }}>{sub}</Txt>
       <Txt v="small" style={{ marginTop: 2 }}>{line}</Txt>

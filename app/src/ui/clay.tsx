@@ -1,9 +1,10 @@
 // Higgsfield clay loops (assets/video, same files as the landing). Muted, looping, on a dark surface so the black
 // background disappears. Shows the webp poster under reduce-motion and until the first frame is ready.
+import type React from 'react';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 
 const SRC = {
   hero: [require('../../assets/video/hero-duo-loop.mp4'), require('../../assets/video/hero-duo-loop.webp')],
@@ -40,7 +41,11 @@ export type ClayName = keyof typeof SRC;
 // explicit size: on web the <video> otherwise keeps its intrinsic 960 px size despite inset 0
 const FILL = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' } as const;
 
-export function ClayLoop({ name, size, width, height, loop = true, cover, style }: { name: ClayName; size?: number; width?: number | `${number}%`; height?: number; loop?: boolean; cover?: boolean; style?: StyleProp<ViewStyle> }) {
+/**
+ * `blend` screens the loop onto the surface under it, so its black background vanishes on any dark card (not only on
+ * pure black) instead of showing as a black square.
+ */
+export function ClayLoop({ name, size, width, height, loop = true, cover, blend, style }: { name: ClayName; size?: number; width?: number | `${number}%`; height?: number; loop?: boolean; cover?: boolean; blend?: boolean; style?: StyleProp<ViewStyle> }) {
   const [video, poster] = SRC[name];
   const [reduce, setReduce] = useState(false);
   const [ready, setReady] = useState(false);
@@ -53,8 +58,18 @@ export function ClayLoop({ name, size, width, height, loop = true, cover, style 
     return () => sub.remove();
   }, [player, reduce]);
   const box = { width: width ?? size, height: height ?? size };
+  // react-native-web drops mixBlendMode from styles, so on web it is set on the DOM node
+  const el = useRef<React.ComponentRef<typeof View>>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !blend) return;
+    // react-native-web gives positioned views z-index 0, which makes each one its own stacking context: blending inside
+    // a transparent wrapper would blend with nothing. Blend the outermost wrapper that holds only this loop instead.
+    let node = el.current as unknown as HTMLElement | null;
+    for (let i = 0; i < 3 && node?.parentElement && node.parentElement.childElementCount === 1 && getComputedStyle(node.parentElement).backgroundColor === 'rgba(0, 0, 0, 0)'; i++) node = node.parentElement;
+    if (node?.style) node.style.mixBlendMode = 'screen';
+  }, [blend]);
   return (
-    <View style={[box, { backgroundColor: '#000', overflow: 'hidden' }, style]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <View ref={el} style={[box, { backgroundColor: '#000', overflow: 'hidden' }, blend ? { mixBlendMode: 'screen' } : null, style]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {!reduce ? <VideoView player={player} style={FILL} contentFit={cover ? 'cover' : 'contain'} nativeControls={false} /> : null}
       {reduce || !ready ? <Image source={poster} style={FILL} contentFit={cover ? 'cover' : 'contain'} /> : null}
     </View>

@@ -19,7 +19,7 @@ import { GS, GT } from './tokens';
 import { Sprite } from '@/ui/sprite';
 
 /** Who you play against, as a card says it. */
-export const vsLabel = (g: Pick<GameDef, 'vs'>, short = false) => (g.vs === 'bot' ? (short ? 'vs Bot' : 'vs Clashy Bot') : g.vs === 'bots' ? 'vs 7 bots' : 'Solo');
+export const vsLabel = (g: Pick<GameDef, 'vs'>, short = false) => (g.vs === 'bot' ? (short ? 'vs Bot' : 'vs Clashy Bot') : g.vs === 'bots' ? (short ? '7 bots' : 'vs 7 bots') : 'Solo');
 export const catLabel = (c: Category) => CATEGORIES.find((x) => x.key === c)?.label ?? '';
 export const openGame = (g: Pick<GameDef, 'id'>) => router.push(`/games/${g.id}` as Href);
 
@@ -43,18 +43,17 @@ export function InfoChip({ text, color = C.ink, size = 12 }: { text: string; col
   );
 }
 
-/** The big card of the Hot carousel: tint glow, art, badge, name, hook, length and opponent. */
+/** The big card of the Hot carousel: art, badge, name, hook, length and opponent. */
 export function HotCard({ g, i = 0, w, onPress = () => openGame(g) }: { g: GameDef; i?: number; w: number; onPress?: () => void }) {
   return (
     <Animated.View entering={FadeInDown.delay(i * 50).duration(320)}>
       <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${g.name}. ${g.hook}`}
-        style={({ pressed }) => ({ width: w, height: 168, borderRadius: GS.radius.hero, overflow: 'hidden', backgroundColor: GT.hero, borderWidth: 1.5, borderColor: `${g.tint}55`, padding: 16, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-        <View style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: g.tint, opacity: GS.glow.hot }} />
+        style={({ pressed }) => ({ width: w, height: 184, borderRadius: GS.radius.hero, overflow: 'hidden', backgroundColor: GT.hero, borderWidth: 1.5, borderColor: `${g.tint}55`, padding: 16, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
         <Image source={ENGINE_ART[g.engine]} style={{ position: 'absolute', right: 8, top: 10, width: 92, height: 92 }} contentFit="contain" />
         <Badge text={g.badge ?? 'Hot'} />
         <View style={{ flex: 1 }} />
         <Text numberOfLines={1} style={{ ...FONT.displayB, fontSize: 26, letterSpacing: -0.8, color: g.tint }}>{g.name}</Text>
-        <Txt v="small" color={GT.sub} lines={1} style={{ ...FONT.semi }}>{g.hook}</Txt>
+        <Txt v="small" color={GT.sub} lines={2} style={{ ...FONT.semi, lineHeight: 17 }}>{g.hook}</Txt>
         <Txt v="small" style={{ marginTop: 3 }}>{lengthOf(g)} · {vsLabel(g)}</Txt>
       </Pressable>
     </Animated.View>
@@ -65,8 +64,7 @@ export function HotCard({ g, i = 0, w, onPress = () => openGame(g) }: { g: GameD
 export function GameCard({ g, w, onPress = () => openGame(g) }: { g: GameDef; w: number; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${g.name}. ${g.hook}`}
-      style={({ pressed }) => ({ width: w, minHeight: 196, borderRadius: GS.radius.card, overflow: 'hidden', backgroundColor: pressed ? GT.panelPressed : GT.panel, padding: 12, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
-      <View style={{ position: 'absolute', left: -30, top: -50, width: 150, height: 150, borderRadius: 75, backgroundColor: g.tint, opacity: GS.glow.card }} />
+      style={({ pressed }) => ({ width: w, minHeight: 196, borderRadius: GS.radius.card, overflow: 'hidden', backgroundColor: pressed ? GT.panelPressed : GT.panel, borderWidth: 1, borderColor: `${g.tint}26`, padding: 12, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
       <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Image source={ENGINE_ART[g.engine]} style={{ width: 64, height: 64 }} contentFit="contain" />
         {g.badge ? <Badge text={g.badge} /> : null}
@@ -74,8 +72,8 @@ export function GameCard({ g, w, onPress = () => openGame(g) }: { g: GameDef; w:
       <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...FONT.bold, fontSize: 18, letterSpacing: -0.4, color: g.tint, marginTop: 8 }}>{g.name}</Text>
       <Txt v="small" color={GT.subCard} lines={2} style={{ marginTop: 2, lineHeight: 17, minHeight: 34 }}>{g.hook}</Txt>
       <View style={{ flex: 1 }} />
-      <Row style={{ gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-        <View style={{ backgroundColor: GT.chip, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={C.ink} style={{ fontSize: 11, ...FONT.semi }}>{lengthOf(g)}</Txt></View>
+      <Row style={{ gap: 5, marginTop: 8, overflow: 'hidden' }}>
+        <View style={{ backgroundColor: GT.chip, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" lines={1} color={C.ink} style={{ fontSize: 11, ...FONT.semi }}>{lengthOf(g)}</Txt></View>
         <View style={{ backgroundColor: GT.chip, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }}><Txt v="small" color={C.muted} style={{ fontSize: 11, ...FONT.semi }}>{vsLabel(g, true)}</Txt></View>
       </Row>
     </Pressable>
@@ -124,11 +122,10 @@ export function CategoryChips<K extends string>({ items, value, onChange }: { it
 }
 
 /* ---------- one game ---------- */
-/** A game's hero: tint glow, art, name, hook, then chips (length, opponent, category and your record). */
+/** A game's hero: art, name, hook, then chips (length, opponent, category and your record). */
 export function GameHero({ def, record }: { def: GameDef; record?: { wins: number; played: number; net: number } }) {
   return (
     <Animated.View entering={FadeInDown.duration(320)} style={{ borderRadius: GS.radius.hero, overflow: 'hidden', backgroundColor: GT.hero, borderWidth: 1.5, borderColor: `${def.tint}44`, padding: 16 }}>
-      <View style={{ position: 'absolute', right: -50, top: -60, width: 220, height: 220, borderRadius: 110, backgroundColor: def.tint, opacity: GS.glow.hero }} />
       <Row style={{ gap: 14, alignItems: 'center' }}>
         <Image source={ENGINE_ART[def.engine]} style={{ width: 84, height: 84 }} contentFit="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
