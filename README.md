@@ -5,6 +5,13 @@ Royales and Clan Wars. The live part of an on-chain clash (sealed picks, scoring
 MagicBlock Ephemeral Rollup; escrow and settlement are on Solana. The 150 practice games run off chain on live prices.
 Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (Entertainment Finance).
 
+**Everything below runs on Solana devnet with test USDC. No real money moves anywhere.**
+
+The loop: two players stake, MagicBlock VRF rolls one coin for both, each locks up or down privately inside MagicBlock's
+TEE rollup, a crank scores the clash every second for 60 s, and a Magic Action pays the winner on Solana.
+[Tests](TESTING.md) · [Submission form](HACKATHON_SUBMISSION_FORM.md) · [MagicBlock design](docs/MAGICBLOCK.md) ·
+[Devnet record](docs/DEVNET.md) · [Security audit](docs/AUDIT.md)
+
 ## Status: live on Solana devnet with MagicBlock's Private Ephemeral Rollup, VRF, cranks and Magic Actions (deployed Nov 22, upgraded Nov 25, 2026)
 
 > **Built before and after kickoff.** Solana Blitz v10 kicked off on Nov 20, 2026 at 14:00 UTC. The first version of
@@ -17,7 +24,7 @@ Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (En
 
 | Piece | Address | Notes |
 |---|---|---|
-| Program `clashy` | [`FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS`](https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS?cluster=devnet) | Anchor. [Initialized](https://explorer.solana.com/tx/4p3J8MfGMNSBjhiyjTLpA9T1CcnC1ewXb6bjgVBvawMuokZJCyQeF2jjJY4AxyY568CWYxKthMLPkiBvMJdsfD7o?cluster=devnet) Nov 22 02:27 UTC. Upgraded four times on Nov 25: [cranks, keeper, Magic Actions, private picks, oracle](https://explorer.solana.com/tx/4VJAbxj2mqY962jYCXSRhdrf86p3bGuyAkuGuhVFh8adfPC4XW32iNm7Tme8aWWdHyPXuJABskug16qnKQhGbwZw?cluster=devnet), [session keys](https://explorer.solana.com/tx/2bfRV8kMn2X3PWXwz7fxRamt1Akd1MhSQjWTviTvc6B3ydiyXh5Z6mLbgsgXVdoNQU8CpgHCv1sYnHbXbheydEJZ?cluster=devnet), [VRF callback fix and 0.5% Stash fee](https://explorer.solana.com/tx/jKQqVjuN48xpkFaKwkAwkwui86jg3nnKEx6L6CYYPLReu8zBEwQ4WVmfJMVVREFFz9vGfhaVNriYSHo6axhqSnt?cluster=devnet), [crank cancelled by the finishing tick](https://explorer.solana.com/tx/3LJSPdfkpULiu9HnWVaJxHh3rhLTew6rpRPwvS1NVwDZvHsnKejPYj5Fv8dMDEycfNH6sVrXZV3SXyfymyU944k6?cluster=devnet). Program data account: 1,605,240 bytes. Its first 1,583,160 bytes match `chain/target/deploy/clashy.so` (sha256 `707e9cb8…2dc9b7`) and the rest is zero padding (checked Nov 25 with `solana program dump`). Upgrade authority: one deployer key, `6XdpT4…nYbe`. |
+| Program `clashy` | [`FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS`](https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS?cluster=devnet) | Anchor. [Initialized](https://explorer.solana.com/tx/4p3J8MfGMNSBjhiyjTLpA9T1CcnC1ewXb6bjgVBvawMuokZJCyQeF2jjJY4AxyY568CWYxKthMLPkiBvMJdsfD7o?cluster=devnet) Nov 22 02:27 UTC. Upgraded four times on Nov 25: [cranks, keeper, Magic Actions, private picks, oracle](https://explorer.solana.com/tx/4VJAbxj2mqY962jYCXSRhdrf86p3bGuyAkuGuhVFh8adfPC4XW32iNm7Tme8aWWdHyPXuJABskug16qnKQhGbwZw?cluster=devnet), [session keys](https://explorer.solana.com/tx/2bfRV8kMn2X3PWXwz7fxRamt1Akd1MhSQjWTviTvc6B3ydiyXh5Z6mLbgsgXVdoNQU8CpgHCv1sYnHbXbheydEJZ?cluster=devnet), [VRF callback fix and 0.5% Stash fee](https://explorer.solana.com/tx/jKQqVjuN48xpkFaKwkAwkwui86jg3nnKEx6L6CYYPLReu8zBEwQ4WVmfJMVVREFFz9vGfhaVNriYSHo6axhqSnt?cluster=devnet), [crank cancelled by the finishing tick](https://explorer.solana.com/tx/3LJSPdfkpULiu9HnWVaJxHh3rhLTew6rpRPwvS1NVwDZvHsnKejPYj5Fv8dMDEycfNH6sVrXZV3SXyfymyU944k6?cluster=devnet). Program space: 1,605,240 bytes (the program data account is 1,605,285 bytes with its 45-byte header). Its first 1,583,160 bytes match `chain/target/deploy/clashy.so` (sha256 `707e9cb8…2dc9b7`) and the rest is zero padding (checked Nov 25 with `solana program dump`). Upgrade authority: one deployer key, `6XdpT4…nYbe`. |
 | Test USDC (stake currency) | [`8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN`](https://explorer.solana.com/address/8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN?cluster=devnet) | SPL token, 6 decimals. It has no value and exists only on devnet. |
 | Ephemeral Rollup | `https://devnet-tee.magicblock.app` | MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator version 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. The Nov 22 runs used `devnet-as.magicblock.app` (validator `MAS1Dt9…`); feeds, boards and the squad channel were moved home from there with `admin_undelegate` and re-delegated to the TEE on Nov 25 (`chain/evidence/devnet-migrate.log`, `devnet-migrate2.log`). |
 | Prices | SOL `ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu`, BTC `71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr`, ETH `5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG` | SOL, BTC and ETH read MagicBlock's oracle accounts. The five stocks (NVDA, TSLA, AAPL, SPY, GOOGL) keep Clashy's own crank-pushed feeds. |
@@ -115,19 +122,21 @@ below are commit times in UTC (`TZ=UTC git log`).
 | `375d706..6431028` | 154 | Nov 15 09:43 to Nov 20 07:13 (before kickoff) | The website, art and app; the first Anchor program (duels, commit-reveal picks, Ephemeral Rollup delegation, VRF coin rolls, Royale, clans and wars, perps, rake and Elo; `lib.rs` was 2,618 lines); the sponsor relay; the security audit and its fixes; the local MagicBlock stack and tests; chat, stickers and the first tour |
 | `93fa845..e833c62` | 15 | Nov 20 14:49 to Nov 22 04:47 (after kickoff) | The white tour card, the practice games and the game kit (the first three commits landed at 14:49 UTC, 49 minutes after kickoff, so part of that work was written before it); the beta legal pages; `close_duel` (45 program lines); the devnet test USDC and faucet; the first devnet deploy and test run; the Royale stock-coin fix; the faucet limits; the devnet record |
 | `ddfa4da..e14e80f` | 10 | Nov 24 20:29 to Nov 25 11:37 (after kickoff) | README and submission form; **MagicBlock cranks, the keeper PDA, Magic Action payouts, private picks on the TEE rollup, MagicBlock oracle prices** (program, app and tests); the app's MagicBlock track and Live on MagicBlock screen; session keys (`lock_pick_session`, `call_round_session`); the VRF callback fix; the 0.5% Stash trading fee; TEE authentication; the three devnet upgrades and the TEE test runs; result Lottie animations; the sealed-in-TEE duel card; `scripts/devnet-proof.ts` |
+| `a72149c..9e0a58e` | 9 | Nov 25 11:54 to 17:56 (after kickoff) | Session keys in the app (private picks signed on the device); the claims audit of docs and site copy; the finishing crank tick cancels its MagicBlock task (the fourth devnet upgrade, `3LJSPdfk…`); Lottie on phones; the clay sprite animations in live clashes; two duel-screen fixes found while filming |
+| `e50830c..` | | Nov 26 (after kickoff) | Docs only: the cited test logs published, the Nov 26 test re-run (TESTING.md), the read-only devnet live check script, and this README |
 
-After kickoff the program grew by 1,011 lines and lost 64 (`git diff --shortstat 6431028 HEAD -- chain/programs`);
-`lib.rs` is now 3,467 lines and the program source 4,546.
+After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat 6431028 HEAD -- chain/programs`);
+`lib.rs` is now 3,485 lines and the program source 4,564.
 
 ### Details
 
 - **On-chain:** the Anchor program runs end to end on a local MagicBlock stack (Solana validator + Ephemeral Rollup)
   and on devnet: escrowed knockout duels, sealed picks (commit-reveal or private TEE picks), live scoring on the
   rollup, settlement with rake and Elo, clans with vote-run chest trades, clan wars and Royale tournaments. **Money is
-  USDC only**: players never hold SOL, a sponsor relay pays every fee and rent. Latest local runs (Nov 25, MagicBlock
-  validator 1.1.1 over Agave 4.5.0-beta.0): magicblock 4/4, clashy 5/5 (four in `chain/evidence/suite-clashy.log`,
-  the VRF test after its fix in `c-vrf.log`), perps 3/3, brief 9/9, void 1/1 and 13/13 Rust unit tests, every test
-  player at 0 SOL. See [chain/README.md](chain/README.md), [chain/TESTING.md](chain/TESTING.md) and
+  USDC only**: players never hold SOL, a sponsor relay pays every fee and rent. Latest local run (Nov 26, MagicBlock
+  validator 1.1.1 over Agave 4.5.0-beta.0): magicblock 4/4, clashy 5/5, perps 3/3, brief 9/9, void 1/1, sponsor relay
+  5/5, practice clash 5/5, live order books 7/7, 13/13 Rust unit tests and the social server 4/4, every test player at
+  0 SOL ([TESTING.md](TESTING.md), logs in `chain/evidence/*-nov26.log`). See [chain/README.md](chain/README.md), [chain/TESTING.md](chain/TESTING.md) and
   [docs/DEVNET.md](docs/DEVNET.md).
 - **MagicBlock VRF rolls the coin of every on-chain duel and Royale:** proven locally with MagicBlock's own
   `vrf-oracle`, and on devnet with their hosted oracle. Practice games roll their coin in the app.
@@ -215,6 +224,65 @@ After kickoff the program grew by 1,011 lines and lost 64 (`git diff --shortstat
 | `landing/` | Second landing page variant with the clay animation clips and the Arena demo; `docs/DEPLOY-RUNBOOK.md` builds this one. Not hosted yet |
 | `assets/` | Brand, 3D/clay art and clay animation clips (`assets/SOURCES.md` says how each was made) |
 | `docs/` | MagicBlock, devnet, audit and system design; game design, mini-games and the real-trades plan are design documents, not built |
+
+## Architecture
+
+```text
+ Player (Expo app: iOS, Android, web)        holds test USDC only, 0 SOL; Privy wallet on web, session key on device
+   │  signs moves                                   │ in-game moves (pick lock, Royale calls) by a 6-hour MagicBlock session key
+   ▼                                                ▼
+ Sponsor relay (chain/scripts/sponsor.ts)  ── pays every Solana fee and rent, co-signs only Clashy player instructions
+   │
+   ├─► Solana devnet: program `clashy` (Anchor)
+   │      open / join duel (USDC into an escrow PDA) · request_coin_roll ─► MagicBlock VRF ─► coin_roll_callback
+   │      delegate the duel and the private pick accounts to the rollup
+   │      settle_duel (pot minus 3% rake, Elo) ◄── Magic Action after commit and undelegate
+   │
+   └─► MagicBlock Private Ephemeral Rollup (devnet-tee, TEE validator MTEW…)
+          lock_pick: each pick is a private account only its owner can read until the start
+          start ─► schedules a crank: tick_duel / tick_round every 1,000 ms, no player online
+          prices: MagicBlock oracle accounts (SOL, BTC, ETH); Clashy crank feeds for five stocks
+          finishing tick ─► keeper PDA commits and undelegates, cancels its crank, Magic Action settles on Solana
+
+ Social server (server/): DMs, follows, notifications · indexer: archives calls and squad messages
+ Practice games: 150 games in the app on live Phoenix / Pacifica / Jupiter prices, practice money, off chain
+```
+
+The step-by-step flow, with the MagicBlock feature behind each step, is in [docs/MAGICBLOCK.md](docs/MAGICBLOCK.md);
+capacity and costs are in [docs/SYSTEM-DESIGN.md](docs/SYSTEM-DESIGN.md).
+
+## How to run
+
+Tools: Node 22+, Rust with Anchor 0.32.1, the Solana CLI, and MagicBlock's validator CLI
+(`npm i -g @magicblock-labs/ephemeral-validator@1.1.1`).
+
+**Check the devnet deployment (read-only, no keys):**
+
+```bash
+cd chain && npm install
+npx tsx scripts/devnet-livecheck.ts
+```
+
+**Local MagicBlock stack and every test:**
+
+```bash
+cd chain && npm install && anchor build
+CLASHY_RESET=1 bash scripts/localnet.sh       # base :8999, MagicBlock rollup :7799, vrf-oracle; deploys the program
+cargo test -p clashy --lib
+for t in magicblock clashy perps brief void sponsor; do npx tsx --test --test-concurrency=1 tests/$t.test.ts; done
+npx tsx scripts/crank.ts &                     # prices, for practice-clash.test.ts and the app
+npx tsx scripts/sponsor.ts &                   # the relay on :8790, for markets.test.ts and the app
+npx tsx --test tests/practice-clash.test.ts tests/markets.test.ts
+(cd ../server && npm install && npm test)
+```
+
+**The app against the local stack:** with the stack, crank and relay running,
+`cd app && npm install && EXPO_PUBLIC_CLASHY_DEV_WALLET=1 npx expo start --web --port 8098` gives each browser tab its
+own device test wallet, so two tabs can clash each other. Without that variable the web app signs in with Privy.
+
+**Against devnet:** `source chain/.devnet.env` (gitignored; endpoints and key paths), then run the crank and relay as
+in [docs/DEVNET.md](docs/DEVNET.md#running-the-backend-against-devnet-from-chain). The whole backend in Docker:
+[docker/README.md](docker/README.md); a server deploy: [docs/DEPLOY-RUNBOOK.md](docs/DEPLOY-RUNBOOK.md).
 
 ## Website
 
