@@ -1,0 +1,23 @@
+(node:83291) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  duel on SOL: entry 69370000 exit 69380000 pnl 72,-72 winner 1 · USDC 104.7/95 · ratings 1016/984
+▶ knockout duel: quick match on one rolled coin
+  ✔ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (54091.103292ms)
+  VRF roll: BTC in 1879 ms via MagicBlock's oracle on queue Cuj97g…
+  ✔ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (15346.837167ms)
+✔ knockout duel: quick match on one rolled coin (72814.489084ms)
+(node:84046) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  25x clash on BTC: entry 59362170000 exit 59371110000 pnl 37,-37 ko 0 winner 1
+▶ perps clash: leverage and liquidation
+  ✔ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (49838.304416ms)
+✔ perps clash: leverage and liquidation (55649.489583ms)
+ℹ tests 3
+ℹ suites 2
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 132285.967334
+exit 0

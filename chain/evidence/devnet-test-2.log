@@ -1,0 +1,146 @@
+(node:72028) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  duel on BTC: entry 59517810000 exit 59564420000 pnl 391,-391 winner 1 · USDC 104.7/95 · ratings 1016/984
+▶ knockout duel: quick match on one rolled coin
+  ✔ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (54032.57225ms)
+  ✔ challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner (10258.468708ms)
+  VRF roll: BTC in 1782 ms via MagicBlock's oracle on queue Cuj97g…
+  ✔ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (14929.366041ms)
+✔ knockout duel: quick match on one rolled coin (82670.329709ms)
+  clan trade long SOL 5x: 69550000 → 69570000, P&L 0.0175 USDC of notional
+  war returns 5,0 bps → winner flame-mwr8e6a1
+  member cashed out 10000000 shares of 30000000 for 11.566666 USDC of a 34.7 USDC chest
+▶ clans: group trading by vote, then clan vs clan
+  ✔ USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return (86081.690875ms)
+✔ clans: group trading by vote, then clan vs clan (86082.655917ms)
+  Royale VRF coin: TSLA
+▶ tournament: an on-chain Royale
+  ✖ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (30019.568292ms)
+✖ tournament: an on-chain Royale (30024.123625ms)
+(node:74319) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  25x clash on SOL: entry 69430000 exit 69470000 pnl 144,-144 ko 0 winner 1
+▶ perps clash: leverage and liquidation
+  ✔ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (52159.162125ms)
+  ✖ a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot (16690.409584ms)
+  ✔ leverage above the program's 100x cap is refused at reveal (13125.993084ms)
+✖ perps clash: leverage and liquidation (88049.308334ms)
+(node:74954) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ practice clash rules
+  ✔ classic: the right call takes the stake; same calls or no move are a dead heat (0.499ms)
+  ✔ perps: leverage × the move of the stake changes hands, capped at the stake (0.085292ms)
+  ✔ perps knockout: a side is out when its loss reaches its stake (0.074791ms)
+  ✔ the bot takes the other side, so any move has a winner (0.059291ms)
+✔ practice clash rules (1.105875ms)
+▶ the live price a practice clash plays on
+  ✔ the rollup feeds for SOL, BTC and ETH are live and moving with the clock (2914.8265ms)
+✔ the live price a practice clash plays on (2915.221959ms)
+(node:74964) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ sponsor relay: what it will not pay for
+  ✔ a player instruction with the sponsor as payer is accepted (1.935459ms)
+  ✔ refuses another fee payer, admin and feed instructions, the sponsor in a player slot, the wrong layer, other programs (4.01075ms)
+✔ sponsor relay: what it will not pay for (9.164458ms)
+▶ sponsor relay: withdrawals and Privy sign-in
+  ✔ pays for a USDC transfer out of the signer's own account only (2.68675ms)
+  ✔ a forged Privy access token is refused (checked against Privy with the app secret) (525.688292ms)
+✔ sponsor relay: withdrawals and Privy sign-in (528.623459ms)
+▶ sponsor relay: a real sponsored transaction
+  ✖ a wallet with zero SOL creates its player account through the relay; the faucet gives it test USDC (2085.46725ms)
+✖ sponsor relay: a real sponsored transaction (2086.333083ms)
+(node:74967) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+crank: rollup rejected the transaction: Simulation failed. 
+Message: transaction verification error: This transaction has already been processed. 
+
+Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+
+crank: rollup rejected the transaction: Simulation failed. 
+Message: transaction verification error: This transaction has already been processed. 
+
+Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+
+crank: rollup rejected the transaction: Simulation failed. 
+Message: transaction verification error: This transaction has already been processed. 
+
+Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+
+crank: rollup rejected the transaction: Simulation failed. 
+Message: transaction verification error: This transaction has already been processed. 
+
+Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+
+✖ a live duel nobody finishes is voided after the grace and refunds both stakes, no rake (175635.07575ms)
+ℹ tests 19
+ℹ suites 9
+ℹ pass 15
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 472364.754125
+
+✖ failing tests:
+
+test at tests/clashy.test.ts:1:19253
+✖ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (30019.568292ms)
+  Error: rollup rejected the transaction: Simulation failed. 
+  Message: transaction verification error: Error processing Instruction 0: custom program error: 0x177b. 
+  
+  Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+  
+      at sendEr (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:269:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/clashy.test.ts:317:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/perps.test.ts:1:6512
+✖ a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot (16690.409584ms)
+  Error: rollup rejected the transaction: Simulation failed. 
+  Message: transaction verification error: Error processing Instruction 0: custom program error: 0x1770. 
+  
+  Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+  
+      at sendEr (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:269:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:143:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/sponsor.test.ts:1:6168
+✖ a wallet with zero SOL creates its player account through the relay; the faucet gives it test USDC (2085.46725ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 400
+  
+      at TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/sponsor.test.ts:108:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/void.test.ts:1:1074
+✖ a live duel nobody finishes is voided after the grace and refunds both stakes, no rake (175635.07575ms)
+  Error: rollup rejected the transaction: Simulation failed. 
+  Message: transaction verification error: Error processing Instruction 0: custom program error: 0x177b. 
+  
+  Catch the `SendTransactionError` and call `getLogs()` on it for full details.
+  
+      at sendEr (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:269:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/void.test.ts:62:3)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+exit 1

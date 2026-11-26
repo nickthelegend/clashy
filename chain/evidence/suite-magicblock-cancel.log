@@ -1,0 +1,21 @@
+(node:26572) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  keeper TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK · action escrow FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE holds 0.10089088 SOL
+  crank cancelled by the finishing tick; 1 transactions on the duel after it, none failed
+  cranked duel on SOL: entry 67790000 exit 67880000 winner 1 · settled 30.7 s after start · keeper ticks 0→31
+▶ MagicBlock crank + keeper + Magic Action settlement
+  ✔ a cranked duel finishes and pays out on Solana with no transaction after the start (43688.023375ms)
+  cranked Royale on SOL: 1 rounds, lives 1,0,0 → payouts 5.82,0,0 USDC, nobody resolved or settled by hand
+  ✔ a cranked Royale resolves every round and pays the survivors with no resolve or settle call (20248.460792ms)
+  private duel on SOL: long 25x vs short 25x, entry 67900000 exit 67770000 winner 2; picks private until the start
+  ✔ private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself (43720.2955ms)
+  ✔ the keeper cannot be abused: only the admin can create or delegate it (17.124625ms)
+✔ MagicBlock crank + keeper + Magic Action settlement (123427.171416ms)
+ℹ tests 4
+ℹ suites 1
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126160.111833

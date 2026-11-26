@@ -1,0 +1,37 @@
+(node:64090) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  keeper TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK · action escrow FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE holds 0.05065024 SOL
+  cranked duel on BTC: entry 58687308852 exit 58685785831 winner 2 · settled 31.8 s after start · keeper ticks 0→31
+▶ MagicBlock crank + keeper + Magic Action settlement
+  ✔ a cranked duel finishes and pays out on Solana with no transaction after the start (48791.655042ms)
+  cranked Royale on BTC: 1 rounds, lives 1,0,0 → payouts 5.82,0,0 USDC, nobody resolved or settled by hand
+  ✔ a cranked Royale resolves every round and pays the survivors with no resolve or settle call (30343.834875ms)
+  ✖ private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself (36852.427125ms)
+  ✔ the keeper cannot be abused: ticking a duel that is not live does nothing, and only the admin delegates it (254.544875ms)
+✖ MagicBlock crank + keeper + Magic Action settlement (120640.562458ms)
+ℹ tests 4
+ℹ suites 1
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 123041.277
+
+✖ failing tests:
+
+test at tests/magicblock.test.ts:1:11070
+✖ private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself (36852.427125ms)
+  Error [TransactionExpiredBlockheightExceededError]: Signature 4cWhnJrgvQoeJgp7zECzdyrsB41oQ2SUDF6hTzFGmwHY24szGWFsS7tfepK6No9wtqwRTfzvQtxiLkKyiANfXzPP has expired: block height exceeded.
+      at Connection.confirmTransactionUsingBlockHeightExceedanceStrategy (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:4053:15)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Connection.confirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:3864:14)
+      at async sendAndConfirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/utils/send-and-confirm-transaction.ts:48:7)
+      at async mintTo (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/spl-token/src/actions/mintTo.ts:39:12)
+      at async giveUsdc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:226:3)
+      at async usdcPlayer (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:233:3)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/magicblock.test.ts:213:22)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    signature: '4cWhnJrgvQoeJgp7zECzdyrsB41oQ2SUDF6hTzFGmwHY24szGWFsS7tfepK6No9wtqwRTfzvQtxiLkKyiANfXzPP'
+  }

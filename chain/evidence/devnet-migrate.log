@@ -1,0 +1,42 @@
+(node:52898) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+08:15:28 config: rollup validator MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57 · 8 coins · vrf required
+08:15:28 feed 0: undelegate sent on the old rollup (5K2RnxC3uo…)
+08:15:28 feed 1: undelegate sent on the old rollup (4Bs2ireUdh…)
+08:15:29 feed 2: undelegate sent on the old rollup (3Qg9o6ZqVx…)
+08:15:29 feed 3: undelegate sent on the old rollup (3Zia3RaogS…)
+08:15:29 feed 4: undelegate sent on the old rollup (9hsFyNiq5N…)
+08:15:29 feed 5: undelegate sent on the old rollup (27qKN7taXR…)
+08:15:29 feed 6: undelegate sent on the old rollup (uyC3oXNmqv…)
+08:15:30 feed 7: undelegate sent on the old rollup (3Qy516koU5…)
+08:15:30 board 9dwM99: undelegate sent on the old rollup (44Szh2km9r…)
+08:15:30 board BvCzhb: undelegate sent on the old rollup (3Brtewf5PH…)
+08:15:30 channel 6jycgD: undelegate sent on the old rollup (5hFE7M6QT3…)
+08:15:30 feed 0: home
+08:15:30 feed 1: home
+08:15:30 feed 2: home
+08:15:30 feed 3: home
+08:15:30 feed 4: home
+08:15:31 feed 5: home
+08:15:31 feed 6: home
+08:15:31 feed 7: home
+08:15:31 board 9dwM99: home
+08:15:31 board BvCzhb: home
+08:15:32 channel 6jycgD: home
+08:15:32 pinning the rollup validator MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo (https://devnet-tee.magicblock.app)
+/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:4248
+        throw new TransactionExpiredTimeoutError(
+              ^
+
+TransactionExpiredTimeoutError: Transaction was not confirmed in 30.00 seconds. It is unknown if it succeeded or failed. Check signature 56PqcB9in4a8WEsqHc5iENh5qy4JCbTsMgWUqVAWN2F1ZfuEa5JRLbhgfPnjkVFnhohuVRckprFdX9y2Wm9moEtt using the Solana Explorer or CLI tools.
+    at Connection.confirmTransactionUsingLegacyTimeoutStrategy (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:4248:15)
+    at async Connection.confirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:3859:14)
+    at async sendAndConfirmRawTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/provider.ts:420:11)
+    at async AnchorProvider.sendAndConfirm (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/provider.ts:167:14)
+    at async MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:29:16)
+    at async ensureSetup (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:336:7)
+    at async <anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/scripts/devnet-magicblock.ts:75:1) {
+  signature: '56PqcB9in4a8WEsqHc5iENh5qy4JCbTsMgWUqVAWN2F1ZfuEa5JRLbhgfPnjkVFnhohuVRckprFdX9y2Wm9moEtt'
+}
+
+Node.js v26.5.0

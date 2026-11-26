@@ -1,0 +1,27 @@
+(node:28107) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  duel on BTC (settled magic action): entry 58558730000 exit 58562680000 pnl 33,-33 winner 1 · USDC 104.7/95 · ratings 1016/984
+▶ knockout duel: quick match on one rolled coin
+  ✔ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (37707.34525ms)
+  ✔ challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner (2583.98725ms)
+  VRF roll: BTC in 1072 ms via MagicBlock's oracle on queue GKE6d7…
+  ✔ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (4940.149458ms)
+✔ knockout duel: quick match on one rolled coin (45786.956583ms)
+  clan trade long SOL 5x: 67710000 → 67670000, P&L -0.03625 USDC of notional
+  war returns -12,0 bps → winner moon-mwwccr3k
+  member cashed out 10000000 shares of 30000000 for 8.333333 USDC of a 25 USDC chest
+▶ clans: group trading by vote, then clan vs clan
+  ✔ USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return (68557.775209ms)
+✔ clans: group trading by vote, then clan vs clan (68558.122166ms)
+  royale (settled magic action): lives 1,0,0 rounds 1 → payouts 5.82,0,0 USDC
+▶ tournament: an on-chain Royale
+  ✔ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (13872.732291ms)
+✔ tournament: an on-chain Royale (13872.921167ms)
+ℹ tests 5
+ℹ suites 3
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 129828.324417

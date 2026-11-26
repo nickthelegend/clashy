@@ -1,0 +1,16 @@
+(node:65448) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  keeper TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK · action escrow FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE holds 0.05065024 SOL
+  TEE privacy: A sees side 1; B sees nothing
+  private duel on SOL: long 25x vs short 25x, entry 67470083 exit 67500113 winner 1; picks private until the start
+▶ MagicBlock crank + keeper + Magic Action settlement
+  ✔ private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself (53367.741792ms)
+✔ MagicBlock crank + keeper + Magic Action settlement (57233.32925ms)
+ℹ tests 1
+ℹ suites 1
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 59626.758708

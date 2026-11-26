@@ -1,0 +1,30 @@
+(node:31926) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ names
+  ✔ a handle is unique and must be 3-16 lowercase letters, digits or _ (1749.981375ms)
+✔ names (2371.527583ms)
+▶ the player stays in control: limits checked on chain
+  ✔ a lower daily limit applies at once and blocks a bigger stake; a raise waits a day (1686.581833ms)
+  ✔ a break blocks every stake and cannot be shortened (1743.104667ms)
+  ✔ stakes count toward today and the day streak (1401.776459ms)
+✔ the player stays in control: limits checked on chain (4831.664375ms)
+▶ Stash: savings, round-ups, real stocks
+  ✔ save, round up a payment in the same transaction, withdraw (4055.079167ms)
+  Stash fees: buy 0.05 USDC, sell 0.024865 USDC → treasury
+  ✔ buys NVIDIA through Orca Whirlpool from the Stash, records the cost, sells half back (3459.908833ms)
+✔ Stash: savings, round-ups, real stocks (7515.183625ms)
+▶ calls feed and clan chat on the MagicBlock rollup
+  ✔ post a call on a stock, reply, like once (2850.064916ms)
+  ✔ members post in their clan channel; outsiders cannot (3221.69575ms)
+✔ calls feed and clan chat on the MagicBlock rollup (6071.940917ms)
+▶ squads: a player can be in any number
+  ✔ create one squad, join two more, leave one; the first stays the main squad (5144.973708ms)
+✔ squads: a player can be in any number (5145.074291ms)
+ℹ tests 9
+ℹ suites 5
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 26761.098459

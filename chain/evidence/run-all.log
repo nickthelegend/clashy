@@ -1,0 +1,48 @@
+== magicblock
+    ok 1 - a cranked duel finishes and pays out on Solana with no transaction after the start
+    ok 2 - a cranked Royale resolves every round and pays the survivors with no resolve or settle call
+    ok 3 - private duel: picks locked inside the MagicBlock Private Ephemeral Rollup, then a cranked clash that settles itself
+    ok 4 - the keeper cannot be abused: ticking a duel that is not live does nothing, and only the admin delegates it
+ok 1 - MagicBlock crank + keeper + Magic Action settlement
+# pass 4
+# fail 0
+== clashy
+    ok 1 - open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC
+    ok 2 - challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner
+    not ok 3 - MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused
+not ok 1 - knockout duel: quick match on one rolled coin
+    ok 1 - USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return
+ok 2 - clans: group trading by vote, then clan vs clan
+    ok 1 - USDC entries escrowed, calls and rounds on the ER, survivors split the pot
+ok 3 - tournament: an on-chain Royale
+# pass 4
+# fail 1
+== perps
+    ok 1 - 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell
+    ok 2 - a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot
+    ok 3 - leverage above the program's 100x cap is refused at reveal
+ok 1 - perps clash: leverage and liquidation
+# pass 3
+# fail 0
+== brief
+    ok 1 - a handle is unique and must be 3-16 lowercase letters, digits or _
+ok 1 - names
+    ok 1 - a lower daily limit applies at once and blocks a bigger stake; a raise waits a day
+    ok 2 - a break blocks every stake and cannot be shortened
+    ok 3 - stakes count toward today and the day streak
+ok 2 - the player stays in control: limits checked on chain
+    ok 1 - save, round up a payment in the same transaction, withdraw
+    ok 2 - buys NVIDIA through Orca Whirlpool from the Stash, records the cost, sells half back
+ok 3 - Stash: savings, round-ups, real stocks
+    ok 1 - post a call on a stock, reply, like once
+    ok 2 - members post in their clan channel; outsiders cannot
+ok 4 - calls feed and clan chat on the MagicBlock rollup
+    ok 1 - create one squad, join two more, leave one; the first stays the main squad
+ok 5 - squads: a player can be in any number
+# pass 9
+# fail 0
+== void
+ok 1 - a live duel nobody finishes is voided after the grace and refunds both stakes, no rake
+# pass 1
+# fail 0
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

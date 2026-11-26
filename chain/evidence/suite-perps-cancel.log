@@ -1,0 +1,19 @@
+(node:29607) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  settled magic action
+  25x clash on SOL: entry 67760000 exit 67740000 pnl -73,73 ko 0 winner 2
+▶ perps clash: leverage and liquidation
+  ✔ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (36859.461667ms)
+  settled magic action
+  liquidation on SOL: entry 67720000 → 66027000 pnl -10000,2500 ko 1 winner 2 · short +9.7 USDC
+  ✔ a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot (5467.721167ms)
+  ✔ leverage above the program's 100x cap is refused at reveal (3781.821042ms)
+✔ perps clash: leverage and liquidation (49201.539084ms)
+ℹ tests 3
+ℹ suites 1
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50585.739292

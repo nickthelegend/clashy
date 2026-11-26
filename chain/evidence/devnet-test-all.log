@@ -1,0 +1,234 @@
+(node:67347) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ names
+  ✔ a handle is unique and must be 3-16 lowercase letters, digits or _ (6289.011417ms)
+✔ names (9891.896167ms)
+▶ the player stays in control: limits checked on chain
+  ✔ a lower daily limit applies at once and blocks a bigger stake; a raise waits a day (5531.943334ms)
+  ✔ a break blocks every stake and cannot be shortened (5688.504625ms)
+  ✔ stakes count toward today and the day streak (4939.710042ms)
+✔ the player stays in control: limits checked on chain (16160.818666ms)
+▶ Stash: savings, round-ups, real stocks
+  ✔ save, round up a payment in the same transaction, withdraw (13705.681625ms)
+  ✖ buys NVIDIA through Orca Whirlpool from the Stash, records the cost, sells half back (5769.224166ms)
+✖ Stash: savings, round-ups, real stocks (19479.250292ms)
+▶ calls feed and clan chat on the MagicBlock rollup
+  ✔ post a call on a stock, reply, like once (10605.840959ms)
+  ✔ members post in their clan channel; outsiders cannot (10952.889708ms)
+✔ calls feed and clan chat on the MagicBlock rollup (21559.639ms)
+▶ squads: a player can be in any number
+  ✔ create one squad, join two more, leave one; the first stays the main squad (17312.37125ms)
+✔ squads: a player can be in any number (17312.926584ms)
+(node:68491) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  duel on SOL: entry 69720000 exit 69700000 pnl -143,143 winner 2 · USDC 95/104.7 · ratings 984/1016
+▶ knockout duel: quick match on one rolled coin
+  ✔ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (53968.252416ms)
+  ✔ challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner (10454.388333ms)
+  VRF roll: ETH in 1816 ms via MagicBlock's oracle on queue Cuj97g…
+  ✔ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (15383.225958ms)
+✔ knockout duel: quick match on one rolled coin (83207.139334ms)
+  clan trade long SOL 5x: 69690000 → 69710000, P&L 0.0175 USDC of notional
+  war returns 5,0 bps → winner flame-mwr86tkf
+  member cashed out 10000000 shares of 30000000 for 11.566666 USDC of a 34.7 USDC chest
+▶ clans: group trading by vote, then clan vs clan
+  ✔ USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return (86591.120292ms)
+✔ clans: group trading by vote, then clan vs clan (86592.019291ms)
+▶ tournament: an on-chain Royale
+  ✖ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (15210.347042ms)
+✖ tournament: an on-chain Royale (15217.085625ms)
+(node:70221) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ relay market proxy
+  ✔ passes only the listed public reads (37.639375ms)
+  ✔ Jupiter prices are shared per mint: a burst of overlapping reads all answer with real prices (1239.850292ms)
+✔ relay market proxy (1278.209791ms)
+▶ Phoenix (on-chain order book)
+  ✔ lists active markets with leverage caps and fees (10.788958ms)
+  Phoenix SOL: mid 69.775, $5,000 buys 71.652 at 69.7819 over 2 levels, sells back at 69.7700
+  ✔ a $5,000 SOL order fills level by level on the live book (849.025625ms)
+  ✔ funding and candles are real numbers (1137.373542ms)
+✔ Phoenix (on-chain order book) (1998.024417ms)
+▶ Pacifica (order book, Solana settlement)
+  ✔ lists perps and its fee schedule (11.430209ms)
+  Pacifica BTC: mid 59552.5, $20,000 buys 0.33584 at 59553.00 over 1 levels, sells back at 59552.00
+  ✔ a $20,000 BTC order fills level by level on the live book (200.00575ms)
+✔ Pacifica (order book, Solana settlement) (212.356667ms)
+(node:70227) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ perps clash: leverage and liquidation
+  ✖ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (9754.9805ms)
+  ✖ a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot (9590.09ms)
+  ✖ leverage above the program's 100x cap is refused at reveal (9576.388417ms)
+✖ perps clash: leverage and liquidation (35144.210042ms)
+(node:70283) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ practice clash rules
+  ✔ classic: the right call takes the stake; same calls or no move are a dead heat (2.575125ms)
+  ✔ perps: leverage × the move of the stake changes hands, capped at the stake (0.11675ms)
+  ✔ perps knockout: a side is out when its loss reaches its stake (0.082ms)
+  ✔ the bot takes the other side, so any move has a winner (0.062208ms)
+✔ practice clash rules (3.268959ms)
+▶ the live price a practice clash plays on
+  ✖ the rollup feeds for SOL, BTC and ETH are live and moving with the clock (2908.445208ms)
+✖ the live price a practice clash plays on (2909.461625ms)
+(node:70304) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ sponsor relay: what it will not pay for
+  ✔ a player instruction with the sponsor as payer is accepted (1.975542ms)
+  ✔ refuses another fee payer, admin and feed instructions, the sponsor in a player slot, the wrong layer, other programs (3.950708ms)
+✔ sponsor relay: what it will not pay for (8.984583ms)
+▶ sponsor relay: withdrawals and Privy sign-in
+  ✔ pays for a USDC transfer out of the signer's own account only (1.760125ms)
+  ✔ a forged Privy access token is refused (checked against Privy with the app secret) (542.546666ms)
+✔ sponsor relay: withdrawals and Privy sign-in (544.539833ms)
+▶ sponsor relay: a real sponsored transaction
+  ✖ a wallet with zero SOL creates its player account through the relay; the faucet gives it test USDC (2146.916583ms)
+✖ sponsor relay: a real sponsored transaction (2147.851042ms)
+(node:70307) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✖ a live duel nobody finishes is voided after the grace and refunds both stakes, no rake (13305.142584ms)
+ℹ tests 35
+ℹ suites 17
+ℹ pass 27
+ℹ fail 8
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 333705.881583
+
+✖ failing tests:
+
+test at tests/brief.test.ts:1:5788
+✖ buys NVIDIA through Orca Whirlpool from the Stash, records the cost, sells half back (5769.224166ms)
+  Error: NVDA pool 6R4r93V5fcMzc13CL2enEepDSYcr4Qx3ptZBDwudTXCo is not on this cluster
+      at poolState (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/stocks.ts:26:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async minShares (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/stocks.ts:58:31)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/brief.test.ts:112:17)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/clashy.test.ts:1:19253
+✖ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (15210.347042ms)
+  Error: AnchorError thrown in programs/clashy/src/lib.rs:1430. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.
+      at AnchorError.parse (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:152:14)
+      at translateError (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:277:35)
+      at MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:35:29)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/clashy.test.ts:292:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    errorLogs: [ 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:1430. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.' ],
+    logs: [ 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS invoke [1]', 'Program log: Instruction: CreateTournament', 'Program 11111111111111111111111111111111 invoke [2]', 'Program 11111111111111111111111111111111 success', 'Program 11111111111111111111111111111111 invoke [2]', 'Program 11111111111111111111111111111111 success', 'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]', 'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 233 of 173052 compute units', 'Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success', 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:1430. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS consumed 34164 of 200000 compute units', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS failed: custom program error: 0x1783' ],
+    error: { errorCode: { code: 'VrfRequired', number: 6019 }, errorMessage: 'This deployment requires MagicBlock VRF for randomness', comparedValues: undefined, origin: { file: 'programs/clashy/src/lib.rs', line: 1430 } },
+    _programErrorStack: { stack: [ [Object] ] }
+  }
+
+test at tests/perps.test.ts:1:4926
+✖ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (9754.9805ms)
+  Error: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.
+      at AnchorError.parse (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:152:14)
+      at translateError (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:277:35)
+      at MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:35:29)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async liveDuel (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:65:3)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:101:46)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    errorLogs: [ 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.' ],
+    logs: [ 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS invoke [1]', 'Program log: Instruction: RevealSeed', 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS consumed 11354 of 200000 compute units', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS failed: custom program error: 0x1783' ],
+    error: { errorCode: { code: 'VrfRequired', number: 6019 }, errorMessage: 'This deployment requires MagicBlock VRF for randomness', comparedValues: undefined, origin: { file: 'programs/clashy/src/lib.rs', line: 881 } },
+    _programErrorStack: { stack: [ [Object] ] }
+  }
+
+test at tests/perps.test.ts:1:6649
+✖ a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot (9590.09ms)
+  Error: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.
+      at AnchorError.parse (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:152:14)
+      at translateError (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:277:35)
+      at MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:35:29)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async liveDuel (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:65:3)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:133:52)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    errorLogs: [ 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.' ],
+    logs: [ 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS invoke [1]', 'Program log: Instruction: RevealSeed', 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS consumed 11354 of 200000 compute units', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS failed: custom program error: 0x1783' ],
+    error: { errorCode: { code: 'VrfRequired', number: 6019 }, errorMessage: 'This deployment requires MagicBlock VRF for randomness', comparedValues: undefined, origin: { file: 'programs/clashy/src/lib.rs', line: 881 } },
+    _programErrorStack: { stack: [ [Object] ] }
+  }
+
+test at tests/perps.test.ts:1:8729
+✖ leverage above the program's 100x cap is refused at reveal (9576.388417ms)
+  Error: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.
+      at AnchorError.parse (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:152:14)
+      at translateError (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:277:35)
+      at MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:35:29)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:176:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    errorLogs: [ 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.' ],
+    logs: [ 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS invoke [1]', 'Program log: Instruction: RevealSeed', 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS consumed 11354 of 200000 compute units', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS failed: custom program error: 0x1783' ],
+    error: { errorCode: { code: 'VrfRequired', number: 6019 }, errorMessage: 'This deployment requires MagicBlock VRF for randomness', comparedValues: undefined, origin: { file: 'programs/clashy/src/lib.rs', line: 881 } },
+    _programErrorStack: { stack: [ [Object] ] }
+  }
+
+test at tests/practice-clash.test.ts:1:2117
+✖ the rollup feeds for SOL, BTC and ETH are live and moving with the clock (2908.445208ms)
+  AssertionError [ERR_ASSERTION]: the crank pushed a newer SOL price within 2.5 s
+      at TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/practice-clash.test.ts:60:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/sponsor.test.ts:1:6168
+✖ a wallet with zero SOL creates its player account through the relay; the faucet gives it test USDC (2146.916583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  401 !== 400
+  
+      at TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/sponsor.test.ts:108:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/void.test.ts:1:1065
+✖ a live duel nobody finishes is voided after the grace and refunds both stakes, no rake (13305.142584ms)
+  Error: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.
+      at AnchorError.parse (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:152:14)
+      at translateError (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/error.ts:277:35)
+      at MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:35:29)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/void.test.ts:38:3)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    errorLogs: [ 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.' ],
+    logs: [ 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS invoke [1]', 'Program log: Instruction: RevealSeed', 'Program log: AnchorError thrown in programs/clashy/src/lib.rs:881. Error Code: VrfRequired. Error Number: 6019. Error Message: This deployment requires MagicBlock VRF for randomness.', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS consumed 11354 of 200000 compute units', 'Program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS failed: custom program error: 0x1783' ],
+    error: { errorCode: { code: 'VrfRequired', number: 6019 }, errorMessage: 'This deployment requires MagicBlock VRF for randomness', comparedValues: undefined, origin: { file: 'programs/clashy/src/lib.rs', line: 881 } },
+    _programErrorStack: { stack: [ [Object] ] }
+  }
+exit 1

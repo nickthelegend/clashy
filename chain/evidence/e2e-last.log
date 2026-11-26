@@ -1,0 +1,46 @@
+(node:47491) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  duel on SOL: entry 71790000 exit 71790000 pnl 0,0 winner 3 · USDC 100/100 · ratings 1000/1000
+▶ knockout duel: quick match on one rolled coin
+  ✔ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (41057.690958ms)
+  ✔ challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner (4227.586ms)
+  VRF roll: SOL in 1334 ms via MagicBlock's oracle on queue GKE6d7…
+  ✔ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (7273.994167ms)
+✔ knockout duel: quick match on one rolled coin (62679.383833ms)
+  clan trade long SOL 5x: 71810000 → 71760000, P&L -0.0425 USDC of notional
+  war returns -14,0 bps → winner moon-mwir2vc0
+  member cashed out 10000000 shares of 30000000 for 8.333333 USDC of a 25 USDC chest
+▶ clans: group trading by vote, then clan vs clan
+  ✔ USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return (72427.425375ms)
+✔ clans: group trading by vote, then clan vs clan (72427.554417ms)
+▶ tournament: an on-chain Royale
+  ✖ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (17454.645375ms)
+✖ tournament: an on-chain Royale (17454.992584ms)
+ℹ tests 5
+ℹ suites 3
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 153970.140333
+
+✖ failing tests:
+
+test at tests/clashy.test.ts:1:18241
+✖ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (17454.645375ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/clashy.test.ts:302:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /PayoutMismatch/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+exit 1

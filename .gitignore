@@ -2,6 +2,8 @@ node_modules/
 dist/
 .DS_Store
 *.log
+# the test logs the docs cite are published on purpose (scanned for secrets before each commit)
+!chain/evidence/*.log
 .env
 .env.*
 assets/gen-nov17/bad/

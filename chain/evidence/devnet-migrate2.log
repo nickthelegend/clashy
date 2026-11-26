@@ -1,0 +1,12 @@
+(node:53481) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+08:16:11 config: rollup validator MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo · 8 coins · vrf required
+08:16:11 pinning the rollup validator MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo (https://devnet-tee.magicblock.app)
+08:16:31 feeds and boards are on the TEE rollup
+08:16:32 SOL: now reads MagicBlock oracle ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu
+08:16:33 BTC: now reads MagicBlock oracle 71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr
+08:16:34 ETH: now reads MagicBlock oracle 5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG
+08:16:35 keeper created with 0.05 SOL
+08:16:36 keeper delegated to the TEE rollup
+08:16:37 keeper action escrow FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE topped up with 0.05 SOL
+08:16:38 done · keeper TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK · escrow 0.05065024 SOL · crank GGeCjD… · coins ENYw 71wt 5vaY Hewk AbS4 9vJT Ar7d HYis

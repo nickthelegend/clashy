@@ -1,0 +1,111 @@
+(node:77428) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ knockout duel: quick match on one rolled coin
+  ✖ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (83346.128542ms)
+  ✔ challenge board: an unmatched challenge refunds in full; joining your own is refused; payouts only to the right owner (9861.234333ms)
+  ✖ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (28815.139292ms)
+✖ knockout duel: quick match on one rolled coin (125206.873583ms)
+  clan trade long SOL 5x: 69440000 → 69460000, P&L 0.0175 USDC of notional
+  war returns 5,0 bps → winner flame-mwr8qcbn
+  member cashed out 10000000 shares of 30000000 for 11.566666 USDC of a 34.7 USDC chest
+▶ clans: group trading by vote, then clan vs clan
+  ✔ USDC chest as shares, weighted votes, captain executes and closes at the oracle price, war settles to the better return (87820.447667ms)
+✔ clans: group trading by vote, then clan vs clan (87821.219417ms)
+  Royale VRF coin: AAPL
+  royale on BTC: lives 1,1,0 rounds 3 → payouts 2.91,2.91,0 USDC
+▶ tournament: an on-chain Royale
+  ✔ USDC entries escrowed, calls and rounds on the ER, survivors split the pot (50316.84275ms)
+✔ tournament: an on-chain Royale (50317.3795ms)
+(node:80154) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ perps clash: leverage and liquidation
+  ✖ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (35703.483708ms)
+  liquidation on SOL: entry 69420000 → 67684500 pnl -10000,2500 ko 1 winner 2 · short +9.7 USDC
+  ✔ a 50x long is liquidated by a 2.5% drop and loses to a 10x short, even mid-clash; the short takes the pot (21322.871666ms)
+  ✔ leverage above the program's 100x cap is refused at reveal (13371.512958ms)
+✖ perps clash: leverage and liquidation (76353.370833ms)
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/sponsor.test.ts:106:10: ERROR: The symbol "t" has already been declared
+    at failureErrorWithLog (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/esbuild/lib/main.js:1748:15)
+    at /Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/esbuild/lib/main.js:1017:50
+    at responseCallbacks.<computed> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/esbuild/lib/main.js:884:9)
+    at handleIncomingPacket (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/esbuild/lib/main.js:939:12)
+    at Socket.readFromStdout (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/esbuild/lib/main.js:862:7)
+    at Socket.emit (node:events:509:20)
+    at addChunk (node:internal/streams/readable:568:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:519:3)
+    at Readable.push (node:internal/streams/readable:399:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+
+Node.js v26.5.0
+✖ tests/sponsor.test.ts (139.24675ms)
+(node:81273) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ a live duel nobody finishes is voided after the grace and refunds both stakes, no rake (178068.373416ms)
+ℹ tests 10
+ℹ suites 4
+ℹ pass 6
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 524317.395625
+
+✖ failing tests:
+
+test at tests/clashy.test.ts:1:1497
+✖ open → join → roll → sealed picks → live on the ER → settle with rake and Elo, all in USDC (83346.128542ms)
+  Error [TransactionExpiredTimeoutError]: Transaction was not confirmed in 30.00 seconds. It is unknown if it succeeded or failed. Check signature 2hrfJyeV3jnuozgkkBAdoYu6XBmjppvyuCq2Ko6SnNuNkaohUFqfKHzbniEdyhPLBehYH3NWQn9P9hfBgfZ1ThFd using the Solana Explorer or CLI tools.
+      at Connection.confirmTransactionUsingLegacyTimeoutStrategy (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:4248:15)
+      at async Connection.confirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:3859:14)
+      at async sendAndConfirmRawTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/provider.ts:420:11)
+      at async AnchorProvider.sendAndConfirm (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/provider.ts:167:14)
+      at async MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:29:16)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/clashy.test.ts:110:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1869:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    signature: '2hrfJyeV3jnuozgkkBAdoYu6XBmjppvyuCq2Ko6SnNuNkaohUFqfKHzbniEdyhPLBehYH3NWQn9P9hfBgfZ1ThFd'
+  }
+
+test at tests/clashy.test.ts:1:9709
+✖ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (28815.139292ms)
+  Error [TransactionExpiredBlockheightExceededError]: Signature sbnaSaKL2ka5FAzDPH2zw4f6ZFhtA7tjYHAX8qz9sXKittZVkDLoyhNxTh8F3JfnZzh3KA7QL6zdqu6jbtSeG1p has expired: block height exceeded.
+      at Connection.confirmTransactionUsingBlockHeightExceedanceStrategy (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:4053:15)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Connection.confirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:3864:14)
+      at async sendAndConfirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/utils/send-and-confirm-transaction.ts:48:7)
+      at async createAssociatedTokenAccountIdempotent (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/spl-token/src/actions/createAssociatedTokenAccountIdempotent.ts:51:5)
+      at async giveUsdc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:211:15)
+      at async usdcPlayer (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/common.ts:219:3)
+      at async newPlayer (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/clashy.test.ts:30:14)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/clashy.test.ts:160:17)
+      at async Test.run (node:internal/test_runner/test:1389:7) {
+    signature: 'sbnaSaKL2ka5FAzDPH2zw4f6ZFhtA7tjYHAX8qz9sXKittZVkDLoyhNxTh8F3JfnZzh3KA7QL6zdqu6jbtSeG1p'
+  }
+
+test at tests/perps.test.ts:1:4807
+✖ 25x long vs 25x short at the live price: leverage recorded, P&L is 25x the move, settles at the bell (35703.483708ms)
+  Error [TransactionExpiredTimeoutError]: Transaction was not confirmed in 30.00 seconds. It is unknown if it succeeded or failed. Check signature yxo3MzdKz3BANpofXpfUWZCsQ4Gg48tMGbSEaNwFQKGUHWVJcsuZWii5Jxki8LjjHwW4z4nHSdWLADr2mSobBwN using the Solana Explorer or CLI tools.
+      at Connection.confirmTransactionUsingLegacyTimeoutStrategy (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:4248:15)
+      at async Connection.confirmTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@solana/web3.js/src/connection.ts:3859:14)
+      at async sendAndConfirmRawTransaction (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/provider.ts:420:11)
+      at async AnchorProvider.sendAndConfirm (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/provider.ts:167:14)
+      at async MethodsBuilder.rpc (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/node_modules/@coral-xyz/anchor/src/program/namespace/rpc.ts:29:16)
+      at async newPlayer (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:33:3)
+      at async liveDuel (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:56:13)
+      at async TestContext.<anonymous> (/Volumes/Extreme SSD/Projects/grokbot/projects/clashy/chain/tests/perps.test.ts:99:46)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Promise.all (index 0) {
+    signature: 'yxo3MzdKz3BANpofXpfUWZCsQ4Gg48tMGbSEaNwFQKGUHWVJcsuZWii5Jxki8LjjHwW4z4nHSdWLADr2mSobBwN'
+  }
+
+test at tests/sponsor.test.ts:1:1
+✖ tests/sponsor.test.ts (139.24675ms)
+  'test failed'
+exit 1

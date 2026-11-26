@@ -1,0 +1,25 @@
+(node:72409) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+▶ relay market proxy
+  ✔ passes only the listed public reads (22.393292ms)
+  ✔ Jupiter prices are shared per mint: a burst of overlapping reads all answer with real prices (2273.653875ms)
+✔ relay market proxy (2296.694209ms)
+▶ Phoenix (on-chain order book)
+  ✔ lists active markets with leverage caps and fees (5.044583ms)
+  Phoenix SOL: mid 67.495, $5,000 buys 74.074 at 67.5000 over 1 levels, sells back at 67.4804
+  ✔ a $5,000 SOL order fills level by level on the live book (975.587375ms)
+  ✔ funding and candles are real numbers (1133.419833ms)
+✔ Phoenix (on-chain order book) (2114.607708ms)
+▶ Pacifica (order book, Solana settlement)
+  ✔ lists perps and its fee schedule (5.323375ms)
+  Pacifica BTC: mid 58496.5, $20,000 buys 0.34190 at 58497.00 over 1 levels, sells back at 58496.00
+  ✔ a $20,000 BTC order fills level by level on the live book (271.852208ms)
+✔ Pacifica (order book, Solana settlement) (277.685958ms)
+ℹ tests 7
+ℹ suites 3
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4798.824709

@@ -1,0 +1,14 @@
+(node:87681) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  VRF roll: SOL in 1083 ms via MagicBlock's oracle on queue GKE6d7…
+▶ knockout duel: quick match on one rolled coin
+  ✔ MagicBlock VRF rolls the coin; with VRF required the commit-reveal roll and a forged callback are refused (4837.413042ms)
+✔ knockout duel: quick match on one rolled coin (5301.877916ms)
+ℹ tests 1
+ℹ suites 1
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6967.544
