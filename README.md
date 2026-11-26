@@ -19,22 +19,44 @@ Instruction names link to the program, [`chain/programs/clashy/src/lib.rs`](chai
 
 | Mode | How it plays | On chain, and the MagicBlock piece |
 |---|---|---|
-| **1v1 Clash** | Two players stake from $5. One coin is rolled for both; each calls up or down in secret; 60 s live (or a stock over an hour); the better call takes the pot minus a 3% rake. | Escrow `open_duel` / `join_duel` on Solana · **VRF** coin roll (`request_coin_roll`, `coin_roll_callback`) · picks sealed in the **Private ER (TEE)** with a **session key** (`lock_pick_session`) · **crank** scores every second (`tick_duel`) · **Magic Action** pays out on Solana |
+| **1v1 Clash** | Two players stake from $5 in the app (the program's minimum is 1 USDC). One coin is rolled for both; each calls up or down in secret; 60 s live (or a stock over an hour); the better call takes the pot minus a 3% rake. | Escrow `open_duel` / `join_duel` on Solana · **VRF** coin roll (`request_coin_roll`, `coin_roll_callback`) · picks sealed in the **Private ER (TEE)** with a **session key** (`lock_pick_session`) · **crank** scores every second (`tick_duel`) · **Magic Action** pays out on Solana |
 | **Perps clash** | Long or short with leverage (up to 50× in the app, 100× in the program) for 60 s; liquidated means out. | The same duel pipeline; each crank tick checks liquidation |
-| **Royale** | Up to 16 players, $2 in. A call every round; a wrong call costs a heart; the players with the most hearts left split the pot. | **VRF** coin · round calls signed with **session keys** on the rollup (`call_round_session`) · **crank** resolves rounds (`tick_round`) · payout from the TEE validator |
-| **Squads** | Any number of members pool USDC in one shared chest; a deposit buys chest shares. Any member proposes a call (coin, up or down, leverage up to 20×, size); members vote, weighted by their shares; the captain places it at the oracle price. | Program-owned chest token account · `create_clan`, `join_clan`, `deposit_chest`, `propose`, `vote`, `execute_proposal`, `close_position` |
-| **Squad war** | A captain stakes part of the chest against a rival squad; the rival accepts with the same stake; both squads trade by vote during the window; the better return takes both stakes into its chest. | `declare_war`, `accept_war`, `settle_war`, scored at MagicBlock oracle prices |
+| **Royale** | Up to 16 players, $2 in. A call every round; a wrong call costs a heart; the players with the most hearts left split the pot. | **VRF** coin · round calls signed with **session keys** on the rollup (`call_round_session`) · **crank** resolves rounds (`tick_round`) · **Magic Action** pays the survivors on Solana (`settle_tournament`, sent by MagicBlock's TEE validator) |
+| **Squads** | Any number of members pool USDC in one shared chest; a deposit buys chest shares. Any member proposes a call (coin, up or down, leverage up to 20×, size); members vote, weighted by their shares; the captain places it, and later closes it, at Clashy's crank-pushed Solana price feed (Coinbase prices), not MagicBlock's oracle. | On Solana, no MagicBlock piece: program-owned chest token account · `create_clan`, `join_clan`, `deposit_chest`, `propose`, `vote`, `execute_proposal`, `close_position` |
+| **Squad war** | A captain stakes part of the chest against a rival squad; the rival accepts with the same stake; both squads trade by vote during the window; the better return takes both stakes into its chest. | `declare_war`, `accept_war`, `settle_war` on Solana, scored from the squads' trades at Clashy's crank-pushed Solana price feed (`solana_price`), not MagicBlock's oracle |
 | **Weekly Cup** | Best profit this week (clash winnings plus Stash stock gains); resets Monday. | Read from program accounts, nothing entered by hand |
 | **Squad chat and the calls feed** | Squad channels and a public feed of calls. | Channels and boards delegated to the rollup (`post_message`, `post`) |
-| **Stash** | Save USDC, set spending limits and breaks; buy tokenized stocks (mainnet only: devnet has no xStock pool). | `stash_save`, `set_limits`, `take_break`, `stash_invest` |
+| **Stash** | Save USDC, set spending limits and breaks; buy tokenized stocks (not on devnet, which has no xStock pool; the buy passes on the local stack against a mainnet snapshot of the five xStock Orca Whirlpool pools). | `stash_save`, `set_limits`, `take_break`, `stash_invest` |
 | **150 practice games** | Memes, perps, stocks, crypto and party games on live prices with practice money. | Off chain, on purpose: free and instant |
+
+### MagicBlock proof
+
+One row per MagicBlock feature: where it is in the program and one devnet transaction that shows it (each one read
+back with `getTransaction` on Nov 27, 2026). Solana links open on devnet; rollup links open MagicBlock's TEE rollup
+through Explorer's custom-RPC setting.
+
+| Feature | Code | Devnet transaction |
+|---|---|---|
+| Delegation to the TEE rollup | `delegate_private_duel` ([lib.rs:2075](chain/programs/clashy/src/lib.rs#L2075)) | [`WdtSjg2a…`](https://explorer.solana.com/tx/WdtSjg2a61LVRNT4i6g8mbFMCZMkvLb1DkKzf8SgQYY1jUV9TJCoGFjuhFLaFHM61FoBXvDiF82MbnqPWyoKHyn?cluster=devnet) DelegatePrivateDuel (Solana) |
+| VRF coin roll | `request_coin_roll` / `coin_roll_callback` ([lib.rs:1067](chain/programs/clashy/src/lib.rs#L1067), [:1095](chain/programs/clashy/src/lib.rs#L1095)) | [`2Zw2y1eK…`](https://explorer.solana.com/tx/2Zw2y1eKtUcCwezCpjLyhn5JJwTBTTaf9d1yKAdpAR7a4dd4xUEBG19TTk2BbsM4VkjzjD75QZDFpNHpkTXe2v71?cluster=devnet) CoinRollCallback, signed by MagicBlock's VRF oracle `vrfkfM4u…` (Solana) |
+| Private ER (TEE) pick | `lock_pick_inner` ([lib.rs:314](chain/programs/clashy/src/lib.rs#L314)), `lock_pick` ([:2091](chain/programs/clashy/src/lib.rs#L2091)) | [`5XprAGcb…`](https://explorer.solana.com/tx/5XprAGcb1V3TPCXuPhsKAnhNbyru2jHbvwoeobFHdhjS6fbu9dgNqC4fgjcApU37z7SnVUmzPUcCPMdMuJQ4axL7?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) LockPick (rollup) |
+| Session keys | `check_session` ([lib.rs:368](chain/programs/clashy/src/lib.rs#L368)), `lock_pick_session` / `call_round_session` ([:2099](chain/programs/clashy/src/lib.rs#L2099), [:2107](chain/programs/clashy/src/lib.rs#L2107)) | [`39c58MZ8…`](https://explorer.solana.com/tx/39c58MZ8THhCZHWRewCmX3mBxSq5FrbVXR27MSdZgLrZTY5RQPErDWgWac5tizxNsovtXJeLm8hYUicVqymgojTT?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) CallRoundSession, signed by the relay and the player's session key (rollup, Nov 26) |
+| Crank scheduled (ScheduleTask) | `schedule_ticks` ([lib.rs:2227](chain/programs/clashy/src/lib.rs#L2227)), called by `start_private_duel` ([:2116](chain/programs/clashy/src/lib.rs#L2116)) | [`45DauMxT…`](https://explorer.solana.com/tx/45DauMxTGoQnq3frKWPY48KR8b7pXAjsyTrBFKgfzuR7NrpaAFY56rvUcqEmDi8CL7EtMhfput8vkWz2Uh2NJ7r2?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) StartPrivateDuel, logs `Scheduled task request with ID …` (rollup) |
+| Crank tick + oracle price | `tick_duel` ([lib.rs:1964](chain/programs/clashy/src/lib.rs#L1964)); `read_price` accepts MagicBlock's oracle owner `PriCems5…` ([price.rs:41](chain/programs/clashy/src/price.rs#L41)) | [`4NHsJ6eh…`](https://explorer.solana.com/tx/4NHsJ6ehn78NCT9j285LXHCP7zduBmNkbLp75R4BucrAsaENDMD7YETCX8BBVVfw9gQ2eLynoNHBNM4cNuEuUL26?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) TickDuel, signed by the TEE validator `MTEWGuqx…`, reads the ETH oracle account `5vaYr1hp…` (rollup) |
+| Crank cancelled (CancelTask) | `cancel_ticks` ([lib.rs:2215](chain/programs/clashy/src/lib.rs#L2215)) | [`5XckXUfd…`](https://explorer.solana.com/tx/5XckXUfdGfgS3iNWzBR5oa9Uw6SKFLTJ4xwbykXPtA3dUxsPtx2ZCzKRbLoP7ZQaitVN45CY14ebCHwUaS411abN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) the finishing TickDuel, logs `Successfully added cancel request for task …` (rollup) |
+| Magic Action: duel payout | `settle_duel_action` ([lib.rs:215](chain/programs/clashy/src/lib.rs#L215)), attached after commit and undelegate in `tick_duel` ([:1998](chain/programs/clashy/src/lib.rs#L1998)) | [`3TRqj5wU…`](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet) ProcessUndelegation + SettleDuel, signed by the TEE validator `MTEWGuqx…` (Solana) |
+| Magic Action: Royale payout | `settle_tournament_action` ([lib.rs:242](chain/programs/clashy/src/lib.rs#L242)), attached in `tick_round` ([:2038](chain/programs/clashy/src/lib.rs#L2038)) | [`KauWRCg6…`](https://explorer.solana.com/tx/KauWRCg6xyYhYCB4zuWN75UxYVQfVfGWBBgg9iqnhKDh1B4a177is8b3Z4e9h2aMh3KDmjRVXT5F5w5jNWACi87?cluster=devnet) ProcessUndelegation + SettleTournament, signed by the TEE validator `MTEWGuqx…` (Solana, Nov 26) |
+
+The two settles are version-1 transactions. Full trails: [`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt)
+(Nov 25 duel), [`devnet-proof3.txt`](chain/evidence/devnet-proof3.txt) (the crank cancel) and
+[`devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md) (Nov 26 duel, Royale and squad war).
 
 ## Status: live on Solana devnet with MagicBlock's Private Ephemeral Rollup, VRF, cranks and Magic Actions (deployed Nov 22, upgraded Nov 25, 2026)
 
 > **Built before and after kickoff.** Solana Blitz v10 kicked off on Nov 20, 2026 at 14:00 UTC. The first version of
 > the app, the website and the on-chain program was written before then. All of the MagicBlock work beyond delegation
 > and VRF (cranks, the keeper, Magic Action payouts, private picks on the TEE rollup, oracle prices, session keys) was
-> written after kickoff, on Nov 25. The commit ranges are in [Before and after kickoff](#before-and-after-kickoff).
+> written after kickoff, on Nov 24-25 (from Nov 24 20:29 UTC). The commit ranges are in [Before and after kickoff](#before-and-after-kickoff).
 > Check the event rules before submitting.
 
 ### Devnet deployment
@@ -45,13 +67,13 @@ Instruction names link to the program, [`chain/programs/clashy/src/lib.rs`](chai
 | Test USDC (stake currency) | [`8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN`](https://explorer.solana.com/address/8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN?cluster=devnet) | SPL token, 6 decimals. It has no value and exists only on devnet. |
 | Ephemeral Rollup | `https://devnet-tee.magicblock.app` | MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator version 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. The Nov 22 runs used `devnet-as.magicblock.app` (validator `MAS1Dt9…`); feeds, boards and the squad channel were moved home from there with `admin_undelegate` and re-delegated to the TEE on Nov 25 (`chain/evidence/devnet-migrate.log`, `devnet-migrate2.log`). |
 | Prices | SOL `ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu`, BTC `71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr`, ETH `5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG` | SOL, BTC and ETH read MagicBlock's oracle accounts. The five stocks (NVDA, TSLA, AAPL, SPY, GOOGL) keep Clashy's own crank-pushed feeds. |
-| Keeper | `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK` | A PDA delegated to the rollup. It signs the crank's commits; its action escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` pays for Magic Actions. |
+| Keeper | `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK` | A PDA delegated to the rollup. It signs the crank's commits. Its escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` is the account MagicBlock can charge for Magic Actions; its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27). |
 | VRF | queue [`Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh`](https://explorer.solana.com/address/Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh?cluster=devnet) | MagicBlock VRF program `Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz`. The callbacks are signed by their oracle `vrfkfM4uoisXZQPrFiS2brY4oMkU9EWjyvmvqaFd5AS`. `vrf_required = true`, so the commit-reveal fallback is refused. |
-| Fee sponsor (relay) | [`AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz`](https://explorer.solana.com/address/AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz?cluster=devnet) | Pays every Solana fee and rent for players, who hold 0 SOL. The keeper's escrow pays the rollup-side Magic Action fees. |
+| Fee sponsor (relay) | [`AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz`](https://explorer.solana.com/address/AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz?cluster=devnet) | Pays every Solana fee and rent for players, who hold 0 SOL. Magic Actions are sent by MagicBlock's TEE validator. |
 | Base RPC | `https://rpc.magicblock.app/devnet` | The rake is 3% (300 bps). The admin can change it (up to 10%) with `update_config`. |
 
 **One private duel through the app, start to finish** (Nov 25, 11:33–11:35 UTC, duel `3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4`,
-two device-wallet players with 0 SOL; full trail of 97 transactions, 85 on the rollup, in
+two device-wallet players with 0 SOL; full trail of 100 transactions, 88 on the rollup, in
 [`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt)):
 [open](https://explorer.solana.com/tx/4eQDRFpkCtejM51giwd8MRPcoEgeKHmQLdRHhw7ThyNo8VpPGdNWnEu5NgcEARGqdCNnxp364hZQVySLQWMw2F6k?cluster=devnet) →
 [join](https://explorer.solana.com/tx/2zh5WqipZtcJ3ciuQoLhLXtasJc8fVZkxA3RuyyG2GB7GHRiKHj7RYQMvzBrMqjyPyvF4B1Nd9WimThBDYnfY8gd?cluster=devnet) →
@@ -63,7 +85,7 @@ two device-wallet players with 0 SOL; full trail of 97 transactions, 85 on the r
 [lock pick B](https://explorer.solana.com/tx/3Z8DxDcXYhd68CFC2p95CNQbaTfzJo7TfbMTQvMa5jG1CxyaVM1zGSpGzcvdTmpCJf1AeJP8nC9RdVPHMAM4FKQm?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) on the rollup →
 [start](https://explorer.solana.com/tx/45DauMxTGoQnq3frKWPY48KR8b7pXAjsyTrBFKgfzuR7NrpaAFY56rvUcqEmDi8CL7EtMhfput8vkWz2Uh2NJ7r2?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) →
 one crank `TickDuel` per second for 60 s ([first](https://explorer.solana.com/tx/4NHsJ6ehn78NCT9j285LXHCP7zduBmNkbLp75R4BucrAsaENDMD7YETCX8BBVVfw9gQ2eLynoNHBNM4cNuEuUL26?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app), [last](https://explorer.solana.com/tx/49EUfL6UUTnqgGAKbaobDE9w3M8gpGkazXJVkTehaDiZkGaW5NoGTp8o6cvQpvCGNW8m6ABN9G7iWvVytY17XNu3?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)) →
-commit and settle on Solana at 11:35:04 ([Solana](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet), [rollup](https://explorer.solana.com/tx/mWYjHRgP7gacpxzJmHT9o1UP1qmfB5nptMisS1MeDt8qupje4KaCLMxKY3x2yM7FM8Ss6MrvsJKQgkLDpj9Te2B?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)).
+the Magic Action at 11:35:04: the duel is undelegated and `settle_duel` pays out in one Solana transaction signed by MagicBlock's TEE validator `MTEWGuqx…` ([ProcessUndelegation + SettleDuel](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet), [rollup side](https://explorer.solana.com/tx/mWYjHRgP7gacpxzJmHT9o1UP1qmfB5nptMisS1MeDt8qupje4KaCLMxKY3x2yM7FM8Ss6MrvsJKQgkLDpj9Te2B?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)).
 ETH went 1,639.80 → 1,638.63; player B called down and won +9.70 USDC, player A lost 5 USDC. After the duel went
 home, MagicBlock's scheduler tried the remaining ticks 11 more times; they failed because the duel had left the rollup,
 and then the task was dropped. Since the devnet upgrade that evening, the finishing tick cancels its crank. A few runs
@@ -84,17 +106,20 @@ More, including a Royale, are in [HACKATHON_SUBMISSION_FORM.md](HACKATHON_SUBMIS
 
 ### What was tested on devnet
 
-**Nov 25, on the TEE rollup** (`chain/evidence/devnet-mb-test.log`, `chain/evidence/devnet-private.log`). All four
-tests in `chain/tests/magicblock.test.ts` passed, over two runs: the first run passed three and the private duel failed
-on a devnet mint timeout while funding a test player; a second run passed the private duel.
-- **Cranked duel:** VRF rolled BTC; 31 crank ticks; settled by a Magic Action 31.8 s after the start, with no
-  transaction sent after the start.
-- **Cranked Royale:** the survivor was paid 5.82 USDC; nobody resolved or settled by hand; round calls were signed by a
-  MagicBlock session key.
+**Nov 25, on the TEE rollup:** all four tests in `chain/tests/magicblock.test.ts` passed in one run after the last
+upgrade, `3LJSPdfk…` (`chain/evidence/devnet-mb-cancel.log`). Earlier that day they passed over two runs
+(`devnet-mb-test.log`, `devnet-private.log`: the private duel first failed on a devnet mint timeout while funding a test
+player).
+- **Cranked duel:** VRF rolled BTC; keeper ticks 306 → 337; settled by a Magic Action 31.6 s after the start, with no
+  transaction sent after the start; the finishing tick cancelled the crank.
+- **Cranked Royale:** TSLA, 3 rounds; the survivor was paid 5.82 USDC; nobody resolved or settled by hand. The test
+  asserts that player 1 made every round call through a MagicBlock session key (the log does not print the calls; the
+  Nov 26 in-app Royale trail shows 12 `CallRoundSession` transactions).
 - **Private duel:** picks locked inside the TEE. Player A's authenticated connection reads A's pick; player B's reads
   nothing. The clash then settled itself.
 - **Keeper abuse:** an outsider cannot create or delegate the keeper.
-- **Through the web app:** the private ETH duel above, played by two device-wallet players with 0 SOL.
+- **Through the web app:** the private ETH duel above, played by two device-wallet players with 0 SOL. On Nov 26 a
+  private duel, a 3-player Royale and a squad war were played the same way ([`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md)).
 
 **Nov 22, on devnet-as** (logs `chain/evidence/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`,
 `devnet-test-4.log`, `devnet-test-clashy.log`). No single run was all green: each test below passed in at least one
@@ -109,14 +134,15 @@ run, several only after reruns.
 - **Social:** clans (chest shares, votes, a trade closed at the Solana price, clan war), squads, names, safety limits,
   the calls feed and clan chat on the rollup.
 - **Relay:** the sponsor relay refuses bad requests and a forged Privy token. The zero-SOL sponsored-player test failed
-  on devnet (it needs a real Privy sign-in).
+  on devnet (it needs a real Privy sign-in); it passed on the local stack on Nov 26 (`suite-sponsor-nov26.log`).
 - **Through the web app:** two players reported a crypto clash, a perps clash and an on-chain Royale. No transaction
   links were kept for those runs, so the Nov 25 duel above is the in-app proof.
 
 ### Not on devnet
 
-- **Stash buys are mainnet only.** Buying a tokenized stock (for example NVIDIA) goes through an Orca xStock pool, and
-  devnet has no such pool. Stash savings do work on devnet.
+- **Stash stock buys.** Buying a tokenized stock (for example NVIDIA) goes through an Orca xStock pool, and devnet has
+  no such pool. The buy passes on the local stack against a mainnet snapshot of the five xStock Whirlpool pools (Nov 26,
+  `suite-brief-nov26.log`). Stash savings do work on devnet.
 - **Nothing is on mainnet.** The program is not deployed there, and no real money moves anywhere. The open Medium
   findings and the follow-ups to the three mitigated Highs in [docs/AUDIT.md](docs/AUDIT.md) gate mainnet. The Nov 25
   MagicBlock code has not been audited yet.
@@ -141,7 +167,7 @@ below are commit times in UTC (`TZ=UTC git log`).
 | `93fa845..e833c62` | 15 | Nov 20 14:49 to Nov 22 04:47 (after kickoff) | The white tour card, the practice games and the game kit (the first three commits landed at 14:49 UTC, 49 minutes after kickoff, so part of that work was written before it); the beta legal pages; `close_duel` (45 program lines); the devnet test USDC and faucet; the first devnet deploy and test run; the Royale stock-coin fix; the faucet limits; the devnet record |
 | `ddfa4da..e14e80f` | 10 | Nov 24 20:29 to Nov 25 11:37 (after kickoff) | README and submission form; **MagicBlock cranks, the keeper PDA, Magic Action payouts, private picks on the TEE rollup, MagicBlock oracle prices** (program, app and tests); the app's MagicBlock track and Live on MagicBlock screen; session keys (`lock_pick_session`, `call_round_session`); the VRF callback fix; the 0.5% Stash trading fee; TEE authentication; the three devnet upgrades and the TEE test runs; result Lottie animations; the sealed-in-TEE duel card; `scripts/devnet-proof.ts` |
 | `a72149c..9e0a58e` | 9 | Nov 25 11:54 to 17:56 (after kickoff) | Session keys in the app (private picks signed on the device); the claims audit of docs and site copy; the finishing crank tick cancels its MagicBlock task (the fourth devnet upgrade, `3LJSPdfk…`); Lottie on phones; the clay sprite animations in live clashes; two duel-screen fixes found while filming |
-| `e50830c..` | | Nov 26 (after kickoff) | Docs only: the cited test logs published, the Nov 26 test re-run (TESTING.md), the read-only devnet live check script, and this README |
+| `e50830c..ba4d09d`, then doc fixes | 15 to `ba4d09d` | Nov 26 04:39 to 22:52, then Nov 27 (after kickoff) | Docs and evidence: the cited test logs, the Nov 26 test re-run (TESTING.md), the read-only devnet live check, the proof scripts and the Nov 26 trails, this README. App UI: sprite animations, live-clash polish, the Play tab, the squad leverage vote (62 app files, +376/−112 since `9e0a58e`). Landing: the Squads rename. The program, tests, server and `web/` are unchanged |
 
 After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat 6431028 HEAD -- chain/programs`);
 `lib.rs` is now 3,485 lines and the program source 4,564.
@@ -220,8 +246,7 @@ After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat
   - **Deploying:** `bash deploy/up.sh testnet|mainnet` (settings in `deploy/*.env.example`), followed by a read-only
     preflight. Not yet run against a server.
   - **System design and costs:** [docs/SYSTEM-DESIGN.md](docs/SYSTEM-DESIGN.md). It plans for 100 players (load-test
-    script `server/test/load.ts`; a Nov 19 run on the Mac reported p95 8 ms with 0 errors, but its output is not stored
-    in the repo) and an exact-size mainnet deploy (8.155 SOL rent for 1,605,240 bytes).
+    script `server/test/load.ts`; no run output is stored in the repo) and an exact-size mainnet deploy (8.155 SOL rent for 1,605,240 bytes).
 - **App:** the practice games run on live prices with no money. Three screens play the real program on the local
   stack or on devnet: **On-chain duel** (commit-reveal or private TEE picks), **On-chain Royale** and **On-chain clan**
   (chest, votes, wars), plus a **Live on MagicBlock** screen that reads the config, keeper and oracle accounts. On web
@@ -257,7 +282,7 @@ After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat
    │      settle_duel (pot minus 3% rake, Elo) ◄── Magic Action after commit and undelegate
    │
    └─► MagicBlock Private Ephemeral Rollup (devnet-tee, TEE validator MTEW…)
-          lock_pick: each pick is a private account only its owner can read until the start
+          lock_pick: each pick is a private account the rival cannot read until the start (the relay co-signs the lock)
           start ─► schedules a crank: tick_duel / tick_round every 1,000 ms, no player online
           prices: MagicBlock oracle accounts (SOL, BTC, ETH); Clashy crank feeds for five stocks
           finishing tick ─► keeper PDA commits and undelegates, cancels its crank, Magic Action settles on Solana
