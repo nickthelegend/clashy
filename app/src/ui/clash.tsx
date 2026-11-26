@@ -74,12 +74,14 @@ export function FaceOff({ me, rival, meLabel = 'You', rivalLabel, size = 92 }: {
 
 /** Slot-machine roll: spins through the pool while the VRF works, then lands on the rolled coin. */
 export function CoinRoll({ pool, landed, size = 150 }: { pool: string[]; landed?: string | null; size?: number }) {
-  const [i, setI] = useState(0);
+  // the spin is keyed to the wall clock, so both players' phones show the same coin at the same moment
+  const tick = () => Math.floor(Date.now() / 110) % Math.max(1, pool.length);
+  const [i, setI] = useState(tick);
   useEffect(() => {
     if (landed) return;
-    const h = setInterval(() => setI((x) => (x + 1) % Math.max(1, pool.length)), 110);
+    const h = setInterval(() => setI(tick()), 55);
     return () => clearInterval(h);
-  }, [landed, pool.length]);
+  }, [landed, pool.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const sym = landed ?? pool[i] ?? '…';
   return (
     <View style={{ alignItems: 'center' }}>
@@ -118,7 +120,9 @@ export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirC
 }) {
   const lead = Math.max(-1, Math.min(1, (myPnl - theirPnl) * 40));
   const pct = 50 + lead * 45;
-  const fmt = (p: number) => `${p >= 0 ? '+' : ''}${p.toFixed(2)}%`;
+  // a 60-second clash moves hundredths of a percent, so small scores keep three decimals (two hide every swing)
+  const fmt = (p: number) => `${p > 0 ? '+' : p < 0 ? '−' : ''}${Math.abs(p).toFixed(Math.abs(p) < 10 ? 3 : 2)}%`;
+  const tone = (p: number) => (p > 0 ? C.up : p < 0 ? C.down : C.ink);
   const move = price && entry ? ((price - entry) / entry) * 100 : 0;
   return (
     <View>
@@ -130,7 +134,7 @@ export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirC
         <Text style={{ ...FONT.display, fontSize: 64, color: C.ink, marginTop: 10, letterSpacing: -1 }}>{left !== null ? (left >= 60 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : `${Math.ceil(left)}`) : '…'}</Text>
         <Txt v="small">{coinName(sym)} {price ? fmtUsd(price) : '…'} · {move >= 0 ? '+' : ''}{move.toFixed(3)}% since the start</Txt>
       </View>
-      <FightStage myPnl={myPnl} theirPnl={theirPnl} over={!onRollup} myKo={perps?.myKo || (perps ? myPnl <= -100 : false)} theirKo={perps?.theirKo || (perps ? theirPnl <= -100 : false)} />
+      <FightStage myPnl={myPnl} theirPnl={theirPnl} over={!onRollup} myKo={perps?.myKo || (perps ? myPnl <= -100 : false)} theirKo={perps?.theirKo || (perps ? theirPnl <= -100 : false)} size={128} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <ProfileAvatar p={me} size={46} />
         <View style={{ flex: 1, height: 22, borderRadius: 11, backgroundColor: C.opp, overflow: 'hidden' }}>
@@ -148,11 +152,11 @@ export function LiveBoard({ me, rival, rivalPic, myPnl, theirPnl, myCall, theirC
         ) : (
           <>
             <View>
-              <Text style={{ ...FONT.display, fontSize: 30, color: myPnl >= 0 ? C.up : C.down }}>{fmt(myPnl)}</Text>
+              <Text style={{ ...FONT.display, fontSize: 30, color: tone(myPnl) }}>{fmt(myPnl)}</Text>
               <Txt v="small">You called {myCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ ...FONT.display, fontSize: 30, color: theirPnl >= 0 ? C.up : C.down }}>{fmt(theirPnl)}</Text>
+              <Text style={{ ...FONT.display, fontSize: 30, color: tone(theirPnl) }}>{fmt(theirPnl)}</Text>
               <Txt v="small">{rival?.name ?? 'Rival'} called {theirCall === 1 ? 'UP ▲' : 'DOWN ▼'}</Txt>
             </View>
           </>
