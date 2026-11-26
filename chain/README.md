@@ -14,7 +14,7 @@ MagicBlock Ephemeral Rollup by a crank, settlement on Solana by a Magic Action, 
 | Prices | A crank pushes live Coinbase prices into delegated `PriceFeed` accounts on the rollup every second (duels, tournaments), and into never-delegated base feeds on Solana every 5 s (clan trades; one transaction for all coins). The program also reads MagicBlock's pricing-oracle accounts (`PriCems5…`, PriceUpdateV2 layout). On devnet SOL, BTC and ETH read MagicBlock's oracle; the crank's rollup feeds are used only for the five stocks |
 | Money | **USDC only.** Every stake, chest, war pot and entry is a USDC token account owned by the program's `auth` PDA. A player's wallet never needs SOL: the sponsor relay pays every fee and rent |
 | Wallets | Privy (web): email or Google sign-in makes a Solana wallet that holds USDC. Phones and automated tests use a device test key on the local stack |
-| Deployed | Solana devnet since Nov 22, 2026, upgraded three times on Nov 25 (see [docs/DEVNET.md](../docs/DEVNET.md)). Upgrade authority: one deployer key. Mainnet: **not deployed** |
+| Deployed | Solana devnet since Nov 22, 2026, upgraded four times on Nov 25 (see [docs/DEVNET.md](../docs/DEVNET.md)). Upgrade authority: one deployer key. Mainnet: **not deployed** |
 
 ## Money: USDC in, no SOL ever
 
@@ -125,13 +125,13 @@ a test can reach them (the Nov 25 crank, keeper, Magic Action, TEE and session-k
 
 - **Devnet: deployed.** Program `FQKy8f…wdS` since Nov 22, 2026; four upgrades on Nov 25 (cranks, keeper, Magic
   Actions, private picks, oracle, `admin_undelegate`; session keys; the VRF callback fix and the 0.5% Stash trading
-  fee; the finishing tick cancels its crank). Program data account 1,605,240 bytes; the last build is 1,583,160 bytes. Rollup: MagicBlock's TEE
+  fee; the finishing tick cancels its crank). Program data account 1,605,285 bytes (1,605,240 bytes of program space after its 45-byte header); the last build is 1,583,160 bytes. Rollup: MagicBlock's TEE
   (`devnet-tee.magicblock.app`); its transactions need an auth token (30 days), public reads need none. On Nov 25 all
   four `tests/magicblock.test.ts` tests passed there in one run (after the crank-cancel upgrade), and two players played a private duel through the
   app (`../docs/DEVNET.md`, `evidence/devnet-proof.txt`).
 - **Local MagicBlock stack: works end to end, in USDC.** MagicBlock validator 1.1.1 over Agave 4.5.0-beta.0 with
-  devnet's feature set. Latest runs (Nov 25): magicblock 4/4, clashy 5/5 (the VRF test passed after its fix), perps
-  3/3, brief 9/9, void 1/1, 13/13 Rust unit tests (see [TESTING.md](TESTING.md)); every test player holds USDC and
+  devnet's feature set. Latest runs (Nov 26, `evidence/*-nov26.log`): magicblock 4/4, clashy 5/5, perps 3/3,
+  brief 9/9, void 1/1, sponsor relay 5/5, 13/13 Rust unit tests (see [TESTING.md](TESTING.md)); every test player holds USDC and
   exactly 0 SOL. Browser players ran full duels, a clan trade, a clan war and a three-player Royale through the app
   (Nov 16, manual multi-tab runs).
 - **Privy:** the Clashy app exists in Privy's dashboard (owner's statement); the web app signs in with it and the relay
@@ -142,11 +142,12 @@ a test can reach them (the Nov 25 crank, keeper, Magic Action, TEE and session-k
   is refused. The Nov 25 local VRF failure came from SDK 0.18's `#[vrf_callback]` evaluating a const fn at run time
   (over 200k compute units); a compile-time `VRF_IDENTITY` fixed it.
 - **Session keys:** `lock_pick_session` and `call_round_session` are deployed on devnet; the cranked Royale test made its
-  round calls with one. The app does not use them yet.
+  round calls with one. The app uses them for the private pick lock and every Royale call (`evidence/devnet-proof2.txt`:
+  2 `LockPickSession`; `evidence/devnet-proof-nov26-royale.txt`: 12 `CallRoundSession`).
 - **Practice clash against Clashy Bot (no testnet needed):** the real 60-second clash with Practice money, played on
   the same live rollup price feeds real clashes settle on (read only, nothing is sent). Clashy Bot takes the other side
   of every call.
-- **Mainnet: not deployed.** The program data account is 1,605,240 bytes: 8.155 SOL rent-exempt; a deploy briefly
+- **Mainnet: not deployed.** The program data account is 1,605,285 bytes (1,605,240 of program space): 8.155 SOL rent-exempt; a deploy briefly
   holds about twice that (buffer plus program data) and returns the buffer. The sponsor also needs SOL for fees and
   rent. It needs real SOL and Nick's go-ahead. Real money stays off until then.
 - **Why base feeds:** on the local stack (Nov 18), MagicBlock sponsored only 10 commits per delegated account

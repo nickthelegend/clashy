@@ -1,7 +1,8 @@
 # Testing
 
 Every suite below was re-run on **Nov 26, 2026 (04:38–05:05 UTC)** on a Mac, unless the row says otherwise. The
-program, tests, server and website were unchanged since `9e0a58e` (the last commit pushed to GitHub), and the program
+program, tests, server and website were unchanged since `9e0a58e` (later commits change only the app, the landing page,
+the docs and the proof scripts; everything is pushed to GitHub), and the program
 binary they ran, `chain/target/deploy/clashy.so`, has sha256 `707e9cb8…`, the same build that is deployed on devnet. Raw output is in [`chain/evidence/`](chain/evidence/) (files
 ending `-nov26.log`). Per-test detail is in [chain/TESTING.md](chain/TESTING.md).
 
@@ -42,9 +43,18 @@ What the Nov 26 run printed (from the logs):
 - **Clan:** long SOL 5x closed at -0.0175 USDC; a member cashed out exactly 8.333333 USDC (10 of 30 shares of a
   25 USDC chest).
 - **Liquidation:** BTC dropped 2.5% (staged), the 50x long was knocked out and the 10x short won +9.7 USDC. In the
-  25x vs 25x clash SOL did not move, so it was a dead heat.
+  25x vs 25x clash SOL did not move (`pnl 0,0`, a dead heat), so its "P&L is 25x the move" check compared 0 to 0 and
+  the multiplier was not exercised on Nov 26. In the Nov 25 run (`suite-perps.log`) BTC moved 1.79 bp and both sides
+  scored ±44 bp, 25x the move.
 - **Stash fee:** buy 0.05 USDC, sell 0.024865 USDC, both to the treasury.
+- **Stash stock buy:** NVIDIA bought through Orca and half sold back, on the local stack against a mainnet snapshot of
+  the five xStock Whirlpool pools (`chain/scripts/localnet.sh`); devnet has no xStock pool.
 - **Relay:** a wallet with 100 USDC and 0 SOL created its player account through the relay.
+
+**Through the web app on devnet (Nov 26, the film's games):** a private ETH duel (99 transactions, 89 on the rollup),
+a 3-player Royale (93, 84 on the rollup) and a squad war (18 Solana transactions, none failed), each played by device
+wallets with 0 SOL; trails and every failed transaction explained in `chain/evidence/devnet-proof-nov26.md`. The Nov 25
+in-app duel (100 transactions, 88 on the rollup) is in `chain/evidence/devnet-proof.txt`.
 
 ## Not re-run on Nov 26
 
@@ -53,9 +63,7 @@ What the Nov 26 run printed (from the logs):
 | The same MagicBlock suite on the devnet TEE rollup | It spends devnet SOL and test USDC; this run was read-only on devnet | 4/4 pass in one run on Nov 25 after upgrade `3LJSPdfk…` (`chain/evidence/devnet-mb-cancel.log`) |
 | The other suites on devnet | Same reason | Nov 22, on the first program and devnet-as: each passed in at least one run, several after reruns; the 0-SOL sponsored-player test failed there because it needs a real Privy sign-in (`devnet-test-*.log`) |
 | Mainnet-fork Phoenix trade | Needs the mainnet fork (`scripts/forknet.sh`) | Sold 1 SOL for 54.660103 USDC, the book expected 54.660103 (Nov 18) |
-| Stash stock buy through Orca | Mainnet only: devnet has no xStock pool | Passed on the mainnet fork only |
 | App lint and type check | Another session had uncommitted app changes in progress, so a run would not test the committed app | Not recorded |
-| App in a browser, two players, on devnet | Needs the relay and two browsers; done for the film | Nov 25: one private ETH duel, 97 transactions, 85 on the rollup, B won +9.70 USDC (`chain/evidence/devnet-proof.txt`) |
 
 ## Devnet live check (read-only)
 
