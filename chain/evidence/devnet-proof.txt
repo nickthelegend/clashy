@@ -1,15 +1,13 @@
-(node:71641) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
 duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4 · coin 2 · entry 1639802527 → exit 1638627055 · winner 2 · status 5
-97 transactions (85 on the rollup)
+100 transactions (88 on the rollup)
 
 11:33:19  Solana  OpenDuel
           https://explorer.solana.com/tx/4eQDRFpkCtejM51giwd8MRPcoEgeKHmQLdRHhw7ThyNo8VpPGdNWnEu5NgcEARGqdCNnxp364hZQVySLQWMw2F6k?cluster=devnet
-11:33:20  rollup  (no log)
+11:33:20  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/3CUXqpwxDVK83VHJwgUFNBsj6d3NrejR8cANky26xz9BVaBQ4EHCg513ki9a621kKdkXiB2hKQhvaaX3msuwmiPF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:33:45  Solana  JoinDuel
           https://explorer.solana.com/tx/2zh5WqipZtcJ3ciuQoLhLXtasJc8fVZkxA3RuyyG2GB7GHRiKHj7RYQMvzBrMqjyPyvF4B1Nd9WimThBDYnfY8gd?cluster=devnet
-11:33:46  rollup  (no log)
+11:33:46  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/USaxd5tpCv21Mxu2xKva3YS9zKxYjDwnAgaAYwam7juxxyWTpn8PfyxKDBEbXriW7S9uV4KLHCUmEfcCxntgijQ?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:33:47  Solana  RequestCoinRoll
           https://explorer.solana.com/tx/4iyNPdpSNGCtNocH52ouFeWPZWQbApD2ptWPvRKrzDm2TZeM7uwmFFzurqJJhfuhnw9Gh8XcaxJeVNkKJSgghaom?cluster=devnet
@@ -17,7 +15,7 @@ duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4 · coin 2 · entry 1639802527 
           https://explorer.solana.com/tx/Bkq4XhY2oRDBvoiLfzb8WddA48afp8SVVwrS4Z6TRrZpLJsp5YZhRDPvDitbcapYKB488HjDzGUWoFk1efKZDnD?cluster=devnet
 11:33:48  Solana  CoinRollCallback
           https://explorer.solana.com/tx/2Zw2y1eKtUcCwezCpjLyhn5JJwTBTTaf9d1yKAdpAR7a4dd4xUEBG19TTk2BbsM4VkjzjD75QZDFpNHpkTXe2v71?cluster=devnet
-11:33:48  rollup  (no log)
+11:33:48  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/5X1D19PMJS1r3x5NYecrW3nME8zHcJmKQisXTXe8BVNxGPcMeKeySCLvu3hPruy67KvgrQMKqPfqjsHLd6m11Spd?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:33:49  Solana  FAILED MagicBlock VRF oracle
           https://explorer.solana.com/tx/oeUDbqaRfToi5WbMXdJa9ikPKsCE8k64aNDSSYyvSeW9tAkmGNGvNb6gENpPuCfWyKXGoPtanKi7WLtR1aEMzR7?cluster=devnet
@@ -27,15 +25,15 @@ duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4 · coin 2 · entry 1639802527 
           https://explorer.solana.com/tx/31NjbkQ1bzqERKRZuMPHMz1xTtAxJSeRQ7XfNnxZqsYr5mfbWFx1uSiuTQvGhEZbxVHW9wpi8idNYLZ7cTFEB3Ci?cluster=devnet
 11:33:49  Solana  OpenPrivatePicks
           https://explorer.solana.com/tx/2sbsAPkPeLggFuJaKqZv63F4v52f6TcmnPGycHLzZoMcRHWFcvL9cU7EFgegoKcugh4HjfWnYQPM5dYfv7BdGfHq?cluster=devnet
-11:33:49  rollup  (no log)
+11:33:49  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/2MHHYooksHH7KcUJNCtQm8BnDxnCC61nXxXFg9phsVUUPQ8zz8h3EUozyMCNif4fRTavBGQ97yVrcNsdRWBYpqLs?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:33:50  Solana  DelegatePrivateDuel
           https://explorer.solana.com/tx/WdtSjg2a61LVRNT4i6g8mbFMCZMkvLb1DkKzf8SgQYY1jUV9TJCoGFjuhFLaFHM61FoBXvDiF82MbnqPWyoKHyn?cluster=devnet
-11:33:50  rollup  (no log)
+11:33:50  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/5MLmydioV6ivfMrPFKGki5AX5KDm5x5DZ6L8MbRzpeYfw7PgtZsGnwkmYvrEg4yXRWmAPwtQQK77yXh3y2YmQiQF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:33:50  rollup  (no log)
+11:33:50  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/4WdGWTDeGxXMJq4dzQcKci7iJukBBczrTh1CLiBhz52APMWWJTE3VfMCpAkAqs7WQHZMh1QWM1fTBC3Fq7YA7tGG?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:33:50  rollup  (no log)
+11:33:50  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/58C1sM569EsUwziN2hHXwXEinrHb4n79CcHKssiqsAjFNj57WakmegRQDcCHQtCkUCfToA9g4PNkHNhCxWo1JrXq?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:34:01  rollup  LockPick
           https://explorer.solana.com/tx/5XprAGcb1V3TPCXuPhsKAnhNbyru2jHbvwoeobFHdhjS6fbu9dgNqC4fgjcApU37z7SnVUmzPUcCPMdMuJQ4axL7?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
@@ -45,7 +43,7 @@ duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4 · coin 2 · entry 1639802527 
           https://explorer.solana.com/tx/4NHsJ6ehn78NCT9j285LXHCP7zduBmNkbLp75R4BucrAsaENDMD7YETCX8BBVVfw9gQ2eLynoNHBNM4cNuEuUL26?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:34:03  rollup  StartPrivateDuel
           https://explorer.solana.com/tx/45DauMxTGoQnq3frKWPY48KR8b7pXAjsyTrBFKgfzuR7NrpaAFY56rvUcqEmDi8CL7EtMhfput8vkWz2Uh2NJ7r2?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:34:04  Solana  (no log)
+11:34:04  Solana  ProcessUndelegation
           https://explorer.solana.com/tx/2KhJNLiyWie2qXRqxF5GJqWRQFir5D8uote8okSdXqKeZuYUaLLAmXaDekH26UUAbNqYJxb2U6YsV3qGGDTBYKi2?cluster=devnet
 11:34:04  rollup  TickDuel
           https://explorer.solana.com/tx/3qCuLV7fW7dbiGt9uc6W2bS9jRwRCnCoEL6TQF1KJwB3poYPTYU7GeiaS1bBgAc4edKdruN6PjMm66YtpejQSmGU?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
@@ -171,7 +169,7 @@ duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4 · coin 2 · entry 1639802527 
           https://explorer.solana.com/tx/sD1LcrhtzS5Vo7wr9Vc6o2nRdFuPVaxEtsXhpan3fwZT3ZiqEZwsiciRBQpfAJASM8MbeNXZzAaKo6NGKsHa3Qf?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:35:03  rollup  TickDuel
           https://explorer.solana.com/tx/49EUfL6UUTnqgGAKbaobDE9w3M8gpGkazXJVkTehaDiZkGaW5NoGTp8o6cvQpvCGNW8m6ABN9G7iWvVytY17XNu3?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:35:04  Solana  (no log)
+11:35:04  Solana  ProcessUndelegation + SettleDuel
           https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet
 11:35:04  rollup  FAILED TickDuel
           https://explorer.solana.com/tx/2pvDEXh2TgrZpNRjLdx87LffEZQRMdeeru8mPAugb4HRo8NuD4HvGJS3KpCodfWVwrW8qxDiuTfxVcQmkPvQiE6N?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
@@ -197,3 +195,9 @@ duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4 · coin 2 · entry 1639802527 
           https://explorer.solana.com/tx/2fpqc6KKUd9cc2pm8XZ2UbGfNsYyMcXZg3pJ9kpbLVoyH3A4keXAmXUzhN5hDZApmcDxtysJqEDUfM8ukT5bjwKt?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:35:31  rollup  FAILED TickDuel
           https://explorer.solana.com/tx/iCJCh5eTxMtEs9ewUdW3Z1gRP51Vg5wfTYfuwGAVyUeyGmWTgc63jA5mqkVnU2qbsnMQjcVJmZ24PtFcfajaRKs?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+22:14:38  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/4L2CFZT3ZAux1uJVFc99ejaJmaXpkrm7Jx9nEojMBVD4vvwQCuEo4FMjNU7tMrYeJoNDWHpa1Mivrn4vgynsENiA?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+22:14:38  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/5YGvzhKVe95HXMYxUSBoUhwpeKQ4ZTN9gFhaSULQx3JLgMmg3kGbGrL9GwNuYGrcK3n7Z5qA4tdrAJxbnLtwoKye?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+22:14:38  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/tKdBBfxNsU9L8Lb13ggLWAqV9XxxUnjdsXsLYVr5PJDD3sUhwBPaFeHBnGQw4Mv3xa5YQyjXkpY3ZmXxs9jysah?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app

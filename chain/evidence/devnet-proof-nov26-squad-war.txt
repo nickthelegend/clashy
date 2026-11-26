@@ -1,0 +1,40 @@
+squad moon-pack-4d5oe 3KfTYbDNmggvcSJTn8RnHFwwoB6MSdyf13Ef1LbD8aSB · chest 30.00 USDC · trades -0.23 · wars 0W 1L
+squad night-owls-4d5oe HTYjcTYtiiUgHHrH1hMZnge4cY6o81L3ribJz5yMdk92 · chest 29.70 USDC · trades 0.15 · wars 1W 0L
+18 transactions on Solana devnet
+
+22:24:27  CreateClan
+          https://explorer.solana.com/tx/kHrWQhNCgwpxQ3VcgPV6VYCpdVhMGUHQK819QxuAVjEudnGQ51gBFeynTS1j1PwmgP85gWcgUvMYv7AteLYL87i?cluster=devnet
+22:24:28  CreateClan
+          https://explorer.solana.com/tx/3KZ5uW4VHPbcGp5ioxfjMHirYaHA2EzQBpnNbrEaSzGhnAqWjzSuhF9RxhXgN5Y5uW1WB11BY8riQappQBcvWaHE?cluster=devnet
+22:24:34  JoinClan
+          https://explorer.solana.com/tx/2LAnkb713tBTLNwupQhkLvxxKyQ6UA4YtATsLgbdtv9WPZn7Ti3mxU3wyYTc6TyG47QR6G1MeMJRWQPyfcLBVXAg?cluster=devnet
+22:24:51  DepositChest
+          https://explorer.solana.com/tx/4z2E1cJZDtfX98rqeVvzvyJ9n31AXSAi9Lw2y6BZLHpXcsjq522wVhkBa8u4m4VchjiuvHjCt37cexePvkoFHKU2?cluster=devnet
+22:25:00  DepositChest
+          https://explorer.solana.com/tx/4P6dpzDLPzyx1NnSAFA19pBktdDTvBDX8fhqnBQCDjCczf1MYrx27j3ixVER3PCpCGJuCWCdSfgsWzjpSe5PvdmR?cluster=devnet
+22:25:09  DepositChest
+          https://explorer.solana.com/tx/RkCxJrcKzvzW81csWUBBbCPHmacagv8xPH6iigS611zWKsiXMMRnHx15qfN8Je74iW7DWE4qAERtPNctzsDus1d?cluster=devnet
+22:25:16  DeclareWar
+          https://explorer.solana.com/tx/2B58Lqw4qWM85GTQTKZAJhoPSZZkrb5ZJrbJFDmXReyNfYX6NuRPtLj9CdF2dRHe3wU4Z7WoSeWebB56iciExJLD?cluster=devnet
+22:25:22  AcceptWar
+          https://explorer.solana.com/tx/636HkPj18SYR3UbaxwrRWirVfhjnfu2ubJ25P8umeaNZzVuP1szqP7JcdfHGchU1Pw5PPxvDsZpKrE4Xk2MxLSyr?cluster=devnet
+22:25:27  Propose
+          https://explorer.solana.com/tx/5CAeLyN1kVG92KhnpYjLEawbQPjWaXR8FpSQXGDaDu6DFb87qvWQC6xPmJneYrgCnpeK5V1SwvmiHWGv3CtaaP5n?cluster=devnet
+22:25:35  Vote
+          https://explorer.solana.com/tx/4nhou9vKyiyLZhrNd7vgfMFU8LVVnmZZUUFqmx552ZtjtzRNgcECUjDNwPh214MX4Jj8Sfwx4nGE1DhZXkANPg7K?cluster=devnet
+22:25:37  Vote
+          https://explorer.solana.com/tx/3p2AP1dGUkjmUTAWcEqdC8Vj9HMjh4sDmTn89iAfyVtan9SZ2J2SZHEWi8wDDLegjsxCDSGfcTrEs5mxtotmwYxZ?cluster=devnet
+22:25:39  ExecuteProposal
+          https://explorer.solana.com/tx/3pCMsHVHtwrSTWTWmVWCkxRu8Wohe3HPxqRRPFAnddCZ8Fes8wPeXVoWnCotHknhk9UUUT9w7ZtHHXCeSdVUwWkU?cluster=devnet
+22:25:44  Propose
+          https://explorer.solana.com/tx/24YEDBBtHst7sm5krXKhajKXEvghJ7rAjN19smTj1gAqtrrNxMGSrm7PpX4NR2AyYBhTkTkgFwWfBiTzBEqJaEHQ?cluster=devnet
+22:25:48  Vote
+          https://explorer.solana.com/tx/2thEAMem7pKqXC9utuQo59xtMQJA6dgB3XcLQcbbPxAtoL8dtF15sEMxtriqs2ep5vAuvVwztTPrTQgERzg4dUHo?cluster=devnet
+22:25:49  ExecuteProposal
+          https://explorer.solana.com/tx/2LmMEKxWEsqP1Y1JDkfAkQa2pcPQJ7jpTkgrwKPSNr1TrKRTP36u25BCFS6JHCtNANkTHVfSQ6WPyhU91gCv7Gh3?cluster=devnet
+22:30:52  ClosePosition
+          https://explorer.solana.com/tx/4rUBxYMVhnxr76Q6eMt7gTyn7YbArN3GKDNC7Axc4G7xvWQynhA1RxjvMJrdBLX5pLPa5zUXPDCZPZNCW1VBc997?cluster=devnet
+22:30:55  ClosePosition
+          https://explorer.solana.com/tx/4MiGDe9o67GKRn2wjVh3z7x4koUR2f4KHZEy2HVxkjyAsKKpjPQqDN31tMdUd1MoLB4GsaXcSR4v56YbQv6QgVtf?cluster=devnet
+22:30:58  SettleWar
+          https://explorer.solana.com/tx/34zEMU21YnJfPNWwv8uB6mUizMwwZvBybntn61LTWpWwSD8wWq12x4FfwezSg8R76V7qSYwneLNMpYi3demDtsxL?cluster=devnet

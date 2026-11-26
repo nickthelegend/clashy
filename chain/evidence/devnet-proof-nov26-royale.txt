@@ -1,31 +1,31 @@
 royale LifRbotyx5vkJBcCRYDKZPutHbhV6gNofAaGguEsx1u · coin 1 · players 3 · rounds 5 · lives 0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0 · status 3
-91 transactions (82 on the rollup)
+93 transactions (84 on the rollup)
 
 11:22:57  Solana  CreateTournament
           https://explorer.solana.com/tx/5uMqvrtkjc2mFNAm5dKhBLh3Hp5aP1G8YB1ntmb1T25TqjQrqPdgB7GPhsjZy5ebRnYF391wX39qzCmdnvKQVnSv?cluster=devnet
 11:22:58  Solana  JoinTournament
           https://explorer.solana.com/tx/E1gdzMKuEFTibNvaB9AeCoboddMwdSJ9jfSjJBQPCtBAgaETc31vvi8cAtmj1mQretD2zVtfBBrTTYTJ1sGJPGm?cluster=devnet
-11:22:58  rollup  (no log)
+11:22:58  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/3RerdGiUAReMyE9rz8gsTek95jnCgK9TvScso95cPEuQMw85ie1fTvLmziWrPmHsD9avP6wjXCiAq3EvrYDaU29H?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:22:59  Solana  RequestTournamentCoin
           https://explorer.solana.com/tx/126XozLjUb7XTgBLU23w37FqvQvu986k9Ti1LprLCb3Jz5hpnmP3NNriqoWC2tUhmSQ8XxMftztixYByGMKHPs4b?cluster=devnet
-11:22:59  rollup  (no log)
+11:22:59  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/4JwkrC4N5HwqeEqdLCPeHeW1BGzrkZb2hoS5au4QrLRShVU24XqyssZpscBxP1sgQxjj1hdUTphvoZaiMzpMpSnV?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:23:00  Solana  FAILED MagicBlock VRF oracle
           https://explorer.solana.com/tx/2tZR9GE45QrKshLuKGWRtXuusMp4Jn26sDxjsYUmGwMp5qfwnmKY3d5uSVWFLa21CzuvjGP2Qxua1GcmFyZJ3BQJ?cluster=devnet
 11:23:00  Solana  TournamentCoinCallback
           https://explorer.solana.com/tx/GJ3D257YSjgZwgPCW7G4jELLFQ8ZYUKs6RLSc3qMr81PwU8a7GeJDNooYcUwzudh37ZzaebHBP9AtE7cVfcUAmV?cluster=devnet
-11:23:00  rollup  (no log)
+11:23:00  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/E6LRK1qSiuyJsFiV9AXKxWpUB5uogpMUkzJ9ycgnkb5afQQaDr8KzQVQnMqrpniBieQnESxGaVixLVrNB1MxJN8?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:23:01  rollup  (no log)
+11:23:01  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/4ZVBNrJFyb6VCYw4aeTUtV5Amj7LTrJdumgtkudeUCCqwJ74W22SpLXGogeady3Vt3d6za914PYHPuTuCnaL4Vgv?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:23:15  Solana  JoinTournament
           https://explorer.solana.com/tx/CMSo7KNMDiULmzNeKmuEasW6ejGFKmBDuN4vCrTXp7jcdopEQ7jLG4stP3wt187rYDpHGPUkYvZafXzwJwdYhry?cluster=devnet
-11:23:15  rollup  (no log)
+11:23:15  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/526ewaD8msgBBXpoxbJ9bMc9rgjnP8WTWVLC4nTQqvzrcoys8aR9y9ApEv1gHwxhN5xwMXbEjii446LFaWtiipDc?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:23:16  Solana  JoinTournament
           https://explorer.solana.com/tx/CBPGbdhh41PVp1PHBjBzYhnvzz16a4AwytjqBe6Jhga2UPCeiA2vfExUcAian2tgcVzHBXcsPvWBV2xTPbEx94E?cluster=devnet
-11:23:17  rollup  (no log)
+11:23:17  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/3x2zDkHjaSR74W97P1wmyC5S3VFNKShfi4kb1Yn3vL2GdyW78j3BpgjUuxQnLKsWUXFcyjMDAVSCstEX2xn1mhPm?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:23:20  Solana  DelegateTournament
           https://explorer.solana.com/tx/3TdkEFBNfHBnQCpDgt4uurJTBGGEwZoeQY8Bkp3FRJAqsnXYbcohbPECFepWMWpiTUCXuXMuGGEvwav53ThurYUh?cluster=devnet
@@ -35,7 +35,7 @@ royale LifRbotyx5vkJBcCRYDKZPutHbhV6gNofAaGguEsx1u · coin 1 · players 3 · rou
           https://explorer.solana.com/tx/3ewMESbWXmq3PWaYAXJ9C9XKWvzt2BpD39At9kZYcAgzNbdSacnDqfWJ8JXd9yqsTvFMgptzSkdFMXBTTa2ohADK?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:23:22  rollup  StartTournamentCranked
           https://explorer.solana.com/tx/5RvUw9xunCkn4vsLyBo2b4t5jZ6R846TGj9cobKpKu4EPqbbMKXZFghCUnyYrJPNeFa5WRG12tS6zzMi6b3yWVpc?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:23:22  rollup  (no log)
+11:23:22  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/3NxSNQj9xB2WV5N4gcPVPbX51kE76diSf3jcnTH6ajsocQoQL3runDFgx7RLnvMQELggYRcpbYwvNkGt2fu3KeQo?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:23:23  rollup  TickRound
           https://explorer.solana.com/tx/2q2YCwTTzfefQpmCj4Ttir75SMgdWfWCT9fmkPZtaLQqeitYneFpg2oKmdSxPU84wEM99WECSeo3iY2x5Wgf4fn8?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
@@ -161,25 +161,29 @@ royale LifRbotyx5vkJBcCRYDKZPutHbhV6gNofAaGguEsx1u · coin 1 · players 3 · rou
           https://explorer.solana.com/tx/QoeZy8usCvMKVpNPxkATcoPSGnwMxNCQjKmsHu3L1ku7nfuB9KgPaFE4T94rHXbgELwXgVnu774N11N1rm3q4n9?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
 11:24:12  rollup  TickRound
           https://explorer.solana.com/tx/5nANTU9cKLH5j88g29BL9FFXX8SCg5H4KbE4VF3XJuR677oh6AVx3MwzJtsnEjaX1vzutCbX5CaQBMhQkyBdjGiJ?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:13  Solana  (no log)
+11:24:13  Solana  ProcessUndelegation + SettleTournament
           https://explorer.solana.com/tx/KauWRCg6xyYhYCB4zuWN75UxYVQfVfGWBBgg9iqnhKDh1B4a177is8b3Z4e9h2aMh3KDmjRVXT5F5w5jNWACi87?cluster=devnet
-11:24:13  rollup  FAILED (no log)
+11:24:13  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/3T1biiDomtWocQMBmM71eUjAUMjYsuSG975B25cnP9L47HKFeVBnwTdATBWCmSJqatyA85s2PgrcomWGEAgYnart?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:13  rollup  FAILED (no log)
+11:24:13  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/28tyqzHUN5MSHeytwumdqQr4FN8WxnLVu7Eepevb9Rb1URuVVJBZayGYzy3BtMxMZgSKkgWbRs9R8rZTorihBaeR?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:13  rollup  FAILED (no log)
+11:24:13  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/5YHiZPP5wGr4MB9HapvoCQVs3RAXGEhz78yBzWw5NN7zTAbXaWi63jqiC7fankBMJTqvMoULECysyK5UZGYfg4zQ?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:13  rollup  (no log)
+11:24:13  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/X8Mc2DpZhsGRHYCbgGW4VyFYiBjMvQVBV5thccwg2qK28Kn5ZsdSztBDKeHX1p7S48Y7KQ5YNBCFL79rGnXeJjM?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:13  rollup  (no log)
+11:24:13  rollup  MagicBlock validator: account sync
           https://explorer.solana.com/tx/5HiEnvbByNRw8XnjhmkCutuWNcHV793aGniu9MJxMPfVWXhCkwtTytU38P2n5sboeeXfysHWJPdLiogsebM7m49L?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:14  rollup  FAILED (no log)
+11:24:14  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/4nc6SMJnMYyXJqqRbrZhHhDx6iHRrtyUw9ftRET1L8EgFRLThQETPTdWKXV6bmbhHQqGAAzKakog6Bed6S1aZkrC?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:14  rollup  FAILED (no log)
+11:24:14  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/WaR2YVF8Qu48YP5vYwDtkbDmWTQykDaVSAXoAYeeaphcTQPPk4DoasMrzdptMpFbrzBa8Z8dcBKoAb9iqLB78zz?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:14  rollup  FAILED (no log)
+11:24:14  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/4EteyHQHv44jCtqVRpcxYb25doVBNppzmejhBRCmgbMBFefUJfJtV42GHHvYb7v5ptTzusNHnJDeMZnSAtbJdAjK?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:15  rollup  FAILED (no log)
+11:24:15  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/3ZkRT32RAV1PW1LR4PQMkAQhQEPGx8UEiX6z6Dad6ZpcM4eimGZ7JCkx9pwgG3wUHzWHkBC3jwnwBFk81AAh7yfu?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
-11:24:16  rollup  FAILED (no log)
+11:24:16  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
           https://explorer.solana.com/tx/3TtcYJJfH7nq6sz7PLBy42vdPH2ScWdFVFw7TWFJPpcwcAkBdHKE8ajoDVy2W2BV8n1tmw2A1MPcN4WT1rycrZwm?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+21:28:42  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/21G8dBeDZ2Cm9PJaQCC6yx2p9qG8F7E9FEbvyX9cv46XpzuPVQdGVdhMn7pZgnRvYC7eMuCRosVMuoyRpBPgHCfs?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+22:15:50  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/5kmxebc22d56sbFMjxdKXi1CLJEHcN4tkKUBQk6ca3EW1D7UufKkhGcskRUCrsyuZWS2qAqK31NmFsdLyQFt5VWs?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app

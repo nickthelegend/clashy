@@ -4,6 +4,14 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { BASE_URL, ER_URL, baseProgram, programId } from '../tests/common.ts';
 
+/** getTransaction over raw JSON-RPC with version 1 allowed: web3.js only parses legacy and v0, and the Magic Action
+ *  settle that MagicBlock's validator sends home is a version-1 transaction. */
+async function rawTx(conn: Connection, sig: string): Promise<{ meta?: { logMessages?: string[] } } | null> {
+  const r = await fetch(conn.rpcEndpoint, { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTransaction', params: [sig, { maxSupportedTransactionVersion: 1, encoding: 'json', commitment: 'confirmed' }] }) });
+  return ((await r.json()) as { result?: { meta?: { logMessages?: string[] } } }).result ?? null;
+}
+
 const base = new Connection(BASE_URL, 'confirmed');
 const rollup = new Connection(ER_URL.replace(/\?.*$/, ''), 'confirmed');
 const erHost = ER_URL.replace(/\?.*$/, '');
@@ -27,10 +35,10 @@ async function collect(conn: Connection, layer: Row['layer']) {
     const sigs = await conn.getSignaturesForAddress(acc, { limit: 100 }).catch(() => []);
     for (const s of sigs) {
       if (rows.has(s.signature)) continue;
-      const tx = await conn.getTransaction(s.signature, { maxSupportedTransactionVersion: 0 }).catch(() => null);
+      const tx = await rawTx(conn, s.signature).catch(() => null);
       const logs = tx?.meta?.logMessages ?? [];
       const names = logs.filter((l) => l.startsWith('Program log: Instruction: ')).map((l) => l.slice(26));
-      const ix = names.length ? [...new Set(names)].join(' + ') : logs.some((l) => /Vrf1RN/.test(l)) ? 'MagicBlock VRF oracle' : logs.some((l) => /DELeGG/.test(l)) ? 'MagicBlock delegation program' : '(no log)';
+      const ix = names.length ? [...new Set(names)].join(' + ') : logs.some((l) => /Vrf1RN/.test(l)) ? 'MagicBlock VRF oracle' : logs.some((l) => /DELeGG/.test(l)) ? 'MagicBlock delegation program' : logs.some((l) => /MagicRoot|CloneAccount/.test(l)) ? 'MagicBlock validator: account sync' : logs.some((l) => /eHyd5BU8/.test(l)) ? 'MagicBlock scheduler: a run queued before the cancel' : '(no log)';
       rows.set(s.signature, { t: s.blockTime ?? 0, layer, ix, sig: s.signature, err: !!s.err });
     }
   }
