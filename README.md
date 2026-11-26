@@ -1,7 +1,7 @@
 # Clashy
 
-**Trade against people, not the house.** Clashy is a mobile-first PvP trading game on Solana: 1v1 Knockout Duels,
-Royales and Clan Wars. The live part of an on-chain clash (sealed picks, scoring every second, Royale rounds) runs on a
+**Trade against people, not the house.** Clashy is a mobile-first PvP trading game on Solana: 1v1 clashes, perps
+clashes, Royales, and squads that pool one chest, vote every call and go to war with rival squads. The live part of an on-chain clash (sealed picks, scoring every second, Royale rounds) runs on a
 MagicBlock Ephemeral Rollup; escrow and settlement are on Solana. The 150 practice games run off chain on live prices.
 Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (Entertainment Finance).
 
@@ -11,6 +11,23 @@ The loop: two players stake, MagicBlock VRF rolls one coin for both, each locks 
 TEE rollup, a crank scores the clash every second for 60 s, and a Magic Action pays the winner on Solana.
 [Tests](TESTING.md) · [Submission form](HACKATHON_SUBMISSION_FORM.md) · [MagicBlock design](docs/MAGICBLOCK.md) ·
 [Devnet record](docs/DEVNET.md) · [Security audit](docs/AUDIT.md)
+
+## What Clashy does
+
+Every real-money mode below is an on-chain game on Solana devnet (test USDC); the live part runs on MagicBlock.
+Instruction names link to the program, [`chain/programs/clashy/src/lib.rs`](chain/programs/clashy/src/lib.rs).
+
+| Mode | How it plays | On chain, and the MagicBlock piece |
+|---|---|---|
+| **1v1 Clash** | Two players stake from $5. One coin is rolled for both; each calls up or down in secret; 60 s live (or a stock over an hour); the better call takes the pot minus a 3% rake. | Escrow `open_duel` / `join_duel` on Solana · **VRF** coin roll (`request_coin_roll`, `coin_roll_callback`) · picks sealed in the **Private ER (TEE)** with a **session key** (`lock_pick_session`) · **crank** scores every second (`tick_duel`) · **Magic Action** pays out on Solana |
+| **Perps clash** | Long or short with leverage (up to 50× in the app, 100× in the program) for 60 s; liquidated means out. | The same duel pipeline; each crank tick checks liquidation |
+| **Royale** | Up to 16 players, $2 in. A call every round; a wrong call costs a heart; the players with the most hearts left split the pot. | **VRF** coin · round calls signed with **session keys** on the rollup (`call_round_session`) · **crank** resolves rounds (`tick_round`) · payout from the TEE validator |
+| **Squads** | Any number of members pool USDC in one shared chest; a deposit buys chest shares. Any member proposes a call (coin, up or down, leverage up to 20×, size); members vote, weighted by their shares; the captain places it at the oracle price. | Program-owned chest token account · `create_clan`, `join_clan`, `deposit_chest`, `propose`, `vote`, `execute_proposal`, `close_position` |
+| **Squad war** | A captain stakes part of the chest against a rival squad; the rival accepts with the same stake; both squads trade by vote during the window; the better return takes both stakes into its chest. | `declare_war`, `accept_war`, `settle_war`, scored at MagicBlock oracle prices |
+| **Weekly Cup** | Best profit this week (clash winnings plus Stash stock gains); resets Monday. | Read from program accounts, nothing entered by hand |
+| **Squad chat and the calls feed** | Squad channels and a public feed of calls. | Channels and boards delegated to the rollup (`post_message`, `post`) |
+| **Stash** | Save USDC, set spending limits and breaks; buy tokenized stocks (mainnet only: devnet has no xStock pool). | `stash_save`, `set_limits`, `take_break`, `stash_invest` |
+| **150 practice games** | Memes, perps, stocks, crypto and party games on live prices with practice money. | Off chain, on purpose: free and instant |
 
 ## Status: live on Solana devnet with MagicBlock's Private Ephemeral Rollup, VRF, cranks and Magic Actions (deployed Nov 22, upgraded Nov 25, 2026)
 
