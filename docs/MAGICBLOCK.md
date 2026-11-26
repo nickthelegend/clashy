@@ -6,8 +6,9 @@ test that proves it.
 
 **Where it is proven:** on the local MagicBlock stack (validator 1.1.1, `chain/evidence/suite-magicblock.log`) and on
 Solana devnet with MagicBlock's Private Ephemeral Rollup `https://devnet-tee.magicblock.app`, validator
-`MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` (Nov 25, `chain/evidence/devnet-mb-test.log`,
-`chain/evidence/devnet-private.log`, and one private duel played through the app, `chain/evidence/devnet-proof.txt`).
+`MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` (Nov 25: 4/4 in one run, `chain/evidence/devnet-mb-cancel.log`, after
+`devnet-mb-test.log` and `devnet-private.log`; one private duel played through the app, `chain/evidence/devnet-proof.txt`;
+Nov 26: a duel, a Royale and a squad war through the app, `chain/evidence/devnet-proof-nov26.md`).
 All of this code was written after the Nov 20 kickoff and has not been security-audited yet.
 
 ## One clash, end to end
@@ -37,8 +38,9 @@ failed because the duel had left the rollup.
 - Code: `delegate_duel`, `delegate_private_duel`, `delegate_tournament`, `delegate_feed`, `delegate_board`,
   `delegate_channel`, `delegate_keeper`; commits in `check_duel`, `tick_duel`, `tick_round`, `void_*`,
   `abandon_private_duel` (`chain/programs/clashy/src/lib.rs`).
-- Moves on the rollup cost nothing. Players hold 0 SOL; a sponsor relay pays every Solana fee and rent, and the
-  keeper's escrow pays for Magic Actions.
+- Moves on the rollup cost nothing. Players hold 0 SOL; a sponsor relay pays every Solana fee and rent. Magic Actions
+  are sent by MagicBlock's TEE validator; the keeper's escrow is the account MagicBlock can charge for them, and
+  its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27).
 - The TEE rollup accepts transactions only with an auth token (a signed challenge, valid 30 days;
   `chain/tests/common.ts`). Public reads need none.
 - On Nov 25 the feeds, boards and squad channel were brought home from devnet-as with `admin_undelegate` and
@@ -57,7 +59,9 @@ failed because the duel had left the rollup.
 - `open_private_picks` creates one `Pick` account per player and pre-funds each with the rent of its permission.
 - `lock_pick` (on the rollup, signed by the player) creates the Pick's ephemeral permission, private with that player
   as the only member, and writes side and leverage. The rival cannot read it (checked on the devnet TEE, see the
-  test below); a second lock is refused.
+  test below); a second lock is refused. The pick is private from the rival until the start, not from Clashy: the
+  app's lock is co-signed by the sponsor relay, so the relay sees the side and leverage in the transaction it pays
+  for. The test checks account reads only, not whether the rival can fetch the lock transaction itself.
 - `start_private_duel` refuses to start until both picks are locked. It then copies them into the duel, flips both
   permissions public, starts the clock, schedules the crank and sends the Picks home. `close_pick` returns their rent
   after settlement. `abandon_private_duel` refunds both stakes if a player never locks.
@@ -94,6 +98,8 @@ failed because the duel had left the rollup.
 ### Magic Actions (settlement on Solana in the same intent)
 - `settle_duel_action` / `settle_tournament_action` build a post-undelegate `CallHandler` with every account
   settle_duel / settle_tournament needs (vault, auth, players' USDC accounts, Elo records, treasury, rent payer).
+- On devnet the action lands as one version-1 Solana transaction signed by the TEE validator `MTEWGuqx…`:
+  `ProcessUndelegation` then `SettleDuel` (duel `3TRqj5wU…`, Nov 25) or `SettleTournament` (Royale `KauWRCg6…`, Nov 26).
 - Attached in `check_duel`, `void_duel`, `tick_duel`, `resolve_round`, `void_tournament`, `tick_round` and
   `abandon_private_duel`. Actions are not atomic. If one ever fails, the game still comes home FINISHED and anyone
   can call settle by hand (the app does so after 8 s), so money is never stuck.
@@ -103,12 +109,12 @@ failed because the duel had left the rollup.
 
 ### Keeper (a delegated fee payer PDA)
 - A scheduled instruction carries no wallet signature, so the `keeper` PDA (seeds `["keeper"]`, delegated once by the
-  admin) signs the commits and pays for Magic Actions through the validator's magic fee vault
-  (`["magic-fee-vault", validator]`). The commits are paid for, not sponsored; whether that avoids the
+  admin) signs the commits and passes the validator's magic fee vault (`["magic-fee-vault", validator]`) with the
+  Magic Actions. The commits are paid for, not sponsored; whether that avoids the
   10-sponsored-commits limit seen on the local stack (Nov 18) has not been tested on devnet.
-- Its Solana escrow (`["balance", keeper, 255]`) holds SOL for the actions. On devnet: keeper
-  `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK`, escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` (0.0507 SOL
-  before the Nov 25 runs).
+- Its Solana escrow (`["balance", keeper, 255]`) is the account MagicBlock can charge for Magic Actions. On devnet:
+  keeper `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK`, escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE`;
+  its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27), so no Magic Action has been charged to it so far.
 - `keeper.ticks` and `keeper.finished` count crank ticks and finished games; the app's "Live on MagicBlock" screen
   shows them.
 
@@ -152,8 +158,9 @@ Results (Nov 25):
 | Where | Result | Log |
 |---|---|---|
 | Local stack | 4/4 pass; cranked duel settled 30.6 s after the start, keeper ticks 63 → 94; cranked Royale paid 5.82 USDC | `chain/evidence/suite-magicblock.log` |
-| Devnet TEE, run 1 | 3/4 pass; cranked duel on BTC, 31 ticks, settled by the Magic Action 31.8 s after the start; cranked Royale paid 5.82 USDC with round calls by session key; keeper abuse. The private duel failed on a devnet mint timeout while funding a test player | `chain/evidence/devnet-mb-test.log` |
+| Devnet TEE, run 1 | 3/4 pass; cranked duel on BTC, 31 ticks, settled by the Magic Action 31.8 s after the start; cranked Royale paid 5.82 USDC (the log does not print the session-key calls); keeper abuse. The private duel failed on a devnet mint timeout while funding a test player | `chain/evidence/devnet-mb-test.log` |
 | Devnet TEE, run 2 | private duel passed; A sees side 1, B sees nothing | `chain/evidence/devnet-private.log` |
 | Local stack, after the crank-cancel fix | 4/4 pass, crank cancelled after each game | `chain/evidence/suite-magicblock-cancel.log` |
 | Devnet TEE, after the crank-cancel fix (upgrade `3LJSPdfk…`) | 4/4 pass in one run: cranked BTC duel settled 31.6 s after the start; cranked Royale paid 5.82 USDC; private duel, A sees side 1, B sees nothing; no failed tick in the 8 s after any finish | `chain/evidence/devnet-mb-cancel.log`, trail `chain/evidence/devnet-proof3.txt` |
-| Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 97 transactions, 85 on the rollup | `chain/evidence/devnet-proof.txt` |
+| Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 100 transactions, 88 on the rollup | `chain/evidence/devnet-proof.txt` |
+| Devnet, through the app (Nov 26) | private ETH duel (99 transactions, 89 on the rollup), 3-player Royale with 12 session-key calls (93, 84 on the rollup), squad war (18 Solana transactions) | `chain/evidence/devnet-proof-nov26.md` |

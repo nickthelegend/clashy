@@ -10,7 +10,7 @@
 |---|---|---|---|
 | 1 | Run the read-only live check: `cd projects/clashy/chain && npx tsx scripts/devnet-livecheck.ts`; expect `no FAIL` (Nov 26 result below). | Nov 27 03:30 | 09:00 |
 | 2 | Decide on eligibility: pre-kickoff code is disclosed in the form; if unsure, ask in the Blitz Telegram group now, not at 13:00. | Nov 27 03:30 | 09:00 |
-| 3 | Push the six local docs commits: `git -C projects/clashy log --oneline origin/main..main`, then `git push origin main` (fast-forward). | Nov 27 03:45 | 09:15 |
+| 3 | Done: every commit is pushed (`git -C projects/clashy log --oneline origin/main..main` is empty). | Nov 27 03:45 | 09:15 |
 | 4 | Make `github.com/nickthelegend/clashy` public (Settings → General → Change visibility), or invite GitHub user `jonasXchen` (Settings → Collaborators); the secrets audit below is clean. | Nov 27 04:00 | 09:30 |
 | 5 | Website URL: paste the repo URL (zero work), or deploy `web/` as a static site on your Vercel/Netlify and point `clashy.fun` at it; never paste the parked page. | Nov 27 05:00 | 10:30 |
 | 6 | Second player: book a friend for a 20-minute slot to play player B in a second browser window on your Mac; fallback is two device-wallet players, said on screen. | Nov 27 05:30 | 11:00 |
@@ -65,6 +65,9 @@ Read-only (`chain/scripts/devnet-livecheck.ts`: no key loaded, nothing signed or
 | Fee sponsor (relay) `AjdLmw…` | PASS: 0.6176 SOL, about 8 film takes at ~0.07 each |
 | Price crank key `GGeCjD…` | PASS: 0.2895 SOL (base pushes cost about 0.09 SOL a day) |
 | Rake treasury, test USDC | PASS: 7.44 test USDC collected; mint supply 18,200 (no value) |
+
+The escrow row's label is the script's own. The escrow has never been debited on devnet (0.05065024 SOL before the
+Nov 25 runs and on Nov 27), so no Magic Action has been charged to it so far.
 
 What it cannot prove without sending a transaction: that MagicBlock's scheduler accepts a new crank task today. The
 last proof is the keeper's 13th finished game, on Nov 25 evening. The relay, crank, social server and app are not running

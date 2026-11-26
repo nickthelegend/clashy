@@ -188,12 +188,12 @@ Status as of Nov 25, 2026. "Devnet" means proven on Solana devnet with MagicBloc
 | MagicBlock part | Clashy uses it for | Status |
 |---|---|---|
 | Ephemeral Rollups (Private Ephemeral Rollup, TEE) | Duel scoring, Royale rounds, price feeds, the calls board, squad chat (delegate, then commit and undelegate) | **Devnet** on `devnet-tee.magicblock.app` since Nov 25 (devnet-as Nov 22–25); local stack |
-| Private picks in the TEE | Each player's long/short is a private account only that player can read until the start | **Devnet**: A read A's pick, B read nothing (`devnet-private.log`); one in-app private duel (`devnet-proof.txt`) |
+| Private picks in the TEE | Each player's long/short is a private account the rival cannot read until the start (private from the rival, not from Clashy's relay, which co-signs the lock) | **Devnet**: A read A's pick, B read nothing (`devnet-private.log`); one in-app private duel (`devnet-proof.txt`) |
 | VRF | Coin roll for duels and Royale (`vrf_required = true` refuses the commit-reveal fallback) | **Devnet** (base queue) and local (`vrf-oracle`). Callback fixed for SDK 0.18 on Nov 25 |
 | Pricing oracle (Pyth Lazer on the rollup) | SOL, BTC and ETH read `PriCems5…` PriceUpdateV2 accounts; stocks keep Clashy feeds | **Devnet** for SOL, BTC and ETH since Nov 25. **Next:** use it on the Solana side too and retire the base-feed crank (§5.2) |
 | ER cranks (scheduled tasks on the rollup) | `tick_duel` and `tick_round` every 1,000 ms, so games end even if every player closes the app | **Devnet**: cranked duel settled 31.8 s after the start; in-app duel ticked once a second for 60 s |
 | Magic Actions | Run `settle_duel` / `settle_tournament` on Solana right after the final commit | **Devnet**: cranked duel and Royale paid with no manual settle. Not atomic; the app settles by hand if one fails |
-| Keeper (delegated fee-payer PDA) | Signs crank commits, pays Magic Actions through the magic fee vault | **Devnet** (`TRpZrv…`) |
+| Keeper (delegated fee-payer PDA) | Signs crank commits and passes the magic fee vault with Magic Actions; its escrow has not been debited on devnet | **Devnet** (`TRpZrv…`) |
 | Magic Router | One RPC that routes each transaction to the rollup or to Solana | Not used. Devnet only (`devnet-router.magicblock.app`); no mainnet router URL is documented |
 | Session keys | No wallet pop-ups for in-game moves | `lock_pick_session`, `call_round_session` **deployed on devnet**; the devnet Royale test used them, and the app signs private picks and Royale calls with a 6-hour device session key (relay-checked) |
 | SDK version | `ephemeral-rollups-sdk` `=0.18.0` (`anchor-compat`, `vrf`, `crank`, `access-control`) | 0.20 needs Anchor 1.2 (`chain/programs/clashy/Cargo.toml`); the program stays on Anchor 0.32.1 for now |
