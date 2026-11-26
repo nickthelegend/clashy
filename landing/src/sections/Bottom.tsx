@@ -40,7 +40,7 @@ const MODES: { art: string; name: string; line: string; tint: string; tag: strin
   { art: 'royale', name: 'Royale', line: 'Up to 16 players. Call up or down each round; a wrong call costs a heart.', tint: '#3a1230', tag: 'On devnet' },
   { art: 'diamond', name: 'Diamond duel', line: 'Hold longer than the bot. Sell higher.', tint: '#10284a', tag: 'Practice' },
   { art: 'double', name: 'Double or nothing', line: 'Fifteen-second calls at nearly 2×.', tint: '#3a2a0c', tag: 'Practice' },
-  { art: 'war', name: 'Clan war', line: "Your clan's chest against theirs. The better return takes the pot.", tint: '#2a1440', tag: 'On devnet', video: 'clan-war-loop' },
+  { art: 'war', name: 'Squad war', line: "Your squad's chest against theirs. Members vote every call; the better return takes both stakes.", tint: '#2a1440', tag: 'On devnet', video: 'clan-war-loop' },
   { art: 'line', name: 'Draw the line', line: 'Draw the next minute. The closest line wins.', tint: '#1a1c4a', tag: 'Coming' },
   { art: 'cup', name: 'Weekly cup', line: 'Stock profit plus clash winnings this week. Top three take the podium.', tint: '#3a2a0c', tag: 'In the app' },
   { art: 'bounty', name: 'Bounty', line: "Beat a top player's week and take the bounty.", tint: '#3a1230', tag: 'Coming' },

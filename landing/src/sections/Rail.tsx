@@ -15,9 +15,9 @@ const RANKS = ['Rookie', 'Saver', 'Starter', 'Steady', 'Investor', 'Analyst', 'L
 const CARDS: Card[] = [
   {
     n: '01',
-    label: 'Clans',
-    title: 'Your clan vs theirs.',
-    body: 'Pool a war chest with your crew, vote on trades and take on rival clans. No real money in the beta.',
+    label: 'Squads',
+    title: 'Your squad vs theirs.',
+    body: 'Pool one chest with your crew, vote every call up or down, then stake it against a rival squad. Test USDC on devnet; no real money in the beta.',
     bg: '#F0468C',
     ink: '#fff',
     ui: (
@@ -31,8 +31,8 @@ const CARDS: Card[] = [
           <img src="/art/crest-bolt.webp" alt="" width="48" height="48" />
         </div>
         <div className="ui-tugn">
-          <span>Sample clan +14%</span>
-          <span>Rival clan +9%</span>
+          <span>Sample squad +14%</span>
+          <span>Rival squad +9%</span>
         </div>
       </div>
     ),
@@ -52,7 +52,7 @@ const CARDS: Card[] = [
           ['diamond', 'Diamond duel'],
           ['royale', 'Royale'],
           ['double', 'Double or nothing'],
-          ['war', 'Clan war'],
+          ['war', 'Squad war'],
         ].map(([t, n]) => (
           <div key={t} className="ui-mode">
             {LOOPS.has(t) ? (
@@ -205,7 +205,7 @@ export function Rail() {
             <br />
             with friends.
             <br />
-            <span>Clans, streaks and your rank.</span>
+            <span>Squads, streaks and your rank.</span>
           </h2>
           <p>Everything around the duel that keeps you coming back.</p>
         </motion.div>
