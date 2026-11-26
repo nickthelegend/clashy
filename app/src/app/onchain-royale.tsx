@@ -25,6 +25,7 @@ import { Lottie } from '@/ui/lottie';
 import { BigCta, EDGE, GOLD, Hearts, HowItWorks, OpenRoyale, RoundRing, SURFACE, Segmented, StatusPill, Table, TableRoll, type Seat } from '@/ui/royale';
 import { Sheet } from '@/ui/sheet';
 import { C, F, FONT, S, fmtUsd } from '@/ui/tokens';
+import { Sprite } from '@/ui/sprite';
 
 const ACTIVE = 'clashy:chain:tour';
 const NO_COIN = 255;
@@ -255,6 +256,7 @@ export default function OnchainRoyale() {
               <View>
                 <ClayLoop name={survived ? 'win' : me >= 0 ? 'ko' : 'royale'} size={170} loop={survived} style={{ borderRadius: 36 }} />
                 {me >= 0 ? <Lottie name={survived ? 'win' : 'knockout'} size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
+                {me >= 0 ? <Sprite name={survived ? 'bo-win' : 'bo-ko'} size={96} style={{ position: 'absolute', left: -104, bottom: -6 }} /> : null}
               </View>
               <Text style={{ ...FONT.display, fontSize: 38, color: me < 0 ? C.ink : survived ? C.up : C.down, marginTop: 8, letterSpacing: -1, textAlign: 'center' }}>
                 {me < 0 ? 'Royale over' : survived ? 'You survived' : 'Knocked out'}
@@ -323,7 +325,11 @@ export default function OnchainRoyale() {
                   <StatusPill text={`Round ${tour.round} / ${tour.maxRounds}`} color={GOLD} dot={false} />
                   <StatusPill text={`${aliveNow} Left`} color={C.opp} />
                 </Row>
-                <View style={{ marginTop: 16 }}><RoundRing sym={sym ?? 'SOL'} left={left} total={tour.roundSecs} /></View>
+                <View style={{ marginTop: 16, alignSelf: 'stretch', alignItems: 'center' }}>
+                  <RoundRing sym={sym ?? 'SOL'} left={left} total={tour.roundSecs} />
+                  {/* your clay fighter: takes a hit when a round costs you a heart, knocked out when you're out */}
+                  {me >= 0 ? <Sprite key={`me-${lostK}-${tour.lives[me] > 0}`} name={tour.lives[me] === 0 ? 'bo-ko' : lostK > 0 ? 'bo-hit' : 'bo-idle'} size={84} style={{ position: 'absolute', left: 0, bottom: 0 }} /> : null}
+                </View>
                 <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: move > 0 ? C.up : move < 0 ? C.down : C.ink, marginTop: 10 }}>{price ? fmtUsd(price) : '…'}</Text>
                 <Txt v="small">{sym ? coinName(sym) : 'Coin'} from {fmtUsd(tour.roundPrice)} · {movePct >= 0 ? '+' : ''}{movePct.toFixed(3)}%</Txt>
                 <Text style={{ ...FONT.semi, fontSize: 20, color: left > 0 && left < 3 ? C.opp : C.muted, marginTop: 8 }}>{left > 0 ? `${Math.ceil(left)} S to call` : 'Calling it…'}</Text>

@@ -27,6 +27,7 @@ import { ART, BackBtn, Btn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
 import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
+import { Sprite } from '@/ui/sprite';
 
 type Secrets = { seed: number[]; salt?: number[]; side?: number; lev?: number; locked?: boolean };
 /** The program's DUEL_SETUP_SECS: after this a matched duel that never reached the rollup can be aborted. */
@@ -383,6 +384,9 @@ export default function OnChainDuel() {
                 <View>
                   <ClayLoop name={won ? 'win' : tie ? 'duel' : 'ko'} size={170} loop={!!won} style={{ borderRadius: 36 }} />
                   <Lottie name={won ? 'win' : koMe && !koThem ? 'knockout' : tie ? 'deadHeat' : 'lose'} size={300} style={{ position: 'absolute', left: -65, top: -70 }} />
+                  {/* the clay fighters act out the result: you (the mascot) on the left, the rival (LASER) on the right */}
+                  <Sprite name={won ? 'bo-win' : koMe && !koThem ? 'bo-ko' : tie ? 'bo-idle' : 'bo-lose'} size={96} style={{ position: 'absolute', left: -104, bottom: -6 }} />
+                  <Sprite name={won ? (koThem ? 'laser-ko' : 'laser-lose') : tie ? 'laser-idle' : 'laser-win'} size={96} style={{ position: 'absolute', right: -104, bottom: -6 }} />
                 </View>
                 <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: won ? C.up : tie ? C.ink : C.down, marginTop: 8 }}>{won ? 'You won' : koMe && !koThem ? 'Liquidated' : tie ? 'Dead heat' : 'You lost'}</Text>
                 {duel.ko ? <Txt v="label" color={koMe && !koThem ? C.down : koThem && !koMe ? C.up : C.ink} style={{ textAlign: 'center' }}>{koMe && koThem ? 'Both sides liquidated' : koMe ? `Liquidated · your ${duel.lev[me]}× position lost its whole stake` : `Liquidated · ${rivalProf?.name ?? 'your rival'} lost it all at ${duel.lev[1 - me]}×`}</Txt> : null}
@@ -489,7 +493,11 @@ export default function OnChainDuel() {
           <Animated.View entering={FadeInDown.springify()} style={{ marginTop: 6 }}>
             {duel.status === 0 ? (
               <View style={{ alignItems: 'center' }}>
-                <Searching><View style={{ borderRadius: 70, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={meProf} size={110} /></View></Searching>
+                <View>
+                  <Searching><View style={{ borderRadius: 70, borderWidth: 4, borderColor: C.brand, padding: 3 }}><ProfileAvatar p={meProf} size={110} /></View></Searching>
+                  <Sprite name="bo-idle" size={84} style={{ position: 'absolute', left: -96, bottom: -4 }} />
+                  <Sprite name="laser-idle" size={84} style={{ position: 'absolute', right: -96, bottom: -4 }} />
+                </View>
                 <Text style={{ ...FONT.display, fontSize: 36, color: C.ink, marginTop: 34 }}>Finding a rival</Text>
                 <Txt v="small" style={{ textAlign: 'center' }}>Your {fmtUsdc(duel.stake)} is in escrow on Solana. The first player to join takes you on.</Txt>
                 {me === 0 ? <Pressable onPress={cancel} disabled={!!busy} style={{ marginTop: 18 }}><Txt v="label" color={C.muted}>{busy === 'cancel' ? 'Cancelling…' : 'Cancel and get it back'}</Txt></Pressable> : null}

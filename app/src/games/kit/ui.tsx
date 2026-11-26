@@ -17,6 +17,7 @@ import { fmtX, signedPct } from '../odds';
 import type { GameApi } from './api';
 import { fmtPx, fmtSecs, usd } from './format';
 import { GS, GT } from './tokens';
+import { Sprite } from '@/ui/sprite';
 
 /* ---------- markets ---------- */
 const STOCKISH = new Set<string>([...POOLS.stocks, ...POOLS.indexes]);
@@ -195,6 +196,7 @@ export function StakeRow({ value, onChange, balance, disabled }: { value: number
 export function Waiting({ text, sub, progress, tint = C.brand }: { text: string; sub?: string; progress?: number; tint?: string }) {
   return (
     <View style={{ backgroundColor: GT.panel, borderRadius: GS.radius.card, padding: 18, gap: 10, alignItems: 'center' }}>
+      <Sprite name="bo-idle" size={72} />
       <Txt v="label" style={{ textAlign: 'center' }}>{text}</Txt>
       {sub ? <Txt v="small" style={{ textAlign: 'center' }}>{sub}</Txt> : null}
       {progress !== undefined ? (

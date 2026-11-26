@@ -16,6 +16,7 @@ import { CATEGORIES, type Category, type GameDef } from '../types';
 import type { Line } from './api';
 import { lengthOf, usd } from './format';
 import { GS, GT } from './tokens';
+import { Sprite } from '@/ui/sprite';
 
 /** Who you play against, as a card says it. */
 export const vsLabel = (g: Pick<GameDef, 'vs'>, short = false) => (g.vs === 'bot' ? (short ? 'vs Bot' : 'vs Clashy Bot') : g.vs === 'bots' ? 'vs 7 bots' : 'Solo');
@@ -201,6 +202,7 @@ export function ResultCard({ run, verdict, tint, onAgain, onMore = () => router.
   const big = won ? `+${usd(run.pnl ?? 0)}` : lost ? `−${usd(Math.abs(run.pnl ?? 0))}` : 'Stake back';
   return (
     <Animated.View entering={ZoomIn.springify().damping(14)} style={{ marginTop: 18, borderRadius: GS.radius.hero, backgroundColor: GT.result, borderWidth: 1.5, borderColor: `${color}66`, padding: 18 }}>
+      <Sprite name={won ? 'bo-win' : lost ? 'bo-lose' : 'bo-idle'} size={92} style={{ position: 'absolute', right: 14, top: 10 }} />
       <Txt v="small" color={color} style={{ ...FONT.bold, letterSpacing: 1.2 }}>{won ? 'YOU WON' : lost ? 'YOU LOST' : run.result === 'push' ? 'PUSH' : 'NO RESULT'}</Txt>
       <Text style={{ ...FONT.displayB, fontSize: 46, letterSpacing: -1.6, color, marginTop: 2, fontVariant: ['tabular-nums'] }}>{big}</Text>
       <Txt v="body" color={C.ink} style={{ marginTop: 2 }}>{verdict}</Txt>

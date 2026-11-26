@@ -104,9 +104,16 @@ the LASER film still (one 3 × 2 sheet of six frames per animation, same chat so
   The ChatGPT originals stay on disk in `assets/sprites/src/` (12 MB, not in git).
 - **Player:** `app/src/ui/sprite.tsx` steps through a strip on web and on phones. One-shots hold their last frame, and
   reduced motion shows a still frame.
-- **Where they play:** `app/src/ui/fight.tsx`, the fight stage at the top of every live clash's board (on-chain and
-  practice). It only acts out the real scores: when the lead swings to you, the mascot punches and LASER takes the hit,
-  and the other way round. At the bell the leader celebrates and the other loses; a liquidation is a knockout.
+- **Where they play:**
+  - every live clash (on-chain and practice): the fight stage on the board (`app/src/ui/fight.tsx`). It only acts out
+    the real scores: when the lead swings to you, the mascot punches and LASER takes the hit, and the other way round.
+    At the bell the leader celebrates and the other loses; a liquidation is a knockout;
+  - the 1v1 result: the mascot (you) and LASER (the rival) flank the clay result tile, winning, losing or knocked out;
+  - "Finding a rival": both stand in their idle loops beside your avatar;
+  - Royale: your mascot stands by the round ring, takes a hit when a round costs you a heart and is knocked out when
+    you're out; the result shows the victory jump or the knockout;
+  - all 150 practice games, through the shared kit: the round-in-progress panel (`Waiting`) shows the stance, and the
+    result card (`ResultCard`) shows the win jump, the loss slump or the stance on a push.
 - **Review page:** `/sprites` plays all twelve and has a fight stage driven by buttons. Checked on the iOS simulator
   (native build) on Nov 25: all twelve play; "You gain" then "Bell" ends with the mascot's victory jump and LASER
   slumped.
