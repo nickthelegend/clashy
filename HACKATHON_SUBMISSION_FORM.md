@@ -211,7 +211,9 @@ TEE rollup. Two device-wallet players with 0 SOL; ETH 1,639.80 → 1,638.63; B c
 
 After the duel went home, MagicBlock's scheduler tried the remaining ticks 11 more times (11:35:04 to 11:35:31); they
 failed because the duel had left the rollup, and then the task was dropped. Since the devnet upgrade that evening
-(`3LJSPdfk…`), the finishing tick cancels its crank and no failed tick follows (`docs/MAGICBLOCK.md`). Four failed
+(`3LJSPdfk…`), the finishing tick cancels its crank; a few runs the scheduler had already queued can still land in
+the next 3 s and stop at the scheduler's own check (`InvalidAccountOwner`, fee 0) before Clashy's program runs
+(`chain/evidence/devnet-proof-nov26.md`). Four failed
 VRF-oracle transactions also appear before the callback landed.
 
 **First deployment, Nov 22 2026, on devnet-as** (read from devnet on Nov 24). How they were found: `getSignaturesForAddress` on the program through `https://rpc.magicblock.app/devnet`, and on the

@@ -35,7 +35,8 @@ ticked once a second for 60 s, and the result came home and was settled: ETH 1,6
 failed VRF-oracle transactions before the callback landed, and 11 failed `TickDuel` retries by MagicBlock's scheduler
 after the duel had gone home, after which the task was dropped. The second is fixed: since upgrade `3LJSPdfk…` (Nov 25
 evening) the finishing tick cancels its crank (`chain/evidence/devnet-proof3.txt`: no failed tick after the last
-`TickDuel`).
+`TickDuel`). In the Nov 26 film games a few runs already queued still landed within 3 s of the finish, each stopped by
+the scheduler's own check before Clashy's program ran (`chain/evidence/devnet-proof-nov26.md`).
 
 ## What was tested on devnet, Nov 22 (devnet-as rollup, first program)
 

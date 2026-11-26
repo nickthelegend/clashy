@@ -66,8 +66,9 @@ one crank `TickDuel` per second for 60 s ([first](https://explorer.solana.com/tx
 commit and settle on Solana at 11:35:04 ([Solana](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet), [rollup](https://explorer.solana.com/tx/mWYjHRgP7gacpxzJmHT9o1UP1qmfB5nptMisS1MeDt8qupje4KaCLMxKY3x2yM7FM8Ss6MrvsJKQgkLDpj9Te2B?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)).
 ETH went 1,639.80 → 1,638.63; player B called down and won +9.70 USDC, player A lost 5 USDC. After the duel went
 home, MagicBlock's scheduler tried the remaining ticks 11 more times; they failed because the duel had left the rollup,
-and then the task was dropped. Since the devnet upgrade that evening, the finishing tick cancels its crank and no
-failed tick follows (`docs/MAGICBLOCK.md`). Four failed VRF-oracle transactions also appear in the trail before the callback landed.
+and then the task was dropped. Since the devnet upgrade that evening, the finishing tick cancels its crank. A few runs
+the scheduler had already queued can still land in the next 3 s; each stops at the scheduler's own check
+(`InvalidAccountOwner`, fee 0) before Clashy's program runs (`chain/evidence/devnet-proof-nov26.md`). Four failed VRF-oracle transactions also appear in the trail before the callback landed.
 
 **One duel on the first deployment** (Nov 22, 04:43–04:45 UTC, on `devnet-as`, duel account `H6GpASV8…DG8t`):
 [open](https://explorer.solana.com/tx/QX8XN8N8sYrNF4DQw12SyDzfP82eJwVLpTxeahJqahdXiMcmja7R7rBoHXURgr6J2LDJRrw4DwLGfG5Xq4oc8X2?cluster=devnet) →

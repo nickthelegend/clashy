@@ -75,7 +75,7 @@ failed because the duel had left the rollup.
 - Ticks are idempotent: a tick on a game that is not due returns OK. A finished tick commits through the keeper.
 - The finishing tick cancels the game's crank (`cancel_ticks`: MagicBlock's `CancelTask`, signed by the keeper, which
   is the task's authority). Validator 1.1.1 reads only the authority account. On devnet the finishing tick logs
-  `Successfully added cancel request for task …` ([example](https://explorer.solana.com/tx/5XckXUfdGfgS3iNWzBR5oa9Uw6SKFLTJ4xwbykXPtA3dUxsPtx2ZCzKRbLoP7ZQaitVN45CY14ebCHwUaS411abN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)), and the tests check that no failed tick follows it.
+  `Successfully added cancel request for task …` ([example](https://explorer.solana.com/tx/5XckXUfdGfgS3iNWzBR5oa9Uw6SKFLTJ4xwbykXPtA3dUxsPtx2ZCzKRbLoP7ZQaitVN45CY14ebCHwUaS411abN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)), and the tests check that no failed tick follows it in the next 8 s. On the Nov 26 film games a few runs the scheduler had already queued still landed within 3 s, each stopped by the scheduler's own check (`InvalidAccountOwner`, fee 0) before Clashy's program ran (`chain/evidence/devnet-proof-nov26.md`).
   A game finished another way (a player's backup `check_duel`) still leaves its crank to fail its remaining ticks
   quietly until the scheduler drops it.
 - Validator 1.1.1 runs these with its built-in scheduler: mainnet and MagicBlock's devnet TEE run 1.1.1, and so does
@@ -155,5 +155,5 @@ Results (Nov 25):
 | Devnet TEE, run 1 | 3/4 pass; cranked duel on BTC, 31 ticks, settled by the Magic Action 31.8 s after the start; cranked Royale paid 5.82 USDC with round calls by session key; keeper abuse. The private duel failed on a devnet mint timeout while funding a test player | `chain/evidence/devnet-mb-test.log` |
 | Devnet TEE, run 2 | private duel passed; A sees side 1, B sees nothing | `chain/evidence/devnet-private.log` |
 | Local stack, after the crank-cancel fix | 4/4 pass, crank cancelled after each game | `chain/evidence/suite-magicblock-cancel.log` |
-| Devnet TEE, after the crank-cancel fix (upgrade `3LJSPdfk…`) | 4/4 pass in one run: cranked BTC duel settled 31.6 s after the start; cranked Royale paid 5.82 USDC; private duel, A sees side 1, B sees nothing; no failed tick after any finish | `chain/evidence/devnet-mb-cancel.log`, trail `chain/evidence/devnet-proof3.txt` |
+| Devnet TEE, after the crank-cancel fix (upgrade `3LJSPdfk…`) | 4/4 pass in one run: cranked BTC duel settled 31.6 s after the start; cranked Royale paid 5.82 USDC; private duel, A sees side 1, B sees nothing; no failed tick in the 8 s after any finish | `chain/evidence/devnet-mb-cancel.log`, trail `chain/evidence/devnet-proof3.txt` |
 | Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 97 transactions, 85 on the rollup | `chain/evidence/devnet-proof.txt` |
