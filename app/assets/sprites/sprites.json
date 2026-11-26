@@ -1,4 +1,22 @@
 {
+  "bo-cashout": {
+    "frames": 6,
+    "size": 368,
+    "fps": 10,
+    "mode": "once"
+  },
+  "bo-dice": {
+    "frames": 6,
+    "size": 408,
+    "fps": 10,
+    "mode": "once"
+  },
+  "bo-flip": {
+    "frames": 6,
+    "size": 336,
+    "fps": 8,
+    "mode": "loop"
+  },
   "bo-hit": {
     "frames": 6,
     "size": 400,
@@ -13,8 +31,14 @@
   },
   "bo-ko": {
     "frames": 6,
-    "size": 448,
+    "size": 440,
     "fps": 10,
+    "mode": "once"
+  },
+  "bo-long": {
+    "frames": 6,
+    "size": 352,
+    "fps": 12,
     "mode": "once"
   },
   "bo-lose": {
@@ -23,11 +47,59 @@
     "fps": 8,
     "mode": "once"
   },
+  "bo-oops": {
+    "frames": 6,
+    "size": 328,
+    "fps": 10,
+    "mode": "once"
+  },
   "bo-punch": {
     "frames": 6,
     "size": 384,
     "fps": 12,
     "mode": "once"
+  },
+  "bo-rocket": {
+    "frames": 6,
+    "size": 376,
+    "fps": 8,
+    "mode": "pingpong"
+  },
+  "bo-short": {
+    "frames": 6,
+    "size": 320,
+    "fps": 12,
+    "mode": "once"
+  },
+  "bo-shrug": {
+    "frames": 6,
+    "size": 328,
+    "fps": 8,
+    "mode": "once"
+  },
+  "bo-streak": {
+    "frames": 6,
+    "size": 336,
+    "fps": 8,
+    "mode": "pingpong"
+  },
+  "bo-think": {
+    "frames": 6,
+    "size": 336,
+    "fps": 6,
+    "mode": "pingpong"
+  },
+  "bo-trophy": {
+    "frames": 6,
+    "size": 352,
+    "fps": 8,
+    "mode": "loop"
+  },
+  "bo-wave": {
+    "frames": 6,
+    "size": 328,
+    "fps": 8,
+    "mode": "pingpong"
   },
   "bo-win": {
     "frames": 6,
@@ -39,6 +111,18 @@
     "frames": 6,
     "size": 408,
     "fps": 12,
+    "mode": "once"
+  },
+  "laser-bored": {
+    "frames": 6,
+    "size": 320,
+    "fps": 5,
+    "mode": "loop"
+  },
+  "laser-faceoff": {
+    "frames": 6,
+    "size": 320,
+    "fps": 8,
     "mode": "once"
   },
   "laser-hit": {
@@ -64,6 +148,30 @@
     "size": 320,
     "fps": 8,
     "mode": "once"
+  },
+  "laser-melt": {
+    "frames": 6,
+    "size": 344,
+    "fps": 8,
+    "mode": "once"
+  },
+  "laser-panic": {
+    "frames": 6,
+    "size": 320,
+    "fps": 8,
+    "mode": "pingpong"
+  },
+  "laser-rage": {
+    "frames": 6,
+    "size": 320,
+    "fps": 10,
+    "mode": "once"
+  },
+  "laser-taunt": {
+    "frames": 6,
+    "size": 320,
+    "fps": 8,
+    "mode": "pingpong"
   },
   "laser-win": {
     "frames": 6,

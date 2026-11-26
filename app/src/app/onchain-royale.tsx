@@ -256,7 +256,7 @@ export default function OnchainRoyale() {
               <View>
                 <ClayLoop name={survived ? 'win' : me >= 0 ? 'ko' : 'royale'} size={170} loop={survived} style={{ borderRadius: 36 }} />
                 {me >= 0 ? <Lottie name={survived ? 'win' : 'knockout'} size={300} style={{ position: 'absolute', left: -65, top: -70 }} /> : null}
-                {me >= 0 ? <Sprite name={survived ? 'bo-win' : 'bo-ko'} size={96} style={{ position: 'absolute', left: -104, bottom: -6 }} /> : null}
+                {me >= 0 ? <Sprite name={survived ? 'bo-trophy' : 'bo-ko'} size={96} style={{ position: 'absolute', left: -104, bottom: -6 }} /> : null}
               </View>
               <Text style={{ ...FONT.display, fontSize: 38, color: me < 0 ? C.ink : survived ? C.up : C.down, marginTop: 8, letterSpacing: -1, textAlign: 'center' }}>
                 {me < 0 ? 'Royale over' : survived ? 'You survived' : 'Knocked out'}

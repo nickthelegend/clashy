@@ -1,14 +1,15 @@
 // The fight stage over a live clash: your clay mascot (left) against the rival, played by LASER (right). It only
 // acts out the real scores it is given: when the lead swings your way the mascot lands a punch and LASER takes the hit,
 // when it swings the other way LASER fires his laser eyes and the mascot takes it. At the bell (or a knockout) the
-// leader celebrates and the other one loses, or is knocked out if the chain liquidated them.
+// leader celebrates and the other one loses, or is knocked out if the chain liquidated them. Between blows LASER panics
+// while you lead and taunts while he leads; liquidated, he melts; beaten, he rages.
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Sprite, type SpriteName } from '@/ui/sprite';
 
 type Pose = 'idle' | 'attack' | 'hit' | 'ko' | 'win' | 'lose';
 const BO: Record<Pose, SpriteName> = { idle: 'bo-idle', attack: 'bo-punch', hit: 'bo-hit', ko: 'bo-ko', win: 'bo-win', lose: 'bo-lose' };
-const LASER: Record<Pose, SpriteName> = { idle: 'laser-idle', attack: 'laser-attack', hit: 'laser-hit', ko: 'laser-ko', win: 'laser-win', lose: 'laser-lose' };
+const LASER: Record<Pose, SpriteName> = { idle: 'laser-idle', attack: 'laser-attack', hit: 'laser-hit', ko: 'laser-melt', win: 'laser-win', lose: 'laser-rage' };
 /** A lead change smaller than this (in percentage points of P&L) is noise, not a blow. */
 const SWING = 0.004;
 /** At most one exchange of blows this often. */
@@ -43,12 +44,15 @@ export function FightStage({ myPnl, theirPnl, over, myKo = false, theirKo = fals
     else setPoses((p) => ({ me: 'idle', them: 'idle', n: p.n + 1 }));
   }, [over]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // between blows LASER panics while you lead and taunts while he leads
+  const lead = myPnl - theirPnl;
+  const laser: SpriteName = poses.them === 'idle' && !over ? (lead > SWING ? 'laser-panic' : lead < -SWING ? 'laser-taunt' : 'laser-idle') : LASER[poses.them];
   // a blow plays once, then both go back to their stance
   const settle = () => { if (!over) setPoses((p) => (p.me === 'idle' && p.them === 'idle' ? p : { me: 'idle', them: 'idle', n: p.n })); };
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: size, marginBottom: 6 }}>
       <Sprite key={`me-${poses.n}-${poses.me}`} name={BO[poses.me]} size={size} onDone={poses.me === 'attack' || poses.me === 'hit' ? settle : undefined} />
-      <Sprite key={`them-${poses.n}-${poses.them}`} name={LASER[poses.them]} size={size} />
+      <Sprite key={`them-${poses.n}-${laser}`} name={laser} size={size} />
     </View>
   );
 }

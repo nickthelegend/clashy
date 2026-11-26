@@ -83,9 +83,9 @@ still tile. Checked: the iOS JS bundle includes the native player and not lottie
 not the native player. On Nov 25 a native debug build (`npx expo run:ios`, Xcode 26.5, iPhone 17 simulator) played the
 squad war Lottie on the Play tab: the crests slide in and the VS burst lands, then it loops.
 
-## Sprites: the mascot and LASER (added Nov 25)
+## Sprites: the mascot and LASER (12 on Nov 25, 30 since Nov 26)
 
-Twelve clay sprite animations, six per character, made with ChatGPT's image model from the approved mascot sheet and
+Thirty clay sprite animations. The first twelve, six per character, made with ChatGPT's image model from the approved mascot sheet and
 the LASER film still (one 3 × 2 sheet of six frames per animation, same chat so the characters stay on model):
 
 | Mascot (you) | LASER (the rival) |
@@ -97,10 +97,35 @@ the LASER film still (one 3 × 2 sheet of six frames per animation, same chat so
 | `bo-win` victory jump (loop) | `laser-win` gloats, coins (loop) |
 | `bo-lose` | `laser-lose` |
 
+**The game moments (Nov 26):** eighteen more, made with the Codex CLI's image tool (on Nick's ChatGPT plan) from the
+same references plus the approved idle sheet, so the characters stay on model:
+
+| Mascot | Where it plays |
+|---|---|
+| `bo-think` thinking | every game's round-in-progress panel (`Waiting`), the "level" score |
+| `bo-long` / `bo-short` | the picked UP / DOWN choice (`Choice`) |
+| `bo-dice` dice roll | every rolled market (`RolledPanel`, 12 engines), replays on each roll |
+| `bo-rocket` / `bo-streak` / `bo-cashout` | the pot bar (`PotBar`): pot climbing / streak of 3+ / cashed out |
+| `bo-streak` / `bo-oops` | you vs the bot (`Sides`): you ahead / behind |
+| `bo-shrug` / `bo-trophy` | the result card: a push / a win of 3× the stake or more; the Royale survivor |
+| `bo-flip` coin flip | the 1v1 coin roll (MagicBlock VRF) |
+| `bo-wave` hello | the welcome screen |
+
+| LASER | Where it plays |
+|---|---|
+| `laser-faceoff` | the 1v1 face-off while the coin rolls |
+| `laser-bored` | after your call is sealed, waiting for the rival's |
+| `laser-panic` / `laser-taunt` | the live fight between blows: you lead / he leads |
+| `laser-melt` / `laser-rage` | the end of the live fight: liquidated / beaten |
+
+Each new sheet was checked by numbers against the character's approved idle sheet (body-colour area 0.7–1.1×, the
+headband present in every mascot frame), and every cut frame is non-empty and unclipped. Two sheets whose props
+crossed into the next cell were regenerated or trimmed (the slicer now drops slivers at a cell's border).
+
 - **Cut:** `python3 -I app/scripts/make-sprites.py` slices each sheet, removes the white background with an edge flood
   fill (the cream belly stays), sizes every sheet of a character by the area of its body colour so all its animations
-  match, and lines every frame up on the feet. Output: `app/assets/sprites/<name>.webp` (one row of frames, 971 KB for
-  all twelve), `sprites.json` (frames, frame size, fps, loop mode) and animated previews in `assets/sprites/preview/`.
+  match, and lines every frame up on the feet. Output: `app/assets/sprites/<name>.webp` (one row of frames, 2.4 MB for
+  all thirty), `sprites.json` (frames, frame size, fps, loop mode) and animated previews in `assets/sprites/preview/`.
   The ChatGPT originals stay on disk in `assets/sprites/src/` (12 MB, not in git).
 - **Player:** `app/src/ui/sprite.tsx` steps through a strip on web and on phones. One-shots hold their last frame, and
   reduced motion shows a still frame.

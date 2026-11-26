@@ -12,7 +12,8 @@ and updates app/assets/sprites/sprites.json (frame count and frame rate per spri
 How a frame is cut:
   1. Split the sheet into its 3 x 2 cells.
   2. Background: flood-fill near-white from the cell's border, so the cream belly and white highlights inside the
-     character stay opaque; the edge is feathered by one pixel.
+     character stay opaque; the edge is feathered by one pixel. Small slivers at the cell border (a prop from the
+     neighbouring frame) are dropped.
   3. Size: a character is drawn at one size in all its animations. ChatGPT draws each sheet at its own size (up to
      30 % apart), so each sheet is measured by the area of the character's body colour, which barely changes with the
      pose, and one scale per character makes every frame of every animation fit.
@@ -52,6 +53,25 @@ SPEC = {
     'laser-ko': {'fps': 10, 'mode': 'once', 'keep_y': True},
     'laser-win': {'fps': 10, 'mode': 'loop', 'keep_y': True},
     'laser-lose': {'fps': 8, 'mode': 'once'},
+    # Nov 26: the game moments (made with the Codex CLI's image tool from the same references)
+    'bo-think': {'fps': 6, 'mode': 'pingpong'},
+    'bo-long': {'fps': 12, 'mode': 'once', 'keep_y': True},
+    'bo-short': {'fps': 12, 'mode': 'once', 'keep_y': True},
+    'bo-rocket': {'fps': 8, 'mode': 'pingpong', 'keep_y': True},
+    'bo-cashout': {'fps': 10, 'mode': 'once'},
+    'bo-flip': {'fps': 8, 'mode': 'loop'},
+    'bo-dice': {'fps': 10, 'mode': 'once'},
+    'bo-streak': {'fps': 8, 'mode': 'pingpong'},
+    'bo-oops': {'fps': 10, 'mode': 'once'},
+    'bo-shrug': {'fps': 8, 'mode': 'once'},
+    'bo-trophy': {'fps': 8, 'mode': 'loop'},
+    'bo-wave': {'fps': 8, 'mode': 'pingpong'},
+    'laser-faceoff': {'fps': 8, 'mode': 'once'},
+    'laser-bored': {'fps': 5, 'mode': 'loop'},
+    'laser-panic': {'fps': 8, 'mode': 'pingpong'},
+    'laser-taunt': {'fps': 8, 'mode': 'pingpong'},
+    'laser-melt': {'fps': 8, 'mode': 'once', 'keep_y': True},
+    'laser-rage': {'fps': 10, 'mode': 'once'},
 }
 
 
@@ -80,6 +100,32 @@ def alpha_from_border(rgb: np.ndarray, thresh: int = 26) -> np.ndarray:
     return np.array(img.filter(ImageFilter.GaussianBlur(0.8)))
 
 
+def drop_border_fragments(a: np.ndarray) -> np.ndarray:
+    """A prop that crosses into a neighbouring cell leaves a sliver at this cell's edge: drop any opaque piece that
+    touches the cell border and is under 3 % of the cell's opaque area (a flood that stops once a piece is big)."""
+    solid = a > 128
+    limit = max(50, int(0.03 * solid.sum()))
+    h, w = solid.shape
+    seen = np.zeros_like(solid)
+    out = a.copy()
+    border = [(y, x) for x in range(w) for y in (0, h - 1)] + [(y, x) for y in range(h) for x in (0, w - 1)]
+    for sy, sx in border:
+        if not solid[sy, sx] or seen[sy, sx]:
+            continue
+        piece, q, big = [(sy, sx)], deque([(sy, sx)]), False
+        seen[sy, sx] = True
+        while q:
+            y, x = q.popleft()
+            for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= ny < h and 0 <= nx < w and solid[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True; q.append((ny, nx)); piece.append((ny, nx))
+            if len(piece) > limit:
+                big = True; break
+        if not big:
+            ys, xs = zip(*piece); out[list(ys), list(xs)] = 0
+    return out
+
+
 def measure(name: str) -> dict:
     """Cut a sheet's six frames and measure them (pixels of the source sheet)."""
     sheet = Image.open(SRC / f'{name}.png').convert('RGB')
@@ -89,7 +135,7 @@ def measure(name: str) -> dict:
     for r in range(ROWS):
         for c in range(COLS):
             cell = np.array(sheet.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch)))
-            a = alpha_from_border(cell)
+            a = drop_border_fragments(alpha_from_border(cell))
             ys, xs = np.nonzero(a > 128)
             if len(ys) == 0:
                 raise SystemExit(f'{name}: cell {r},{c} is empty')

@@ -1,4 +1,4 @@
-// The clay sprite cast: every animation of the mascot and of LASER, playing, plus the fight stage that live clashes use,
+// The clay sprite cast: all 30 animations of the mascot and of LASER, playing, plus the fight stage that live clashes use,
 // driven here by buttons that swing the score. Sprites come from scripts/make-sprites.py (see docs/ANIMATIONS.md).
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -11,8 +11,9 @@ import { Sprite, type SpriteName } from '@/ui/sprite';
 import { C, FONT, S } from '@/ui/tokens';
 
 const CAST: { who: string; names: [SpriteName, string][] }[] = [
-  { who: 'You', names: [['bo-idle', 'Stance'], ['bo-punch', 'Punch'], ['bo-hit', 'Takes a hit'], ['bo-ko', 'Knocked out'], ['bo-win', 'Wins'], ['bo-lose', 'Loses']] },
-  { who: 'LASER, the rival', names: [['laser-idle', 'Trash talk'], ['laser-attack', 'Laser eyes'], ['laser-hit', 'Takes a hit'], ['laser-ko', 'Knocked out'], ['laser-win', 'Gloats'], ['laser-lose', 'Loses']] },
+  { who: 'You · the clash', names: [['bo-idle', 'Stance'], ['bo-punch', 'Punch'], ['bo-hit', 'Takes a hit'], ['bo-ko', 'Knocked out'], ['bo-win', 'Wins'], ['bo-lose', 'Loses']] },
+  { who: 'You · the games', names: [['bo-think', 'Thinking'], ['bo-long', 'Long'], ['bo-short', 'Short'], ['bo-rocket', 'Rocket'], ['bo-cashout', 'Cash out'], ['bo-flip', 'Coin flip'], ['bo-dice', 'Dice roll'], ['bo-streak', 'On fire'], ['bo-oops', 'Oops'], ['bo-shrug', 'Shrug'], ['bo-trophy', 'Trophy'], ['bo-wave', 'Hello']] },
+  { who: 'LASER, the rival', names: [['laser-idle', 'Trash talk'], ['laser-attack', 'Laser eyes'], ['laser-hit', 'Takes a hit'], ['laser-ko', 'Knocked out'], ['laser-win', 'Gloats'], ['laser-lose', 'Loses'], ['laser-faceoff', 'Face-off'], ['laser-bored', 'Bored'], ['laser-panic', 'Panic'], ['laser-taunt', 'Taunt'], ['laser-melt', 'Liquidated'], ['laser-rage', 'Rage']] },
 ];
 
 /** A one-shot animation restarts every 2.4 s here so it can be watched. */

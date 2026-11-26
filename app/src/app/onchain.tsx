@@ -505,7 +505,11 @@ export default function OnChainDuel() {
             ) : duel.status === 1 || (duel.status === 2 && !rolledSeen) ? (
               <View style={{ alignItems: 'center' }}>
                 <FaceOff me={meProf} rival={rivalProf ?? undefined} meLabel={meProf?.name ?? 'You'} rivalLabel={rivalProf?.name ?? 'Rival'} />
-                <View style={{ height: 22 }} />
+                <Row style={{ alignSelf: 'stretch', justifyContent: 'space-between', marginTop: 6 }}>
+                  <Sprite name="bo-flip" size={84} />
+                  <Sprite name="laser-faceoff" size={84} />
+                </Row>
+                <View style={{ height: 10 }} />
                 <CoinRoll pool={symbolsIn(duel.poolMask ?? 0b111)} landed={duel.status === 2 ? sym2 : null} />
               </View>
             ) : duel.status === 2 ? (
@@ -515,8 +519,11 @@ export default function OnChainDuel() {
                 <Txt v="small" style={{ textAlign: 'center' }}>{perps ? `Long or short at ${duelLev}× for ${duel.lenSecs} seconds. A ${(100 / duelLev).toFixed(duelLev >= 25 ? 1 : 0)}% move against you and you're liquidated.` : duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
                 <View style={{ alignSelf: 'stretch', marginTop: 20 }}>
                   {me >= 0 && !(duel.picksCommitted & (1 << me)) && !(mbMode.private && myLock) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : mbMode.private ? (
-                    <SealedPick label={`${myLock?.side === 1 ? (perps ? 'Long' : 'Up') : (perps ? 'Short' : 'Down')} · ${myLock?.sent ? 'sealed' : 'sealing…'}`}
-                      note={myLock?.sent ? `Locked inside MagicBlock's private rollup (TEE). Only you can read it until ${rivalProf?.name ?? 'your rival'} locks too.` : 'Sending it to MagicBlock\'s private rollup (TEE)…'} />
+                    <View>
+                      <SealedPick label={`${myLock?.side === 1 ? (perps ? 'Long' : 'Up') : (perps ? 'Short' : 'Down')} · ${myLock?.sent ? 'sealed' : 'sealing…'}`}
+                        note={myLock?.sent ? `Locked inside MagicBlock's private rollup (TEE). Only you can read it until ${rivalProf?.name ?? 'your rival'} locks too.` : 'Sending it to MagicBlock\'s private rollup (TEE)…'} />
+                      {myLock?.sent ? <Sprite name="laser-bored" size={76} style={{ position: 'absolute', right: 8, top: 6 }} /> : null}
+                    </View>
                   ) : (
                     <View style={{ alignItems: 'center', backgroundColor: '#15151B', borderRadius: 24, padding: 18 }}>
                       <Text style={{ ...FONT.display, fontSize: 28, color: C.ink }}>🔒 Locked</Text>

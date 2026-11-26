@@ -21,12 +21,31 @@ const FILES = {
   'laser-ko': require('../../assets/sprites/laser-ko.webp'),
   'laser-win': require('../../assets/sprites/laser-win.webp'),
   'laser-lose': require('../../assets/sprites/laser-lose.webp'),
+  // game moments (Nov 26)
+  'bo-think': require('../../assets/sprites/bo-think.webp'),
+  'bo-long': require('../../assets/sprites/bo-long.webp'),
+  'bo-short': require('../../assets/sprites/bo-short.webp'),
+  'bo-rocket': require('../../assets/sprites/bo-rocket.webp'),
+  'bo-cashout': require('../../assets/sprites/bo-cashout.webp'),
+  'bo-flip': require('../../assets/sprites/bo-flip.webp'),
+  'bo-dice': require('../../assets/sprites/bo-dice.webp'),
+  'bo-streak': require('../../assets/sprites/bo-streak.webp'),
+  'bo-oops': require('../../assets/sprites/bo-oops.webp'),
+  'bo-shrug': require('../../assets/sprites/bo-shrug.webp'),
+  'bo-trophy': require('../../assets/sprites/bo-trophy.webp'),
+  'bo-wave': require('../../assets/sprites/bo-wave.webp'),
+  'laser-faceoff': require('../../assets/sprites/laser-faceoff.webp'),
+  'laser-bored': require('../../assets/sprites/laser-bored.webp'),
+  'laser-panic': require('../../assets/sprites/laser-panic.webp'),
+  'laser-taunt': require('../../assets/sprites/laser-taunt.webp'),
+  'laser-melt': require('../../assets/sprites/laser-melt.webp'),
+  'laser-rage': require('../../assets/sprites/laser-rage.webp'),
 };
 export type SpriteName = keyof typeof FILES;
 type Meta = { frames: number; size: number; fps: number; mode: 'loop' | 'pingpong' | 'once' };
 const meta = META as Record<SpriteName, Meta>;
-/** The frame size the idle stances are cut at; other animations are bigger frames at the same scale. */
-const BASE = 328;
+/** Each character's idle stance frame size: its other animations are bigger frames at the same scale. */
+const baseOf = (name: SpriteName) => meta[`${name.split('-')[0]}-idle` as SpriteName].size;
 
 function order(m: Meta): number[] {
   const f = [...Array(m.frames).keys()];
@@ -67,7 +86,7 @@ export function Sprite({ name, size = 120, flip = false, onDone, style }: { name
     return () => clearInterval(h);
   }, [name, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const d = (size * m.size) / BASE;           // this animation's frame on screen
+  const d = (size * m.size) / baseOf(name);           // this animation's frame on screen
   const frame = seq[Math.min(i, seq.length - 1)];
   return (
     <View pointerEvents="none" style={[{ width: size, height: size, overflow: 'visible' }, style]}>

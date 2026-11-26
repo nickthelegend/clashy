@@ -13,6 +13,7 @@ import { ClayLoop, type ClayName } from '@/ui/clay';
 import { AVATARS, Btn, ErrorLine, Row, Txt, Wordmark } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { C, F, FONT, S } from '@/ui/tokens';
+import { Sprite } from '@/ui/sprite';
 
 export const ONBOARDED_KEY = 'clashy:onboarded';
 
@@ -50,7 +51,10 @@ function NameStep({ onDone }: { onDone: () => void }) {
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: S.gutter, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
       <View style={{ alignItems: 'center' }}>
-        <Image source={AVATARS[avatar]} style={{ width: 120, height: 120, borderRadius: 60 }} contentFit="cover" />
+        <View>
+          <Image source={AVATARS[avatar]} style={{ width: 120, height: 120, borderRadius: 60 }} contentFit="cover" />
+          <Sprite name="bo-wave" size={84} style={{ position: 'absolute', left: -96, bottom: -4 }} />
+        </View>
         <Txt v="title" style={{ marginTop: 16, fontSize: 30 }}>Pick your name</Txt>
         <Txt v="body" color="#B9B9C2" style={{ marginTop: 6, textAlign: 'center' }}>It's on your calls, clashes and squads. Yours alone, on chain.</Txt>
       </View>

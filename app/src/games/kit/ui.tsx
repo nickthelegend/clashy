@@ -80,6 +80,7 @@ export function RolledPanel({ g, sym, shown, onReroll, sub }: { g: GameApi; sym:
   const m = sym ? g.feed.mark(sym) : undefined;
   return (
     <Panel style={{ alignItems: 'center', gap: 8 }}>
+      <Sprite key={sym ?? 'rolling'} name="bo-dice" size={72} style={{ position: 'absolute', right: 8, top: 6 }} />
       {s ? <Logo sym={s} info={g.info} size={76} /> : <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: GT.placeholder }} />}
       <Txt v="title" lines={1} style={{ fontSize: 24 }}>{s ? nameOf(g.info, s) : 'Rolling…'}</Txt>
       <Note center>{sym ? `${tickerOf(sym)} · ${fmtPx(m?.p)}${sub ? ` · ${sub}` : ''}` : 'Finding a market with a live price…'}</Note>
@@ -123,6 +124,7 @@ export function Choice({ title, sub, color, onPress, disabled, selected, h = GS.
   return (
     <Pressable onPress={() => { Haptics.selectionAsync(); onPress(); }} disabled={disabled} accessibilityRole="button" accessibilityLabel={sub ? `${title}, ${sub}` : title} accessibilityState={{ selected: !!selected, disabled: !!disabled }}
       style={({ pressed }) => ({ flex: 1, minHeight: h, borderRadius: GS.radius.card, paddingHorizontal: 10, paddingVertical: 12, backgroundColor: solid ? color : GT.raised, borderWidth: 2, borderColor: selected ? '#fff' : 'transparent', alignItems: 'center', justifyContent: 'center', gap: 4, opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+      {selected && (color === C.up || color === C.down) ? <Sprite key={`${title}-${color}`} name={color === C.up ? 'bo-long' : 'bo-short'} size={56} style={{ position: 'absolute', right: 2, top: 2 }} /> : null}
       {art}
       <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...FONT.display, fontSize: 26, letterSpacing: -0.6, color: solid ? GT.onTint : C.ink }}>{title}</Text>
       {sub ? <Text numberOfLines={2} style={{ ...FONT.semi, fontSize: 12.5, textAlign: 'center', color: solid ? 'rgba(10,10,13,0.72)' : C.muted }}>{sub}</Text> : null}
@@ -196,7 +198,7 @@ export function StakeRow({ value, onChange, balance, disabled }: { value: number
 export function Waiting({ text, sub, progress, tint = C.brand }: { text: string; sub?: string; progress?: number; tint?: string }) {
   return (
     <View style={{ backgroundColor: GT.panel, borderRadius: GS.radius.card, padding: 18, gap: 10, alignItems: 'center' }}>
-      <Sprite name="bo-idle" size={72} />
+      <Sprite name="bo-think" size={72} />
       <Txt v="label" style={{ textAlign: 'center' }}>{text}</Txt>
       {sub ? <Txt v="small" style={{ textAlign: 'center' }}>{sub}</Txt> : null}
       {progress !== undefined ? (
@@ -249,6 +251,7 @@ type SideCard = { title: string; color: string; sub?: string };
 export function Sides({ you, bot, lead }: { you: SideCard; bot: SideCard; lead?: 'you' | 'bot' | null }) {
   const card = (who: 'you' | 'bot', s: SideCard) => (
     <Panel style={{ flex: 1, alignItems: 'center', gap: 6, minWidth: 0 }} tint={lead === who ? (who === 'you' ? C.up : C.opp) : undefined}>
+      {who === 'you' ? <Sprite key={lead ?? 'level'} name={lead === 'you' ? 'bo-streak' : lead === 'bot' ? 'bo-oops' : 'bo-think'} size={48} style={{ position: 'absolute', left: 4, top: 2 }} /> : null}
       <Tag text={who === 'you' ? 'YOU' : 'CLASHY BOT'} color={who === 'you' ? C.brand : C.opp} />
       <Text numberOfLines={1} adjustsFontSizeToFit style={{ ...FONT.bold, fontSize: s.title.length > 9 ? 17 : s.title.length > 7 ? 20 : 24, letterSpacing: -0.6, color: s.color, fontVariant: ['tabular-nums'] }}>{s.title}</Text>
       {s.sub ? <Txt v="small" lines={2} style={{ textAlign: 'center', fontVariant: ['tabular-nums'] }}>{s.sub}</Txt> : null}
@@ -284,10 +287,12 @@ export function Heart({ size = 12, color }: { size?: number; color: string }) {
 /** The instant games' bar: the streak, the pot, and Cash out (allowed once there's a right answer). */
 export function PotBar({ g, mult, streak, canCash, onCash, streakLabel = 'Streak' }: { g: GameApi; mult: number; streak: number; canCash: boolean; onCash: () => void; streakLabel?: string }) {
   const { def } = g;
+  const [cashed, setCashed] = useState(false);
   return (
     <View style={{ gap: 12 }}>
       <Row style={{ gap: 10 }}>
         <Panel style={{ flex: 1, gap: 2 }}>
+          <Sprite key={cashed ? 'cash' : streak >= 3 ? 'fire' : streak > 0 ? 'rocket' : 'think'} name={cashed ? 'bo-cashout' : streak >= 3 ? 'bo-streak' : streak > 0 ? 'bo-rocket' : 'bo-think'} size={56} style={{ position: 'absolute', right: 4, top: 4 }} />
           <Txt v="small">{streakLabel}</Txt>
           <Text style={{ ...FONT.displayB, fontSize: 30, letterSpacing: -1, color: C.ink, fontVariant: ['tabular-nums'] }}>{streak}</Text>
         </Panel>
@@ -300,7 +305,7 @@ export function PotBar({ g, mult, streak, canCash, onCash, streakLabel = 'Streak
         </Panel>
       </Row>
       <TourTarget id="g-go">
-        <Go title={canCash ? `Cash out ${usd(g.stake * mult)}` : 'Cash out'} sub={canCash ? undefined : 'After your first right answer'} onPress={onCash} disabled={!canCash} color={def.tint} ink={GT.onTint} />
+        <Go title={canCash ? `Cash out ${usd(g.stake * mult)}` : 'Cash out'} sub={canCash ? undefined : 'After your first right answer'} onPress={() => { setCashed(true); onCash(); }} disabled={!canCash} color={def.tint} ink={GT.onTint} />
       </TourTarget>
     </View>
   );
