@@ -88,8 +88,8 @@ const Chip = ({ text, color = C.muted, bg = C.s2 }: { text: string; color?: stri
 );
 
 /** A trade put to the squad's vote. */
-export function TradeCard({ sym, side, sizePct, notional, proposer, proposerName, yes, no, left, children }: {
-  sym: string; side: number; sizePct: number; notional: number; proposer?: Profile; proposerName: string;
+export function TradeCard({ sym, side, lev = 1, sizePct, notional, proposer, proposerName, yes, no, left, children }: {
+  sym: string; side: number; lev?: number; sizePct: number; notional: number; proposer?: Profile; proposerName: string;
   /** Fractions of all chest shares. */ yes: number; no: number; left: number; children?: ReactNode;
 }) {
   const up = side === 1;
@@ -98,7 +98,7 @@ export function TradeCard({ sym, side, sizePct, notional, proposer, proposerName
       <Row style={{ gap: 12 }}>
         <CoinToken sym={sym} size={52} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: up ? C.up : C.down }} numberOfLines={1}>{up ? '▲ UP' : '▼ DOWN'} · {sym}</Text>
+          <Text style={{ ...FONT.semi, fontSize: 19, letterSpacing: -0.3, color: up ? C.up : C.down }} numberOfLines={1}>{up ? '▲ UP' : '▼ DOWN'} · {sym} · {lev}×</Text>
           <Txt v="small" lines={1}>{coinName(sym)} · {sizePct}% of the chest · {fmtUsd(notional)}</Txt>
         </View>
         {left > 0 ? <Chip text={fmtLeft(left)} color={C.ink} bg="rgba(240,70,140,0.18)" /> : <Chip text="Closed" />}
@@ -119,8 +119,8 @@ export function TradeCard({ sym, side, sizePct, notional, proposer, proposerName
 }
 
 /** A trade the squad is in (or was). */
-export function PositionCard({ sym, side, notional, entry, now, open, pnl, action }: {
-  sym: string; side: number; notional: number; entry: number; now: number | null; open: boolean; /** USD */ pnl: number; action?: ReactNode;
+export function PositionCard({ sym, side, lev = 1, notional, entry, now, open, pnl, action }: {
+  sym: string; side: number; lev?: number; notional: number; entry: number; now: number | null; open: boolean; /** USD */ pnl: number; action?: ReactNode;
 }) {
   const up = side === 1;
   return (
@@ -129,7 +129,7 @@ export function PositionCard({ sym, side, notional, entry, now, open, pnl, actio
         <CoinToken sym={sym} size={44} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Row style={{ gap: 6 }}>
-            <Txt v="label" lines={1} color={up ? C.up : C.down} style={{ flexShrink: 1 }}>{up ? '▲ Up' : '▼ Down'} {sym}</Txt>
+            <Txt v="label" lines={1} color={up ? C.up : C.down} style={{ flexShrink: 1 }}>{up ? '▲ Up' : '▼ Down'} {sym} {lev}×</Txt>
             {open ? <Chip text="LIVE" color={C.up} bg={C.upBg} /> : <Chip text="Closed" />}
           </Row>
           <Txt v="small" lines={1} style={{ marginTop: 2 }}>{fmtUsd(notional)} · {fmtUsd(entry)} → {now !== null ? fmtUsd(now) : '…'}</Txt>

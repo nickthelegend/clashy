@@ -45,6 +45,7 @@ const VOTE_SECS = 60;
 const WAR_STAKE_USDC = 5;
 const WAR_LENGTHS = [{ key: '120', label: '2 min' }, { key: '3600', label: '1 hour' }, { key: '86400', label: '1 day' }] as const;
 const SIZES = [{ key: '2500', label: '25%' }, { key: '5000', label: '50%' }, { key: '10000', label: '100%' }] as const;
+const LEVS = [{ key: '1', label: '1×' }, { key: '5', label: '5×' }, { key: '10', label: '10×' }, { key: '20', label: '20×' }] as const;
 const retBps = (score: number, base: number, chest: number) => (chest ? ((score - base) * 10_000) / chest : 0);
 const pctTxt = (bps: number) => `${bps > 0.5 ? '+' : bps < -0.5 ? '−' : ''}${(Math.abs(bps) / 100).toFixed(2)}%`;
 
@@ -81,8 +82,8 @@ export default function OnchainClan() {
   // proposal form
   const [coin, setCoin] = useState<'0' | '1' | '2'>('0');
   const [dir, setDir] = useState<1 | 2>(1);
-  // squad trades are unleveraged: the chest moves 1:1 with the price, like owning it
-  const lev = '1';
+  // the squad votes on the leverage with the call (the program allows up to 20×); a loss is capped at the trade's size
+  const [lev, setLev] = useState<'1' | '5' | '10' | '20'>('10');
   const [size, setSize] = useState<'2500' | '5000' | '10000'>('5000');
 
   const profiles = useProfiles();
@@ -161,7 +162,7 @@ export default function OnchainClan() {
   const leave = guard('leave', () => onBase(`Leave ${mine!.name}`, () => progs!.base.methods.leaveClan().accountsPartial({ wallet: wallet!, clan: mine!.key, member: P.member(mine!.key, wallet!), rentPayer: sponsor! }).rpc()));
   const propose = guard('propose', async () => {
     const prop = P.proposal(mine!.key, mine!.proposals);
-    const what = `${dir === 1 ? 'Long' : 'Short'} ${COIN_SYMBOLS[+coin]} · ${+size / 100}% of chest`;
+    const what = `${dir === 1 ? "Long" : "Short"} ${COIN_SYMBOLS[+coin]} ${lev}× · ${+size / 100}% of chest`;
     await onBase(`Propose ${what}`, () => progs!.base.methods.propose(+coin, dir, +lev, +size, new BN(VOTE_SECS)).accountsPartial({ wallet: wallet!, payer: sponsor!, clan: mine!.key, member: P.member(mine!.key, wallet!), proposal: prop }).rpc());
     setProposing(false);
   });
@@ -325,7 +326,7 @@ export default function OnchainClan() {
               const failed = (left === 0 && p.yes <= p.no) || now > p.deadline + 3600;
               const sym = COIN_SYMBOLS[p.coin] ?? '…';
               return (
-                <TradeCard key={p.key.toBase58()} sym={sym} side={p.side} sizePct={p.sizeBps / 100} notional={usd((mine.chest * p.sizeBps) / 10_000)}
+                <TradeCard key={p.key.toBase58()} sym={sym} side={p.side} lev={p.lev} sizePct={p.sizeBps / 100} notional={usd((mine.chest * p.sizeBps) / 10_000)}
                   proposer={names.get(p.proposer.toBase58())} proposerName={nameOf(p.proposer)}
                   yes={mine.shares ? p.yes / mine.shares : 0} no={mine.shares ? p.no / mine.shares : 0} left={left}>
                   {!p.myVote && left > 0 ? (
@@ -350,7 +351,7 @@ export default function OnchainClan() {
                   const px = prices[p.coin] ?? null;
                   const live = p.open && px ? (p.notional * pnlBps(p.entry, px, p.side, p.lev)) / 10_000 : p.pnl;
                   return (
-                    <PositionCard key={p.key.toBase58()} sym={COIN_SYMBOLS[p.coin] ?? '…'} side={p.side} notional={usd(p.notional)} entry={p.entry} now={p.open ? px : p.exit} open={p.open} pnl={usd(Math.round(live))}
+                    <PositionCard key={p.key.toBase58()} sym={COIN_SYMBOLS[p.coin] ?? '…'} side={p.side} lev={p.lev} notional={usd(p.notional)} entry={p.entry} now={p.open ? px : p.exit} open={p.open} pnl={usd(Math.round(live))}
                       action={p.open && (captain || warOver) ? <Btn title={busy === `close-${p.id}` ? 'Closing…' : 'Close at the current price'} kind="white" h={44} style={{ borderRadius: 22 }} disabled={!!busy} onPress={() => at('trades', () => closePos(p))} /> : undefined} />
                   );
                 })}
@@ -493,9 +494,11 @@ export default function OnchainClan() {
         <View style={{ marginTop: 12 }}><DirPick dir={dir} onChange={setDir} /></View>
         <Txt v="small" style={{ marginTop: 14, marginBottom: 6 }}>How much of the chest</Txt>
         {mine ? <Pills items={SIZES.map((s) => ({ key: s.key, label: s.label, sub: fmtUsd(usd((mine.chest * +s.key) / 10_000)) }))} value={size} onChange={setSize} /> : null}
+        <Txt v="small" style={{ marginTop: 14, marginBottom: 6 }}>Leverage</Txt>
+        <Pills items={LEVS.map((l) => ({ key: l.key, label: l.label }))} value={lev} onChange={setLev} />
         {err && spot === 'trades' ? <ErrorLine msg={err} /> : null}
         <View style={{ marginTop: 16 }}>
-          <BigGo title={busy === 'propose' ? 'Proposing…' : `Propose ${dir === 1 ? '▲ UP' : '▼ DOWN'} on ${COIN_SYMBOLS[+coin]}`} color={dir === 1 ? C.up : C.down} fg={dir === 1 ? '#03140A' : '#fff'}
+          <BigGo title={busy === 'propose' ? 'Proposing…' : `Propose ${dir === 1 ? '▲ UP' : '▼ DOWN'} on ${COIN_SYMBOLS[+coin]} · ${lev}×`} color={dir === 1 ? C.up : C.down} fg={dir === 1 ? '#03140A' : '#fff'}
             disabled={!!busy || !mine || mine.chest === 0} onPress={() => at('trades', propose)} />
         </View>
         {mine && mine.chest === 0 ? <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>Add to the chest first: an empty chest has nothing to trade.</Txt> : null}
