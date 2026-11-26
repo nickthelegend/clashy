@@ -1,7 +1,9 @@
 # Clashy: Solana Blitz v10 submission (ready to paste)
 
-Prepared Nov 24, 2026 (UTC) for Nick, who submits; updated Nov 25 after the TEE rollup move and the three program
-upgrades. Facts below were checked against public pages, devnet and the repo's logs on those days. Fields marked **Nick** need his own details or a decision.
+Prepared Nov 24, 2026 (UTC) for Nick, who submits; updated Nov 25 after the TEE rollup move and the program upgrades,
+and re-checked on **Nov 26, 2026 at 04:30–05:10 UTC** against the live form's own code, the events API, the Luma page
+and devnet (every explorer link below resolves on chain). Everything Nick must type or decide is marked `NICK:`.
+His morning checklist is [docs/NICK.md](docs/NICK.md).
 
 ## The event (verified)
 
@@ -18,9 +20,19 @@ The form's server-rendered page says "No open events to submit to right now". Th
 events list loads, and the events API lists V10 as `active`. If the form still shows no event after you log in, ask in
 the Blitz Telegram group before the deadline.
 
-**Required fields** (read from the form's own validation on Nov 24; no screenshot is stored): project name (up to 200 characters), description (up to 5,000),
-**website, GitHub repo, Pitch & Demo and Explorer link** (each must be a URL), and a connected wallet ("required to
-submit, prizes pay here"). Name, email and country are also required.
+**The form's fields**, read from its own validation code on Nov 26 (the page's JavaScript bundle; no screenshot is
+stored). Four steps: Purpose, About you, Proof of Work, Boost.
+- **Required:** first and last name (up to 100 characters each), email, country (picked from the list), a connected
+  wallet ("Connect a wallet in About you to submit"), project name (up to 200), description (up to 5,000), and four
+  URLs: **Website, GitHub, Pitch & Demo, Explorer link**. A Telegram login is needed to use the form at all.
+- **Optional:** your role(s), on-chain addresses (up to 28, "Program ID, wallet or fee vault"), categories (up to 3 of
+  DeFi, Payments, Games, AI / Agents, Privacy, Infra, DePIN, Social, Consumer, Other), team members (each needs at
+  least one role), additional info (up to 5,000), your X account and other X accounts.
+- **GitHub check:** the form checks the repo live (`/api/repo-check`). If it can't see the repo it says "can't see
+  repo — invite @jonasXchen" and links to the repo's collaborator settings. So a private repo works if Nick invites
+  GitHub user `jonasXchen`; a public repo needs nothing.
+- Roles to pick from: Founder, Technical / Engineering, Business / Operations, Marketing / Growth, Design / Creative,
+  Product, Community, Other.
 
 ---
 
@@ -30,8 +42,16 @@ submit, prizes pay here"). Name, email and country are also required.
 
 ## Step 2: About you (Nick)
 
-First name, last name, email, country of residence, your role(s) and **Wallet**. Connect the wallet you want the prize
-paid to. Nick fills these in himself; none of it is written here.
+| Field | Value |
+|---|---|
+| First name | `NICK:` |
+| Last name | `NICK:` |
+| Email | `NICK:` |
+| Country of residence | `NICK:` (pick from the list) |
+| Role(s) | `NICK:` (suggested: Founder, Technical / Engineering) |
+| Wallet | `NICK:` connect the Solana wallet the prize should be paid to (prizes are USDC) |
+
+None of Nick's personal details are written in this repo.
 
 ## Step 3: Proof of Work
 
@@ -47,7 +67,7 @@ Clashy
 Trade against people, not the house: 1v1 trading duels and Royales on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 ```
 
-### Description (3,761 characters, limit 5,000)
+### Description (4,101 characters, limit 5,000)
 
 ```text
 Trade against people, not the house: 1v1 trading duels and Royales on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
@@ -63,20 +83,23 @@ How it uses MagicBlock (devnet program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1
 - Session keys: lock_pick_session and call_round_session let a MagicBlock session key make in-game moves (used by the app: one wallet signature creates a 6-hour session key on the device (sponsored, relay-checked), and the private-duel pick lock and every Royale call are signed by it; played on devnet in duel 3qa893zcqdm9WpPAGJMdjfxZqUXFvhr1U2A2ZdHwuT8t, both picks landed as LockPickSession).
 - Zero-fee play: players hold 0 SOL. A sponsor relay pays every Solana fee and rent, the keeper pays rollup-side actions, and rollup moves are free. On web, players sign in with Privy (email or Google). We don't use MagicBlock private payments.
 
-What is live: the program on Solana devnet with MagicBlock's TEE rollup, VRF oracle and oracle prices. On Nov 25 all four MagicBlock tests passed there over two runs: a cranked duel settled by a Magic Action 31.8 s after the start, a cranked Royale paid its survivor with no resolve or settle by hand, a private duel, and keeper abuse checks. Two players with 0 SOL also played a private ETH duel through the web app: 97 transactions, 85 on the rollup, one crank tick per second, and the winner got +9.70 USDC. Around that sit 150 practice games on live Phoenix and Pacifica prices (practice money only), chat, squads and a guided tour.
+What is live: the program on Solana devnet with MagicBlock's TEE rollup, VRF oracle and oracle prices. On Nov 25 all four MagicBlock tests passed there over two runs: a cranked duel settled by a Magic Action 31.8 s after the start, a cranked Royale paid its survivor with no resolve or settle by hand, a private duel, and keeper abuse checks. Two players with 0 SOL also played a private ETH duel through the web app: 97 transactions, 85 on the rollup, one crank tick per second, and the winner got +9.70 USDC. Around that sit 150 practice games on live Phoenix and Pacifica prices (practice money only), chat, squads and a guided tour. On Nov 26 every local suite was re-run on MagicBlock's own validator: 56 of 56 tests pass.
 
 What isn't live: there is nothing on mainnet and no real money. Buying tokenized stocks for Stash needs an Orca xStock pool, which exists only on mainnet. The app isn't hosted yet; the services ran on a Mac. The program is upgradeable by one key; a multisig is the mainnet plan.
 
-Honest timeline: the first app, website and program were written Nov 15-20, before the Nov 20 14:00 UTC kickoff (commits 375d706..6431028). After kickoff (93fa845..e14e80f): the practice games and game kit, the first devnet deploy, and all of the MagicBlock work above except delegation and VRF: cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, the VRF callback fix, the move to the TEE rollup and the devnet runs. Details are in the README.
+Honest timeline: the first app, website and program were written Nov 15-20, before the Nov 20 14:00 UTC kickoff (commits 375d706..6431028). After kickoff (93fa845..9e0a58e, then docs only): the practice games and game kit, the first devnet deploy, and all of the MagicBlock work above except delegation and VRF: cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, the VRF callback fix, the move to the TEE rollup and the devnet runs. Details are in the README.
 ```
 
 ### Categories (up to 3)
 
 `Games`, `Consumer`, `Social`
 
-### Project website (required URL), Nick decides
+### Project website (required URL)
 
-**Not live yet.** On Nov 24 and Nov 25, 2026, `clashy.fun` resolved to a parked Hostinger page (`2.57.91.91`, title
+`NICK:` paste one of the two options below.
+
+
+**Not live yet.** On Nov 24, 25 and 26, 2026, `clashy.fun` resolved to a parked Hostinger page (`2.57.91.91`, title
 "Parked Domain name on Hostinger DNS system"), and `play.clashy.fun` had no DNS record. Pick one:
 1. Deploy a landing page and the app, point DNS, then use `https://clashy.fun`. The repo has two landing pages:
    `web/` and `landing/`; [docs/DEPLOY-RUNBOOK.md](docs/DEPLOY-RUNBOOK.md) builds `landing/`. Pick one before
@@ -92,16 +115,21 @@ Don't paste `https://clashy.fun` while it's still the parked page.
 https://github.com/nickthelegend/clashy
 ```
 
-**The repo is PRIVATE** (checked with `gh repo view` on Nov 25, 2026). The form checks access live. Before
-submitting, either make it public or invite the reviewer account that the form names in its "can't see repo" warning.
-Also push any local commits first (see the checklist).
+**The repo is PRIVATE** (checked with `gh repo view` on Nov 26, 2026). The form checks access live. `NICK:` before
+submitting, either make it public, or invite GitHub user **`jonasXchen`** (the reviewer the form names) under
+Settings → Collaborators. Push the local Nov 26 docs commits first (see docs/NICK.md).
 
-### Pitch & Demo (required URL), Nick
+### Pitch & Demo (required URL)
 
-**No demo video of the devnet product exists yet.** The Nov 25 in-app devnet duel was captured as screenshots and a
-text log only, not as video. The launch film (`marketing/clashy-x/film/`, outside this repo; 48 s) is a brand film on
-practice money. Nick hasn't approved it, and it shows no devnet clash. The form doesn't
-publish a length limit. A demo that meets Nick's film rules would:
+```text
+NICK: the unlisted YouTube or Drive link of the demo film
+```
+
+**No approved demo film exists yet.** A first cut from a real devnet duel recorded on Nov 25 evening
+(`marketing/clashy-x/demo/clashy-demo-film-v1.mp4`, 2:01, outside this repo) has not been approved or posted; its
+voice is ElevenLabs, not the Chatterbox voice Nick's film rules ask for. The plan for the film is
+`research/films/clashy/FILM-DRAFT.md` in the grokbot folder. The launch film (`marketing/clashy-x/film/`, 48 s) is a
+brand film on practice money and shows no devnet clash. The form doesn't publish a length limit. A demo that meets Nick's film rules would:
 - open on the live product within 15 s (no title cards first);
 - play one real devnet clash: the VRF roll, sealed picks, live on the rollup, settlement and the USDC receipt;
 - show the explorer tabs for the same duel (base and rollup);
@@ -116,7 +144,7 @@ Upload it (YouTube unlisted or Drive, viewable by anyone with the link) and past
 https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS?cluster=devnet
 ```
 
-### On-chain addresses (optional; the form says they are checked for recent devnet/mainnet activity)
+### On-chain addresses (optional, up to 28; the form says they are checked for recent devnet/mainnet activity)
 
 | Kind | Address |
 |---|---|
@@ -126,8 +154,8 @@ https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS
 Leave the fee vault out: the form's fee vault is for MagicBlock private-payment fees, and Clashy doesn't use them.
 (Clashy's keeper pays Magic Action fees through the validator's magic fee vault, a different account.)
 
-**"Recent" activity:** the program has base-layer transactions on Nov 25, 2026 (three upgrades, the TEE migration,
-the TEE test runs and the in-app duel at 11:33-11:35 UTC). A fresh devnet clash while recording the demo adds more.
+**"Recent" activity:** the program's latest base-layer transaction was on Nov 25, 2026 at 17:46 UTC (the duel
+recorded for the first demo cut), read on Nov 26 at 04:36 UTC. A fresh devnet clash while recording the demo adds more.
 
 ### Additional information (optional, up to 5,000)
 
@@ -149,13 +177,14 @@ VRF queue Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh. Test USDC mint 8Jb66Cfuj
 
 Trust: the program is upgradeable by one deployer key, and the admin can change rake (max 10%), treasury and vrf_required. A multisig is the mainnet plan.
 
-Kickoff disclosure: the first app, website and program predate the Nov 20 14:00 UTC kickoff (commits 375d706..6431028, Nov 15-20). After kickoff (93fa845..e14e80f, Nov 20-25): the practice games and game kit, close_duel, the devnet deploy, and the MagicBlock cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, VRF callback fix, 0.5% Stash fee, the TEE migration and the devnet runs. Mainnet: not deployed, no real money.
+Kickoff disclosure: the first app, website and program predate the Nov 20 14:00 UTC kickoff (commits 375d706..6431028, Nov 15-20). After kickoff (93fa845..9e0a58e, Nov 20-25; Nov 26 docs only): the practice games and game kit, close_duel, the devnet deploy, and the MagicBlock cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, VRF callback fix, 0.5% Stash fee, the TEE migration and the devnet runs. Mainnet: not deployed, no real money.
 ```
 
 ## Step 4: Boost (Nick)
 
-- **Your X account:** Clashy's X account (the drafts use `@ClashyFun`; confirm the handle).
-- **Team members:** Telegram handles, if anyone else should be able to see and edit the submission.
+- **Your X account:** `NICK:` (the X drafts use `@ClashyFun`; confirm the handle exists before pasting it).
+- **Team members:** `NICK:` none, unless someone else should see and edit the submission (each needs a role).
+- **X accounts:** `NICK:` optional.
 
 ---
 
@@ -246,8 +275,11 @@ Kickoff: Nov 20, 2026 14:00 UTC. These are commit times in UTC (`TZ=UTC git log`
 | `375d706..6431028` | 154 | Nov 15 09:43 to Nov 20 07:13 (**before kickoff**) | The website, art and app; the first Anchor program (duels, commit-reveal picks, rollup delegation, VRF coin rolls, Royale, clans and wars, perps, rake and Elo; `lib.rs` 2,618 lines); the sponsor relay; the audit and its fixes; the local MagicBlock stack and tests; chat, stickers and the first tour |
 | `93fa845..e833c62` | 15 | Nov 20 14:49 to Nov 22 04:47 (**after kickoff**) | The white tour card, the practice games and the game kit (the first three commits landed at 14:49 UTC, 49 minutes after kickoff, so part of that work was written before it); the beta legal pages; `close_duel` (45 lines in `lib.rs` and `math.rs`); the devnet test USDC and faucet; the first devnet deploy and test run; the Royale stock-coin fix; the faucet limits; docs/DEVNET.md |
 | `ddfa4da..e14e80f` | 10 | Nov 24 20:29 to Nov 25 11:37 (**after kickoff**) | README and this form; **MagicBlock cranks, the keeper PDA, Magic Action payouts, private picks on the TEE rollup and MagicBlock oracle prices** in the program, app and tests; the app's MagicBlock track and Live on MagicBlock screen; session keys (`lock_pick_session`, `call_round_session`); the VRF callback fix; the 0.5% Stash trading fee; TEE authentication; the TEE tests with a real privacy check; result Lottie animations; the sealed-in-TEE duel card; `scripts/devnet-proof.ts` |
+| `a72149c..9e0a58e` | 9 | Nov 25 11:54 to 17:56 (**after kickoff**) | Session keys in the app; the claims audit of docs and site copy; the finishing crank tick cancels its MagicBlock task (devnet upgrade `3LJSPdfk…`); Lottie on phones; the clay sprite animations in live clashes; two duel-screen fixes found while filming |
+| `e50830c..` | | Nov 26 (**after kickoff**) | Docs only: the cited test logs published, the Nov 26 re-run of every local suite, the read-only devnet live check, README, this form, docs/NICK.md |
 
-All commits are pushed to the private repo's `main`. After kickoff the program grew by 1,039 lines and lost 74
+Everything through `9e0a58e` is pushed to the private repo's `main`; the Nov 26 docs commits are local until Nick
+pushes them. After kickoff the program grew by 1,039 lines and lost 74
 (`git diff --shortstat 6431028 HEAD -- chain/programs`); `lib.rs` is now 3,485 lines. The program on devnet is the last
 Nov 25 build (upgrade `3LJSPdfk…`): a `solana program dump` after it gave a 1,605,240-byte program data account whose
 first 1,583,160 bytes match `chain/target/deploy/clashy.so` (sha256 `707e9cb8…2dc9b7`); the rest is zero padding. The event pages publish no rule on code written before kickoff, but Luma frames the week as building an MVP.
@@ -257,23 +289,4 @@ Whether to enter is Nick's call.
 
 ## What Nick must do before Fri Nov 27, 2026 14:00 UTC (19:30 IST)
 
-1. **Decide on eligibility.** The first version of the app and program predates kickoff; the MagicBlock cranks,
-   keeper, Magic Actions, TEE picks, oracle and session keys came after it (see the table above). If unsure, ask the MagicBlock
-   team in the Blitz Telegram group, and keep the disclosure in the description either way.
-2. **Push and open the repo.** Commit the Nov 25 docs fixes, check `git -C projects/clashy log origin/main..main`,
-   and push (`git push origin main`). Then make `github.com/nickthelegend/clashy` public, or invite the reviewer the form names.
-   Check that the form's repo check goes green.
-3. **Website.** Deploy `web/` or `landing/` and point `clashy.fun` (docs/DEPLOY-RUNBOOK.md builds `landing/`), or
-   paste the repo URL instead. Never
-   paste the parked page.
-4. **Demo.** Record a devnet demo or approve one, then upload it so anyone with the link can watch. It should show the
-   live product within 15 s, one real devnet clash with the VRF roll, the rollup and settlement, and the explorer. No
-   video of the devnet product exists yet. A fresh clash while recording also gives the program recent devnet
-   activity.
-   - **Before recording:** the sponsor had 0.452 devnet SOL on Nov 25 after the TEE runs, and the crank about 0.3
-     (docs/DEVNET.md). That's enough for a demo. The keeper escrow held 0.0507 SOL for Magic Actions before the Nov 25
-     runs; top it up if many games are played. If new players will be made, top up the sponsor
-     (`AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz`) from faucet.solana.com.
-5. **Fill the form.** Log in with Telegram, connect the payout wallet, fill About you, paste Step 3 from this file,
-   and add your X handle and any team members.
-6. **Submit** before 14:00 UTC on Nov 27, then check that the submission shows on your builder profile.
+The ordered checklist, with times in UTC and IST, is at the top of [docs/NICK.md](docs/NICK.md).
