@@ -543,6 +543,7 @@ export default function OnChainDuel() {
                   </View>
                 ) : null}
                 <Txt v="small" style={{ textAlign: 'center', marginTop: 12 }}>{perps ? `Long or short at ${duelLev}× for ${duel.lenSecs} seconds. A ${(100 / duelLev).toFixed(duelLev >= 25 ? 1 : 0)}% move against you and you're liquidated.` : duel.lenSecs >= 3600 ? 'Where is it in 1 hour?' : `Where is it in ${duel.lenSecs} seconds?`}</Txt>
+                {!perps ? <Txt v="small" color={C.dim} style={{ textAlign: 'center', marginTop: 2, fontSize: 12.5 }}>Same call as your rival? A tie: you both get your stake back, no fee.</Txt> : null}
                 <View style={{ alignSelf: 'stretch', marginTop: 14 }}>
                   {me >= 0 && !(duel.picksCommitted & (1 << me)) && !(mbMode.private && myLock) ? <CallButtons onUp={() => pick(1, duelLev)} onDown={() => pick(2, duelLev)} disabled={!!busy} {...(perps ? { upLabel: 'Long', downLabel: 'Short' } : {})} /> : mbMode.private ? (
                     <View>
