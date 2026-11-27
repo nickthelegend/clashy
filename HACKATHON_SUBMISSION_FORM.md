@@ -148,8 +148,9 @@ MagicBlock's TEE rollup, Nov 27:
 - with no one to fight, the arena: all 151 games playing at once in one grid that zooms out from a single game (each
   recorded live for about 10 s in a desktop browser at phone size, its buttons pressed by a script), then a few favourites: Tap Grid full screen on Bitcoin, Draw the Line, and two walls
   of six practice games played live;
-- the web app on desktop; seven Solana Explorer cards for the same clash and war; store plans (App Store, Google
-  Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150+ games.
+- the web app on desktop; seven Solana Explorer cards for the same clash and war; an end card with no
+  narration: the tagline (Clash 1v1. Squad up. Play 150+ games.) and store badges with their logos (App Store, Google
+  Play, Seeker dApp Store and an Android APK download: all coming soon, no build exists yet; Web: play in your browser).
 Trails: [`chain/evidence/devnet-proof-nov27-ios-duel2.txt`](chain/evidence/devnet-proof-nov27-ios-duel2.txt) (the SOL
 clash: 96 txs, 86 on the rollup, 61 crank ticks, 2 `LockPickSession`) and
 [`chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`](chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt) (27

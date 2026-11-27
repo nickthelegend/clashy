@@ -24,8 +24,9 @@ the rollup with MagicBlock stickers, both phones in step as Ben's reply arrives 
 that zooms out from a single game (each game recorded live for about 10 s in a desktop browser at phone size, its
 buttons pressed by a script, `marketing/clashy-x/demo/allgames-rec.mjs` in the grokbot folder), then a few favourites: Tap Grid full screen and
 Draw the Line on Bitcoin, and two walls of six practice games recorded live in a desktop browser at phone size; the web app on desktop;
-the same clash's and war's transactions on Solana Explorer; store plans (App Store, Google Play, Solana dApp Store:
-coming soon). Trails:
+the same clash's and war's transactions on Solana Explorer; an end card with no narration: the tagline and
+store badges with their logos (App Store, Google Play, Seeker dApp Store and an Android APK download: all coming soon,
+no build exists yet; Web: play in your browser). Trails:
 [`chain/evidence/devnet-proof-nov27-ios-duel2.txt`](chain/evidence/devnet-proof-nov27-ios-duel2.txt),
 [`chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`](chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt),
 [`chain/evidence/devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt). Off camera:
