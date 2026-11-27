@@ -2,9 +2,10 @@
 
 **Clash 1v1. Squad up. Play 150 games.** Clashy is a mobile-first PvP trading game on Solana that does three things: 1v1 clashes (and
 perps clashes and Royales) on one coin; squads that pool one chest, vote every call and go to war with rival squads; and
-150 games on live prices. The live part of an on-chain clash (sealed picks, scoring every second, Royale rounds) runs on a
-MagicBlock Ephemeral Rollup; escrow and settlement are on Solana. The 150 practice games run off chain on live prices.
-Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (Entertainment Finance).
+151 practice games on live prices. The live part of an on-chain clash (sealed picks, scoring every second, Royale rounds)
+runs on a MagicBlock Ephemeral Rollup; escrow and settlement are on Solana. The 151 practice games run off chain with
+paper money on live prices. Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (Entertainment
+Finance).
 
 **Everything below runs on Solana devnet with test USDC. No real money moves anywhere.**
 
@@ -22,25 +23,27 @@ narration is the builder's own voice, cloned (ElevenLabs, and a local Chatterbox
 
 The loop: two players stake, MagicBlock VRF rolls one coin for both, each locks up or down privately inside MagicBlock's
 TEE rollup, a crank scores the clash every second for 60 s, and a Magic Action pays the winner on Solana.
-[Tests](TESTING.md) · [Submission form](HACKATHON_SUBMISSION_FORM.md) · [MagicBlock design](docs/MAGICBLOCK.md) ·
+[Docs hub](docs/README.md) · [Features and proof](docs/FEATURES.md) · [Tests](TESTING.md) ·
+[Submission form](HACKATHON_SUBMISSION_FORM.md) · [MagicBlock design](docs/MAGICBLOCK.md) ·
 [Devnet record](docs/DEVNET.md) · [Security audit](docs/AUDIT.md)
 
 ## What Clashy does
 
-Every real-money mode below is an on-chain game on Solana devnet (test USDC); the live part runs on MagicBlock.
-Instruction names link to the program, [`chain/programs/clashy/src/lib.rs`](chain/programs/clashy/src/lib.rs).
+Every staked mode below is an on-chain game on Solana devnet (test USDC, no real money); the live part runs on
+MagicBlock. Instruction names are in the program, [`chain/programs/clashy/src/lib.rs`](chain/programs/clashy/src/lib.rs).
+Where each feature lives and how it is proven: [docs/FEATURES.md](docs/FEATURES.md).
 
 | Mode | How it plays | On chain, and the MagicBlock piece |
 |---|---|---|
-| **1v1 Clash** | Two players stake from $5 in the app (the program's minimum is 1 USDC). One coin is rolled for both; each calls up or down in secret; 60 s live (or a stock over an hour); the better call takes the pot minus a 3% rake. | Escrow `open_duel` / `join_duel` on Solana · **VRF** coin roll (`request_coin_roll`, `coin_roll_callback`) · picks sealed in the **Private ER (TEE)** with a **session key** (`lock_pick_session`) · **crank** scores every second (`tick_duel`) · **Magic Action** pays out on Solana |
+| **1v1 Clash** | Two players stake from $5 in the app (the program's minimum is 1 USDC). One coin is rolled for both; the pick screen shows that coin's price chart, then each calls up or down in secret; 60 s live (or a stock over an hour); the better call takes the pot minus a 3% rake. Equal P&L is a tie: both stakes come back, no fee (`finish_duel` sets winner 3; `settle_duel` splits the pot with no rake), and the pick screen says so. | Escrow `open_duel` / `join_duel` on Solana · **VRF** coin roll (`request_coin_roll`, `coin_roll_callback`) · picks sealed in the **Private ER (TEE)** with a **session key** (`lock_pick_session`) · **crank** scores every second (`tick_duel`) · **Magic Action** pays out on Solana |
 | **Perps clash** | Long or short with leverage (up to 50× in the app, 100× in the program) for 60 s; liquidated means out. | The same duel pipeline; each crank tick checks liquidation |
-| **Royale** | Up to 16 players, $2 in. A call every round; a wrong call costs a heart; the players with the most hearts left split the pot. | **VRF** coin · round calls signed with **session keys** on the rollup (`call_round_session`) · **crank** resolves rounds (`tick_round`) · **Magic Action** pays the survivors on Solana (`settle_tournament`, sent by MagicBlock's TEE validator) |
-| **Squads** | Any number of members pool USDC in one shared chest; a deposit buys chest shares. Any member proposes a call (coin, up or down, leverage up to 20×, size); members vote, weighted by their shares; the captain places it, and later closes it, at Clashy's crank-pushed Solana price feed (Coinbase prices), not MagicBlock's oracle. | On Solana, no MagicBlock piece: program-owned chest token account · `create_clan`, `join_clan`, `deposit_chest`, `propose`, `vote`, `execute_proposal`, `close_position` |
+| **Royale** | Up to 16 players, $2 in. A call every round, with the round's price line drawn from its start price; a wrong call costs a heart; the players with the most hearts left split the pot. | **VRF** coin · round calls signed with **session keys** on the rollup (`call_round_session`) · **crank** resolves rounds (`tick_round`) · **Magic Action** pays the survivors on Solana (`settle_tournament`, sent by MagicBlock's TEE validator) |
+| **Squads** | Any number of members pool USDC in one shared chest; a deposit buys chest shares. A member with chest shares proposes a call (coin, up or down, leverage up to 20×, size); members vote, weighted by their shares; the captain places it, and later closes it, at Clashy's crank-pushed Solana price feed (Coinbase prices), not MagicBlock's oracle. | On Solana, no MagicBlock piece: program-owned chest token account · `create_clan`, `join_clan`, `deposit_chest`, `propose`, `vote`, `execute_proposal`, `close_position` |
 | **Squad war** | A captain stakes part of the chest against a rival squad; the rival accepts with the same stake; both squads trade by vote during the window; the better return takes both stakes into its chest. | `declare_war`, `accept_war`, `settle_war` on Solana, scored from the squads' trades at Clashy's crank-pushed Solana price feed (`solana_price`), not MagicBlock's oracle |
-| **Weekly Cup** | Best profit this week (clash winnings plus Stash stock gains); resets Monday. | Read from program accounts, nothing entered by hand |
-| **Squad chat and the calls feed** | Squad channels and a public feed of calls. | Channels and boards delegated to the rollup (`post_message`, `post`) |
+| **Weekly Cup** | Clash winnings settled this week plus Stash stock profit (the stock part is not limited to the week: holdings keep no buy dates); resets Monday. | Read from program accounts, nothing entered by hand |
+| **Squad chat and the calls feed** | Each squad has `#general` and `#trades` channels (members only) with stickers, and there is a public feed of calls. | Channels and boards delegated to the rollup (`open_channel`, `post_message`, `post`) |
 | **Stash** | Save USDC, set spending limits and breaks; buy tokenized stocks (not on devnet, which has no xStock pool; the buy passes on the local stack against a mainnet snapshot of the five xStock Orca Whirlpool pools). | `stash_save`, `set_limits`, `take_break`, `stash_invest` |
-| **150 practice games** | Memes, perps, stocks, crypto and party games on live prices with practice money. | Off chain, on purpose: free and instant |
+| **151 practice games** | Memes, perps, stocks, crypto and party games on live prices with practice money, on 33 engines (`app/src/games/catalog.ts`). Tap Grid plays full screen; Draw the Line (added Nov 27) has you draw the next 30 s against Clashy Bot. | Off chain, on purpose: free and instant |
 
 ### MagicBlock proof
 
@@ -61,8 +64,22 @@ through Explorer's custom-RPC setting.
 | Magic Action: Royale payout | `settle_tournament_action` ([lib.rs:242](chain/programs/clashy/src/lib.rs#L242)), attached in `tick_round` ([:2038](chain/programs/clashy/src/lib.rs#L2038)) | [`KauWRCg6…`](https://explorer.solana.com/tx/KauWRCg6xyYhYCB4zuWN75UxYVQfVfGWBBgg9iqnhKDh1B4a177is8b3Z4e9h2aMh3KDmjRVXT5F5w5jNWACi87?cluster=devnet) ProcessUndelegation + SettleTournament, signed by the TEE validator `MTEWGuqx…` (Solana, Nov 26) |
 
 The two settles are version-1 transactions. Full trails: [`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt)
-(Nov 25 duel), [`devnet-proof3.txt`](chain/evidence/devnet-proof3.txt) (the crank cancel) and
-[`devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md) (Nov 26 duel, Royale and squad war).
+(Nov 25 duel), [`devnet-proof3.txt`](chain/evidence/devnet-proof3.txt) (the crank cancel),
+[`devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md) (Nov 26 duel, Royale and squad war) and the Nov 27 trails
+([`devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt),
+[`devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt),
+[`devnet-proof-nov27-duel.txt`](chain/evidence/devnet-proof-nov27-duel.txt),
+[`devnet-proof-nov27-royale.txt`](chain/evidence/devnet-proof-nov27-royale.txt), the last with 21 `CallRoundSession`
+transactions). Every evidence file is listed in [docs/README.md](docs/README.md#evidence).
+
+## Platforms
+
+| Platform | Status |
+|---|---|
+| Web app | Runs in any browser: the same Expo app exported for web, with a desktop layout on wide screens. Sign-in with Privy (email or Google). Not hosted yet |
+| iOS | Same Expo codebase (`app/ios/`). Native builds run on iOS Simulators with a device test wallet on devnet; Privy is web only. The Nov 27 clash and squad war in the demo film were played this way |
+| Android | Same Expo codebase (`app/app.json` names the package). No Android build has been made or run yet |
+| App Store, Google Play, Solana dApp Store | Coming soon. Nothing has been submitted to any store, and there is no APK or IPA in the repo |
 
 ## Status: live on Solana devnet with MagicBlock's Private Ephemeral Rollup, VRF, cranks and Magic Actions (deployed Nov 22, upgraded Nov 25, 2026)
 
@@ -133,6 +150,9 @@ player).
 - **Keeper abuse:** an outsider cannot create or delegate the keeper.
 - **Through the web app:** the private ETH duel above, played by two device-wallet players with 0 SOL. On Nov 26 a
   private duel, a 3-player Royale and a squad war were played the same way ([`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md)).
+- **Nov 27:** a private SOL duel (101 txs, 89 on the rollup) and a 3-player Royale (112 txs, 100 on the rollup, 21
+  session-key calls) in the app, then a private BTC duel (94 txs, 82 on the rollup, 61 crank ticks) and a squad war
+  (19 Solana txs) on iOS Simulators by fresh device test wallets (`chain/evidence/devnet-proof-nov27-*.txt`).
 
 **Nov 22, on devnet-as** (logs `chain/evidence/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`,
 `devnet-test-4.log`, `devnet-test-clashy.log`). No single run was all green: each test below passed in at least one
@@ -160,7 +180,9 @@ run, several only after reruns.
   findings and the follow-ups to the three mitigated Highs in [docs/AUDIT.md](docs/AUDIT.md) gate mainnet. The Nov 25
   MagicBlock code has not been audited yet.
 - **Not hosted yet.** `clashy.fun` is still a parked Hostinger page, and `play.clashy.fun` has no DNS record (both
-  checked Nov 25, 2026). The relay, crank and app ran on a Mac for the devnet tests.
+  checked Nov 27, 2026). The relay, crank and app ran on a Mac for the devnet tests.
+- **No store builds.** Nothing is submitted to the App Store, Google Play or the Solana dApp Store, and no Android
+  build has been made.
 
 ### Who can change the program
 
@@ -180,7 +202,8 @@ below are commit times in UTC (`TZ=UTC git log`).
 | `93fa845..e833c62` | 15 | Nov 20 14:49 to Nov 22 04:47 (after kickoff) | The white tour card, the practice games and the game kit (the first three commits landed at 14:49 UTC, 49 minutes after kickoff, so part of that work was written before it); the beta legal pages; `close_duel` (45 program lines); the devnet test USDC and faucet; the first devnet deploy and test run; the Royale stock-coin fix; the faucet limits; the devnet record |
 | `ddfa4da..e14e80f` | 10 | Nov 24 20:29 to Nov 25 11:37 (after kickoff) | README and submission form; **MagicBlock cranks, the keeper PDA, Magic Action payouts, private picks on the TEE rollup, MagicBlock oracle prices** (program, app and tests); the app's MagicBlock track and Live on MagicBlock screen; session keys (`lock_pick_session`, `call_round_session`); the VRF callback fix; the 0.5% Stash trading fee; TEE authentication; the three devnet upgrades and the TEE test runs; result Lottie animations; the sealed-in-TEE duel card; `scripts/devnet-proof.ts` |
 | `a72149c..9e0a58e` | 9 | Nov 25 11:54 to 17:56 (after kickoff) | Session keys in the app (private picks signed on the device); the claims audit of docs and site copy; the finishing crank tick cancels its MagicBlock task (the fourth devnet upgrade, `3LJSPdfk…`); Lottie on phones; the clay sprite animations in live clashes; two duel-screen fixes found while filming |
-| `e50830c..ba4d09d`, then doc fixes | 15 to `ba4d09d` | Nov 26 04:39 to 22:52, then Nov 27 (after kickoff) | Docs and evidence: the cited test logs, the Nov 26 test re-run (TESTING.md), the read-only devnet live check, the proof scripts and the Nov 26 trails, this README. App UI: sprite animations, live-clash polish, the Play tab, the squad leverage vote (62 app files, +376/−112 since `9e0a58e`). Landing: the Squads rename. The program, tests, server and `web/` are unchanged |
+| `e50830c..ba4d09d` | 15 | Nov 26 04:39 to 22:52 (after kickoff) | Docs and evidence: the cited test logs, the Nov 26 test re-run (TESTING.md), the read-only devnet live check, the proof scripts and the Nov 26 trails, this README. App UI: sprite animations, live-clash polish, the Play tab, the squad leverage vote (62 app files, +376/−112 from `9e0a58e` to `ba4d09d`). Landing: the Squads rename. The program, tests, server and `web/` are unchanged |
+| `c3f3b90..bd8e4c2`, then doc commits | 17 to `bd8e4c2` | Nov 26 23:09 to Nov 27 10:29, then Nov 27 (after kickoff) | Docs, form and the demo films v4 to v6; the Nov 27 devnet trails. App (17 files, +405/−27 from `ba4d09d`): the coin's price chart before the call (clash and Royale), the tie line, the Clash again fix, Tap Grid full screen, Draw the Line (151 games), its tour, the Web Crypto polyfill for phones. The new tagline in the app, `landing/` and `web/` (7 lines in `web/`). `chain/scripts`: `close-war-trades.ts` and the Royale and squad proof scripts. The program, tests and server are unchanged |
 
 After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat 6431028 HEAD -- chain/programs`);
 `lib.rs` is now 3,485 lines and the program source 4,564.
@@ -223,9 +246,10 @@ After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat
     short title, one line on what to do, a step counter, Back, Next and Skip. It switches tabs and scrolls by itself,
     and skips anything that isn't on screen. 25 inner screens and every game get their own short tour on the first
     visit. Replay it from Settings → Take the tour again. Code: [app/src/tour/](app/src/tour/).
-  - **Games:** 150 games on live prices ([docs/GAMES.md](docs/GAMES.md)): memecoins, perps, US stocks, crypto and party
+  - **Games:** 151 games on live prices ([docs/GAMES.md](docs/GAMES.md)): memecoins, perps, US stocks, crypto and party
     games. Some examples:
-    - tap trading on a price grid (Tap Grid, Meme Grid), More or Less lines (More or Less, Power Play), a tower climb,
+    - tap trading on a price grid (Tap Grid, which plays full screen, and Meme Grid), drawing the next 30 seconds on the
+      chart (Draw the Line, Nov 27), More or Less lines (More or Less, Power Play), a tower climb,
       Mines on the day's red markets, roulette on the move;
     - replays of real candles (Rewind, Call the Close, Who's That Chart), one live candle (Candle Call, Wick Duel),
       whole-path calls (Path Pick), same-or-split pairs (In Sync), and a pre-set exit (Exit Plan);
@@ -236,12 +260,12 @@ After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat
     - instant quizzes (Cap or No Cap, Better Day);
     - brackets, bingo, drafts, and a royale against seven bots.
 
-    They run on 32 engines, all driven by one shared stream of Phoenix and Pacifica mark prices (every market the two
+    They run on 33 engines, all driven by one shared stream of Phoenix and Pacifica mark prices (every market the two
     venues list; about 110 on Nov 20), plus Jupiter data for pump.fun coins. Fixed payouts are priced from each
     market's live volatility. All games use practice money, solo or against Clashy Bot. In up/down games the bot always
     takes the other side; in some engines (race, guess, snipe, royale) it picks at random. Each round ends on a receipt
     of real prices. Ideas came from two Grok sessions and research on what ships today (tap trading, PrizePicks,
-    chart-replay quizzes), and the game icons are new clay art. Code: [app/src/games/](app/src/games/) and `app/games`.
+    chart-replay quizzes), and the game icons are new clay art. Code: [app/src/games/](app/src/games/) and [app/src/app/games/](app/src/app/games/).
   - **Game kit:** every piece the games are built from, in one import (`@/games/kit`): style tokens, the round API,
     bell and market helpers, real past candles, the price and candle charts, the controls, and the screen pieces (game
     cards, hero, result card). [docs/GAME-KIT.md](docs/GAME-KIT.md) lists them and how to add a game or an engine;
@@ -264,27 +288,27 @@ After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat
   stack or on devnet: **On-chain duel** (commit-reveal or private TEE picks), **On-chain Royale** and **On-chain clan**
   (chest, votes, wars), plus a **Live on MagicBlock** screen that reads the config, keeper and oracle accounts. On web
   you sign in with **Privy** (email or Google); Privy makes a Solana wallet that holds USDC, signs silently inside the
-  game, and lets you send USDC out or export the key. Locally the relay hands out 100 test USDC. Automated runs use
-  device test keys. In-game moves (the private pick lock and Royale calls) are signed by a MagicBlock session key the
+  game, and lets you send USDC out or export the key. Locally the relay hands out 100 test USDC. Automated runs and the
+  native phone build use device test keys (Privy is web only; `app/src/chain/wallet.tsx`). In-game moves (the private pick lock and Royale calls) are signed by a MagicBlock session key the
   app keeps on the device for 6 hours.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `app/` | Expo app (iOS, Android, web): on-chain duels, Royale and clans, 150 practice games on 32 engines, ranks, chat, squads and the tour |
+| `app/` | Expo app (web and iOS builds; Android configured, not built): on-chain duels, Royale and clans, 151 practice games on 33 engines, ranks, chat, squads and the tour |
 | `chain/` | Anchor program `clashy`, local MagicBlock stack launcher (with the local USDC mint), price crank, sponsor relay, mainnet-fork Phoenix trade, tests |
 | `server/` | Social server: DMs, follows, follow requests, notifications, bios (Node, built-in SQLite, wallet sign-in) |
 | `docker/`, `docker-compose.yml` | The backend in containers: relay, crank, social, web, the local chain, Caddy |
 | `web/` | Landing page (Vite + React + motion), one file: `web/src/App.tsx`. Not hosted yet |
 | `landing/` | Second landing page variant with the clay animation clips and the Arena demo; `docs/DEPLOY-RUNBOOK.md` builds this one. Not hosted yet |
 | `assets/` | Brand, 3D/clay art and clay animation clips (`assets/SOURCES.md` says how each was made) |
-| `docs/` | MagicBlock, devnet, audit and system design; game design, mini-games and the real-trades plan are design documents, not built |
+| `docs/` | Start at [docs/README.md](docs/README.md). MagicBlock, devnet, features, audit and system design; game design, mini-games, launch and the real-trades plan are planning documents, not built |
 
 ## Architecture
 
 ```text
- Player (Expo app: iOS, Android, web)        holds test USDC only, 0 SOL; Privy wallet on web, session key on device
+ Player (Expo app: web, iOS)                 holds test USDC only, 0 SOL; Privy wallet on web, device test key on phones
    │  signs moves                                   │ in-game moves (pick lock, Royale calls) by a 6-hour MagicBlock session key
    ▼                                                ▼
  Sponsor relay (chain/scripts/sponsor.ts)  ── pays every Solana fee and rent, co-signs only Clashy player instructions
@@ -301,7 +325,7 @@ After kickoff the program grew by 1,039 lines and lost 74 (`git diff --shortstat
           finishing tick ─► keeper PDA commits and undelegates, cancels its crank, Magic Action settles on Solana
 
  Social server (server/): DMs, follows, notifications · indexer: archives calls and squad messages
- Practice games: 150 games in the app on live Phoenix / Pacifica / Jupiter prices, practice money, off chain
+ Practice games: 151 games in the app on live Phoenix / Pacifica / Jupiter prices, practice money, off chain
 ```
 
 The step-by-step flow, with the MagicBlock feature behind each step, is in [docs/MAGICBLOCK.md](docs/MAGICBLOCK.md);
