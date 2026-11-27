@@ -116,9 +116,7 @@ Don't paste `https://clashy.fun` while it's still the parked page.
 https://github.com/nickthelegend/clashy
 ```
 
-**The repo is PRIVATE** (checked with `gh repo view` on Nov 27, 2026). The form checks access live. `NICK:` before
-submitting, either make it public, or invite GitHub user **`jonasXchen`** (the reviewer the form names) under
-Settings → Collaborators. Every commit is already pushed.
+**The repo is public** (made public on Nov 27, 2026; `gh repo view` reports PUBLIC and the page loads logged out). Every commit is already pushed.
 
 ### Pitch & Demo (required URL)
 
