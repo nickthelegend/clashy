@@ -1,13 +1,13 @@
-# Clashy Games: 150 games on live prices
+# Clashy Games: 151 games on live prices
 
-Status: 100 games built Nov 20, 2026; 50 more on 11 new engines Nov 21. Every game is played with **practice money** (the Practice paper balance) on **live prices**
+Status: 100 games built Nov 20, 2026; 50 more on 11 new engines Nov 21; one more, Draw the Line, on a new engine (`drawline`) Nov 27, so 151 games on 33 engines (counted from `catalog.ts` and `engines/index.ts`). Every game is played with **practice money** (the Practice paper balance) on **live prices**
 (Phoenix and Pacifica perps marks, about 110 markets: crypto, memecoins, US stocks, gold, oil, FX; plus Jupiter data
 for pump.fun launches). Nothing is sent on chain. Games are against **Clashy Bot** (it picks at random, except in Up/Down-style games where it always takes the other side, said plainly),
 seven bots (party games), or solo with a fixed payout priced from live volatility.
 
 Ideas: two Grok sessions (Expert mode; 140 ideas on Nov 20, 38 more on Nov 21) and research on what ships today
 (tap trading on Euphoria and BC.GAME, PrizePicks More/Less, 5-minute up/down markets, chart-replay quizzes), all in
-`grokbot/research/clashy-games/`, judged and merged into 32 engines. Games that need real crowds (spectator pots, crowd
+`grokbot/research/clashy-games/`, judged and merged into 32 engines (a 33rd, `drawline`, came on Nov 27). Games that need real crowds (spectator pots, crowd
 fades, live rooms) were dropped: there are no fake players here.
 
 Every piece the games are drawn with is in one kit: see [GAME-KIT.md](GAME-KIT.md), and /games/kit in the app.
@@ -16,7 +16,7 @@ Every piece the games are drawn with is in one kit: see [GAME-KIT.md](GAME-KIT.m
 | Path | What |
 |---|---|
 | `app/src/games/types.ts` | `GameDef`, `EngineId`, categories |
-| `app/src/games/catalog.ts` | the 150 games |
+| `app/src/games/catalog.ts` | the 151 games |
 | `app/src/games/feed.ts` | the shared live feed (`useFeed`, `feed.mark/fresh/since/moving`), pools, names and logos |
 | `app/src/games/odds.ts` | volatility from ticks (`sigmaOf`), touch / stay odds, `payoutFor` (97% of fair), helpers |
 | `app/src/games/kit/` | the game kit: tokens, `GameApi`, round and market helpers, real past candles, charts, UI and screen pieces ([GAME-KIT.md](GAME-KIT.md)) |
@@ -74,7 +74,7 @@ round state.
 | bracket | eight markets, quarter-finals to a final, decided by the move at the bell; call every match; more right calls than the bot's random bracket wins 2× | `n` (8) |
 | elim | `n` markets; every `every` seconds the worst since the start is knocked out; you and the bot each back one; whose market lasts longer wins 2× | `n`, `every` |
 | leader | from the last 5 minutes, the leader and laggard of `n` markets; CHASE (the leader stays ahead over the round) or FADE (the laggard gains on it); bot takes the other side | `n` |
-| tapgrid | tap trading: a grid of time × price cells slides toward the live line; tap up to `chips` cells (each 1/chips of the stake), each priced live by simulation from volatility and locked when tapped; a cell pays if the line passes through it in its moment; unused chips come back | `cols`, `colSecs`, `rows`, `chips` |
+| tapgrid | tap trading (a Full screen button, Nov 27, opens a bigger grid): a grid of time × price cells slides toward the live line; tap up to `chips` cells (each 1/chips of the stake), each priced live by simulation from volatility and locked when tapped; a cell pays if the line passes through it in its moment; unused chips come back | `cols`, `colSecs`, `rows`, `chips` |
 | picks | More or Less on `n` lines (price above or below its entry at the bell, or a move bigger or smaller than its even-odds size, only on markets that are moving); Power pays 0.97 × 2^k when all k hit, Flex (k ≥ 3) pays with one miss; a pick exactly on its line is void | `n`, `min`, `flex` (false: Power only) |
 | tower | climb floors: each floor is a `floorSecs` call on UP / FLAT / DOWN lanes of an even third each; easy picks two lanes (×1.455), hard one (×2.91); cash out between floors, a miss falls; a quiet feed after floor 1 pays the pot already won | `floors`, `floorSecs`, `mode` |
 | mines | `tiles` real markets ranked by the day's change (24 h, Pacifica): the `count` worst are the mines (the best with `green`), so a board deals on any day; exact odds 0.97 × Π (N−i)/(N−m−i); face up (a knowledge game) or face down | `tiles`, `mines`: `red` / `green`, `count` (4 of 16, 2 of 9), `faceUp` |
@@ -85,3 +85,4 @@ round state.
 | path | commit to up/down for every leg before the round; all right pays 0.97 × 2^legs; a wrong leg loses at once; a flat leg with no wrong one refunds | `legs` |
 | sync | two markets (a pair): SAME (both finish up or both down) or SPLIT, vs Clashy Bot; either flat refunds | `pairs` |
 | timer | pick a side and your exit second before the round; Clashy Bot takes the same side and exits at a random second; liquidation at 1/lev against; the better P&L at the exit wins 2× | `lev` |
+| drawline | Draw the Line (Nov 27): the last minute of one rolled market, then a blank future; draw your line across it, Clashy Bot draws one too; every live price within a line's band or crossing it is a touch; more touches than the bot wins 2×, equal is a push | `band` (default 0.1 of the canvas height) |

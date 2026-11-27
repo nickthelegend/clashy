@@ -1,8 +1,9 @@
 # Testing
 
 Every suite below was re-run on **Nov 26, 2026 (04:38–05:05 UTC)** on a Mac, unless the row says otherwise. The
-program, tests, server and website were unchanged since `9e0a58e` (later commits change only the app, the landing page,
-the docs and the proof scripts; everything is pushed to GitHub), and the program
+program, tests and server are unchanged since `9e0a58e` (later commits change the app, the landing page, the docs, the
+proof scripts and `chain/scripts/close-war-trades.ts`, and on Nov 27 seven tagline lines in `web/`, whose build and
+lint were re-run then; everything is pushed to GitHub), and the program
 binary they ran, `chain/target/deploy/clashy.so`, has sha256 `707e9cb8…`, the same build that is deployed on devnet. Raw output is in [`chain/evidence/`](chain/evidence/) (files
 ending `-nov26.log`). Per-test detail is in [chain/TESTING.md](chain/TESTING.md).
 
@@ -29,7 +30,7 @@ the sponsor pays all fees and rent.
 | Practice clash vs Clashy Bot (rules + live rollup feeds) | `npx tsx scripts/crank.ts`, then `npx tsx --test tests/practice-clash.test.ts` | 5 | 5 pass | `suite-practice-nov26.log` |
 | Practice order-book perps on live Phoenix and Pacifica books | `npx tsx scripts/sponsor.ts`, then `npx tsx --test tests/markets.test.ts` | 7 | 7 pass | `suite-markets-nov26.log` |
 | Social server (DMs, follows, archive), SQLite | `cd server && npm test` | 4 | 4 pass | `social-nov26.log` |
-| Website | `cd web && npm run build && npm run lint` | build + lint | both clean | not stored |
+| Website | `cd web && npm run build && npm run lint` | build + lint | both clean (re-run Nov 27 10:39 UTC at `e38bbda`, after the tagline edit) | not stored |
 
 What the Nov 26 run printed (from the logs):
 - **Cranked duel (local):** ETH, settled by the Magic Action 30.8 s after the start, keeper ticks 0 → 31, and the
@@ -51,6 +52,12 @@ What the Nov 26 run printed (from the logs):
   the five xStock Whirlpool pools (`chain/scripts/localnet.sh`); devnet has no xStock pool.
 - **Relay:** a wallet with 100 USDC and 0 SOL created its player account through the relay.
 
+**Through the app on devnet (Nov 27):** a private SOL duel (101 transactions, 89 on the rollup, 61 crank ticks) and a
+3-player Royale (112, 100 on the rollup, 21 session-key calls), then the demo film's private BTC duel (94, 82 on the
+rollup, 61 crank ticks) and squad war (19 Solana transactions) on iOS Simulators by fresh device test wallets. Trails:
+`chain/evidence/devnet-proof-nov27-duel.txt`, `-royale.txt`, `-ios-duel.txt`, `-ios-squad-war.txt`. These are
+recorded runs, not test suites.
+
 **Through the web app on devnet (Nov 26, the film's games):** a private ETH duel (99 transactions, 89 on the rollup),
 a 3-player Royale (93, 84 on the rollup) and a squad war (18 Solana transactions, none failed), each played by device
 wallets with 0 SOL; trails and every failed transaction explained in `chain/evidence/devnet-proof-nov26.md`. The Nov 25
@@ -64,6 +71,18 @@ in-app duel (100 transactions, 88 on the rollup) is in `chain/evidence/devnet-pr
 | The other suites on devnet | Same reason | Nov 22, on the first program and devnet-as: each passed in at least one run, several after reruns; the 0-SOL sponsored-player test failed there because it needs a real Privy sign-in (`devnet-test-*.log`) |
 | Mainnet-fork Phoenix trade | Needs the mainnet fork (`scripts/forknet.sh`) | Sold 1 SOL for 54.660103 USDC, the book expected 54.660103 (Nov 18) |
 | App lint and type check | Another session had uncommitted app changes in progress, so a run would not test the committed app | Not recorded |
+
+## No automated tests
+
+- **The app has no test suite.** The Nov 27 app changes (the price chart on the pick screen, the tie line, the Clash
+  again fix, the Royale round line, Tap Grid full screen, Draw the Line, the Web Crypto polyfill) are covered only by
+  the Nov 27 devnet trails and the demo film. The tie rule itself is the program's (`finish_duel`), and the suites
+  above have settled dead heats (`suite-perps-nov26.log`: `winner 3`).
+- **The 151 practice games** have no per-game test. `practice-clash.test.ts` covers the practice clash rules and the
+  live feeds; `markets.test.ts` covers the live order books.
+- **`chain/scripts/close-war-trades.ts`** has no test and no stored run log. The program rule it relies on (any closer
+  after the war window, `close_position`) is not covered by a test either; the attack test only checks that a
+  non-captain cannot close before the window ends.
 
 ## Devnet live check (read-only)
 

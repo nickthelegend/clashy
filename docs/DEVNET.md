@@ -40,6 +40,13 @@ evening) the finishing tick cancels its crank (`chain/evidence/devnet-proof3.txt
 `TickDuel`). In the Nov 26 film games a few runs already queued still landed within 3 s of the finish, each stopped by
 the scheduler's own check before Clashy's program ran (`chain/evidence/devnet-proof-nov26.md`).
 
+**Nov 27, through the app:** a private SOL duel (101 transactions, 89 on the rollup) and a 3-player Royale (112, 100 on
+the rollup, 21 `CallRoundSession`), then, on iOS Simulators with device test wallets, a private BTC duel (94, 82 on the
+rollup, 61 crank ticks) and a squad war (19 Solana transactions). The Nov 27 trails show the same pattern: 4 failed
+VRF-oracle transactions before each callback and 7 or 8 scheduler runs queued before the cancel, each failed
+(`chain/evidence/devnet-proof-nov27-*.txt`). The iOS duel also has one failed `StartPrivateDuel`, sent at 09:15:25,
+before the second pick lock at 09:15:26; the retry at 09:15:27 started the duel.
+
 ## What was tested on devnet, Nov 22 (devnet-as rollup, first program)
 
 Logs: `chain/evidence/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`, `devnet-test-4.log`,
@@ -65,7 +72,7 @@ reruns.
 perps clash (VRF rolled BTC, +9.70 USDC) and an on-chain Royale (VRF rolled SOL, 6 rounds, +3.88 USDC to the
 survivor). No transaction signatures were kept for those runs; the Nov 25 duel above is the in-app proof.
 
-**Practice games:** a Nov 22 run loaded the games on live prices and started a round in each of the 32 engines. The
+**Practice games:** a Nov 22 run loaded the games on live prices and started a round in each of the 32 engines (a 33rd engine, `drawline`, came on Nov 27 and was not part of that run). The
 runner and its output are not in the repo, so the per-game counts from that run are not claimed here.
 
 ## Fixed while deploying

@@ -8,7 +8,8 @@ test that proves it.
 Solana devnet with MagicBlock's Private Ephemeral Rollup `https://devnet-tee.magicblock.app`, validator
 `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo` (Nov 25: 4/4 in one run, `chain/evidence/devnet-mb-cancel.log`, after
 `devnet-mb-test.log` and `devnet-private.log`; one private duel played through the app, `chain/evidence/devnet-proof.txt`;
-Nov 26: a duel, a Royale and a squad war through the app, `chain/evidence/devnet-proof-nov26.md`).
+Nov 26: a duel, a Royale and a squad war through the app, `chain/evidence/devnet-proof-nov26.md`; Nov 27: two duels, a
+Royale and a squad war, the last duel and the war on iOS Simulators, `chain/evidence/devnet-proof-nov27-*.txt`).
 All of this code was written after the Nov 20 kickoff and has not been security-audited yet.
 
 ## One clash, end to end
@@ -164,3 +165,4 @@ Results (Nov 25):
 | Devnet TEE, after the crank-cancel fix (upgrade `3LJSPdfk…`) | 4/4 pass in one run: cranked BTC duel settled 31.6 s after the start; cranked Royale paid 5.82 USDC; private duel, A sees side 1, B sees nothing; no failed tick in the 8 s after any finish | `chain/evidence/devnet-mb-cancel.log`, trail `chain/evidence/devnet-proof3.txt` |
 | Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 100 transactions, 88 on the rollup | `chain/evidence/devnet-proof.txt` |
 | Devnet, through the app (Nov 26) | private ETH duel (99 transactions, 89 on the rollup), 3-player Royale with 12 session-key calls (93, 84 on the rollup), squad war (18 Solana transactions) | `chain/evidence/devnet-proof-nov26.md` |
+| Devnet, through the app (Nov 27) | private SOL duel (101 transactions, 89 on the rollup, 61 crank ticks), 3-player Royale with 21 session-key calls (112, 100 on the rollup); on iOS Simulators a private BTC duel (94, 82 on the rollup, 61 crank ticks, 2 session-key pick locks) and a squad war (19 Solana transactions) | `chain/evidence/devnet-proof-nov27-duel.txt`, `-royale.txt`, `-ios-duel.txt`, `-ios-squad-war.txt` |

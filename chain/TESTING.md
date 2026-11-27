@@ -28,6 +28,7 @@ see [../TESTING.md](../TESTING.md) and the `evidence/*-nov26.log` files. The tab
 | Social server | `cd server && npm test` | 4 | 4 pass on SQLite (Nov 26, `social-nov26.log`); on Postgres 16 on Nov 19 per docs/AUDIT.md (no log stored) |
 | Mainnet-fork trade on Phoenix | `npx tsx scripts/fork-trade.ts 1` | 1 | sold 1 SOL for 54.660103 USDC, book expected 54.660103 (`.forknet/last-trade.json`) |
 | App on-chain private duel on devnet, two device wallets | scripted browser run of the web app | 1 duel (Nov 25), then a duel, a Royale and a squad war (Nov 26) | Nov 25: ETH, B won +9.70 USDC, A lost 5; 100 transactions, 88 on the rollup (`evidence/devnet-proof.txt`). Nov 26: `evidence/devnet-proof-nov26.md` |
+| App on devnet, Nov 27 | the app (the build used for the SOL duel and Royale is not recorded), then the native iOS build on iOS Simulators with device test wallets | 2 duels, 1 Royale, 1 squad war | Private SOL duel, 101 txs (`evidence/devnet-proof-nov27-duel.txt`); 3-player Royale, 112 txs, 21 `CallRoundSession` (`-royale.txt`); private BTC duel, 94 txs, 61 crank ticks (`-ios-duel.txt`); squad war, 19 txs (`-ios-squad-war.txt`) |
 | App on-chain duel, clan, clan war and Royale on the local stack | manual multi-tab browser runs (no spec file is committed) | 5 duels, 1 clan flow, 2 wars, 2 Royales | Nov 16: all settled with no errors. Kept as notes, not as logs |
 
 ## Local stack
