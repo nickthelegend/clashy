@@ -1,0 +1,207 @@
+(node:70757) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+duel HoHrN9SBYCAfnpqnnNedUgNnrDtGbSXa7bWDGxfARAvk · coin 0 · entry 72943837 → exit 72853899 · winner 2 · status 5
+101 transactions (89 on the rollup)
+
+07:42:09  Solana  OpenDuel
+          https://explorer.solana.com/tx/3uSAQqKaAWjGNvppGB2Rj2df4tPXSrJKrbmnap6w9BkHjZQoapqfgMfPZbMCUHd5d4fHLupBfKq3gs3njXpMY3DD?cluster=devnet
+07:42:10  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/3XfYByLn9ivDku8GaF3iD3b3co4uypjoEuvSXncEsxg6WNF9NthFc73bP8xrG98tZVx4HdSGpyCkrzBW5LckMXs6?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:24  Solana  JoinDuel
+          https://explorer.solana.com/tx/4MJSUCpiJhndo6381hKwJVYjeSHZGtGtTHyBjVB87AFHK19f8FzBS2PpuhcJAjBerwFeCvtbiJS9H9J8fQkvbtGx?cluster=devnet
+07:42:24  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/ng7kYgSRLYU4cxqJUPhJdXhvY3yQqVnknkBMoPj65k3L2Tyq3RQUnBBUMMCeCULPefu3GmjmT3rduZeDprSm6xH?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:25  Solana  RequestCoinRoll
+          https://explorer.solana.com/tx/2dA6EtP39Ld2tyhGWW5uzCFCEjmgYaTyZesfWD8v94XpzM7VT6jCU41fiMgFzNap5D64aW7sSToVpLodp8CDMAfp?cluster=devnet
+07:42:26  Solana  OpenPrivatePicks
+          https://explorer.solana.com/tx/2SXasZmvCGakHH6tFWTYf96nri1LrghTf8nkmPfMWDNRa2M2vWKnnB5yx1yxcYoQzKQRcoAMUvHjSPLbGswnQdfr?cluster=devnet
+07:42:26  Solana  FAILED MagicBlock VRF oracle
+          https://explorer.solana.com/tx/2mdafYg4T6Wx3j9bBfWQUwzFMvcvqymxVeggpnwS7iAvs9wqkWpgv6rLHiP9Zcof8YePihRyqr7nPsgQy5vB55Tw?cluster=devnet
+07:42:26  Solana  FAILED MagicBlock VRF oracle
+          https://explorer.solana.com/tx/2CM97ZpEZtmBsSQ4F3AkWJnFzfdwUncEPW8XCfNC7FA3dUtb1wCAebWhDHXnLA58yiVBFEmXQPDhdMpj9VwXqXfH?cluster=devnet
+07:42:26  Solana  FAILED MagicBlock VRF oracle
+          https://explorer.solana.com/tx/4CeVJuyNmAbRo3jJGRF895xVziixA8ru2X1Y433eRWvPQwiDz6HGtmvuacMkJ148n6P1FBdfqr4wFG6JvzsGwVpG?cluster=devnet
+07:42:26  Solana  FAILED MagicBlock VRF oracle
+          https://explorer.solana.com/tx/3u51LEtcQrQiuEuYNMxUmWWNUCEZiKT6nv8QPSrewFXyehsRoD7PWbGbRWB69qHHGSmMtnjZbgDL7nzw6vY9oNUa?cluster=devnet
+07:42:26  Solana  CoinRollCallback
+          https://explorer.solana.com/tx/37MCrkiPzCyzeiojjk1EPKkSMZSWqU5nL79uKidKhvgXwWBZMU8GfrX5H39M7zPcyDe4MWCKmeZTqD1176w2r5ff?cluster=devnet
+07:42:26  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/3uaKuMB5gvzSAM9b14E6movWdSmiYfCNApPMKsuBbuemcKEMydL7mymhfKmutKd7iPMCTDqftWmZDSBL7K6Es9ow?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:26  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/4gzS3CPqcLZrbnvNFDoP8Sg6mYxtRfGaoQVYmAq9cZiYtEGLVg2tFN4fkP6yW2Judr7e5uxDKiVUnLWDQBT5LCmH?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:27  Solana  DelegatePrivateDuel
+          https://explorer.solana.com/tx/3YS2aCEX8jLLbe9zQ1UnGPy4YXmXhiKTmdnBmaXzUdS69qiKfoknTitzY1vrk2YDTdidWdjQV3uF7TrYewc61oLC?cluster=devnet
+07:42:28  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/4Wa5kgW3LNsJJ6zfTd4NPwiGMNDX93V1Na7pY2ASAmbNoo83tW8ZpuVdTAtEGUaivH2d4d2kypWd12BGCinsEFqc?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:28  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/jCjNQM56NFPMpW79xCbkxp8DdNWYLxGXif9Mcaqm8eDp3phvB431cgYr7sknkNXBEAJ8GCzFWa6fffNDu5WaJ64?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:29  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/2Mnu25meAAynQLa4x6d6wRsBZTvzQ5y1QaLmZhVMXK6vNeAzVYh1tLDwwPDLp8UKzWp9AHfrzq1HDMTJovDXoU7C?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:37  rollup  LockPickSession
+          https://explorer.solana.com/tx/3KWZ3W55VueJMM1Drtmd8oBfbJwL8hJgRNDYAoMS4YRhQsTMomp8bWiPvQhURumrjjHjqchnqWW6UchzRsuPgdoM?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:39  rollup  TickDuel
+          https://explorer.solana.com/tx/2RYXMrPiAZzqha1UCivocnAsvKaYWN8xDC6HWYA221yQt1DkMscQP5KmDrEdcAyxy9SbDsAJV3MgLz196bD2LDu8?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:39  rollup  StartPrivateDuel
+          https://explorer.solana.com/tx/49PYtqxv8sgzQGzbGwyGo5k9opzAYmvPAHgw7V2SdzoLNDE2NfgbaiqbEDSivaEbWhR8KabcR8ipoctUsNgnoxfH?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:39  rollup  LockPickSession
+          https://explorer.solana.com/tx/61tZFqsqjA2ecbMXEv1owfYCzqsrUXi3xbv3Cbr4NrecasApQ6E51WacYwNnfV5wsZAMZj3oUKNazetchNF7zNSd?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:40  Solana  ProcessUndelegation
+          https://explorer.solana.com/tx/swkk6G5ms5nSNkY8fqHNgEGszLzFznsQjJSQHXz7u3n6cKUei8iFHaPbNMqfMPFv7wnmrYg1f7Pa1AWqfjf5jiH?cluster=devnet
+07:42:40  rollup  TickDuel
+          https://explorer.solana.com/tx/4XFJWbivs5VahTDkcWcdDR9QW8edKe1ECCgSWEwo6FvTsc7zxrdbwM2HpJ5sBZECBuGe3KJyeJqTQ5pcK13tFKkX?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:41  rollup  TickDuel
+          https://explorer.solana.com/tx/abWE3hecg35rXz7ngr56ztF6XG4wuRsrkpL8CqjLkv1oFsRhRwHPqcxTGbvNy8kdiFbYKjncJeDZv3Wy232fZEN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:41  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/24JQC2PpHwgWHPJebh7ndgUtSQ74AeLoYUncCghQAScDRRACZbsZS4cf7g5dh315M7gmhdMKKckYYtWFXugFyxrv?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:41  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/EQUhhmzDwwByfffhVag4gXuUbAq6sawN9RkEpkcys5wg1HvfY4pjgvHiDEijV96YF5hrpLVgi51h8tWHygoLdyF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:42  rollup  TickDuel
+          https://explorer.solana.com/tx/GbELU5mS5VbvN9HTAa5VLwnjp12Rub3HWqFXgE8ETYzbHmfeQFLCSaiYsGsFsWjWfaWBN6RwPZuhrQZ79EwSjMw?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:42  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/5w6BxYDQpFTwW92jZqkkWiG3GKGMZbgdXQWN87nbpr1L6eTxhwqwSXbkVJWSe3xKt2HjarC35oGXUS8z7bz7GhM9?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:42  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/2oPWVw5na2EXqJewCuRfQ8hVtwUgo11nWBWrKrCES71uWazL9FHxS5nSDZ9SZLeqc5ESe2yfHFmeTxoaiPTYZ4wq?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:43  rollup  TickDuel
+          https://explorer.solana.com/tx/29ojS9zsh6JWTdBpGdzEaxwCCtM5MNH6W7huNF87Q3EUZq2VAQ8kTvcM5LXaMnyrZJS86qhvvCoWirVHmGuTVySw?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:44  rollup  TickDuel
+          https://explorer.solana.com/tx/2rjV6DfGC1C6gDsCZRXfd9xtWCALZoFXTiyumfXhUz8p7mnASZJMRSAEMdDWx9iNiD3qnujs7ayARaFLuHJ759FX?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:45  rollup  TickDuel
+          https://explorer.solana.com/tx/61GU6x1KoedZsBcBjg56jnWC4kHDWHmB9GFNntmgaCdKQzQyVMC1Ab7y94e4HpyWotAaiKYoGWouyUbNpPcxZ6zN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:46  rollup  TickDuel
+          https://explorer.solana.com/tx/2xEb2RS5boSaWeMHsFj4X8iKdF3QYFkABm555BGqnskcrXxk32QaHfL3Sz3wBmCPmtcvSRz24QFc2q2s8sb3ZzH6?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:47  rollup  TickDuel
+          https://explorer.solana.com/tx/5MYHGokpr8oSrpR1HdMbfHSiAgDCQLJdqRDfuQ9NzmNQ1E67g6KnfQBcb1rMBa7a6dvgCtMb4273DzNKE5LsbmER?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:47  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/5nBnzCthfrem2tgnuUy7H72VGGdRJNKjnfEG2p87cnMfs3HuGLu1oi3Ujgw9jRr1PbzEtW3paUEG8dhSdLUFp3Nn?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:47  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/5U59GQ7pp525uerjQtktczHt8z3SyeAPwx98oyYEMC9EruZTaG5TvkK1q9vKC7qyjSNnhDpkTaM7AXgCHqYc4goH?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:48  rollup  TickDuel
+          https://explorer.solana.com/tx/3Lp8xYP5YFngZLEtoqVUvpFR9ZqEKGoBcemUw3UG7CLsUonZ4sRTcBwJVDE8yq2YfXhPbJCvJ94g3vGgYbqHPdVn?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:49  rollup  TickDuel
+          https://explorer.solana.com/tx/5M7vrrNM1K4MGtH6brpyhLCW9YymeRGkhmoxhSJkjMKXpeHQDyw8aY2KuFpKsvvuGmNxrnhSUHg4BJBhZP3sf4N7?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:50  rollup  TickDuel
+          https://explorer.solana.com/tx/2PaSrFKLmku6eSc922PAXqCUv5rYq4utwFjz1gBnK1jkoSq8XuZ2e6ydVCKRJE8DwjNswA49qKoHn4mDuF56baWu?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:51  rollup  TickDuel
+          https://explorer.solana.com/tx/ZVRocVy5XRLgu6v12PhAA5eHwA9iuLLpAQHniBmhWE56xgF1VpuMSPHnekoNQpcg3hTnTksM5c5zENJkSTLig5D?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:52  rollup  TickDuel
+          https://explorer.solana.com/tx/3k38kZP3vkUFvb6VPAD81grNiooGM7HGEj8G7tUT5KMpPPSxF1zFANXDXvoPToy2fv7hu9TbV12j86Zh8whA44CQ?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:52  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/2CJy4GQjkAewcZ9vKjsLwgPzpJ85TrtHFLu3K2CjJfDNwPRqiXWViHKWKkov5b41GFJodVAh2h713j5SkxksTdjc?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:52  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/5RrL8d3rZrrvBc2ekNjRusTJWhSLPin722j9WsQ7Y7r5T5XY2a4XEwQE5NiWepXCyp4KY4Xr2gPDSCBwcmCxkTyZ?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:53  rollup  TickDuel
+          https://explorer.solana.com/tx/3YVQ6J7yrHoqyUoyT3bHvKr6P24Gh97rqJRhTMNHwrYjiwiDpYqBPGvWapCtjQH5i7eNXRq3dayXroggHKYoMcUT?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:54  rollup  TickDuel
+          https://explorer.solana.com/tx/3GCxM8wtrSRwxZ3pxaVFL99UUdTF563NbDwdbAMWV5AJ9JjCKQKvDTFzBetnTs2WNcY1iHmtQPW21mVm2Sz5yPc?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:55  rollup  TickDuel
+          https://explorer.solana.com/tx/2HCRU2bLLyy4hvDL1UJLMhMrheNbEgcVgGrcyeYaqNb212grXWFMWyMRs23uern14edQYcM6qG87bZsKxGNMNN68?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:56  rollup  TickDuel
+          https://explorer.solana.com/tx/3PowcXsYJtzMmUT5dR3Ged8ZFvVnJBeGQr9UjpeqpEe8vp5YvparNWBFTTNn2xwi614vwuVesJWHCEpJEj7c4kxZ?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:57  rollup  TickDuel
+          https://explorer.solana.com/tx/4DSFe419ZjocVqzab7VyxZAL9UTcqc7zmQHYG2GuneQdZEUuXMJr3cfsAKCB5vPZyfafqDUWxsayKsDsrro6NSFy?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:58  rollup  TickDuel
+          https://explorer.solana.com/tx/5iZMzFCyPoEVBurm5DJ2HVKtPJFZcwzshZ9WuBgyGvmMHK1NsQ29L4HP797AwX9jxxU1NLPDMHRvVa6aewYEfJLt?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:42:59  rollup  TickDuel
+          https://explorer.solana.com/tx/53QDnZ5N7icEAekdtYB5D782F7NHRVXrdMKDkyA3fHturaLbZgw26uvbG8AL9BYtcXfwseehbjHUkj3DvWWReETk?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:00  rollup  TickDuel
+          https://explorer.solana.com/tx/ZeGFKjAAMRyoYZ6Cgas899ejx3Yv4xqZh4Mg39fN1LRUxqJRud33eRoJvEh6Hh1y4CjPj4qr6sigL6dRm7AXV1J?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:01  rollup  TickDuel
+          https://explorer.solana.com/tx/3Xw2c31XooLb8bNq5AwrVokccm5wPC4PQ9AataTDkKsXFWcFbckTRBU6jHv6odMtqxNLxWmExB7atUKKQwGN5X7e?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:02  rollup  TickDuel
+          https://explorer.solana.com/tx/5NzzPkvmC9cFSLPmGVW3FRmbs5bv5sztjgBPwDcTXJnWe8aXBGexWpAqVdTfnZm33yYg1EUZTRZkw5F4rXti7Tuv?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:03  rollup  TickDuel
+          https://explorer.solana.com/tx/gJ7fP4EeZ9bjz3eujSu21jYNu8kee5gsfMWRmQhQgcen4BaXNXMRwMMz8q99Hnden6DZLKzNHCvWmjWo5hMsmSa?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:04  rollup  TickDuel
+          https://explorer.solana.com/tx/NTmYYBFqgkYdZ2QEDd6e4aR14vGoehonSK3g2zSTcto9D6wufty9iwZu4YXzSrypJ9JJu18LnkQXmTjzAscbUWk?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:05  rollup  TickDuel
+          https://explorer.solana.com/tx/3QrgJBaxeB1Ak5PM9rMgCNVBpCngm6RmxUawTdC4KocXeXq7sYLEJ25eFoV18HtvqkxmSJTnPjcxsPLEZJyf7g9t?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:06  rollup  TickDuel
+          https://explorer.solana.com/tx/598eQGq1GbfPRQnnds5ZaD8pntZC1qEXRqpQzRqxjgV7JkRAVUiKhiyqVaPQJTqmrzYwnW93izcaUwMM8GXP2Yco?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:07  rollup  TickDuel
+          https://explorer.solana.com/tx/33Sv1ahVi4fg6acoEHd7uHyRi2P6b9bSbEP9Ltg3d6Yv5gJaxt5bRrVwQGjCFpUaBdZjbYKnCuLnLBXybebh8J7k?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:08  rollup  TickDuel
+          https://explorer.solana.com/tx/2pZSxbgnAoqCHAyjpsyXGFDFXxvsnqaGbFGWAewwEvFJEQsiCdXpK8stn7RFJsh6RY8gwuPXngqTe27QAkiqS2YF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:09  rollup  TickDuel
+          https://explorer.solana.com/tx/5WGTspSVAYtZuP5MEAwxhycKK5ZrD6i1ytr2swP2zb93HXR1HxcQvZgU7hUrDjd2syaR8cYYtcLzYSe6aTi1qbmo?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:10  rollup  TickDuel
+          https://explorer.solana.com/tx/g35LhNxX9mZHShDui4W8AVvZnCqYCx8dD5x3Y1MmiNpVbAdbGuJHHNqFBf57JsuC2bze6YYN4b23DeVJh5ZZtuN?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:11  rollup  TickDuel
+          https://explorer.solana.com/tx/SZhULKinyAs5X43kuFSxh5kCDDLpBBBmYgX4SkvPF8TeC91DFp5AgL2ZgVUWcsGnxBYMqyF5yt1W9ZicNmD4wXd?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:12  rollup  TickDuel
+          https://explorer.solana.com/tx/5yGCfhtvYNKrMdDqc9KtqkTnusnxBDpTXSu3WFvn2zLTKyttUH3zwch3gqpubQTZKTTL6M4284kE2coJwKgnDqfU?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:13  rollup  TickDuel
+          https://explorer.solana.com/tx/q9yHN3xFpLATp98PzTRiwfgych2E1DivdrVyyUU8bf9Jrvky6Wqa7aGycM1mQWhvbtxRZzzzxU69h1VFuBXnNug?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:14  rollup  TickDuel
+          https://explorer.solana.com/tx/46fN2gbEM6wECzV8vP846oARqRJGYrQufaAko4ghuvxQZRXhfbwWahUGkZ7TZzStBTMbYtCyYkzZhdj6LML7T8Z1?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:15  rollup  TickDuel
+          https://explorer.solana.com/tx/4ik57Zj6a746y8R7TYyvFQ3XFUeJ4VQd5HG6ZYfVg2xmNt4GAVi23Pv6KvfeDFfjSmnG2XN2G3PkzsC7ui64B7cg?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:16  rollup  TickDuel
+          https://explorer.solana.com/tx/3z1sU4d3Zu95MiaiMg7s65PbGFEE7iDPtdPorAT88fEv5CgXCCSFTJkhwUbrhH7MFq3gontJ53KgVJGsqFxswrMk?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:17  rollup  TickDuel
+          https://explorer.solana.com/tx/4oBbTFevVJThWxGvMijhUYqgubMLKAgTvYrXhZQkau4tTLuqsYKmfLFNpreR4HPMhrSeLQwyT9TDM2Hnt9XTWYAu?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:18  rollup  TickDuel
+          https://explorer.solana.com/tx/D2YZvNLWJtsxkm5WYkprTykXc2m3eGfzQxcFyatuPW9B1GoHbmGhRcCAHshc4z3gCH87v8hDSvQfX9gcUy2NDbE?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:19  rollup  TickDuel
+          https://explorer.solana.com/tx/xSupgestKXhdZKxewWC37ZWzfWCUjV4LLh9YzDSkQiA9mbaVoNvYQ1qs3ArjPtMXU7n2HdtqoLawKyKnBQUkfgF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:20  rollup  TickDuel
+          https://explorer.solana.com/tx/5kv1PQgxksSqmm3wTXKUj6MbeyLGXpHu2nBtb1qog3ugz8Sb8MYqJowNrJqgX7SNpqnbY6osc3y586EcZK7pv7ti?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:21  rollup  TickDuel
+          https://explorer.solana.com/tx/26a3KVDDsW2hWJqxXH8ZVkz53NXKSYG3G7oPsvHFem91WULL55cBEzwAbHu3E3CfXPxXvPaJKwb3d6hTD7S8FR9M?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:22  rollup  TickDuel
+          https://explorer.solana.com/tx/44kuzoXniGKBGWsva3gqwHLTFeS6Da1LxrEQnhPfjAfMMfGU7gdtDJbaTr4gmXiqjWx7XgDhx3fyxHybgTj75Srg?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:23  rollup  TickDuel
+          https://explorer.solana.com/tx/4Zw1HaGLqmbt4RonojruU9Dz26GYb5ZpJtFJauDfi2tqbHJ8b3GJrXeRbisvtbGXw13dmvjtvX5gM4S6TXte4yP7?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:24  rollup  TickDuel
+          https://explorer.solana.com/tx/29PkxiwMHfyro1nddSWzgZxuRtHW1eSSMY4JQgdSJQTs2C3ZKceXP2AVfe9NgTVe7hFYBCCzRwygyiCPTk4j3bS5?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:25  rollup  TickDuel
+          https://explorer.solana.com/tx/cFKy1KLUiytMrbiapVSWSkrjtZkQqByrrqBJC5QJCvAgMA4TBDVfQETbkkDj2YBjua79GBiLQgAZ2XwBVYUfk5Q?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:26  rollup  TickDuel
+          https://explorer.solana.com/tx/3Hb545e33RU4Ry73W47Vu9KxvT9hrHWSiVQmrMxRZur1yUadD55aa4ZWzaMwHm3i5vTiUoYTxGhAKGpjYzYEoQCk?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:27  rollup  TickDuel
+          https://explorer.solana.com/tx/64ewZNeGxntW23tEH3DVyR77SyZ1rGBJ4t984MUFRJoBYnhQUvqLa75hyAXjsari8TzEcHea4W1KZkJGZyzwmG9z?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:28  rollup  TickDuel
+          https://explorer.solana.com/tx/CArjntuwBeQHGRpCjGZmzqUtoSGMXPh2SiX1WP2rhvTDAHxQ76KaeMrmAp3p7UzdiE2B6u49Kg55ei2kVABXEbF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:29  rollup  TickDuel
+          https://explorer.solana.com/tx/229dcwzVvCWPzgHZQB6568wQYgcAiuXbRrjqLRTEAysasmSyBHTMYQZY6V216LuDsZLqosaXvkWNB7GGCUVtHE4M?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:30  rollup  TickDuel
+          https://explorer.solana.com/tx/2jYbawtd1M2xi6bV13f9jgdZBTMubdxzRTbJhY2PXkT7bizJb7tJ1HBhafHyXFnGHWiVgrCgTMYrqZcyZdi6vr9U?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:31  rollup  TickDuel
+          https://explorer.solana.com/tx/3QwU1v237KyhP87AEEwUwZy4Nou3UvJ6CFkJqU3ueTWqyxJx3GWbuAgFMrftVdVMFMQXt9hLQ3zFGXH7FvsN8Qq4?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:32  rollup  TickDuel
+          https://explorer.solana.com/tx/2yRwhCCHf1zSZpyboU6myUmwqU5XTA3RT7ngSpdEywH4x5ZDLUav2oFMT5JKhbRZpFheK9ypvyXKcqE5uCEcy1w1?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:33  rollup  TickDuel
+          https://explorer.solana.com/tx/2venQWof7bNGQbeiLA9Udv61sKfHp71pV1dKo64KPcxQj92PxDCGJMGwQAyQzjssqZJBTvZ3iHKtJcUjGGToezDh?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:34  rollup  TickDuel
+          https://explorer.solana.com/tx/5U5BTKUhzZwM5VxnXGXpchaMs2wz4AgKVSaUG2QqkYrxybUymg1ssCtwCu9LQWpj5hiEV7UXZ4MeYxjvbuncf8kL?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:35  rollup  TickDuel
+          https://explorer.solana.com/tx/2eMJPkqt8GREjRL3mcjFbFXecW9nT2qKtWA4fYz72mXpL9DvtdqybwxeKcWDBGuEjnNjxSo399DMdCnkqrSvXjZ1?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:36  rollup  TickDuel
+          https://explorer.solana.com/tx/4HBATVmpqkiag9SpRZa5MT2akBRHBfg9tR2UqZMxjJjmYbVqKjdwD5qkXbpssYANF42Evorjqf8K7M2JumcC3KGz?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:37  rollup  TickDuel
+          https://explorer.solana.com/tx/2xZMmEWs3zQVdAxypQz6biKMchBL62FpGyhqca4oMZ9bkX75exoevnmajhYru98HzTR318o1NZTvpDWFzcEeGLwU?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:38  rollup  TickDuel
+          https://explorer.solana.com/tx/3kMP915nVdHebZmeLHo348aheyR4o1XxGXJkT9Tb6hz83e7J9AxKKGMXF67GEYtsvEY4pWWefAHddov1rSLRBSkV?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:39  rollup  TickDuel
+          https://explorer.solana.com/tx/5beZP5a9URqm8Qq9Gs1SfrnW1VEvLRtnxBzsFSrx1fJioKRz1dZRxZcSRbiDhVd2Pz2T8SQJuqDXewEN5esLDXQH?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:40  Solana  ProcessUndelegation + SettleDuel
+          https://explorer.solana.com/tx/4iYTqH92kgwhUsAV9jRLp5LkPohiJgjUduyoH49Sgxh3pvVNLFfEJByeZcdnr332fqEFYSmmaDg5PBd6mjLCcx4G?cluster=devnet
+07:43:40  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/5MqMRSeWPdiQaCSeJtujQ5pzByQUZCtjrGxy1yjQSTwbA3XweFEfkaAafYfD3GUnFn1S6QUJFZvUemkCGrJCCgDL?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/27fZqnhvw5ZDUAoqUWLvsWgUN3Na3GYXMECN9y7NBo2xALB51WJqgyL1hNupxNrSTcKN2foMDSPJjyj1GFd7aU6G?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/53tf2Mv9y2jnPswLXHbBdnfsW3EW4brrwp3e3cqrVp2YbqMEXKZVGtqyhrEVSU5p7QxaAxaCwgWMPfJADVaHgViF?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/4oh7MKDpuf5hmiprEj2LLQWAt856ir3c5GW84Y6smWUDgaVBbS5PFuiqp5ZUSrRBhn6NZS9P1Qwxz8zgNTvkysBm?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/3FVztUCELRQRHXp1PsF3baaEdCZK4MTe89Z8ioBdPkgSBPmTDY2Qh6NTmr1gGCcbiZpt6EkhDAn79VjBTUBHEo3F?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/2bgf7BPj7kVRRA73N1FuLHoN6j7kiW6u36UJLyNNMjCbaHhVWnetnB9znSQQNmCnNb9o132B5YoDXmuaRKYniCQp?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/435VDfMDFWVkiUmZimH51PUcYW3iLfnEH266m9hFG5c7uMuUizWJ1eXtq9m7ycPbzxUui8aMUYwTwdYcwJmt1To5?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  MagicBlock validator: account sync
+          https://explorer.solana.com/tx/vHCU7U6CLFJBKrefuBKuahST7TLx5HM5LHwWVrmsG6shF5uyAeSPPG8ozdKexCaySLrJa3QVatwvHAVxCaoqhPe?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:41  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/55PhykhSgERNgEfgpAQb5XSNJe7sSfKiubJaAFiLMb2gpGNjanLyV5mee2RYyCVv5tCTZgBWgGXWuNze2hwtTz7i?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
+07:43:43  rollup  FAILED MagicBlock scheduler: a run queued before the cancel
+          https://explorer.solana.com/tx/2JCvaVxfLx7cD8zgLeiZvCjYC4NhkFGpUrs64ViLbXnzUNmTUFQqc9THR7u34266pr4N5pDBdq5DETvrzympypCw?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
