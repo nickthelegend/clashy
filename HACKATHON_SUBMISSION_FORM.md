@@ -125,19 +125,21 @@ Settings → Collaborators. Every commit is already pushed.
 NICK: the unlisted YouTube or Drive link of the demo film
 ```
 
-**Demo film v4 (3:09) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (phone-size copy, 10 MB;
-the full-quality master is `marketing/clashy-x/demo/clashy-demo-film-v4.mp4` in the grokbot folder, outside this repo).
+**Demo film v5 (4:44) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (phone-size copy, 10 MB;
+the full-quality master is `marketing/clashy-x/demo/clashy-demo-film-v5.mp4` in the grokbot folder, outside this repo).
 Not yet uploaded anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. Recorded live on
-Solana devnet and MagicBlock's TEE rollup on Nov 26, 2026, with no faked output:
-- opens on a live devnet duel (two phones), then the landing and sign-up;
-- the private 1v1 duel: escrow, MagicBlock VRF coin roll (ETH), both calls sealed in the TEE with a session key, 61
-  crank ticks, the Magic Action payout (Ben +9.70 USDC);
-- a 3-player Royale: VRF coin, 12 session-key calls, 51 crank ticks, Ben last standing (+5.82 USDC);
-- a squad war: two squads made in the app, chest deposits, a challenge, Ana proposes SOL up 10×, Ben votes yes on his
-  own phone, Night Owls call down and win the pot (9.70 USDC after rake);
-- the PvP-first Play tab, the practice games, a Stash save and the spending limits;
-- eight Solana Explorer cards for the same games (escrow, VRF signer, TEE lock at fee 0, crank tick, payout by the TEE
-  validator, Royale session-key call, squad vote, war settle).
+Solana devnet and MagicBlock's TEE rollup, with no faked output:
+- a 5-second intro from the launch film, then onboarding (four slides, a name, a funded test wallet), Home and Play;
+- the private 1v1 clash (Nov 27): escrow, MagicBlock VRF coin roll (SOL), both phones show the coin's chart from
+  Clashy's on-chain feed, then both calls are sealed in the TEE with a session key, 61 crank ticks, the Magic Action
+  payout (Ben +9.70 USDC);
+- a 3-player Royale (Nov 27): a price line each round, 21 session-key calls, all three outlast ten rounds;
+- a squad war (Nov 26): two squads, chest deposits, a challenge, a voted SOL 10× up trade, Night Owls win the pot;
+- chats (Nov 27): search and follow, a DM with MagicBlock and Clashy stickers, the squad's #general on the rollup;
+- ten practice games on live prices: Tap Grid on Bitcoin, Meme Roulette, Chart Detective, Gold Rush and Macro Picks
+  solo; Coin Call, Hot Potato, In Sync, Knockout at 1000× and Breakout against Clashy Bot;
+- the Stash and its limits, then eight Solana Explorer cards (escrow, VRF signer, TEE lock at fee 0, crank tick 61,
+  payout by the TEE validator, Royale session-key call, squad vote, war settle).
 Trails: [`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md). Narration: the builder's voice,
 cloned (ElevenLabs; a local Chatterbox model for the Royale, squad war, games and Stash lines).
 
