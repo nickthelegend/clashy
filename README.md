@@ -9,18 +9,20 @@ Finance).
 
 **Everything below runs on Solana devnet with test USDC. No real money moves anywhere.**
 
-[![Clashy demo film v9: the story of two friends, Ana and Ben, who settle who reads the market better in a private 1v1 clash on Solana, then team up for a squad war, trash-talk in squad chat, and play the arena's games (5:15)](docs/media/clashy-demo-poster.jpg)](docs/media/clashy-demo.mp4)
+[![Clashy demo film v9: the story of two friends, Ana and Ben, who settle who reads the market better in a private 1v1 clash on Solana, then team up for a squad war, trash-talk in squad chat, and play the arena's games (5:27)](docs/media/clashy-demo-poster.jpg)](docs/media/clashy-demo.mp4)
 
-**[Watch the demo film (5:15, 1080p)](docs/media/clashy-demo.mp4).** It is told as one story: two friends, Ana and Ben,
+**[Watch the demo film (5:27, 1080p)](docs/media/clashy-demo.mp4).** It is told as one story: two friends, Ana and Ben,
 each think they read the market better, so they settle it on Clashy. App shots are iOS Simulator recordings (iPhone 17,
 17 Pro and 17 Pro Max, real status bar, a ring on every tap) of the Clashy web app added to the home screen, running
 live on Solana devnet and MagicBlock's TEE rollup on Nov 27, 2026, by fresh device test wallets. In order: the title;
 onboarding in about six seconds (a name, and they're in); Ana opens a 5 USDC clash and Ben takes it, MagicBlock VRF
 rolls SOL, both phones show the coin's chart and the tie rule before the sealed calls (Ana up, Ben down), 60 s scored
 on the rollup, and Ben is paid 9.70 USDC (net +4.70 on a 5 USDC stake); the two team up as a squad with a shared chest
-and fight a squad war where both squads call SOL down and the better return takes the pot; their squad's #general on
-the rollup with MagicBlock stickers, both phones in step as Ben's reply arrives on Ana's; then, with no one to fight, the arena: all 151 games in the web app's catalog, one
-category at a time (Memes 33, Perps 29, Stocks 31, Crypto 30, Party 28), then a few favourites: Tap Grid full screen and
+and fight a squad war where both squads call SOL down and the better return takes the pot; the live leaderboards, read from Solana (players by points from on-chain clashes, where Ben is 1st
+with 75 points, and squads by real P&L); their squad's #general on
+the rollup with MagicBlock stickers, both phones in step as Ben's reply arrives on Ana's; then, with no one to fight, the arena: all 151 games playing at once in one grid
+that zooms out from a single game (each game recorded live for about 10 s in a desktop browser at phone size, its
+buttons pressed by a script, `marketing/clashy-x/demo/allgames-rec.mjs` in the grokbot folder), then a few favourites: Tap Grid full screen and
 Draw the Line on Bitcoin, and two walls of six practice games recorded live in a desktop browser at phone size; the web app on desktop;
 the same clash's and war's transactions on Solana Explorer; store plans (App Store, Google Play, Solana dApp Store:
 coming soon). Trails:

@@ -126,7 +126,7 @@ Settings → Collaborators. Every commit is already pushed.
 NICK: the unlisted YouTube or Drive link of the demo film
 ```
 
-**Demo film v9 (5:15, 1080p) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (65 MB; the
+**Demo film v9 (5:27, 1080p) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (70 MB; the
 master is `marketing/clashy-x/demo/clashy-demo-film-v9.mp4` in the grokbot folder, outside this repo). Not yet uploaded
 anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. It is told as one story: two friends,
 Ana and Ben, each think they read the market better, so they settle it on Clashy. App shots are iOS Simulator
@@ -141,10 +141,12 @@ MagicBlock's TEE rollup, Nov 27:
   votes yes on his own phone; both squads made the same call, so the better return wins (shown in the app; SettleWar tx
   in the trail); trail `chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`. The rival squad was a scripted third
   wallet off camera;
+- the live leaderboards, read from Solana: players by points from on-chain clashes (Ben 1st with 75 points) and squads
+  ranked by real P&L;
 - the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers (Ana's trash talk, then both phones
   in step as Ben's reply and sticker arrive on hers);
-- with no one to fight, the arena: all 151 games in the web app's catalog, one category at a time (Memes 33, Perps 29,
-  Stocks 31, Crypto 30, Party 28), then a few favourites: Tap Grid full screen on Bitcoin, Draw the Line, and two walls
+- with no one to fight, the arena: all 151 games playing at once in one grid that zooms out from a single game (each
+  recorded live for about 10 s in a desktop browser at phone size, its buttons pressed by a script), then a few favourites: Tap Grid full screen on Bitcoin, Draw the Line, and two walls
   of six practice games played live;
 - the web app on desktop; seven Solana Explorer cards for the same clash and war; store plans (App Store, Google
   Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150+ games.
