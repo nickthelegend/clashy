@@ -87,6 +87,8 @@ export default function OnChainDuel() {
   useEffect(() => { hasKeeper().then((k) => setMbMode({ cranked: k, private: k && MB.private })).catch(() => {}); }, []);
   /** My call, locked on the rollup (private picks) or committed on Solana. */
   const [myLock, setMyLock] = useState<{ side: number; lev: number; sent: boolean } | null>(null);
+  // a new clash on this screen ("Clash again") starts with no call: the last clash's lock belongs to that clash only
+  const lockFor = useRef<string | null>(null);
   /** MagicBlock crank ticks seen while this clash is live (read from the keeper on the rollup). */
   const [ticks, setTicks] = useState<{ start: number; now: number } | null>(null);
 
@@ -277,6 +279,11 @@ export default function OnChainDuel() {
     const h = setTimeout(() => setRolledSeen(true), 1800);
     return () => clearTimeout(h);
   }, [duel?.status, duel?.key.toBase58()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const k = duel?.key.toBase58() ?? null;
+    if (k !== lockFor.current) { lockFor.current = k; setMyLock(null); setPickSeen([]); }
+  }, [duel?.key.toBase58()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setActiveDuel = async (key: PublicKey | null) => {
     setActive(key); setDuel(null); inflight.current.clear();
