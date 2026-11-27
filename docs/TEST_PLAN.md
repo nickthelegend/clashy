@@ -38,14 +38,14 @@ the chain refuses) no longer occurs in normal play.
 | B6 | PASS | Privy's "Export wallet" opens in Privy's frame (auth.privy.io); the key never enters the app |
 | B7 | UNTESTED | Signing back in needs Nick's email code (Privy identity provider); signing out was not run so his session stays usable |
 | B8 | FAIL → fixed → PASS | Relay down showed empty boards and a developer command → readable "payment relay is offline" message, boards still read the chain, recovers on its own in ~5 s |
-| C1–C5 | PASS (and re-run) | Win (+9.70, balance exact), loss (−5.00), dead heat (stake back) all verified |
+| C1–C5 | PASS (and re-run) | Win (paid 9.70, net +4.70 on the 5 stake; balance exact), loss (−5.00), dead heat (stake back) all verified |
 | C2–C3 | FAIL → fixed → PASS | Start on the rollup was sent before the rollup had the delegated copy (two 422s per duel) → "on the rollup" now means the rollup copy is program-owned; zero errors |
 | C6 | FAIL → fixed → PASS | Signed out, the board said "No open duels" while Mira's challenge was open → board reads the chain without a wallet; joined Mira's challenge and won |
 | C7 | PASS | Cancel refunds the full 5 USDC |
 | C8 | PASS | Below 5 USDC, Open is disabled and the faucet is offered |
 | C9 | FAIL → fixed → PASS | Profile showed placeholders and fake "Gold III" → on-chain record (2–0, Elo 1031, 50 RP, best streak 2, #1 of 7), settled-duel history, badges earned only from chain facts |
 | C+ | FAIL → fixed → PASS | A duel whose creator leaves was stuck (only the creator could roll VRF / delegate / start) → the joiner's device drives after 8 s; after the 10-min setup window a refund button calls the program's abort (unlock waits 3 s for the chain clock: the first try was refused with NotExpired) |
-| D1–D5 | PASS (and re-run) | Hosted 3/4 seats with Ash and Bo, VRF coin, rounds on the rollup; knocked out (balance unchanged) and won as last survivor (+5.82) |
+| D1–D5 | PASS (and re-run) | Hosted 3/4 seats with Ash and Bo, VRF coin, rounds on the rollup; knocked out (balance unchanged) and won as last survivor (paid 5.82) |
 | D5 | FAIL → fixed → PASS | "Last one standing." shown even with several survivors; no survivor names → exact survivor count, names and payout |
 | D6 | FAIL → fixed → PASS | Lobby hidden when signed out; full lobbies showed "Join" → lobby reads the chain; "Full"; lobby age shown |
 | D7 | PASS | Cancel with 3 players refunds every entry |
@@ -102,7 +102,7 @@ DexScreener prices and say "no money moves"; features that do not exist (chat, b
 | C2 | Friend joins | Kai joins within seconds; screen shows MagicBlock VRF rolling, then "<COIN> rolled · Rolled by MagicBlock VRF" |
 | C3 | Sealed pick | Long/Short 50× → "Locked"; reveal, delegate, start on the rollup happen by themselves |
 | C4 | Live on the rollup | Both P&Ls update every check (~2 s), "Check duel ×N" folds, latency shown |
-| C5 | Settle | At the bell: committed to Solana and settled; result shows exact USDC won/lost/refunded; balance matches (win = +9.70 net of stake) |
+| C5 | Settle | At the bell: committed to Solana and settled; result shows exact USDC won/lost/refunded; balance matches (win = 9.70 paid, net +4.70 on the 5 stake) |
 | C6 | Join from the board | Mira's challenge listed with her stake; Join → duel runs to the end with Mira as creator |
 | C7 | Cancel | Own unmatched duel → "Cancel and refund" → full 5 USDC back, no rake |
 | C8 | Errors | Not enough USDC → Open disabled with the reason; a failed tx shows the program's message |

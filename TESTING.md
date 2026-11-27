@@ -43,8 +43,8 @@ What the Nov 26 run printed (from the logs):
 - **Duel:** BTC, joiner won, USDC 95 / 104.7, ratings 984 / 1016. **Royale:** one survivor took 5.82 USDC.
 - **Clan:** long SOL 5x closed at -0.0175 USDC; a member cashed out exactly 8.333333 USDC (10 of 30 shares of a
   25 USDC chest).
-- **Liquidation:** BTC dropped 2.5% (staged), the 50x long was knocked out and the 10x short won +9.7 USDC. In the
-  25x vs 25x clash SOL did not move (`pnl 0,0`, a dead heat), so its "P&L is 25x the move" check compared 0 to 0 and
+- **Liquidation:** BTC dropped 2.5% (staged), the 50x long was knocked out and the 10x short was paid 9.7 USDC (the pot
+  minus the 3% rake). In the 25x vs 25x clash SOL did not move (`pnl 0,0`, a dead heat), so its "P&L is 25x the move" check compared 0 to 0 and
   the multiplier was not exercised on Nov 26. In the Nov 25 run (`suite-perps.log`) BTC moved 1.79 bp and both sides
   scored ±44 bp, 25x the move.
 - **Stash fee:** buy 0.05 USDC, sell 0.024865 USDC, both to the treasury.
@@ -53,10 +53,13 @@ What the Nov 26 run printed (from the logs):
 - **Relay:** a wallet with 100 USDC and 0 SOL created its player account through the relay.
 
 **Through the app on devnet (Nov 27):** a private SOL duel (101 transactions, 89 on the rollup, 61 crank ticks) and a
-3-player Royale (112, 100 on the rollup, 21 session-key calls), then the demo film's private BTC duel (94, 82 on the
-rollup, 61 crank ticks) and squad war (19 Solana transactions) on iOS Simulators by fresh device test wallets. Trails:
-`chain/evidence/devnet-proof-nov27-duel.txt`, `-royale.txt`, `-ios-duel.txt`, `-ios-squad-war.txt`. These are
-recorded runs, not test suites.
+3-player Royale (112, 100 on the rollup, 21 session-key calls), then on iOS Simulators by fresh device test wallets an
+earlier private BTC duel (94, 82 on the rollup; not in the current film) and a squad war (19 Solana transactions), and
+the demo film's games, played in the Clashy web app (devnet build) on the iOS home screen: a private SOL duel (96, 86
+on the rollup, 61 crank ticks, 2 `LockPickSession`; Ben was paid 9.70 USDC, net +4.70 on a 5 USDC stake) and a squad
+war and rematch (27 Solana transactions: the first war (13) and the rematch (14, 10:38:01–10:41:03 UTC)). Trails:
+`chain/evidence/devnet-proof-nov27-duel.txt`, `-royale.txt`, `-ios-duel.txt`, `-ios-squad-war.txt`, `-ios-duel2.txt`,
+`-ios-squad-rematch.txt`. These are recorded runs, not test suites.
 
 **Through the web app on devnet (Nov 26, the film's games):** a private ETH duel (99 transactions, 89 on the rollup),
 a 3-player Royale (93, 84 on the rollup) and a squad war (18 Solana transactions, none failed), each played by device
@@ -69,7 +72,7 @@ in-app duel (100 transactions, 88 on the rollup) is in `chain/evidence/devnet-pr
 |---|---|---|
 | The same MagicBlock suite on the devnet TEE rollup | It spends devnet SOL and test USDC; this run was read-only on devnet | 4/4 pass in one run on Nov 25 after upgrade `3LJSPdfk…` (`chain/evidence/devnet-mb-cancel.log`) |
 | The other suites on devnet | Same reason | Nov 22, on the first program and devnet-as: each passed in at least one run, several after reruns; the 0-SOL sponsored-player test failed there because it needs a real Privy sign-in (`devnet-test-*.log`) |
-| Mainnet-fork Phoenix trade | Needs the mainnet fork (`scripts/forknet.sh`) | Sold 1 SOL for 54.660103 USDC, the book expected 54.660103 (Nov 18) |
+| Mainnet-fork Phoenix trade | Needs the mainnet fork (`scripts/forknet.sh`) | Sold 1 SOL for 54.660103 USDC, the book expected 54.660103 (Nov 18; not stored in the repo) |
 | App lint and type check | Another session had uncommitted app changes in progress, so a run would not test the committed app | Not recorded |
 
 ## No automated tests

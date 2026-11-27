@@ -9,7 +9,7 @@
 | Base RPC | `https://rpc.magicblock.app/devnet` (MagicBlock's devnet RPC; the public `api.devnet.solana.com` returned 429s during setup) |
 | Ephemeral Rollup | `https://devnet-tee.magicblock.app`, MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. Until Nov 25: `https://devnet-as.magicblock.app`, validator `MAS1Dt9qreoRMQ14YQuhg8UTZMMzDdKhmkZMECCzk57`. Feeds, boards and the squad channel were brought home from devnet-as with `admin_undelegate` and re-delegated to the TEE (`chain/evidence/devnet-migrate.log`; the first attempt timed out while pinning the validator, `devnet-migrate2.log` finished it) |
 | Prices | SOL, BTC and ETH read MagicBlock's oracle accounts `ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu`, `71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr`, `5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG`. NVDA, TSLA, AAPL, SPY and GOOGL keep Clashy's crank-pushed feeds (crank `GGeCjD…`) |
-| Keeper | PDA `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK`, delegated to the TEE; escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE`, the account MagicBlock can charge for Magic Actions; its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27) |
+| Keeper | PDA `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK`, delegated to the TEE; escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE`, the account MagicBlock can charge for Magic Actions; its balance did not change during the Nov 25 MagicBlock runs (0.05065024 SOL at the start of `devnet-mb-test.log` and of the later `devnet-mb-cancel.log`) |
 | VRF | Required (`vrf_required = true`). Coin rolls use MagicBlock's base-layer queue `Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh`; their devnet oracle answers in about 1 to 2 s (block-time granularity). |
 | Stake currency | Clashy test USDC [`8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN`](https://explorer.solana.com/address/8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN?cluster=devnet) (6 decimals). The mint authority is the faucet key; it has no value. |
 | Rake | 3% (300 bps) to treasury `6scuHR…HV3n`. The admin can change it (up to 10%) with `update_config` |
@@ -31,8 +31,8 @@ A sees side 1, B sees nothing; keeper abuse). Earlier that day they passed over 
 
 **Through the real app (web build, two device-wallet players, 0 SOL), Nov 25 11:33–11:35 UTC:** a private duel on
 ETH (duel `3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4`). VRF rolled ETH, both picks locked in the TEE, the crank
-ticked once a second for 60 s, and the result came home and was settled: ETH 1,639.80 → 1,638.63, B (down) won
-+9.70 USDC, A lost 5 USDC. 100 transactions, 88 on the rollup, each with an explorer link in
+ticked once a second for 60 s, and the result came home and was settled: ETH 1,639.80 → 1,638.63, B (down) was
+paid 9.70 USDC (net +4.70 on a 5 USDC stake), A lost 5 USDC. 100 transactions, 88 on the rollup, each with an explorer link in
 `chain/evidence/devnet-proof.txt` (printed by `chain/scripts/devnet-proof.ts`). Two things show in the trail: four
 failed VRF-oracle transactions before the callback landed, and 11 failed `TickDuel` retries by MagicBlock's scheduler
 after the duel had gone home, after which the task was dropped. The second is fixed: since upgrade `3LJSPdfk…` (Nov 25
@@ -41,11 +41,16 @@ evening) the finishing tick cancels its crank (`chain/evidence/devnet-proof3.txt
 the scheduler's own check before Clashy's program ran (`chain/evidence/devnet-proof-nov26.md`).
 
 **Nov 27, through the app:** a private SOL duel (101 transactions, 89 on the rollup) and a 3-player Royale (112, 100 on
-the rollup, 21 `CallRoundSession`), then, on iOS Simulators with device test wallets, a private BTC duel (94, 82 on the
-rollup, 61 crank ticks) and a squad war (19 Solana transactions). The Nov 27 trails show the same pattern: 4 failed
-VRF-oracle transactions before each callback and 7 or 8 scheduler runs queued before the cancel, each failed
-(`chain/evidence/devnet-proof-nov27-*.txt`). The iOS duel also has one failed `StartPrivateDuel`, sent at 09:15:25,
-before the second pick lock at 09:15:26; the retry at 09:15:27 started the duel.
+the rollup, 21 `CallRoundSession`), then, on iOS Simulators with device test wallets, an earlier private BTC duel (94,
+82 on the rollup, 61 crank ticks; not in the current film) and a squad war (19 Solana transactions), then the demo
+film's games in the Clashy web app (devnet build) on the iOS home screen: a private SOL duel (96, 86 on the rollup, 61
+crank ticks, 2 `LockPickSession`; Ben was paid 9.70 USDC, net +4.70 on a 5 USDC stake) and a squad war and rematch (27
+Solana transactions: the first war (13) and the rematch (14, 10:38:01–10:41:03 UTC)). The Nov 27 duel and Royale
+trails show the same pattern: 2 to 4 failed VRF-oracle transactions before each callback and 7 to 9 scheduler runs
+queued before the cancel, each failed (`chain/evidence/devnet-proof-nov27-*.txt`). The BTC iOS duel also has one failed
+`StartPrivateDuel`, sent at 09:15:25, before the second pick lock at 09:15:26; the retry at 09:15:27 started the duel.
+The film's SOL duel has three (10:35:55, 10:35:58, 10:36:01), all before the second pick lock at 10:36:02; the
+start at 10:36:03 landed.
 
 ## What was tested on devnet, Nov 22 (devnet-as rollup, first program)
 
@@ -68,8 +73,8 @@ reruns.
 | Sponsor relay refusals and forged Privy token | Passed. The zero-SOL sponsored-player test failed (it needs a real Privy sign-in) |
 | Stash: buy NVIDIA through Orca | Fails on devnet, which has no xStock/Orca pool; it passes on the local stack against a mainnet snapshot of the five xStock Whirlpool pools (Nov 26, `suite-brief-nov26.log`). Stash savings work. |
 
-**Through the real app, Nov 22:** two players reported a crypto clash (VRF rolled ETH, +9.70 USDC from a $10 pot), a
-perps clash (VRF rolled BTC, +9.70 USDC) and an on-chain Royale (VRF rolled SOL, 6 rounds, +3.88 USDC to the
+**Through the real app, Nov 22 (self-reported, no stored trail):** two players reported a crypto clash (VRF rolled ETH, 9.70 USDC paid from a $10 pot), a
+perps clash (VRF rolled BTC, 9.70 USDC paid) and an on-chain Royale (VRF rolled SOL, 6 rounds, 3.88 USDC paid to the
 survivor). No transaction signatures were kept for those runs; the Nov 25 duel above is the in-app proof.
 
 **Practice games:** a Nov 22 run loaded the games on live prices and started a round in each of the 32 engines (a 33rd engine, `drawline`, came on Nov 27 and was not part of that run). The

@@ -8,8 +8,8 @@ transactions at version 1, so the Magic Action that settles each game on Solana 
 
 | Game | Account | Trail |
 |---|---|---|
-| 1v1 private duel, ETH (VRF), Ben called down and won +9.70 USDC, 61 crank ticks | `4cVexGrafUwJ7MSPBHgGm36jUn4KrXQzZGaJtSxuv8Y2` | [devnet-proof-nov26-duel.txt](devnet-proof-nov26-duel.txt) (99 txs, 89 on the rollup) |
-| 3-player Royale, BTC (VRF), 5 rounds, 12 session-key calls, 51 crank ticks, Ben survived (+5.82 USDC) | `LifRbotyx5vkJBcCRYDKZPutHbhV6gNofAaGguEsx1u` | [devnet-proof-nov26-royale.txt](devnet-proof-nov26-royale.txt) (93 txs, 84 on the rollup) |
+| 1v1 private duel, ETH (VRF), Ben called down and was paid 9.70 USDC (net +4.70 on a 5 USDC stake), 61 crank ticks | `4cVexGrafUwJ7MSPBHgGm36jUn4KrXQzZGaJtSxuv8Y2` | [devnet-proof-nov26-duel.txt](devnet-proof-nov26-duel.txt) (99 txs, 89 on the rollup) |
+| 3-player Royale, BTC (VRF), 5 rounds, 12 session-key calls, 51 crank ticks, Ben survived and was paid 5.82 USDC (net +3.82 on a 2 USDC entry) | `LifRbotyx5vkJBcCRYDKZPutHbhV6gNofAaGguEsx1u` | [devnet-proof-nov26-royale.txt](devnet-proof-nov26-royale.txt) (93 txs, 84 on the rollup) |
 | Squad war: moon-pack (Ana captain, Ben member; chest $35) vs night-owls (Cy; chest $25), $5 stake each, 2 minutes. Moon Pack voted SOL up 10×, Night Owls SOL down 10×; SOL 71.21 → 71.10, so Night Owls won (+0.61% vs −0.66%) and took the pot, 9.70 USDC after the 3% rake | `3KfTYbDNmggvcSJTn8RnHFwwoB6MSdyf13Ef1LbD8aSB`, `HTYjcTYtiiUgHHrH1hMZnge4cY6o81L3ribJz5yMdk92` | [devnet-proof-nov26-squad-war.txt](devnet-proof-nov26-squad-war.txt) (18 txs on Solana, none failed: CreateClan ×2, JoinClan, DepositChest ×3, DeclareWar, AcceptWar, Propose ×2, Vote ×3, ExecuteProposal ×2, ClosePosition ×2, SettleWar) |
 
 ## The failed transactions in these trails, and why

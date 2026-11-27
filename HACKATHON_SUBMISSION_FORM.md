@@ -3,7 +3,7 @@
 Prepared Nov 24, 2026 (UTC) for Nick, who submits; updated Nov 25 after the TEE rollup move and the program upgrades,
 and re-checked on **Nov 26, 2026 at 04:30–05:10 UTC** against the live form's own code, the events API, the Luma page
 and devnet (every explorer link below resolves on chain); updated Nov 27 for the new app features, the Nov 27 devnet
-trails and demo film v6. Everything Nick must type or decide is marked `NICK:`.
+trails and demo film v7. Everything Nick must type or decide is marked `NICK:`.
 His morning checklist is [docs/NICK.md](docs/NICK.md).
 
 ## The event (verified)
@@ -68,7 +68,7 @@ Clashy
 Clash 1v1. Squad up. Play 150+ games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 ```
 
-### Description (4,901 characters, limit 5,000)
+### Description (4,983 characters, limit 5,000)
 
 ```text
 Clash 1v1. Squad up. Play 150+ games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
@@ -82,9 +82,9 @@ How it uses MagicBlock (devnet program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1
 - Oracle: SOL, BTC and ETH read MagicBlock's oracle accounts on the rollup; stocks, squad trades and squad wars use Clashy's own crank-pushed feeds on Solana.
 - VRF: request_coin_roll and request_tournament_coin ask MagicBlock VRF for the coin. Only the VRF program's callback can set it. With vrf_required on, the commit-reveal fallback and forged callbacks are refused, and a test proves it.
 - Session keys: lock_pick_session and call_round_session let a MagicBlock session key make in-game moves (used by the app: one wallet signature creates a 6-hour session key on the device (sponsored, relay-checked), and the private-duel pick lock and every Royale call are signed by it; played on devnet in duel 3qa893zcqdm9WpPAGJMdjfxZqUXFvhr1U2A2ZdHwuT8t, both picks landed as LockPickSession).
-- Zero-fee play: players hold 0 SOL. A sponsor relay pays every Solana fee and rent, Magic Actions are sent by MagicBlock's TEE validator, and rollup moves are free. On web, players sign in with Privy (email or Google); the iOS build uses a device test wallet. We don't use MagicBlock private payments.
+- Zero-fee play: players hold 0 SOL. A sponsor relay pays every Solana fee and rent, Magic Actions are sent by MagicBlock's TEE validator, and rollup moves are free. On web, players sign in with Privy (email or Google); the filmed devnet web build used device test wallets. We don't use MagicBlock private payments.
 
-What is live: the program on Solana devnet with MagicBlock's TEE rollup, VRF oracle and oracle prices. On Nov 25 all four MagicBlock tests passed there in one run: a cranked duel settled by a Magic Action 31.6 s after the start, a cranked Royale paid its survivor with no resolve or settle by hand, a private duel, and keeper abuse checks. Two players with 0 SOL also played a private ETH duel through the web app: 100 transactions, 88 on the rollup, one crank tick per second, and the winner got +9.70 USDC. On Nov 26 and 27 duels, 3-player Royales and squad wars were played the same way, the Nov 27 clash and war on iOS Simulators. Around that sit 151 practice games on live Phoenix and Pacifica prices (practice money only), chat and a guided tour. On Nov 26 every local suite was re-run on MagicBlock's own validator: 56 of 56 tests pass.
+What is live: the program on Solana devnet with MagicBlock's TEE rollup, VRF oracle and oracle prices. On Nov 25 all four MagicBlock tests passed there in one run: a cranked duel settled by a Magic Action 31.6 s after the start, a cranked Royale paid its survivor with no resolve or settle by hand, a private duel, and keeper abuse checks. Two 0-SOL players also played a private ETH duel through the web app: 100 transactions, 88 on the rollup; the winner was paid 9.70 USDC (net +4.70 on a 5 USDC stake). Duels, 3-player Royales and squad wars followed on Nov 26-27 (the film's in the web app on iOS Simulators). Around that sit 151 practice games on live Phoenix and Pacifica prices (practice money only), chat and a guided tour. On Nov 26 every local suite was re-run: 56 of 56 pass (32 on-chain tests against MagicBlock's validator 1.1.1, 13 Rust unit tests, 7 live order-book tests, 4 social-server tests).
 
 What isn't live: there is nothing on mainnet and no real money. Buying tokenized stocks for Stash needs an Orca xStock pool, which exists only on mainnet. The app isn't hosted yet; the services ran on a Mac. No store listing yet (App Store, Google Play, Solana dApp Store) and no Android build. The program is upgradeable by one key; a multisig is the mainnet plan.
 
@@ -134,17 +134,20 @@ TEE rollup, Nov 27:
 - the Clashy title, onboarding (four slides, a name, a funded test wallet) and the Play tab;
 - the private 1v1 clash: MagicBlock VRF rolls SOL, both phones show the coin's last hour and the tie rule (same call: both
   stakes back, no fee), Ana calls up and Ben down, both sealed in the TEE with session keys, 61 crank ticks, the Magic
-  Action payout (Ben +9.70 USDC); trail `chain/evidence/devnet-proof-nov27-ios-duel2.txt`;
+  Action payout (Ben was paid 9.70 USDC, net +4.70 on a 5 USDC stake); trail `chain/evidence/devnet-proof-nov27-ios-duel2.txt`;
 - a squad war (Moon Pack is made, Ben joins, both fund the chest) and a rematch: both squads call SOL down 10x, Ben votes
-  yes on his own phone, and the better return wins (Moon Pack -0.05% vs Night Owls -0.27%); trail
+  yes on his own phone, and the better return wins (shown in the app; SettleWar tx in the trail); trail
   `chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`. The rival squad was a scripted third wallet off camera;
 - the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers;
 - Tap Grid full screen on Bitcoin, Draw the Line, and two walls of six practice games played live;
 - the web app on desktop; seven Solana Explorer cards for the same clash and rematch; store plans (App Store, Google
   Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150+ games.
-Trails: [`chain/evidence/devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt) and
-[`chain/evidence/devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt). Narration: the builder's voice,
-cloned (ElevenLabs; a local Chatterbox model for the Royale, squad war, games and Stash lines).
+Trails: [`chain/evidence/devnet-proof-nov27-ios-duel2.txt`](chain/evidence/devnet-proof-nov27-ios-duel2.txt) (the SOL
+clash: 96 txs, 86 on the rollup, 61 crank ticks, 2 `LockPickSession`) and
+[`chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`](chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt) (27
+Solana txs: the first war (13) and the rematch (14, 10:38:01–10:41:03 UTC)). The practice-game walls were recorded in a
+desktop browser at phone size, not in the iOS Simulator. Narration: the builder's voice, cloned (ElevenLabs; a local
+Chatterbox model for the newer lines).
 
 Upload it (YouTube unlisted or Drive, viewable by anyone with the link) and paste the URL.
 
@@ -165,7 +168,7 @@ Leave the fee vault out: the form's fee vault is for MagicBlock private-payment 
 (Clashy's Magic Actions pass the validator's magic fee vault, a different account; the keeper's escrow `FxRMULT…` has
 not been debited on devnet.)
 
-**"Recent" activity:** the program's latest base-layer transaction was on Nov 27, 2026 at 10:38 UTC (read with
+**"Recent" activity:** the program's latest base-layer transaction was on Nov 27, 2026 at 10:41 UTC (the rematch's SettleWar; read with
 `getSignaturesForAddress` right after, Nov 27). The Nov 27 film games are in `chain/evidence/devnet-proof-nov27-*.txt`; the
 Nov 26 ones in `chain/evidence/devnet-proof-nov26.md`.
 
@@ -175,7 +178,7 @@ Nov 26 ones in `chain/evidence/devnet-proof-nov26.md`.
 Devnet proof (Solana Explorer):
 - Program: https://explorer.solana.com/address/FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS?cluster=devnet
 - Rollup: MagicBlock Private Ephemeral Rollup https://devnet-tee.magicblock.app (validator MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo). Rollup links below open through Explorer's custom RPC setting.
-- One private duel played through the web app by two 0-SOL players, Nov 25 11:33-11:35 UTC (duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4, 100 txs, 88 on the rollup, winner +9.70 USDC):
+- One private duel played through the web app by two 0-SOL players, Nov 25 11:33-11:35 UTC (duel 3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4, 100 txs, 88 on the rollup, the winner was paid 9.70 USDC, net +4.70 on a 5 USDC stake):
   open https://explorer.solana.com/tx/4eQDRFpkCtejM51giwd8MRPcoEgeKHmQLdRHhw7ThyNo8VpPGdNWnEu5NgcEARGqdCNnxp364hZQVySLQWMw2F6k?cluster=devnet
   VRF callback https://explorer.solana.com/tx/2Zw2y1eKtUcCwezCpjLyhn5JJwTBTTaf9d1yKAdpAR7a4dd4xUEBG19TTk2BbsM4VkjzjD75QZDFpNHpkTXe2v71?cluster=devnet
   delegate to the TEE https://explorer.solana.com/tx/WdtSjg2a61LVRNT4i6g8mbFMCZMkvLb1DkKzf8SgQYY1jUV9TJCoGFjuhFLaFHM61FoBXvDiF82MbnqPWyoKHyn?cluster=devnet
@@ -184,7 +187,7 @@ Devnet proof (Solana Explorer):
   first crank tick https://explorer.solana.com/tx/4NHsJ6ehn78NCT9j285LXHCP7zduBmNkbLp75R4BucrAsaENDMD7YETCX8BBVVfw9gQ2eLynoNHBNM4cNuEuUL26?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app
   Magic Action settle on Solana (ProcessUndelegation + SettleDuel, signed by the TEE validator) https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet
 - Program upgrades Nov 25: https://explorer.solana.com/tx/4VJAbxj2mqY962jYCXSRhdrf86p3bGuyAkuGuhVFh8adfPC4XW32iNm7Tme8aWWdHyPXuJABskug16qnKQhGbwZw?cluster=devnet , https://explorer.solana.com/tx/2bfRV8kMn2X3PWXwz7fxRamt1Akd1MhSQjWTviTvc6B3ydiyXh5Z6mLbgsgXVdoNQU8CpgHCv1sYnHbXbheydEJZ?cluster=devnet , https://explorer.solana.com/tx/jKQqVjuN48xpkFaKwkAwkwui86jg3nnKEx6L6CYYPLReu8zBEwQ4WVmfJMVVREFFz9vGfhaVNriYSHo6axhqSnt?cluster=devnet
-- First deployment, Nov 22, on devnet-as.magicblock.app: one duel (settle https://explorer.solana.com/tx/63Naj6C7Wttt8f666pJGhrWvuzHwJTLRSS9BVwLVynjW1yMuGjrU4ajSALcvCGT57HVrDW4VMry8h9fGKpJNiB7g?cluster=devnet ) and one Royale (settle https://explorer.solana.com/tx/2dgA24W5QajN3mRxjaHJ376rjYDbDrbA3ZxDFChW7NRLEdJGgygTJhaftnFsuto7KDgBYcYTZrga5KuLMKa85iTu?cluster=devnet ).
+- First deployment, Nov 22, on devnet-as.magicblock.app (self-reported, no stored trail): one duel (settle https://explorer.solana.com/tx/63Naj6C7Wttt8f666pJGhrWvuzHwJTLRSS9BVwLVynjW1yMuGjrU4ajSALcvCGT57HVrDW4VMry8h9fGKpJNiB7g?cluster=devnet ) and one Royale (settle https://explorer.solana.com/tx/2dgA24W5QajN3mRxjaHJ376rjYDbDrbA3ZxDFChW7NRLEdJGgygTJhaftnFsuto7KDgBYcYTZrga5KuLMKa85iTu?cluster=devnet ).
 VRF queue Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh. Test USDC mint 8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN (no value). Keeper TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK.
 
 Trust: the program is upgradeable by one deployer key, and the admin can change rake (max 10%), treasury and vrf_required. A multisig is the mainnet plan.
@@ -203,8 +206,8 @@ Kickoff disclosure: the first app, website and program predate the Nov 20 14:00 
 ## Devnet transactions (all real)
 
 **Private duel through the web app, Nov 25 2026 (UTC)**, duel `3iqsLN25cTK2SMMHqLyvvQhDLKPDBfHPBEUWBjhx8PW4` on the
-TEE rollup. Two device-wallet players with 0 SOL; ETH 1,639.80 → 1,638.63; B called down and won +9.70 USDC, A lost
-5 USDC. The full trail (100 transactions, 88 on the rollup, each with an explorer link) is
+TEE rollup. Two device-wallet players with 0 SOL; ETH 1,639.80 → 1,638.63; B called down and was paid 9.70 USDC (net +4.70 on a 5 USDC
+stake), A lost 5 USDC. The full trail (100 transactions, 88 on the rollup, each with an explorer link) is
 [`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt), printed by `chain/scripts/devnet-proof.ts`.
 
 | Step | Time | Layer | Transaction |
@@ -223,7 +226,7 @@ TEE rollup. Two device-wallet players with 0 SOL; ETH 1,639.80 → 1,638.63; B c
 
 After the duel went home, MagicBlock's scheduler tried the remaining ticks 11 more times (11:35:04 to 11:35:31); they
 failed because the duel had left the rollup, and then the task was dropped. Since the devnet upgrade that evening
-(`3LJSPdfk…`), the finishing tick cancels its crank; a few runs the scheduler had already queued can still land in
+(`3LJSPdfk…`), the finishing tick cancels its crank; 8 or 9 runs the scheduler had already queued can still land in
 the next 3 s and stop at the scheduler's own check (`InvalidAccountOwner`, fee 0) before Clashy's program runs
 (`chain/evidence/devnet-proof-nov26.md`). Four failed
 VRF-oracle transactions also appear before the callback landed.
@@ -245,7 +248,7 @@ came after that recount.
 | DelegateDuel | 12 | | CreateClan / DeclareWar / SettleWar | 12 / 4 / 4 |
 | SettleDuel | 9 | | InitPlayer / CreateProfile | 112 / 112 |
 
-**Duel `H6GpASV8ThsegMkDbxdy6KeWAVrXaPZhnxpbnBguDG8t`, Nov 22 2026 (UTC):**
+**Duel `H6GpASV8ThsegMkDbxdy6KeWAVrXaPZhnxpbnBguDG8t`, Nov 22 2026 (UTC; self-reported, no stored trail):**
 
 | Step | Time | Layer | Transaction |
 |---|---|---|---|
@@ -258,7 +261,7 @@ came after that recount.
 | First of 47 CheckDuel scoring ticks | 04:44:28 | MagicBlock rollup | [26mbyTzh…Mf3TahHy](https://explorer.solana.com/tx/26mbyTzhw1Gpd2a8u3eB7ZSRfNuWQYcJUb9511An2wHUWfniPaTRTMrfjT4xTzwN2v6fpPzVx5Hg7N8JMf3TahHy?cluster=custom&customUrl=https%3A%2F%2Fdevnet-as.magicblock.app) |
 | Settle (pot, rake, Elo) | 04:45:29 | Solana devnet | [63Naj6C7…KpJNiB7g](https://explorer.solana.com/tx/63Naj6C7Wttt8f666pJGhrWvuzHwJTLRSS9BVwLVynjW1yMuGjrU4ajSALcvCGT57HVrDW4VMry8h9fGKpJNiB7g?cluster=devnet) |
 
-**Royale `8wT2UCqJiwha3wrPfaanMhuKs2DF17ChMVuHyHbeHfLE`, Nov 22 2026 (UTC):**
+**Royale `8wT2UCqJiwha3wrPfaanMhuKs2DF17ChMVuHyHbeHfLE`, Nov 22 2026 (UTC; self-reported, no stored trail):**
 
 | Step | Time | Layer | Transaction |
 |---|---|---|---|

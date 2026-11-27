@@ -14,8 +14,8 @@ Finance).
 **[Watch the demo film (6:32, 1080p)](docs/media/clashy-demo.mp4).** App shots are iOS Simulator recordings (iPhone 17, 17 Pro
 and 17 Pro Max, real status bar, a ring on every tap) of the Clashy web app added to the home screen, running live on
 Solana devnet and MagicBlock's TEE rollup on Nov 27, 2026, by fresh device test wallets. In order: onboarding; a private
-1v1 clash on SOL where both phones show the coin's chart and the tie rule before the sealed calls (Ben +9.70 USDC); a
-squad war and a rematch where both squads call SOL down and the better return takes the pot; the squad's #general on the
+1v1 clash on SOL where both phones show the coin's chart and the tie rule before the sealed calls (Ben was paid 9.70
+USDC, net +4.70 on a 5 USDC stake); a squad war and a rematch where both squads call SOL down and the better return takes the pot; the squad's #general on the
 rollup with MagicBlock stickers; Tap Grid full screen and Draw the Line on Bitcoin; two walls of six practice games
 recorded live in a desktop browser at phone size; the web app on desktop; the same clash's and rematch's transactions on
 Solana Explorer; store plans (App Store, Google Play, Solana dApp Store: coming soon). Trails:
@@ -53,7 +53,7 @@ Where each feature lives and how it is proven: [docs/FEATURES.md](docs/FEATURES.
 ### MagicBlock proof
 
 One row per MagicBlock feature: where it is in the program and one devnet transaction that shows it (each one read
-back with `getTransaction` on Nov 27, 2026). Solana links open on devnet; rollup links open MagicBlock's TEE rollup
+back with `getTransaction`). Solana links open on devnet; rollup links open MagicBlock's TEE rollup
 through Explorer's custom-RPC setting.
 
 | Feature | Code | Devnet transaction |
@@ -71,8 +71,11 @@ through Explorer's custom-RPC setting.
 The two settles are version-1 transactions. Full trails: [`chain/evidence/devnet-proof.txt`](chain/evidence/devnet-proof.txt)
 (Nov 25 duel), [`devnet-proof3.txt`](chain/evidence/devnet-proof3.txt) (the crank cancel),
 [`devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md) (Nov 26 duel, Royale and squad war) and the Nov 27 trails
-([`devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt),
-[`devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt),
+([`devnet-proof-nov27-ios-duel2.txt`](chain/evidence/devnet-proof-nov27-ios-duel2.txt), the film's SOL clash;
+[`devnet-proof-nov27-ios-squad-rematch.txt`](chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt), the film's squad
+war and rematch; [`devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt);
+[`devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt), an earlier iOS Simulator BTC duel
+not in the current film;
 [`devnet-proof-nov27-duel.txt`](chain/evidence/devnet-proof-nov27-duel.txt),
 [`devnet-proof-nov27-royale.txt`](chain/evidence/devnet-proof-nov27-royale.txt), the last with 21 `CallRoundSession`
 transactions). Every evidence file is listed in [docs/README.md](docs/README.md#evidence).
@@ -82,7 +85,7 @@ transactions). Every evidence file is listed in [docs/README.md](docs/README.md#
 | Platform | Status |
 |---|---|
 | Web app | Runs in any browser: the same Expo app exported for web, with a desktop layout on wide screens. Sign-in with Privy (email or Google). Not hosted yet |
-| iOS | Same Expo codebase (`app/ios/`). Native builds run on iOS Simulators with a device test wallet on devnet; Privy is web only. The Nov 27 clash and squad war in the demo film were played this way |
+| iOS | Same Expo codebase. The native iOS project is generated locally with `npx expo run:ios` and is gitignored, so it is not in the repo. A native Release build ran once on an iOS Simulator (it needed the Web Crypto polyfill, `app/src/polyfill.ts`). The demo film does not use it: its Nov 27 clash and squad war were played in the Clashy web app (devnet build) added to the iOS home screen in iOS Simulators, with device test wallets; Privy is web only |
 | Android | Same Expo codebase (`app/app.json` names the package). No Android build has been made or run yet |
 | App Store, Google Play, Solana dApp Store | Coming soon. Nothing has been submitted to any store, and there is no APK or IPA in the repo |
 
@@ -102,7 +105,7 @@ transactions). Every evidence file is listed in [docs/README.md](docs/README.md#
 | Test USDC (stake currency) | [`8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN`](https://explorer.solana.com/address/8Jb66CfujsctN5VuoqJWBjhQcz2G7MZAtszgAziJEXiN?cluster=devnet) | SPL token, 6 decimals. It has no value and exists only on devnet. |
 | Ephemeral Rollup | `https://devnet-tee.magicblock.app` | MagicBlock's Private Ephemeral Rollup (TEE), validator `MTEWGuqxUpYZGFJQcp8tLN7x5v9BSeoFHYWQQ3n3xzo`, validator version 1.1.1. Transactions need an auth token (valid 30 days); public reads need none. The Nov 22 runs used `devnet-as.magicblock.app` (validator `MAS1Dt9…`); feeds, boards and the squad channel were moved home from there with `admin_undelegate` and re-delegated to the TEE on Nov 25 (`chain/evidence/devnet-migrate.log`, `devnet-migrate2.log`). |
 | Prices | SOL `ENYwebBThHzmzwPLAQvCucUTsjyfBSZdD9ViXksS4jPu`, BTC `71wtTRDY8Gxgw56bXFt2oc6qeAbTxzStdNiC425Z51sr`, ETH `5vaYr1hpv8yrSpu8w3K95x22byYxUJCCNCSYJtqVWPvG` | SOL, BTC and ETH read MagicBlock's oracle accounts. The five stocks (NVDA, TSLA, AAPL, SPY, GOOGL) keep Clashy's own crank-pushed feeds. |
-| Keeper | `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK` | A PDA delegated to the rollup. It signs the crank's commits. Its escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` is the account MagicBlock can charge for Magic Actions; its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27). |
+| Keeper | `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK` | A PDA delegated to the rollup. It signs the crank's commits. Its escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE` is the account MagicBlock can charge for Magic Actions; its balance did not change during the Nov 25 MagicBlock runs (0.05065024 SOL at the start of `devnet-mb-test.log` and of the later `devnet-mb-cancel.log`). |
 | VRF | queue [`Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh`](https://explorer.solana.com/address/Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh?cluster=devnet) | MagicBlock VRF program `Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz`. The callbacks are signed by their oracle `vrfkfM4uoisXZQPrFiS2brY4oMkU9EWjyvmvqaFd5AS`. `vrf_required = true`, so the commit-reveal fallback is refused. |
 | Fee sponsor (relay) | [`AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz`](https://explorer.solana.com/address/AjdLmw9hedd9o1ATPRRQgxQKUDRop2Lmz79krZLEP4Hz?cluster=devnet) | Pays every Solana fee and rent for players, who hold 0 SOL. Magic Actions are sent by MagicBlock's TEE validator. |
 | Base RPC | `https://rpc.magicblock.app/devnet` | The rake is 3% (300 bps). The admin can change it (up to 10%) with `update_config`. |
@@ -121,13 +124,13 @@ two device-wallet players with 0 SOL; full trail of 100 transactions, 88 on the 
 [start](https://explorer.solana.com/tx/45DauMxTGoQnq3frKWPY48KR8b7pXAjsyTrBFKgfzuR7NrpaAFY56rvUcqEmDi8CL7EtMhfput8vkWz2Uh2NJ7r2?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app) →
 one crank `TickDuel` per second for 60 s ([first](https://explorer.solana.com/tx/4NHsJ6ehn78NCT9j285LXHCP7zduBmNkbLp75R4BucrAsaENDMD7YETCX8BBVVfw9gQ2eLynoNHBNM4cNuEuUL26?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app), [last](https://explorer.solana.com/tx/49EUfL6UUTnqgGAKbaobDE9w3M8gpGkazXJVkTehaDiZkGaW5NoGTp8o6cvQpvCGNW8m6ABN9G7iWvVytY17XNu3?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)) →
 the Magic Action at 11:35:04: the duel is undelegated and `settle_duel` pays out in one Solana transaction signed by MagicBlock's TEE validator `MTEWGuqx…` ([ProcessUndelegation + SettleDuel](https://explorer.solana.com/tx/3TRqj5wUv7Euxm2kSfToEiKrrMvjnzgCzF3UQDQLQGkL4LcTNQ37nfwwvhJrbgABAwRA7SdcNHLuSgrvL9vfCMC5?cluster=devnet), [rollup side](https://explorer.solana.com/tx/mWYjHRgP7gacpxzJmHT9o1UP1qmfB5nptMisS1MeDt8qupje4KaCLMxKY3x2yM7FM8Ss6MrvsJKQgkLDpj9Te2B?cluster=custom&customUrl=https%3A%2F%2Fdevnet-tee.magicblock.app)).
-ETH went 1,639.80 → 1,638.63; player B called down and won +9.70 USDC, player A lost 5 USDC. After the duel went
-home, MagicBlock's scheduler tried the remaining ticks 11 more times; they failed because the duel had left the rollup,
-and then the task was dropped. Since the devnet upgrade that evening, the finishing tick cancels its crank. A few runs
+ETH went 1,639.80 → 1,638.63; player B called down and was paid 9.70 USDC (net +4.70 on a 5 USDC stake), player A
+lost 5 USDC. After the duel went home, MagicBlock's scheduler tried the remaining ticks 11 more times; they failed because the duel had left the rollup,
+and then the task was dropped. Since the devnet upgrade that evening, the finishing tick cancels its crank. 8 or 9 runs
 the scheduler had already queued can still land in the next 3 s; each stops at the scheduler's own check
 (`InvalidAccountOwner`, fee 0) before Clashy's program runs (`chain/evidence/devnet-proof-nov26.md`). Four failed VRF-oracle transactions also appear in the trail before the callback landed.
 
-**One duel on the first deployment** (Nov 22, 04:43–04:45 UTC, on `devnet-as`, duel account `H6GpASV8…DG8t`):
+**One duel on the first deployment** (Nov 22, 04:43–04:45 UTC, on `devnet-as`, duel account `H6GpASV8…DG8t`; self-reported, no stored trail):
 [open](https://explorer.solana.com/tx/QX8XN8N8sYrNF4DQw12SyDzfP82eJwVLpTxeahJqahdXiMcmja7R7rBoHXURgr6J2LDJRrw4DwLGfG5Xq4oc8X2?cluster=devnet) →
 [join](https://explorer.solana.com/tx/oGzZJJrcEfiFJ6idseA34Ydwp8goXfF8ek8Way44BzpBrTwAkRHPNUzUu2WaZizWoe3EUY3qEdrrdgfiYNPKqWb?cluster=devnet) →
 [VRF request](https://explorer.solana.com/tx/2x4UDrwcsgKjE9GfHD72hGqc9sP7nVowSUA7KeMuiQm8nhGwBejhxKNYx3xL4gxqvmtyVrSnYMKqASmVpLx876ZD?cluster=devnet) →
@@ -156,8 +159,11 @@ player).
 - **Through the web app:** the private ETH duel above, played by two device-wallet players with 0 SOL. On Nov 26 a
   private duel, a 3-player Royale and a squad war were played the same way ([`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md)).
 - **Nov 27:** a private SOL duel (101 txs, 89 on the rollup) and a 3-player Royale (112 txs, 100 on the rollup, 21
-  session-key calls) in the app, then a private BTC duel (94 txs, 82 on the rollup, 61 crank ticks) and a squad war
-  (19 Solana txs) on iOS Simulators by fresh device test wallets (`chain/evidence/devnet-proof-nov27-*.txt`).
+  session-key calls) in the app, then on iOS Simulators by fresh device test wallets: an earlier private BTC duel (94
+  txs, 82 on the rollup; not in the current film), a squad war (19 Solana txs) and, in the web app on the iOS home
+  screen, the demo film's private SOL duel (96 txs, 86 on the rollup, 61 crank ticks, 2 `LockPickSession`; Ben was paid 9.70 USDC, net +4.70 on a 5 USDC
+  stake) and the film's squad war and rematch (27 Solana txs: the first war (13) and the rematch (14, 10:38:01–10:41:03
+  UTC)) (`chain/evidence/devnet-proof-nov27-*.txt`).
 
 **Nov 22, on devnet-as** (logs `chain/evidence/devnet-test-all.log`, `devnet-test-2.log`, `devnet-test-3.log`,
 `devnet-test-4.log`, `devnet-test-clashy.log`). No single run was all green: each test below passed in at least one

@@ -388,7 +388,7 @@ export default function OnchainRoyale() {
             <View style={{ alignItems: 'center' }}>
               <ClayLoop name="royale" size={150} style={{ borderRadius: 34 }} />
               <Text style={{ ...FONT.bold, fontSize: 42, letterSpacing: -1.4, color: C.ink, marginTop: -4 }}>Royale</Text>
-              <Txt v="small" style={{ textAlign: 'center' }}>{ENTRY_USDC} USDC in. Last one standing takes the pot.</Txt>
+              <Txt v="small" style={{ textAlign: 'center' }}>{ENTRY_USDC} USDC in. The players with the most hearts left split the pot.</Txt>
             </View>
             <HowItWorks secs={ROUND_SECS} />
             </TourTarget>

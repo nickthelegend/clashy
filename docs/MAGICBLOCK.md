@@ -41,7 +41,7 @@ failed because the duel had left the rollup.
   `abandon_private_duel` (`chain/programs/clashy/src/lib.rs`).
 - Moves on the rollup cost nothing. Players hold 0 SOL; a sponsor relay pays every Solana fee and rent. Magic Actions
   are sent by MagicBlock's TEE validator; the keeper's escrow is the account MagicBlock can charge for them, and
-  its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27).
+  its balance did not change during the Nov 25 MagicBlock runs (0.05065024 SOL at the start of `devnet-mb-test.log` and of the later `devnet-mb-cancel.log`).
 - The TEE rollup accepts transactions only with an auth token (a signed challenge, valid 30 days;
   `chain/tests/common.ts`). Public reads need none.
 - On Nov 25 the feeds, boards and squad channel were brought home from devnet-as with `admin_undelegate` and
@@ -115,7 +115,7 @@ failed because the duel had left the rollup.
   10-sponsored-commits limit seen on the local stack (Nov 18) has not been tested on devnet.
 - Its Solana escrow (`["balance", keeper, 255]`) is the account MagicBlock can charge for Magic Actions. On devnet:
   keeper `TRpZrvYjB4nBqpq36kEzoghkG7RMipuMZirFbXBwyPK`, escrow `FxRMULTCDTT4xXbiwdacGDPtn5J9cM9jK2hqq8Jj13nE`;
-  its balance has not changed on devnet (0.05065024 SOL before the Nov 25 runs and on Nov 27), so no Magic Action has been charged to it so far.
+  its balance did not change during the Nov 25 MagicBlock runs (0.05065024 SOL at the start of `devnet-mb-test.log` and of the later `devnet-mb-cancel.log`), so no Magic Action has been charged to it so far.
 - `keeper.ticks` and `keeper.finished` count crank ticks and finished games; the app's "Live on MagicBlock" screen
   shows them.
 
@@ -163,6 +163,6 @@ Results (Nov 25):
 | Devnet TEE, run 2 | private duel passed; A sees side 1, B sees nothing | `chain/evidence/devnet-private.log` |
 | Local stack, after the crank-cancel fix | 4/4 pass, crank cancelled after each game | `chain/evidence/suite-magicblock-cancel.log` |
 | Devnet TEE, after the crank-cancel fix (upgrade `3LJSPdfk…`) | 4/4 pass in one run: cranked BTC duel settled 31.6 s after the start; cranked Royale paid 5.82 USDC; private duel, A sees side 1, B sees nothing; no failed tick in the 8 s after any finish | `chain/evidence/devnet-mb-cancel.log`, trail `chain/evidence/devnet-proof3.txt` |
-| Devnet, through the app | private ETH duel, two device wallets, B won +9.70 USDC; 100 transactions, 88 on the rollup | `chain/evidence/devnet-proof.txt` |
+| Devnet, through the app | private ETH duel, two device wallets, B was paid 9.70 USDC (net +4.70 on a 5 USDC stake); 100 transactions, 88 on the rollup | `chain/evidence/devnet-proof.txt` |
 | Devnet, through the app (Nov 26) | private ETH duel (99 transactions, 89 on the rollup), 3-player Royale with 12 session-key calls (93, 84 on the rollup), squad war (18 Solana transactions) | `chain/evidence/devnet-proof-nov26.md` |
-| Devnet, through the app (Nov 27) | private SOL duel (101 transactions, 89 on the rollup, 61 crank ticks), 3-player Royale with 21 session-key calls (112, 100 on the rollup); on iOS Simulators a private BTC duel (94, 82 on the rollup, 61 crank ticks, 2 session-key pick locks) and a squad war (19 Solana transactions) | `chain/evidence/devnet-proof-nov27-duel.txt`, `-royale.txt`, `-ios-duel.txt`, `-ios-squad-war.txt` |
+| Devnet, through the app (Nov 27) | private SOL duel (101 transactions, 89 on the rollup, 61 crank ticks), 3-player Royale with 21 session-key calls (112, 100 on the rollup); on iOS Simulators an earlier private BTC duel (94, 82 on the rollup; not in the current film) and a squad war (19 Solana transactions); then the demo film's private SOL duel in the web app on iOS Simulators (96, 86 on the rollup, 61 crank ticks, 2 `LockPickSession`; Ben was paid 9.70 USDC, net +4.70 on a 5 USDC stake) and squad war and rematch (27 Solana transactions: the first war (13) and the rematch (14, 10:38:01–10:41:03 UTC)) | `chain/evidence/devnet-proof-nov27-duel.txt`, `-royale.txt`, `-ios-duel.txt`, `-ios-squad-war.txt`, `-ios-duel2.txt`, `-ios-squad-rematch.txt` |

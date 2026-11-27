@@ -21,7 +21,7 @@ Where each feature lives in the code, and how it is proven: **[FEATURES.md](FEAT
 | Platform | Status |
 |---|---|
 | Web app | Runs in any browser. It is the same Expo app exported for web, with a desktop layout on wide screens. Sign-in with Privy (email or Google). Not hosted yet: `clashy.fun` is a parked page |
-| iOS | Same Expo codebase; the native project is `app/ios/`. Native builds run on iOS Simulators with a device test wallet on devnet (no Privy on phones). The Nov 27 clash and squad war in the demo film were played this way |
+| iOS | Same Expo codebase. The native iOS project is generated locally with `npx expo run:ios` and is gitignored, so it is not in the repo. A native Release build ran once on an iOS Simulator (it needed the Web Crypto polyfill, `app/src/polyfill.ts`). The demo film uses the web app instead: the Clashy web app (devnet build) added to the iOS home screen in iOS Simulators, with device test wallets on devnet (no Privy there) |
 | Android | Same Expo codebase; `app/app.json` names the package `fun.clashy.app`. No Android build has been made or run yet |
 | App Store, Google Play, Solana dApp Store | Coming soon. Nothing has been submitted to any store |
 
@@ -67,15 +67,17 @@ stripped colour codes and home paths. Trails (`devnet-proof*.txt`) were printed 
 
 | File | What it proves |
 |---|---|
-| [`devnet-proof-nov27-ios-duel.txt`](../chain/evidence/devnet-proof-nov27-ios-duel.txt) | Nov 27, the demo film's clash on iOS Simulators: private BTC duel, 94 txs (82 on the rollup), VRF roll, 2 session-key pick locks, 61 crank ticks, the Magic Action settle |
-| [`devnet-proof-nov27-ios-squad-war.txt`](../chain/evidence/devnet-proof-nov27-ios-squad-war.txt) | Nov 27, the demo film's squad war: two squads, chest deposits, proposals, share-weighted votes, two trades, `SettleWar`, `OpenChannel`; 19 Solana txs |
+| [`devnet-proof-nov27-ios-duel2.txt`](../chain/evidence/devnet-proof-nov27-ios-duel2.txt) | Nov 27, the demo film's clash, in the web app on iOS Simulators: private SOL duel, 96 txs (86 on the rollup), VRF roll, 2 `LockPickSession`, 61 crank ticks, the Magic Action settle; Ben was paid 9.70 USDC (net +4.70 on a 5 USDC stake) |
+| [`devnet-proof-nov27-ios-squad-rematch.txt`](../chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt) | Nov 27, the demo film's squad war and rematch: 27 Solana txs: the first war (13) and the rematch (14, 10:38:01–10:41:03 UTC), ending in the rematch's `SettleWar` |
+| [`devnet-proof-nov27-ios-duel.txt`](../chain/evidence/devnet-proof-nov27-ios-duel.txt) | Nov 27, an earlier iOS Simulator BTC duel (not in the current film): 94 txs (82 on the rollup), VRF roll, 2 session-key pick locks, 61 crank ticks, the Magic Action settle |
+| [`devnet-proof-nov27-ios-squad-war.txt`](../chain/evidence/devnet-proof-nov27-ios-squad-war.txt) | Nov 27, the demo film's first squad war with both squads' transactions (13 of its 19 are also in the rematch trail): two squads, chest deposits, proposals, share-weighted votes, two trades, `SettleWar`, `OpenChannel`; 19 Solana txs |
 | [`devnet-proof-nov27-duel.txt`](../chain/evidence/devnet-proof-nov27-duel.txt) | Nov 27, an earlier private SOL duel in the web app: 101 txs (89 on the rollup), 61 crank ticks |
 | [`devnet-proof-nov27-royale.txt`](../chain/evidence/devnet-proof-nov27-royale.txt) | Nov 27, a 3-player Royale: 112 txs (100 on the rollup), 21 `CallRoundSession`, 70 `TickRound`, settled by a Magic Action |
 | [`devnet-proof-nov26.md`](../chain/evidence/devnet-proof-nov26.md) | Nov 26 summary of the duel, Royale and squad war below, with every failed transaction explained |
 | [`devnet-proof-nov26-duel.txt`](../chain/evidence/devnet-proof-nov26-duel.txt) | Nov 26 private ETH duel: 99 txs (89 on the rollup) |
 | [`devnet-proof-nov26-royale.txt`](../chain/evidence/devnet-proof-nov26-royale.txt) | Nov 26 3-player Royale: 93 txs (84 on the rollup), 12 session-key calls |
 | [`devnet-proof-nov26-squad-war.txt`](../chain/evidence/devnet-proof-nov26-squad-war.txt) | Nov 26 squad war: 18 Solana txs |
-| [`devnet-proof.txt`](../chain/evidence/devnet-proof.txt) | Nov 25 private ETH duel through the web app, two 0-SOL players: 100 txs (88 on the rollup), B won +9.70 USDC |
+| [`devnet-proof.txt`](../chain/evidence/devnet-proof.txt) | Nov 25 private ETH duel through the web app, two 0-SOL players: 100 txs (88 on the rollup), B was paid 9.70 USDC (net +4.70 on a 5 USDC stake) |
 | [`devnet-proof2.txt`](../chain/evidence/devnet-proof2.txt) | Nov 25 private duel with both picks as `LockPickSession` (session keys in the app); a dead heat (`winner 3`) |
 | [`devnet-proof3.txt`](../chain/evidence/devnet-proof3.txt) | Nov 25 duel after upgrade `3LJSPdfk…`: the finishing tick cancels its crank |
 

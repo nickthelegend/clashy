@@ -26,9 +26,9 @@ see [../TESTING.md](../TESTING.md) and the `evidence/*-nov26.log` files. The tab
 | Practice clash vs Clashy Bot | `npx tsx --test tests/practice-clash.test.ts` (localnet + crank running) | 5 | 5 pass (devnet, Nov 22, `devnet-test-2.log`): classic pays the right call the stake, same calls or no move are a dead heat; perps moves leverage × the move of the stake, capped at the stake; a 4% move at 25x knocks a side out, 3.9% does not; the bot always takes the other side; the SOL/BTC/ETH rollup feeds are live and the crank pushes a newer price within 2.5 s |
 | Practice order-book perps (Phoenix, Pacifica) | `npx tsx --test tests/markets.test.ts` (relay running) | 7 | 7 pass against the live venues (Nov 25, `suite-markets.log`): the relay refuses off-list reads; overlapping Jupiter price reads all answer with live prices; Phoenix lists active markets with fees and leverage caps; a $5,000 SOL order walks Phoenix's live book; Phoenix funding and candles are real; Pacifica lists perps and its fee tiers; a $20,000 BTC order walks Pacifica's live book. Fill prices change with every run |
 | Social server | `cd server && npm test` | 4 | 4 pass on SQLite (Nov 26, `social-nov26.log`); on Postgres 16 on Nov 19 per docs/AUDIT.md (no log stored) |
-| Mainnet-fork trade on Phoenix | `npx tsx scripts/fork-trade.ts 1` | 1 | sold 1 SOL for 54.660103 USDC, book expected 54.660103 (`.forknet/last-trade.json`) |
-| App on-chain private duel on devnet, two device wallets | scripted browser run of the web app | 1 duel (Nov 25), then a duel, a Royale and a squad war (Nov 26) | Nov 25: ETH, B won +9.70 USDC, A lost 5; 100 transactions, 88 on the rollup (`evidence/devnet-proof.txt`). Nov 26: `evidence/devnet-proof-nov26.md` |
-| App on devnet, Nov 27 | the app (the build used for the SOL duel and Royale is not recorded), then the native iOS build on iOS Simulators with device test wallets | 2 duels, 1 Royale, 1 squad war | Private SOL duel, 101 txs (`evidence/devnet-proof-nov27-duel.txt`); 3-player Royale, 112 txs, 21 `CallRoundSession` (`-royale.txt`); private BTC duel, 94 txs, 61 crank ticks (`-ios-duel.txt`); squad war, 19 txs (`-ios-squad-war.txt`) |
+| Mainnet-fork trade on Phoenix | `npx tsx scripts/fork-trade.ts 1` | 1 | sold 1 SOL for 54.660103 USDC, book expected 54.660103 (`.forknet/last-trade.json`, gitignored: not stored in the repo) |
+| App on-chain private duel on devnet, two device wallets | scripted browser run of the web app | 1 duel (Nov 25), then a duel, a Royale and a squad war (Nov 26) | Nov 25: ETH, B was paid 9.70 USDC (net +4.70 on a 5 USDC stake), A lost 5; 100 transactions, 88 on the rollup (`evidence/devnet-proof.txt`). Nov 26: `evidence/devnet-proof-nov26.md` |
+| App on devnet, Nov 27 | the app (the build used for the SOL duel and Royale is not recorded), then iOS Simulators with device test wallets; the demo film's duel and squad rematch were played in the Clashy web app (devnet build) added to the iOS home screen, not a native build | 3 duels, 1 Royale, 2 squad wars and a rematch | Private SOL duel, 101 txs (`evidence/devnet-proof-nov27-duel.txt`); 3-player Royale, 112 txs, 21 `CallRoundSession` (`-royale.txt`); an earlier iOS Simulator BTC duel (not in the current film), 94 txs, 82 on the rollup (`-ios-duel.txt`); squad war, 19 txs (`-ios-squad-war.txt`); the film's private SOL duel, 96 txs, 86 on the rollup, 61 crank ticks, 2 `LockPickSession`, Ben paid 9.70 USDC (net +4.70 on a 5 USDC stake) (`-ios-duel2.txt`); the film's squad war and rematch, 27 Solana txs: the first war (13) and the rematch (14, 10:38:01–10:41:03 UTC) (`-ios-squad-rematch.txt`) |
 | App on-chain duel, clan, clan war and Royale on the local stack | manual multi-tab browser runs (no spec file is committed) | 5 duels, 1 clan flow, 2 wars, 2 Royales | Nov 16: all settled with no errors. Kept as notes, not as logs |
 
 ## Local stack
@@ -109,7 +109,7 @@ npx tsx scripts/fork-trade.ts 1
 
 Last run: tx `3Lt4EHkaHBH84DFHGQ8usoXrDN3DCK8JhnBhouCGvfCtEXCLnLpupgJmYDy3dV8ZdJw9eYeX8FkBcUGSwFDh5rEK` on the fork
 (not on mainnet). The forked book's best bid was 60.03 against a ~71 market price, so the 1 SOL sell walked the book to
-54.66. Report in `.forknet/last-trade.json`.
+54.66. Report in `.forknet/last-trade.json` (gitignored, so the result is not stored in the repo).
 
 ## App on-chain duel (two players in the browser)
 
