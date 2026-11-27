@@ -104,7 +104,7 @@ export function Join() {
           Make the first move.
         </motion.h2>
         <motion.div className="join-side" {...r}>
-          <p>The beta will open at play.clashy.fun (not live yet): 150 games on live prices, free with practice money. Real-money duels come later, and apps for iOS, Android and the Solana dApp Store are on the way.</p>
+          <p>The beta will open at play.clashy.fun (not live yet): 150+ games on live prices, free with practice money. Real-money duels come later, and apps for iOS, Android and the Solana dApp Store are on the way.</p>
           <a className="btn btn-primary" href="https://play.clashy.fun">
             Play free
             <span className="arrow" aria-hidden="true">
@@ -160,7 +160,7 @@ export function Footer() {
           </div>
         </div>
         <div className="foot-q">
-          <p>Clash 1v1. Squad up. Play 150 games.</p>
+          <p>Clash 1v1. Squad up. Play 150+ games.</p>
         </div>
       </div>
       <div className="wrap foot-fine">

@@ -1,4 +1,4 @@
-// The game kit, live: /games/kit (Nov 21). Every piece the 150 games are built from, drawn on real prices, real
+// The game kit, live: /games/kit (Nov 21). Every piece the 151 games are built from, drawn on real prices, real
 // candles, real games from the catalog and your own last result, so whoever builds the next game can see what's there
 // (docs/GAME-KIT.md lists the same pieces with their props). The examples here move no money.
 import { router, type Href } from 'expo-router';

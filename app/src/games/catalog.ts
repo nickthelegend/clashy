@@ -1,4 +1,4 @@
-// The 150 games (100 on Nov 20, 50 more on Nov 21). Ideas from two Grok sessions and research on what ships today
+// The 151 games (100 on Nov 20, 50 more on Nov 21, then Draw the Line). Ideas from two Grok sessions and research on what ships today
 // (grokbot/research/clashy-games), judged and merged into the engines in ./engines; see docs/GAMES.md. Each game is an engine with its own markets, clock, colour and settings.
 // "How to play" is written from those settings by `rules()`, so it always matches what the game really does.
 // Leverage here is game leverage on practice money, sized to each market's volatility so a round can bust or pay in

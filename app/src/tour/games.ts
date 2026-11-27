@@ -1,6 +1,6 @@
 // Tours for the Games page and every game (Nov 20). Each game's first visit gets its own short tour: what the game is,
 // the decision, the stake, the start, and where the rules live. The decision and start lines come from the game's
-// engine, so all 150 games get one without 750 hand-written lines.
+// engine, so all 151 games get one without 750 hand-written lines.
 import { GAMES } from '@/games/catalog';
 import type { EngineId, GameDef } from '@/games/types';
 import type { TourStep } from './steps';
@@ -56,7 +56,7 @@ function gameTour(g: GameDef): TourStep[] {
 export const GAME_TOURS: Record<string, TourStep[]> = {
   games: [
     { target: 'games-hot', radius: 28, title: 'Hot right now.', body: 'The most played games. Swipe for more.' },
-    { target: 'games-cats', radius: 20, title: '150 games.', body: 'Memes, perps, stocks, crypto and party games.' },
+    { target: 'games-cats', radius: 20, title: '150+ games.', body: 'Memes, perps, stocks, crypto and party games.' },
     { target: 'games-search', radius: 14, title: 'Know what you want?', body: 'Search any game by name.' },
     { target: 'games-card', radius: 24, title: 'Tap to play.', body: 'Each game shows you around the first time.' },
     { target: 'games-balance', radius: 20, title: 'Practice money.', body: 'Shared with Practice. Tap to see your trades.' },

@@ -65,13 +65,13 @@ Clashy
 ### One-liner (start of the description, and for X)
 
 ```text
-Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
+Clash 1v1. Squad up. Play 150+ games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 ```
 
 ### Description (4,901 characters, limit 5,000)
 
 ```text
-Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
+Clash 1v1. Squad up. Play 150+ games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 
 Most trading games pit you against a house pool. Clashy pits you against a friend or a stranger. Two players stake test USDC, MagicBlock VRF rolls the coin for both of them, both see the coin's price chart, each locks long or short inside MagicBlock's Private Ephemeral Rollup, and a crank scores the clash on the rollup every second until the bell. The winner takes the pot minus a 3% rake, and Elo moves; equal P&L refunds both stakes with no fee. Royale puts up to 16 players in one pot: VRF picks the coin, everyone calls each round on the rollup, and the survivors split the pot. Perps clashes add leverage (up to 100x on chain; the app offers up to 50x) with liquidation. Squads pool a USDC chest, vote every trade weighted by chest shares, war other squads chest against chest, and chat in #general and #trades on the rollup.
 
@@ -141,7 +141,7 @@ TEE rollup, Nov 27:
 - the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers;
 - Tap Grid full screen on Bitcoin, Draw the Line, and two walls of six practice games played live;
 - the web app on desktop; seven Solana Explorer cards for the same clash and rematch; store plans (App Store, Google
-  Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150 games.
+  Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150+ games.
 Trails: [`chain/evidence/devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt) and
 [`chain/evidence/devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt). Narration: the builder's voice,
 cloned (ElevenLabs; a local Chatterbox model for the Royale, squad war, games and Stash lines).

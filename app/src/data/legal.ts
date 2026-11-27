@@ -27,7 +27,7 @@ export const LEGAL: Record<LegalKey, LegalDoc> = {
     sections: [
       {
         h: 'What Clashy is',
-        body: ['Clashy is a game: 150 trading games on live market prices, played with practice money. In the public beta, every game runs on practice money.'],
+        body: ['Clashy is a game: 151 trading games on live market prices, played with practice money. In the public beta, every game runs on practice money.'],
       },
       {
         h: 'You must be 18 or older',

@@ -41,7 +41,7 @@ const CARDS: Card[] = [
     n: '02',
     label: 'The arena',
     title: '150 ways to play.',
-    body: 'Knockout duels, Royale, races, snipes, streaks and more: 150 games on live prices, free with practice money.',
+    body: 'Knockout duels, Royale, races, snipes, streaks and more: 150+ games on live prices, free with practice money.',
     bg: '#5B6CFF',
     ink: '#fff',
     ui: (

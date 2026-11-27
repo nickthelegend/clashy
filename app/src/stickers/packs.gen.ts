@@ -3,7 +3,7 @@ export type Sticker = { id: string; pack: string; word: string; emoji: string; t
 export type Pack = { id: string; name: string; blurb: string; cover: number; stickers: Sticker[] };
 
 export const PACKS: Pack[] = [
-  { id: 'clashy', name: "Clashy", blurb: "Clash 1v1. Squad up. Play 150 games.", cover: require('../../assets/stickers/clashy/01.webp'), stickers: [
+  { id: 'clashy', name: "Clashy", blurb: "Clash 1v1. Squad up. Play 150+ games.", cover: require('../../assets/stickers/clashy/01.webp'), stickers: [
     { id: 'clashy/01', pack: 'clashy', word: "CLASH ME", emoji: '⚔️', tags: "duel fight challenge swords", src: require('../../assets/stickers/clashy/01.webp') },
     { id: 'clashy/02', pack: 'clashy', word: "1V1?", emoji: '👉', tags: "duel challenge you", src: require('../../assets/stickers/clashy/02.webp') },
     { id: 'clashy/03', pack: 'clashy', word: "LONG", emoji: '📈', tags: "up buy rocket green", src: require('../../assets/stickers/clashy/03.webp') },

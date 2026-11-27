@@ -1,4 +1,4 @@
-// Games: /games. The practice side of Clashy: 150 games on live prices with practice money (real-money PvP lives on the
+// Games: /games. The practice side of Clashy: 151 games on live prices with practice money (real-money PvP lives on the
 // Play tab). Hot games up top, then one short shelf per category; a category chip or a search shows the full grid.
 // Each card opens the game (/games/[id]).
 import { router, type Href } from 'expo-router';
@@ -103,7 +103,7 @@ export default function Games() {
         </View>
 
         {cat === 'all' && !q.trim() ? (
-          // one shelf per category, so the page reads as a few kinds of game instead of a wall of 150 cards
+          // one shelf per category, so the page reads as a few kinds of game instead of a wall of 151 cards
           CATEGORIES.map((c, ci) => {
             const n = GAMES.filter((g) => g.cat === c.key).length;
             if (!n) return null;

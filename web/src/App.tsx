@@ -130,10 +130,10 @@ function Hero() {
         <motion.div className="pill pill-live" style={{ margin: '0 auto' }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}><span className="dot" />Practice games live on real prices</motion.div>
         <h1 className="hero2-h" style={{ marginTop: 22 }}>
           <W d={0.2}>Clash</W> <W d={0.27}>1v1.</W> <W d={0.34}>Squad up.</W><br />
-          <W d={0.44}><span className="grad">Play 150 games.</span></W>
+          <W d={0.44}><span className="grad">Play 150+ games.</span></W>
         </h1>
         <motion.p className="lead" style={{ margin: '26px auto 0', textAlign: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8, ease }}>
-          Clashy is a PvP trading game on Solana. Open a challenge or take someone's, one coin gets rolled, you pick long or short, best move in 60 seconds wins. Squad up to pool a chest and war rival squads, or play 150 games on live prices.
+          Clashy is a PvP trading game on Solana. Open a challenge or take someone's, one coin gets rolled, you pick long or short, best move in 60 seconds wins. Squad up to pool a chest and war rival squads, or play 150+ games on live prices.
         </motion.p>
         <motion.div className="hero-cta" style={{ justifyContent: 'center' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.8, ease }}>
           <a className="cta" href="#race">Race two coins now <span className="cta-arrow"><Arrow /></span></a>

@@ -1,6 +1,6 @@
 // Play: the real-USDC PvP modes first, practice last. The 1v1 Clash is the hero, the squad war (squad chest vs squad chest,
 // calls voted by the members) is second, then Royale, the perps clash and the Weekly Cup, then what is happening on chain
-// right now (clashes live on the rollup, top players, results). Practice (vs the bot, and the 150 practice games) closes it.
+// right now (clashes live on the rollup, top players, results). Practice (vs the bot, and the 151 practice games) closes it.
 import type React from 'react';
 import { router, type Href } from 'expo-router';
 import { Image } from 'expo-image';

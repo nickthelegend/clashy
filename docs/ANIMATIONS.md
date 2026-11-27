@@ -137,7 +137,7 @@ crossed into the next cell were regenerated or trimmed (the slicer now drops sli
   - "Finding a rival": both stand in their idle loops beside your avatar;
   - Royale: your mascot stands by the round ring, takes a hit when a round costs you a heart and is knocked out when
     you're out; the result shows the victory jump or the knockout;
-  - all 150 practice games, through the shared kit: the round-in-progress panel (`Waiting`) shows the stance, and the
+  - all 151 practice games, through the shared kit: the round-in-progress panel (`Waiting`) shows the stance, and the
     result card (`ResultCard`) shows the win jump, the loss slump or the stance on a push.
 - **Review page:** `/sprites` plays all twelve and has a fight stage driven by buttons. Checked on the iOS simulator
   (native build) on Nov 25: all twelve play; "You gain" then "Bell" ends with the mascot's victory jump and LASER

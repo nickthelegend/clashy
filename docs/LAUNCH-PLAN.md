@@ -10,7 +10,7 @@ bottom.
 
 | Area | State |
 |---|---|
-| App | 150 games, practice trading on real Phoenix and Pacifica prices, chats, squads, tours, profiles. Sign-in with Privy (email or Google, an embedded Solana wallet). Web build works. iOS and Android run through Expo but are not in any store. |
+| App | 151 games, practice trading on real Phoenix and Pacifica prices, chats, squads, tours, profiles. Sign-in with Privy (email or Google, an embedded Solana wallet). Web build works. iOS and Android run through Expo but are not in any store. |
 | On-chain | The Anchor program handles escrowed duels, Royale, clans, clan wars, rake and Elo, on MagicBlock Ephemeral Rollups with VRF, USDC only and gasless. It has only ever run on a **local** chain. A devnet deploy needs about 14 devnet SOL (the program is 1.3 MB, so its rent is 6.7 SOL, and the buffer briefly doubles that). The deployer wallet `6XdpT4cYBZBMMNXnxzoRYWMxtQk3FuooB98bAp79nYbe` has 0 SOL. |
 | Backend | A Docker stack (relay, crank, social server, web, and Caddy for HTTPS) built to run on one VM with `deploy/up.sh`. Not deployed. |
 | Domain | clashy.fun is bought, but it is a parked Hostinger page. Nothing points at our app yet. |
@@ -21,7 +21,7 @@ bottom.
 
 **Launch in two steps:**
 1. **A public beta on practice money, this week.**
-   - Anyone can sign in and play all 150 games.
+   - Anyone can sign in and play all 151 games.
    - They can trade in Practice, chat, join squads and climb a weekly practice leaderboard.
    - No deposits, no withdrawals, no real stakes.
 2. **Real-money duels after that.**
@@ -54,7 +54,7 @@ The devnet duels also go live in the beta as an "On-chain (devnet)" showcase, wi
 ## Product: what's in the beta (CPO)
 
 **In:**
-- the 150 games
+- the 151 games
 - Practice trading
 - practice duels against Clashy Bot
 - chats, squads, profiles
@@ -143,7 +143,7 @@ current price on X.
 
 **Profile.**
 - Name: Clashy.
-- Bio: "Clash 1v1. Squad up. Play 150 games. PvP trading on Solana and MagicBlock."
+- Bio: "Clash 1v1. Squad up. Play 150+ games. PvP trading on Solana and MagicBlock."
 - Link: clashy.fun.
 - Avatar: our clay app icon. Banner: clay arena art.
 - Pinned: the launch thread.
@@ -157,7 +157,7 @@ current price on X.
 | Daily | 10–20 thoughtful replies in Solana, MagicBlock, meme and trading threads. Replies grow a new account faster than posts. |
 | 3× a week | Building in public: what shipped, real numbers, honest problems. |
 | Weekly | A game of the week, the practice cup results, and Meme War standings once it's live. |
-| Launch day | A thread (the problem, the product, the 150 games, the on-chain duel, try it), the 60–90 s film, and tags for MagicBlock, Solana and Phantom where it's true. |
+| Launch day | A thread (the problem, the product, the 150+ games, the on-chain duel, try it), the 60–90 s film, and tags for MagicBlock, Solana and Phantom where it's true. |
 
 **Rules for every post:**
 - Real numbers and real rounds only. No fake users or fake testimonials, and no bought engagement.
@@ -185,7 +185,7 @@ current price on X.
    - a 14-day calendar
    - the launch thread
    - real game clips recorded from the app
-4. **The landing refresh.** "150 games · Play free" pointing to play.clashy.fun. Staged only; nothing goes live without
+4. **The landing refresh.** "150+ games · Play free" pointing to play.clashy.fun. Staged only; nothing goes live without
    your OK.
 5. **Deploy runbook.** The exact steps for DNS, the VM and devnet, so tonight's deploy is copy and paste.
 

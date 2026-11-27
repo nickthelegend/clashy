@@ -58,7 +58,7 @@ const MAIN: TourStep[] = [
   { route: '/arena', chapter: 'Play', target: 'arena-perps', radius: 26, title: 'Go up to 50×.', body: "Long or short for 60 seconds. Liquidated means you're out." },
   { route: '/arena', chapter: 'Play', target: 'arena-cup', radius: 24, title: 'Glory resets Monday.', body: 'Best profit this week takes the Weekly Cup.' },
   { route: '/arena', chapter: 'Play', target: 'arena-practice', radius: 26, title: 'Free practice.', body: 'Fight Clashy Bot with practice money on live prices.' },
-  { route: '/arena', chapter: 'Play', target: 'arena-allgames', radius: 26, title: '150 more games.', body: 'Memes, perps, stocks and party rooms. Free to play.' },
+  { route: '/arena', chapter: 'Play', target: 'arena-allgames', radius: 26, title: '150+ games.', body: 'Memes, perps, stocks and party rooms. Free to play.' },
 
   { route: '/arena', chapter: 'Squads', target: 'tab-squads', radius: 18, title: 'Stronger together.', body: 'Join a squad, pool a chest, go to war.' },
   { route: '/clans', chapter: 'Squads', target: 'squads-main', radius: 24, title: 'Chest vs chest.', body: "Your squad's level, P&L and shared chest.",

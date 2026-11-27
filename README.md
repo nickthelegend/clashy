@@ -1,6 +1,6 @@
 # Clashy
 
-**Clash 1v1. Squad up. Play 150 games.** Clashy is a mobile-first PvP trading game on Solana that does three things: 1v1 clashes (and
+**Clash 1v1. Squad up. Play 150+ games.** Clashy is a mobile-first PvP trading game on Solana that does three things: 1v1 clashes (and
 perps clashes and Royales) on one coin; squads that pool one chest, vote every call and go to war with rival squads; and
 151 practice games on live prices. The live part of an on-chain clash (sealed picks, scoring every second, Royale rounds)
 runs on a MagicBlock Ephemeral Rollup; escrow and settlement are on Solana. The 151 practice games run off chain with

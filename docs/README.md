@@ -1,6 +1,6 @@
 # Clashy docs
 
-**Clash 1v1. Squad up. Play 150 games.**
+**Clash 1v1. Squad up. Play 150+ games.**
 
 Clashy is a PvP trading game on Solana. The live part of every on-chain game runs on MagicBlock's Private Ephemeral
 Rollup. Everything here runs on **Solana devnet with test USDC**; no real money moves anywhere.
