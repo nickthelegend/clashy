@@ -8,17 +8,17 @@ Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (En
 
 **Everything below runs on Solana devnet with test USDC. No real money moves anywhere.**
 
-[![Clashy demo film: onboarding, a real devnet clash where both players read the chart before they call, a Royale, a squad war, chats with MagicBlock stickers, ten games, then the explorer proof (4:44)](docs/media/clashy-demo-poster.jpg)](docs/media/clashy-demo.mp4)
+[![Clashy demo film: iPhone recordings of a real devnet clash where both players read the chart before they call, a squad war, squad chat with MagicBlock stickers, Tap Grid and Draw the Line, then the explorer proof (5:25)](docs/media/clashy-demo-poster.jpg)](docs/media/clashy-demo.mp4)
 
-**[Watch the demo film (4:44)](docs/media/clashy-demo.mp4).** Recorded live on Solana devnet and MagicBlock's TEE rollup
-by fresh device test wallets on their own phones: onboarding; a private 1v1 clash on SOL where both phones show the
-coin's chart before the sealed calls (Ben +9.70 USDC); a 3-player Royale (all three outlast ten rounds); a squad war;
-DMs and a squad's #general channel on the rollup with MagicBlock stickers; ten practice games on live prices (Tap Grid on
-Bitcoin first); the Stash; then the clash's and the Royale's own transactions on Solana Explorer. The clash, Royale,
-chats and games were filmed on Nov 27 (trails: [`chain/evidence/devnet-proof-nov27-duel.txt`](chain/evidence/devnet-proof-nov27-duel.txt),
-[`chain/evidence/devnet-proof-nov27-royale.txt`](chain/evidence/devnet-proof-nov27-royale.txt)), the squad war and Stash
-on Nov 26 ([`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md)). The narration is the builder's
-own voice, cloned (ElevenLabs, and a local Chatterbox model for the newer lines).
+**[Watch the demo film (5:25, 1080p)](docs/media/clashy-demo.mp4).** Every app shot is an iOS Simulator recording (iPhone 17,
+17 Pro and 17 Pro Max, real status bar) of Clashy added to the home screen, running live on Solana devnet and
+MagicBlock's TEE rollup on Nov 27, 2026, by fresh device test wallets: onboarding; a private 1v1 clash on BTC where both
+phones show the coin's chart before the sealed calls (Ben +9.70 USDC); a squad war (two squads, a chest, a voted SOL 10x
+trade, Night Owls win); the squad's #general on the rollup with MagicBlock stickers; Tap Grid full screen and Draw the
+Line on Bitcoin; then the same clash's and war's transactions on Solana Explorer. Trails:
+[`chain/evidence/devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt),
+[`chain/evidence/devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt). The
+narration is the builder's own voice, cloned (ElevenLabs, and a local Chatterbox model for the newer lines).
 
 The loop: two players stake, MagicBlock VRF rolls one coin for both, each locks up or down privately inside MagicBlock's
 TEE rollup, a crank scores the clash every second for 60 s, and a Magic Action pays the winner on Solana.
