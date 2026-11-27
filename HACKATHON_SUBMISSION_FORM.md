@@ -3,7 +3,7 @@
 Prepared Nov 24, 2026 (UTC) for Nick, who submits; updated Nov 25 after the TEE rollup move and the program upgrades,
 and re-checked on **Nov 26, 2026 at 04:30–05:10 UTC** against the live form's own code, the events API, the Luma page
 and devnet (every explorer link below resolves on chain); updated Nov 27 for the new app features, the Nov 27 devnet
-trails and demo film v7. Everything Nick must type or decide is marked `NICK:`.
+trails and demo film v9. Everything Nick must type or decide is marked `NICK:`.
 His morning checklist is [docs/NICK.md](docs/NICK.md).
 
 ## The event (verified)
@@ -126,21 +126,27 @@ Settings → Collaborators. Every commit is already pushed.
 NICK: the unlisted YouTube or Drive link of the demo film
 ```
 
-**Demo film v7 (6:32, 1080p) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (71 MB; the
-master is `marketing/clashy-x/demo/clashy-demo-film-v7.mp4` in the grokbot folder, outside this repo). Not yet uploaded
-anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. App shots are iOS Simulator recordings
-(real status bar, a ring on every tap) of the Clashy web app on the home screen, live on Solana devnet and MagicBlock's
-TEE rollup, Nov 27:
-- the Clashy title, onboarding (four slides, a name, a funded test wallet) and the Play tab;
-- the private 1v1 clash: MagicBlock VRF rolls SOL, both phones show the coin's last hour and the tie rule (same call: both
-  stakes back, no fee), Ana calls up and Ben down, both sealed in the TEE with session keys, 61 crank ticks, the Magic
-  Action payout (Ben was paid 9.70 USDC, net +4.70 on a 5 USDC stake); trail `chain/evidence/devnet-proof-nov27-ios-duel2.txt`;
-- a squad war (Moon Pack is made, Ben joins, both fund the chest) and a rematch: both squads call SOL down 10x, Ben votes
-  yes on his own phone, and the better return wins (shown in the app; SettleWar tx in the trail); trail
-  `chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`. The rival squad was a scripted third wallet off camera;
-- the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers;
-- Tap Grid full screen on Bitcoin, Draw the Line, and two walls of six practice games played live;
-- the web app on desktop; seven Solana Explorer cards for the same clash and rematch; store plans (App Store, Google
+**Demo film v9 (5:15, 1080p) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (65 MB; the
+master is `marketing/clashy-x/demo/clashy-demo-film-v9.mp4` in the grokbot folder, outside this repo). Not yet uploaded
+anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. It is told as one story: two friends,
+Ana and Ben, each think they read the market better, so they settle it on Clashy. App shots are iOS Simulator
+recordings (real status bar, a ring on every tap) of the Clashy web app on the home screen, live on Solana devnet and
+MagicBlock's TEE rollup, Nov 27:
+- the Clashy title and the tagline, then onboarding in about six seconds (a name, and they're in);
+- the private 1v1 clash: Ana opens a 5 USDC clash and Ben takes it, both stakes in escrow on Solana; MagicBlock VRF rolls
+  SOL, both phones show the coin's last hour and the tie rule (same call: both stakes back, no fee), Ana calls up and Ben
+  down, both sealed in the TEE with session keys, 60 s scored on the rollup by 61 crank ticks, the Magic Action payout
+  (Ben was paid 9.70 USDC, net +4.70 on a 5 USDC stake); trail `chain/evidence/devnet-proof-nov27-ios-duel2.txt`;
+- the two team up: Moon Pack is made, Ben joins, both fund the chest; a squad war where Ana proposes SOL down 10x and Ben
+  votes yes on his own phone; both squads made the same call, so the better return wins (shown in the app; SettleWar tx
+  in the trail); trail `chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`. The rival squad was a scripted third
+  wallet off camera;
+- the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers (Ana's trash talk, then both phones
+  in step as Ben's reply and sticker arrive on hers);
+- with no one to fight, the arena: all 151 games in the web app's catalog, one category at a time (Memes 33, Perps 29,
+  Stocks 31, Crypto 30, Party 28), then a few favourites: Tap Grid full screen on Bitcoin, Draw the Line, and two walls
+  of six practice games played live;
+- the web app on desktop; seven Solana Explorer cards for the same clash and war; store plans (App Store, Google
   Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150+ games.
 Trails: [`chain/evidence/devnet-proof-nov27-ios-duel2.txt`](chain/evidence/devnet-proof-nov27-ios-duel2.txt) (the SOL
 clash: 96 txs, 86 on the rollup, 61 crank ticks, 2 `LockPickSession`) and
