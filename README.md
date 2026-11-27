@@ -7,6 +7,14 @@ Domain: clashy.fun (not hosted yet). Entry for MagicBlock's Solana Blitz v10 (En
 
 **Everything below runs on Solana devnet with test USDC. No real money moves anywhere.**
 
+[![Clashy demo film: a real devnet duel, Royale and squad war, then the explorer proof (3:09)](docs/media/clashy-demo-poster.jpg)](docs/media/clashy-demo.mp4)
+
+**[Watch the demo film (3:09)](docs/media/clashy-demo.mp4).** Everything in it was recorded live on Solana devnet and
+MagicBlock's TEE rollup on Nov 26, 2026: a private 1v1 duel, a 3-player Royale and a squad war, each played by fresh
+device test wallets on their own phones, then the same games' transactions on Solana Explorer. Trails:
+[`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md). The narration is the builder's own voice,
+cloned (ElevenLabs, and a local Chatterbox model for the Royale, squad war, games and Stash lines).
+
 The loop: two players stake, MagicBlock VRF rolls one coin for both, each locks up or down privately inside MagicBlock's
 TEE rollup, a crank scores the clash every second for 60 s, and a Magic Action pays the winner on Solana.
 [Tests](TESTING.md) · [Submission form](HACKATHON_SUBMISSION_FORM.md) · [MagicBlock design](docs/MAGICBLOCK.md) ·
