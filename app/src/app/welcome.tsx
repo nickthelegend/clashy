@@ -20,7 +20,7 @@ export const ONBOARDED_KEY = 'clashy:onboarded';
 // What Clashy is, in the order that matters: PvP trading first, perps and order books, squads, and stocks savings last.
 // fit: the three onboarding clips are 9:16 and fill the card; the square and wide clips sit whole on its black, never cropped.
 const SLIDES: { loop: ClayName; fill?: boolean; title: string; body: string }[] = [
-  { loop: 'hero', title: 'Trade against people, not the house.', body: 'Clash a rival 1v1 on the same coin: long or short, with leverage. When the bell rings, the better trade takes the pot.' },
+  { loop: 'hero', title: 'Clash 1v1. Squad up. Play 150 games.', body: 'Clash a rival on the same coin, long or short. War rival squads with a shared chest. Or play 150 games on live prices.' },
   { loop: 'ko', title: 'Real perps. Real order books.', body: 'Trade Jupiter, Phoenix and Pacifica perps on their live prices and books. Get liquidated and you are knocked out.' },
   { loop: 'war', title: 'Squad up and go to war.', body: 'Pool a USDC chest with your crew, vote on trades together, and take on rival squads in wars and Royale.' },
   { loop: 'onInvest', fill: true, title: 'Stack real stocks on the side.', body: 'Save USDC in your Stash and buy tokenized NVIDIA, Apple or the S&P 500 from $5. The shares are yours.' },

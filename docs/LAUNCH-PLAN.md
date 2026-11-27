@@ -143,7 +143,7 @@ current price on X.
 
 **Profile.**
 - Name: Clashy.
-- Bio: "Trade against people, not the house. 150 trading games on live prices. Built on Solana and MagicBlock."
+- Bio: "Clash 1v1. Squad up. Play 150 games. PvP trading on Solana and MagicBlock."
 - Link: clashy.fun.
 - Avatar: our clay app icon. Banner: clay arena art.
 - Pinned: the launch thread.

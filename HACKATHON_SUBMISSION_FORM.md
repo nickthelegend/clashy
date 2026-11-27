@@ -64,13 +64,13 @@ Clashy
 ### One-liner (start of the description, and for X)
 
 ```text
-Trade against people, not the house: 1v1 trading duels and Royales on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
+Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 150 games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 ```
 
-### Description (4,343 characters, limit 5,000)
+### Description (4,461 characters, limit 5,000)
 
 ```text
-Trade against people, not the house: 1v1 trading duels and Royales on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
+Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 150 games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 
 Most trading games pit you against a house pool. Clashy pits you against a friend or a stranger. Two players stake test USDC, MagicBlock VRF rolls the coin for both of them, each locks long or short inside MagicBlock's Private Ephemeral Rollup, and a crank scores the clash on the rollup every second until the bell. The winner takes the pot minus a 3% rake, and Elo moves. Royale puts up to 16 players in one pot: VRF picks the coin, everyone calls each round on the rollup, and the survivors split the pot. Perps clashes add leverage (up to 100x on chain; the app offers up to 50x) with liquidation. Squads and clans add shared chests, votes and clan wars.
 

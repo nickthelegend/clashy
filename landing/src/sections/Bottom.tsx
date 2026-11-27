@@ -160,7 +160,7 @@ export function Footer() {
           </div>
         </div>
         <div className="foot-q">
-          <p>Trade against people, not the house.</p>
+          <p>Clash 1v1. Squad up. Play 150 games.</p>
         </div>
       </div>
       <div className="wrap foot-fine">
