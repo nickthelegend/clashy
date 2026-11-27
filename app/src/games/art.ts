@@ -14,6 +14,8 @@ const icon = {
   mines: require('../../assets/art/game-mines.webp'), roulette: require('../../assets/art/game-roulette.webp'), rewind: require('../../assets/art/game-rewind.webp'),
   whochart: require('../../assets/art/game-whochart.webp'), candle: require('../../assets/art/game-candle.webp'), path: require('../../assets/art/game-path.webp'),
   sync: require('../../assets/art/game-sync.webp'), timer: require('../../assets/art/game-timer.webp'),
+  // Nov 27: Draw the Line uses the landing's line tile (the clay chart line)
+  drawline: require('../../assets/art/game-path.webp'),
 } as const;
 import type { EngineId } from './types';
 
@@ -48,6 +50,7 @@ export const ENGINE_ART: Record<EngineId, number> = {
   whochart: icon.whochart,
   candle: icon.candle,
   path: icon.path,
+  drawline: icon.drawline,
   sync: icon.sync,
   timer: icon.timer,
 };

@@ -36,7 +36,8 @@ export type EngineId =
   | 'candle' // one candle forms live; call its shape
   | 'path' // commit to the whole path (up then down…) before the round
   | 'sync' // two markets: same way or split?
-  | 'timer'; // set your exit second before the round; the better exit wins
+  | 'timer' // set your exit second before the round; the better exit wins
+  | 'drawline'; // draw the next seconds; touch the real line more than Clashy Bot
 
 export type Category = 'memes' | 'perps' | 'stocks' | 'crypto' | 'party';
 export const CATEGORIES: { key: Category; label: string }[] = [

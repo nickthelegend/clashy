@@ -82,6 +82,7 @@ function rules(e: EngineId, secs: number, p: P, vs: GameDef['vs']): [string, str
     case 'elim': return [`${num(p, 'n', 8)} markets. Back one. ${bot} backs another.`, `Every ${num(p, 'every', 10)} seconds the worst one so far is knocked out.`, 'Whose market lasts longer wins 2×.'];
     case 'leader': return [`${num(p, 'n', 5)} markets, ranked by the last 5 minutes.`, `CHASE: the leader keeps beating the laggard. FADE: the laggard catches up. ${bot} takes the other side.`, `Right after ${len(secs)}: 2× your stake.`];
     /* Nov 21 */
+    case 'drawline': return [`Draw where the price goes over the next ${secs} seconds: drag across the blank part of the chart.`, 'Clashy Bot draws its own line. Then the live price draws over both.', 'Every price that lands on your line or crosses it is a touch. More touches than the bot pays 2×; the same is a push.'];
     case 'tapgrid': return [`A grid runs ahead of the live price: ${num(p, 'cols', 5)} columns of ${num(p, 'colSecs', 5)} seconds, rows of price.`, `Tap up to ${num(p, 'chips', 5)} cells, at least 1.5 s before their moment. Each chip is 1/${num(p, 'chips', 5)} of your stake, and a cell's payout locks when you tap it.`, 'A cell pays if the price line passes through it in its moment. Unused chips come back.'];
     case 'picks': return [`${num(p, 'n', 5)} lines: a market and a number each.`, p.flex === false ? `Pick More or Less on at least ${num(p, 'min', 2)}. Every pick must hit.` : `Pick More or Less on at least ${num(p, 'min', 2)}. Power: every pick must hit. Flex (3 or more): one miss still pays.`, `Every line settles after ${len(secs)}. A pick that lands exactly on its number is dropped.`];
     case 'tower': {
@@ -231,6 +232,7 @@ const SPECS: Spec[] = [
 
   /* ---------- Nov 21: 50 more, on 11 new engines ---------- */
   // tap trading (Euphoria, BC.GAME): round = one lead column + the grid
+  ['draw-line', 'Draw the Line', 'Draw the next 30 seconds. Touch the real price.', 'drawline', 'crypto', 'majors', 30, T.violet, {}, { badge: 'New' }],
   ['tap-grid', 'Tap Grid', 'Tap where the price goes next.', 'tapgrid', 'crypto', 'majors', 30, T.cyan, { cols: 5, colSecs: 5, rows: 7, chips: 5 }, { badge: 'Hot' }],
   ['meme-grid', 'Meme Grid', 'Tap the chaos before it happens.', 'tapgrid', 'memes', 'memes', 28, T.pink, { cols: 6, colSecs: 4, rows: 7, chips: 5 }, { badge: 'New' }],
   ['grid-rush', 'Grid Rush', 'Three-second cells. Tap fast.', 'tapgrid', 'party', 'alts', 21, T.yellow, { cols: 6, colSecs: 3, rows: 7, chips: 5 }],

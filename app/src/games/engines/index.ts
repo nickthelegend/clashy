@@ -34,11 +34,12 @@ import tapgrid from './tapgrid';
 import timer from './timer';
 import tower from './tower';
 import whochart from './whochart';
+import drawline from './drawline';
 
 type Engine = ComponentType<{ g: GameApi }>;
 export const ENGINES: Record<EngineId, Engine> = {
   updown, race, range, touch, cashout, survive, guess, streak,
   podium, draft, snipe, compare, capguess, ko, royale,
   flip, addonce, bingo, bracket, elim, leader,
-  tapgrid, picks, tower, mines, roulette, rewind, whochart, candle, path, sync, timer,
+  tapgrid, picks, tower, mines, roulette, rewind, whochart, candle, path, sync, timer, drawline,
 };

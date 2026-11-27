@@ -13,7 +13,8 @@
 // p: { cols = 5, colSecs = 5, rows = 7, chips = 5 }   (def.secs = (cols + 1) × colSecs)
 import * as Haptics from 'expo-haptics';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, ZoomIn, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { Row, Txt } from '@/ui/kit';
@@ -264,6 +265,15 @@ export default function Tapgrid({ g }: { g: GameApi }) {
     setEndsAt(end);
   };
 
+  const [full, setFull] = useState(false);
+  const wasLive = useRef(false);
+  useEffect(() => {
+    const live = g.phase === 'live' && !!grid;
+    if (live && !wasLive.current) setFull(true);
+    wasLive.current = live;
+    if (g.phase === 'done') { const h = setTimeout(() => setFull(false), 2600); return () => clearTimeout(h); }
+  }, [g.phase, grid]);
+
   const tap = (i: number, r: number, mult: number) => {
     if (g.phase !== 'live' || !grid || !sym || g.busy || settled.current) return;
     if (!g.feed.fresh(sym)) { g.fail(`Waiting for a live ${tickerOf(sym)} price.`); return; }
@@ -326,8 +336,12 @@ export default function Tapgrid({ g }: { g: GameApi }) {
   const hits = placed.filter((c) => res[keyOf(c.i, c.r)] === true);
   const won = hits.reduce((s, c) => s + c.mult, 0) * (g.stake / chips);
   const tk = tickerOf(sym);
+  const note = mode === 'live' ? (!fresh ? `Waiting for a live ${tk} price…` : spare ? 'Tap cells ahead of the line.' : 'All chips down. Watch the line.') : null;
   return (
     <View style={{ gap: 14 }}>
+      <FullGrid open={full} onClose={() => setFull(false)} tint={def.tint} sym={tk} price={mk?.p ?? entry!.p} from={entry!.p} left={left} done={mode === 'done'}
+        spare={spare} chips={chips} hits={hits.length} placed={placed.length} won={won} note={note}
+        grid={(gw, pitch) => <GridView w={gw} rows={rows} cols={cols} colSecs={colSecs} gr={grid!} mode={mode} endsAt={endsAt} now={now} path={drawn} cells={cells} tint={def.tint} onTap={tap} pitch={pitch} visCols={3.2} />} />
       <Panel style={{ gap: 12 }}>
         <MarketHead g={g} sym={sym} from={entry!.p} />
         <Clock left={left} total={span} tint={def.tint} label={mode === 'done' ? 'done' : 'left'} />
@@ -343,14 +357,20 @@ export default function Tapgrid({ g }: { g: GameApi }) {
           <Txt v="small" lines={1} style={{ flexShrink: 1, textAlign: 'right', fontVariant: ['tabular-nums'] }}>{usd(g.stake / chips)} a chip</Txt>
         </Row>
       </Panel>
-      <GridView w={g.width} rows={rows} cols={cols} colSecs={colSecs} gr={grid!} mode={mode} endsAt={endsAt} now={now} path={drawn} cells={cells} tint={def.tint} onTap={tap} />
+      <View>
+        <GridView w={g.width} rows={rows} cols={cols} colSecs={colSecs} gr={grid!} mode={mode} endsAt={endsAt} now={now} path={drawn} cells={cells} tint={def.tint} onTap={tap} />
+        {mode === 'live' ? (
+          <Pressable onPress={() => setFull(true)} accessibilityRole="button" accessibilityLabel="Play full screen" hitSlop={8}
+            style={{ position: 'absolute', left: 8, top: 8, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: '#000000AA', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ ...FONT.bold, fontSize: 14, color: C.ink }}>⤢</Text><Text style={{ ...FONT.semi, fontSize: 12.5, color: C.ink }}>Full screen</Text>
+          </Pressable>
+        ) : null}
+      </View>
       <Row style={{ gap: 8 }}>
         <StatTile k="Hits" v={`${hits.length} of ${placed.length}`} color={hits.length ? C.up : undefined} />
         <StatTile k="Won so far" v={usd(won)} color={won > 0 ? C.up : undefined} />
       </Row>
-      {mode === 'live' ? (
-        <Note center>{!fresh ? `Waiting for a live ${tk} price…` : spare ? 'Tap cells ahead of the line.' : 'All chips down. Watch the line.'}</Note>
-      ) : null}
+      {note ? <Note center>{note}</Note> : null}
     </View>
   );
 }
@@ -374,13 +394,18 @@ function lookOf(st: State, tint: string): { bg: string; bc: string; bw: number; 
  * its right sliding left as the seconds pass (the whole world layer moves on the UI thread, so it glides). The grid
  * fits the width at the start; at the end it slides back so the whole round shows.
  */
-function GridView({ w, rows, cols, colSecs, gr, mode, endsAt, now, path, cells, tint, onTap }: {
+function GridView({ w, rows, cols, colSecs, gr, mode, endsAt, now, path, cells, tint, onTap, pitch = PITCH, visCols }: {
   w: number; rows: number; cols: number; colSecs: number; gr: Grid; mode: Mode; endsAt: number | null; now: number;
   path: Tick[]; cells: Cell[]; tint: string; onTap: (i: number, r: number, mult: number) => void;
+  /** Row height (the full-screen grid uses the whole phone). */
+  pitch?: number;
+  /** How many columns fit ahead of the now line (full screen: fewer, bigger cells that slide in); default: all of them. */
+  visCols?: number;
 }) {
+  const PITCH = pitch;
   const span = (cols + 1) * colSecs * 1000;
-  const nowX = Math.round(w * 0.3);
-  const ppm = (w - GUT - nowX) / span;
+  const nowX = Math.round(w * (visCols ? 0.22 : 0.3));
+  const ppm = (w - GUT - nowX) / (visCols ? Math.min(span, visCols * colSecs * 1000) : span);
   const colW = colSecs * 1000 * ppm;
   const gridH = rows * PITCH;
   const H = TOP + gridH + FOOT;
@@ -389,7 +414,7 @@ function GridView({ w, rows, cols, colSecs, gr, mode, endsAt, now, path, cells, 
   const Y = (p: number) => Math.max(TOP + 1, Math.min(TOP + gridH - 1, TOP + (mid + 0.5 - (p - gr.P0) / gr.h) * PITCH));
   const worldW = Math.ceil(nowX + (span + QUIET_MS + 10_000) * ppm + GUT);
   const dp = dpOf(gr.h);
-  const fs = colW >= 40 ? 12.5 : colW >= 34 ? 10.5 : 9.5;
+  const fs = colW >= 64 && PITCH >= 60 ? 17 : colW >= 40 ? 12.5 : colW >= 34 ? 10.5 : 9.5;
   /** Narrow cells (short columns on a phone) drop the × so the multiplier never cuts off. */
   const narrow = colW < 34;
   const shown = (label: string) => (narrow ? label.replace('×', '') : label);
@@ -442,11 +467,11 @@ function GridView({ w, rows, cols, colSecs, gr, mode, endsAt, now, path, cells, 
               accessibilityRole="button" accessibilityState={{ disabled: !can, selected: c.st === 'placed' || c.st === 'running' || c.st === 'hit' || c.st === 'miss' }}
               accessibilityLabel={`${secsLabel(c.i, colSecs)}, around ${rowPrice(c.r)}${c.label ? `, ${c.label}` : ''}${c.st === 'hit' ? ', hit' : c.st === 'miss' ? ', missed' : ''}`}
               style={({ pressed }) => ({ position: 'absolute', left: X(ws), top: TOP + c.r * PITCH, width: colW, height: PITCH, padding: GAP, transform: [{ scale: pressed ? 0.9 : 1 }] })}>
-              <View style={{ flex: 1, borderRadius: 9, backgroundColor: lk.bg, borderWidth: lk.bw, borderColor: lk.bc, opacity: lk.op, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ flex: 1, borderRadius: PITCH >= 60 ? 14 : 9, backgroundColor: lk.bg, borderWidth: lk.bw, borderColor: lk.bc, opacity: lk.op, alignItems: 'center', justifyContent: 'center' }}>
                 {c.st === 'hit' ? (
                   <Animated.View entering={ZoomIn.duration(240)} style={{ alignItems: 'center' }}>
-                    <Text style={{ ...FONT.bold, fontSize: 14, lineHeight: 16, color: GT.onTint }}>✓</Text>
-                    <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 9, color: GT.onTint, fontVariant: ['tabular-nums'] }}>{shown(c.label)}</Text>
+                    <Text style={{ ...FONT.bold, fontSize: PITCH >= 60 ? 22 : 14, lineHeight: PITCH >= 60 ? 24 : 16, color: GT.onTint }}>✓</Text>
+                    <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: PITCH >= 60 ? 13 : 9, color: GT.onTint, fontVariant: ['tabular-nums'] }}>{shown(c.label)}</Text>
                   </Animated.View>
                 ) : (
                   <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: fs, letterSpacing: narrow ? -0.3 : 0, color: lk.fg, fontVariant: ['tabular-nums'] }}>{shown(c.label)}</Text>
@@ -513,5 +538,50 @@ function GridView({ w, rows, cols, colSecs, gr, mode, endsAt, now, path, cells, 
         ) : null}
       </View>
     </View>
+  );
+}
+
+/** The grid on the whole phone while a round runs: a slim bar (close, market, clock, chips), the grid, and the score. */
+function FullGrid({ open, onClose, tint, sym, price, from, left, done, spare, chips, hits, placed, won, note, grid }: {
+  open: boolean; onClose: () => void; tint: string; sym: string; price: number; from: number; left: number | null; done: boolean;
+  spare: number; chips: number; hits: number; placed: number; won: number; note: string | null;
+  grid: (w: number, pitch: number) => React.ReactNode;
+}) {
+  const { width, height } = useWindowDimensions();
+  const ins = useSafeAreaInsets();
+  const gw = Math.min(width, 560) - 16;
+  const pitch = Math.max(44, Math.floor((height - ins.top - ins.bottom - 64 - 92 - TOP - FOOT) / 7));
+  const pct = from ? ((price - from) / from) * 100 : 0;
+  return (
+    <Modal visible={open} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: ins.top + 6, paddingBottom: ins.bottom + 8, alignItems: 'center' }}>
+        <Row style={{ width: gw, height: 52, gap: 10 }}>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Exit full screen" hitSlop={8}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GT.raised, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ ...FONT.bold, fontSize: 16, color: C.ink }}>✕</Text>
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ ...FONT.bold, fontSize: 17, color: C.ink }}>{sym} <Text style={{ fontVariant: ['tabular-nums'] }}>{num(price, price < 10 ? 4 : 2)}</Text></Text>
+            <Text numberOfLines={1} style={{ ...FONT.semi, fontSize: 13, color: pct >= 0 ? C.up : C.down, fontVariant: ['tabular-nums'] }}>{pct >= 0 ? '+' : ''}{pct.toFixed(3)}% this round</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ ...FONT.bold, fontSize: 22, color: done ? C.muted : tint, fontVariant: ['tabular-nums'] }}>{done ? 'done' : left !== null ? `${Math.ceil(left)}s` : ''}</Text>
+            <Row style={{ gap: 3 }}>
+              {Array.from({ length: chips }, (_, k) => <View key={k} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: k < spare ? tint : 'transparent', borderWidth: 1.5, borderColor: k < spare ? tint : C.dim }} />)}
+            </Row>
+          </View>
+        </Row>
+        <View style={{ marginTop: 8 }}>{grid(gw, pitch)}</View>
+        <Row style={{ width: gw, marginTop: 10, gap: 8 }}>
+          <View style={{ flex: 1, backgroundColor: GT.raised, borderRadius: 16, padding: 10 }}>
+            <Txt v="small">Hits</Txt><Text style={{ ...FONT.bold, fontSize: 18, color: hits ? C.up : C.ink }}>{hits} of {placed}</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: GT.raised, borderRadius: 16, padding: 10 }}>
+            <Txt v="small">Won so far</Txt><Text style={{ ...FONT.bold, fontSize: 18, color: won > 0 ? C.up : C.ink }}>{usd(won)}</Text>
+          </View>
+        </Row>
+        {note ? <Txt v="small" style={{ marginTop: 6, textAlign: 'center' }}>{note}</Txt> : null}
+      </View>
+    </Modal>
   );
 }
