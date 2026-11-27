@@ -2,7 +2,8 @@
 
 Prepared Nov 24, 2026 (UTC) for Nick, who submits; updated Nov 25 after the TEE rollup move and the program upgrades,
 and re-checked on **Nov 26, 2026 at 04:30–05:10 UTC** against the live form's own code, the events API, the Luma page
-and devnet (every explorer link below resolves on chain). Everything Nick must type or decide is marked `NICK:`.
+and devnet (every explorer link below resolves on chain); updated Nov 27 for the new app features, the Nov 27 devnet
+trails and demo film v6. Everything Nick must type or decide is marked `NICK:`.
 His morning checklist is [docs/NICK.md](docs/NICK.md).
 
 ## The event (verified)
@@ -64,15 +65,15 @@ Clashy
 ### One-liner (start of the description, and for X)
 
 ```text
-Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 150 games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
+Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 ```
 
-### Description (4,461 characters, limit 5,000)
+### Description (4,901 characters, limit 5,000)
 
 ```text
-Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 150 games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
+Clash 1v1. Squad up. Play 150 games. Clashy is PvP trading on Solana: 1v1 clashes and Royales on one coin, squads that pool a chest, vote every call and war rival squads, and 151 practice games on live prices. MagicBlock VRF rolls the coin, picks stay sealed in MagicBlock's Private Ephemeral Rollup, a crank scores every second on the rollup, and a Magic Action pays the pot in USDC on Solana.
 
-Most trading games pit you against a house pool. Clashy pits you against a friend or a stranger. Two players stake test USDC, MagicBlock VRF rolls the coin for both of them, each locks long or short inside MagicBlock's Private Ephemeral Rollup, and a crank scores the clash on the rollup every second until the bell. The winner takes the pot minus a 3% rake, and Elo moves. Royale puts up to 16 players in one pot: VRF picks the coin, everyone calls each round on the rollup, and the survivors split the pot. Perps clashes add leverage (up to 100x on chain; the app offers up to 50x) with liquidation. Squads and clans add shared chests, votes and clan wars.
+Most trading games pit you against a house pool. Clashy pits you against a friend or a stranger. Two players stake test USDC, MagicBlock VRF rolls the coin for both of them, both see the coin's price chart, each locks long or short inside MagicBlock's Private Ephemeral Rollup, and a crank scores the clash on the rollup every second until the bell. The winner takes the pot minus a 3% rake, and Elo moves; equal P&L refunds both stakes with no fee. Royale puts up to 16 players in one pot: VRF picks the coin, everyone calls each round on the rollup, and the survivors split the pot. Perps clashes add leverage (up to 100x on chain; the app offers up to 50x) with liquidation. Squads pool a USDC chest, vote every trade weighted by chest shares, war other squads chest against chest, and chat in #general and #trades on the rollup.
 
 How it uses MagicBlock (devnet program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1wdS, rollup devnet-tee.magicblock.app):
 - Private Ephemeral Rollup (TEE): each player's pick is a private account the rival cannot read until the start. On devnet, player A's authenticated connection read A's pick and player B's read nothing. It is private from the rival, not from Clashy: the sponsor relay co-signs each lock.
@@ -81,13 +82,13 @@ How it uses MagicBlock (devnet program FQKy8fTDjciqwzTfo5Ae7Qt6iT3Fi9fhtY6aR2gg1
 - Oracle: SOL, BTC and ETH read MagicBlock's oracle accounts on the rollup; stocks, squad trades and squad wars use Clashy's own crank-pushed feeds on Solana.
 - VRF: request_coin_roll and request_tournament_coin ask MagicBlock VRF for the coin. Only the VRF program's callback can set it. With vrf_required on, the commit-reveal fallback and forged callbacks are refused, and a test proves it.
 - Session keys: lock_pick_session and call_round_session let a MagicBlock session key make in-game moves (used by the app: one wallet signature creates a 6-hour session key on the device (sponsored, relay-checked), and the private-duel pick lock and every Royale call are signed by it; played on devnet in duel 3qa893zcqdm9WpPAGJMdjfxZqUXFvhr1U2A2ZdHwuT8t, both picks landed as LockPickSession).
-- Zero-fee play: players hold 0 SOL. A sponsor relay pays every Solana fee and rent, Magic Actions are sent by MagicBlock's TEE validator, and rollup moves are free. On web, players sign in with Privy (email or Google). We don't use MagicBlock private payments.
+- Zero-fee play: players hold 0 SOL. A sponsor relay pays every Solana fee and rent, Magic Actions are sent by MagicBlock's TEE validator, and rollup moves are free. On web, players sign in with Privy (email or Google); the iOS build uses a device test wallet. We don't use MagicBlock private payments.
 
-What is live: the program on Solana devnet with MagicBlock's TEE rollup, VRF oracle and oracle prices. On Nov 25 all four MagicBlock tests passed there in one run: a cranked duel settled by a Magic Action 31.6 s after the start, a cranked Royale paid its survivor with no resolve or settle by hand, a private duel, and keeper abuse checks. Two players with 0 SOL also played a private ETH duel through the web app: 100 transactions, 88 on the rollup, one crank tick per second, and the winner got +9.70 USDC. On Nov 26 a duel, a 3-player Royale and a squad war were played the same way. Around that sit 150 practice games on live Phoenix and Pacifica prices (practice money only), chat, squads and a guided tour. On Nov 26 every local suite was re-run on MagicBlock's own validator: 56 of 56 tests pass.
+What is live: the program on Solana devnet with MagicBlock's TEE rollup, VRF oracle and oracle prices. On Nov 25 all four MagicBlock tests passed there in one run: a cranked duel settled by a Magic Action 31.6 s after the start, a cranked Royale paid its survivor with no resolve or settle by hand, a private duel, and keeper abuse checks. Two players with 0 SOL also played a private ETH duel through the web app: 100 transactions, 88 on the rollup, one crank tick per second, and the winner got +9.70 USDC. On Nov 26 and 27 duels, 3-player Royales and squad wars were played the same way, the Nov 27 clash and war on iOS Simulators. Around that sit 151 practice games on live Phoenix and Pacifica prices (practice money only), chat and a guided tour. On Nov 26 every local suite was re-run on MagicBlock's own validator: 56 of 56 tests pass.
 
-What isn't live: there is nothing on mainnet and no real money. Buying tokenized stocks for Stash needs an Orca xStock pool, which exists only on mainnet. The app isn't hosted yet; the services ran on a Mac. The program is upgradeable by one key; a multisig is the mainnet plan.
+What isn't live: there is nothing on mainnet and no real money. Buying tokenized stocks for Stash needs an Orca xStock pool, which exists only on mainnet. The app isn't hosted yet; the services ran on a Mac. No store listing yet (App Store, Google Play, Solana dApp Store) and no Android build. The program is upgradeable by one key; a multisig is the mainnet plan.
 
-Honest timeline: the first app, website and program were written Nov 15-20, before the Nov 20 14:00 UTC kickoff (commits 375d706..6431028). After kickoff (93fa845..9e0a58e, then docs, app UI and landing polish): the practice games and game kit, the first devnet deploy, and all of the MagicBlock work above except delegation and VRF: cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, the VRF callback fix, the move to the TEE rollup and the devnet runs. Details are in the README.
+Honest timeline: the first app, website and program were written Nov 15-20, before the Nov 20 14:00 UTC kickoff (commits 375d706..6431028). After kickoff (93fa845..9e0a58e, then docs, app UI, landing polish and the Nov 27 app features: the chart before the call, Draw the Line, Tap Grid full screen): the practice games and game kit, the first devnet deploy, and all of the MagicBlock work above except delegation and VRF: cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, the VRF callback fix, the move to the TEE rollup and the devnet runs. Details are in the README.
 ```
 
 ### Categories (up to 3)
@@ -99,7 +100,7 @@ Honest timeline: the first app, website and program were written Nov 15-20, befo
 `NICK:` paste one of the two options below.
 
 
-**Not live yet.** On Nov 24, 25 and 26, 2026, `clashy.fun` resolved to a parked Hostinger page (`2.57.91.91`, title
+**Not live yet.** On Nov 24, 25, 26 and 27, 2026, `clashy.fun` resolved to a parked Hostinger page (`2.57.91.91`, title
 "Parked Domain name on Hostinger DNS system"), and `play.clashy.fun` had no DNS record. Pick one:
 1. Deploy a landing page and the app, point DNS, then use `https://clashy.fun`. The repo has two landing pages:
    `web/` and `landing/`; [docs/DEPLOY-RUNBOOK.md](docs/DEPLOY-RUNBOOK.md) builds `landing/`. Pick one before
@@ -115,7 +116,7 @@ Don't paste `https://clashy.fun` while it's still the parked page.
 https://github.com/nickthelegend/clashy
 ```
 
-**The repo is PRIVATE** (checked with `gh repo view` on Nov 26, 2026). The form checks access live. `NICK:` before
+**The repo is PRIVATE** (checked with `gh repo view` on Nov 27, 2026). The form checks access live. `NICK:` before
 submitting, either make it public, or invite GitHub user **`jonasXchen`** (the reviewer the form names) under
 Settings → Collaborators. Every commit is already pushed.
 
@@ -139,7 +140,8 @@ recording (real status bar) of Clashy on the home screen, live on Solana devnet 
 - 151 games; Tap Grid full screen on Bitcoin (a box hits at 2.5x) and Draw the Line against Clashy Bot;
 - seven Solana Explorer cards for the same clash and war (escrow, VRF signer, TEE lock at fee 0, crank tick 61, payout
   by the TEE validator, Ben's vote, war settle), then the tagline: Clash 1v1. Squad up. Play 150 games.
-Trails: [`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md). Narration: the builder's voice,
+Trails: [`chain/evidence/devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt) and
+[`chain/evidence/devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt). Narration: the builder's voice,
 cloned (ElevenLabs; a local Chatterbox model for the Royale, squad war, games and Stash lines).
 
 Upload it (YouTube unlisted or Drive, viewable by anyone with the link) and paste the URL.
@@ -161,9 +163,9 @@ Leave the fee vault out: the form's fee vault is for MagicBlock private-payment 
 (Clashy's Magic Actions pass the validator's magic fee vault, a different account; the keeper's escrow `FxRMULT…` has
 not been debited on devnet.)
 
-**"Recent" activity:** the program's latest base-layer transaction was on Nov 26, 2026 at 22:36 UTC (read with
-`getSignaturesForAddress` on Nov 27). The Nov 26 film games (duel, Royale, squad war) are in
-`chain/evidence/devnet-proof-nov26.md`.
+**"Recent" activity:** the program's latest base-layer transaction was on Nov 27, 2026 at 10:38 UTC (read with
+`getSignaturesForAddress` right after, Nov 27). The Nov 27 film games are in `chain/evidence/devnet-proof-nov27-*.txt`; the
+Nov 26 ones in `chain/evidence/devnet-proof-nov26.md`.
 
 ### Additional information (optional, up to 5,000)
 
@@ -185,7 +187,7 @@ VRF queue Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh. Test USDC mint 8Jb66Cfuj
 
 Trust: the program is upgradeable by one deployer key, and the admin can change rake (max 10%), treasury and vrf_required. A multisig is the mainnet plan.
 
-Kickoff disclosure: the first app, website and program predate the Nov 20 14:00 UTC kickoff (commits 375d706..6431028, Nov 15-20). After kickoff (93fa845..9e0a58e, Nov 20-25; Nov 26: docs, app UI and landing polish, program unchanged): the practice games and game kit, close_duel, the devnet deploy, and the MagicBlock cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, VRF callback fix, 0.5% Stash fee, the TEE migration and the devnet runs. Mainnet: not deployed, no real money.
+Kickoff disclosure: the first app, website and program predate the Nov 20 14:00 UTC kickoff (commits 375d706..6431028, Nov 15-20). After kickoff (93fa845..9e0a58e, Nov 20-25; Nov 26-27: docs, app UI, the chart before the call, Draw the Line, Tap Grid full screen, landing polish, program unchanged): the practice games and game kit, close_duel, the devnet deploy, and the MagicBlock cranks, keeper, Magic Actions, TEE private picks, oracle prices, session keys, VRF callback fix, 0.5% Stash fee, the TEE migration and the devnet runs. Mainnet: not deployed, no real money.
 ```
 
 ## Step 4: Boost (Nick)
@@ -287,7 +289,8 @@ Kickoff: Nov 20, 2026 14:00 UTC. These are commit times in UTC (`TZ=UTC git log`
 | `93fa845..e833c62` | 15 | Nov 20 14:49 to Nov 22 04:47 (**after kickoff**) | The white tour card, the practice games and the game kit (the first three commits landed at 14:49 UTC, 49 minutes after kickoff, so part of that work was written before it); the beta legal pages; `close_duel` (45 lines in `lib.rs` and `math.rs`); the devnet test USDC and faucet; the first devnet deploy and test run; the Royale stock-coin fix; the faucet limits; docs/DEVNET.md |
 | `ddfa4da..e14e80f` | 10 | Nov 24 20:29 to Nov 25 11:37 (**after kickoff**) | README and this form; **MagicBlock cranks, the keeper PDA, Magic Action payouts, private picks on the TEE rollup and MagicBlock oracle prices** in the program, app and tests; the app's MagicBlock track and Live on MagicBlock screen; session keys (`lock_pick_session`, `call_round_session`); the VRF callback fix; the 0.5% Stash trading fee; TEE authentication; the TEE tests with a real privacy check; result Lottie animations; the sealed-in-TEE duel card; `scripts/devnet-proof.ts` |
 | `a72149c..9e0a58e` | 9 | Nov 25 11:54 to 17:56 (**after kickoff**) | Session keys in the app; the claims audit of docs and site copy; the finishing crank tick cancels its MagicBlock task (devnet upgrade `3LJSPdfk…`); Lottie on phones; the clay sprite animations in live clashes; two duel-screen fixes found while filming |
-| `e50830c..ba4d09d`, then doc fixes | 15 to `ba4d09d` | Nov 26 04:39 to 22:52, then Nov 27 (**after kickoff**) | Docs and evidence: the cited test logs, the Nov 26 re-run of every local suite, the read-only devnet live check, the proof scripts and the Nov 26 trails, README, this form, docs/NICK.md. App UI: sprite animations, live-clash polish, the Play tab, the squad leverage vote (62 app files, +376/−112 since `9e0a58e`). Landing: the Squads rename. The program, tests, server and `web/` are unchanged |
+| `e50830c..ba4d09d` | 15 | Nov 26 04:39 to 22:52 (**after kickoff**) | Docs and evidence: the cited test logs, the Nov 26 re-run of every local suite, the read-only devnet live check, the proof scripts and the Nov 26 trails, README, this form, docs/NICK.md. App UI: sprite animations, live-clash polish, the Play tab, the squad leverage vote (62 app files, +376/−112 from `9e0a58e` to `ba4d09d`). Landing: the Squads rename. The program, tests, server and `web/` are unchanged |
+| `c3f3b90..bd8e4c2`, then doc commits | 17 to `bd8e4c2` | Nov 26 23:09 to Nov 27 10:29, then Nov 27 (**after kickoff**) | Docs, this form and the demo films v4 to v6; the Nov 27 devnet trails. App (17 files, +405/−27 from `ba4d09d`): the coin's price chart before the call (clash and Royale), the tie line, the Clash again fix, Tap Grid full screen, Draw the Line (151 games), its tour, the Web Crypto polyfill for phones. The tagline in the app, `landing/` and `web/` (7 lines in `web/`). `chain/scripts`: `close-war-trades.ts` and the Royale and squad proof scripts. The program, tests and server are unchanged |
 
 Every commit is pushed to the private repo's `main`. After kickoff the program grew by 1,039 lines and lost 74
 (`git diff --shortstat 6431028 HEAD -- chain/programs`); `lib.rs` is now 3,485 lines. The program on devnet is the last
