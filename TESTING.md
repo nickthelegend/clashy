@@ -18,6 +18,12 @@ the sponsor pays all fees and rent.
 
 **56 tests in 10 suites, 56 pass, 0 fail** (Nov 26, 2026). The website also builds and lints cleanly.
 
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the two suites that need no validator on every push
+to `main` and every pull request: the program unit tests (`cargo test -p clashy --lib` in `chain/`, 13 tests) and the
+social server tests (`npm ci && npm test` in `server/` on Node 24, 4 tests). The on-chain suites need MagicBlock's
+validator stack (`chain/scripts/localnet.sh`) and are not in CI. Both test commands were run locally on Nov 27 when the
+workflow was added (Rust with `--offline`): 13 of 13 and 4 of 4 pass. No CI run result is recorded here yet.
+
 | Suite | Command (from `chain/` unless noted) | Tests | Nov 26 result | Log |
 |---|---|---|---|---|
 | Program unit tests (math, chest shares, price scaling, a real MagicBlock oracle account) | `cargo test -p clashy --lib` | 13 | 13 pass | `unit-nov26.log` |
