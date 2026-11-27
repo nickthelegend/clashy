@@ -18,7 +18,7 @@ import { TxStrip, WalletCard, errText, short, useChain } from '@/chain/useChain'
 import { CallButtons, coinName } from '@/ui/clash';
 import { ClayLoop } from '@/ui/clay';
 import { FX, Hit, RoundBanner } from '@/ui/fx';
-import { ART, BackBtn, ErrorLine, LiveDot, Row, Txt } from '@/ui/kit';
+import { ART, BackBtn, ErrorLine, LiveChart, LiveDot, Row, Txt } from '@/ui/kit';
 import { useDeskColumn } from '@/ui/layout';
 import { TourScroll, TourTarget, useScreenTour, useTourScroll } from '@/tour';
 import { Lottie } from '@/ui/lottie';
@@ -190,6 +190,13 @@ export default function OnchainRoyale() {
   const sym = tour && rolled(tour.coin) ? COIN_SYMBOLS[tour.coin] : null;
   const left = tour ? Math.max(0, tour.roundStartedAt + tour.roundSecs - now) : 0;
   const move = tour && price ? price - tour.roundPrice : 0;
+  // this round's price line, so you read the chart before you call it
+  const [roundLine, setRoundLine] = useState<{ round: number; p: number[] }>({ round: 0, p: [] });
+  useEffect(() => {
+    if (!tour || tour.status !== 1 || !price) return;
+    setRoundLine((r) => (r.round !== tour.round ? { round: tour.round, p: [tour.roundPrice, price] } : r.p[r.p.length - 1] === price ? r : { round: r.round, p: [...r.p, price].slice(-120) }));
+  }, [price, tour?.round, tour?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [lineW, setLineW] = useState(0);
   const movePct = tour && price && tour.roundPrice ? (move / tour.roundPrice) * 100 : 0;
   const ready = hasPlayer && (bal ?? 0) >= ENTRY_USDC;
   /** The pot in USDC. */
@@ -332,6 +339,11 @@ export default function OnchainRoyale() {
                 </View>
                 <Text style={{ ...FONT.bold, fontSize: 38, letterSpacing: -1.2, color: move > 0 ? C.up : move < 0 ? C.down : C.ink, marginTop: 10 }}>{price ? fmtUsd(price) : '…'}</Text>
                 <Txt v="small">{sym ? coinName(sym) : 'Coin'} from {fmtUsd(tour.roundPrice)} · {movePct >= 0 ? '+' : ''}{movePct.toFixed(3)}%</Txt>
+                <View onLayout={(e) => setLineW(Math.floor(e.nativeEvent.layout.width))} style={{ alignSelf: 'stretch', marginTop: 12, backgroundColor: SURFACE, borderRadius: 22, paddingVertical: 6, overflow: 'hidden' }}>
+                  {lineW > 0 && roundLine.round === tour.round && roundLine.p.length > 1
+                    ? <LiveChart data={roundLine.p} w={lineW} h={110} refLine={tour.roundPrice} refLabel="round start" color={move >= 0 ? C.up : C.down} minSpan={0.0004} />
+                    : <View style={{ height: 110, alignItems: 'center', justifyContent: 'center' }}><LiveDot color={C.brandSoft} /><Txt v="small" style={{ marginTop: 6 }}>Drawing this round's price…</Txt></View>}
+                </View>
                 <Text style={{ ...FONT.semi, fontSize: 20, color: left > 0 && left < 3 ? C.opp : C.muted, marginTop: 8 }}>{left > 0 ? `${Math.ceil(left)} S to call` : 'Calling it…'}</Text>
                 <View style={{ alignSelf: 'stretch', marginTop: 16 }}>
                   {me >= 0 && tour.lives[me] > 0 ? (

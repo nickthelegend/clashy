@@ -3,7 +3,7 @@
 // today's live price as the last point. Live draws only the prices this screen has seen since it opened. Anything the
 // crank doesn't record gets Live only. Nothing is backfilled: a range the crank hasn't covered yet says since when.
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { historySym, usePriceHistory, type PriceRange } from '@/chain/history-prices';
 import { Bone, ErrorLine, LiveChart, LiveDot, Row, Txt } from './kit';
@@ -29,14 +29,22 @@ const money = (n: number) => {
 };
 
 /** samples: the live prices this screen has seen ({t ms, p}); price: the live price now. */
-export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, source }: {
+export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, source, start = '24h' }: {
   sym: string; samples: { t: number; p: number }[]; price?: number; h?: number; minSpan?: number; source: string;
+  /** The range it opens on, when the crank records this market (else Live). */
+  start?: Mode;
 }) {
   const hs = historySym(sym);
-  const [mode, setMode] = useState<Mode>(hs ? '24h' : 'live');
+  const [mode, setMode] = useState<Mode>(hs ? start : 'live');
   const hist = usePriceHistory(hs && mode !== 'live' ? mode : null);
   const [w, setW] = useState(0);
   const def = MODES.find((x) => x.k === mode)!;
+  // until you pick a range yourself: a range the crank hasn't covered yet (it was off) opens the next one up
+  const [chosen, setChosen] = useState(false);
+  useEffect(() => {
+    if (chosen || mode === 'live' || mode === '7d' || !hs || !hist.data) return;
+    if (hist.data.points.filter((x) => typeof x.p[hs] === 'number').length < 2) setMode(mode === '1h' ? '24h' : '7d');
+  }, [hist.data, mode, chosen, hs]);
 
   let line: number[] = [];
   let times: number[] = [];
@@ -81,7 +89,7 @@ export function PriceChart({ sym, samples, price, h = 220, minSpan = 0.0006, sou
         {(hs ? MODES : MODES.slice(0, 1)).map((x) => {
           const on = x.k === mode;
           return (
-            <Pressable key={x.k} onPress={() => { Haptics.selectionAsync(); setMode(x.k); }} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={x.past}
+            <Pressable key={x.k} onPress={() => { Haptics.selectionAsync(); setChosen(true); setMode(x.k); }} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={x.past}
               style={{ height: 36, minWidth: 44, paddingHorizontal: 10, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.s2 : 'transparent' }}>
               <Txt v="small" color={on ? C.ink : C.dim} style={{ ...(on ? FONT.semi : FONT.medium), fontSize: 14 }}>{x.label}</Txt>
             </Pressable>
