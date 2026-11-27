@@ -125,16 +125,21 @@ Settings → Collaborators. Every commit is already pushed.
 NICK: the unlisted YouTube or Drive link of the demo film
 ```
 
-**No approved demo film exists yet.** A first cut from a real devnet duel recorded on Nov 25 evening
-(`marketing/clashy-x/demo/clashy-demo-film-v1.mp4`, 2:01, outside this repo) has not been approved or posted; its
-voice is ElevenLabs, not the Chatterbox voice Nick's film rules ask for. The plan for the film is
-`research/films/clashy/FILM-DRAFT.md` in the grokbot folder. The launch film (`marketing/clashy-x/film/`, 48 s) is a
-brand film on practice money and shows no devnet clash. The form doesn't publish a length limit. A demo that meets Nick's film rules would:
-- open on the live product within 15 s (no title cards first);
-- play one real devnet clash: the VRF roll, sealed picks, live on the rollup, settlement and the USDC receipt;
-- show the explorer tabs for the same duel (base and rollup);
-- tour the whole app (games, Royale, squads, chat);
-- use no faked output.
+**Demo film v4 (3:09) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (phone-size copy, 10 MB;
+the full-quality master is `marketing/clashy-x/demo/clashy-demo-film-v4.mp4` in the grokbot folder, outside this repo).
+Not yet uploaded anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. Recorded live on
+Solana devnet and MagicBlock's TEE rollup on Nov 26, 2026, with no faked output:
+- opens on a live devnet duel (two phones), then the landing and sign-up;
+- the private 1v1 duel: escrow, MagicBlock VRF coin roll (ETH), both calls sealed in the TEE with a session key, 61
+  crank ticks, the Magic Action payout (Ben +9.70 USDC);
+- a 3-player Royale: VRF coin, 12 session-key calls, 51 crank ticks, Ben last standing (+5.82 USDC);
+- a squad war: two squads made in the app, chest deposits, a challenge, Ana proposes SOL up 10×, Ben votes yes on his
+  own phone, Night Owls call down and win the pot (9.70 USDC after rake);
+- the PvP-first Play tab, the practice games, a Stash save and the spending limits;
+- eight Solana Explorer cards for the same games (escrow, VRF signer, TEE lock at fee 0, crank tick, payout by the TEE
+  validator, Royale session-key call, squad vote, war settle).
+Trails: [`chain/evidence/devnet-proof-nov26.md`](chain/evidence/devnet-proof-nov26.md). Narration: the builder's voice,
+cloned (ElevenLabs; a local Chatterbox model for the Royale, squad war, games and Stash lines).
 
 Upload it (YouTube unlisted or Drive, viewable by anyone with the link) and paste the URL.
 
