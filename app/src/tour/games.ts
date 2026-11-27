@@ -36,6 +36,7 @@ const GUIDE: Record<EngineId, { pick: Two; go: Two }> = {
   rewind: { pick: { title: 'Real history.', body: 'A real chart, with what came next hidden.' }, go: { title: 'Call it.', body: 'Right grows the pot. Cash out any time.' } },
   whochart: { pick: { title: 'No labels.', body: 'A real chart. Which market is it?' }, go: { title: 'Name it.', body: 'Right grows the pot. Cash out any time.' } },
   candle: { pick: { title: 'One candle.', body: 'It forms live from the price. Call its shape.' }, go: { title: 'Make your call.', body: 'Clashy Bot takes the other side.' } },
+  drawline: { pick: { title: 'Draw the line.', body: 'Drag across the blank part: where does the price go next?' }, go: { title: 'Lock it in.', body: 'Every price that touches your line scores. Beat the bot.' } },
   path: { pick: { title: 'Draw the path.', body: 'Up or down on every leg, before it starts.' }, go: { title: 'Every leg counts.', body: 'All legs right pays the multiplier.' } },
   sync: { pick: { title: 'Two markets.', body: 'Will they finish the same way, or split?' }, go: { title: 'Make your call.', body: 'Clashy Bot takes the other side.' } },
   timer: { pick: { title: 'Set your exit.', body: 'Pick a side and the second you get out.' }, go: { title: 'Beat the bot.', body: 'It exits at a random second. The better P&L wins.' } },
