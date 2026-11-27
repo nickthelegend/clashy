@@ -126,20 +126,22 @@ Settings → Collaborators. Every commit is already pushed.
 NICK: the unlisted YouTube or Drive link of the demo film
 ```
 
-**Demo film v6 (5:25, 1080p) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (76 MB; the
-master is `marketing/clashy-x/demo/clashy-demo-film-v6.mp4` in the grokbot folder, outside this repo). Not yet uploaded
-anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. Every app shot is an iOS Simulator
-recording (real status bar) of Clashy on the home screen, live on Solana devnet and MagicBlock's TEE rollup, Nov 27:
-- the Clashy title, then onboarding (four slides, a name, a funded test wallet) and the Play tab;
-- the private 1v1 clash: MagicBlock VRF rolls BTC, both phones show the coin's last hour from Clashy's on-chain feed,
-  Ana calls down and Ben up, both sealed in the TEE with session keys, 61 crank ticks, the Magic Action payout (Ben
-  +9.70 USDC);
-- a squad war: Moon Pack is made, Ben joins, both fund the chest, Ana challenges Night Owls, proposes SOL up 10x, Ben
-  votes yes on his own phone, the bell, Night Owls win (+0.59% to -0.11%);
-- the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers (10MS, VRF);
-- 151 games; Tap Grid full screen on Bitcoin (a box hits at 2.5x) and Draw the Line against Clashy Bot;
-- seven Solana Explorer cards for the same clash and war (escrow, VRF signer, TEE lock at fee 0, crank tick 61, payout
-  by the TEE validator, Ben's vote, war settle), then the tagline: Clash 1v1. Squad up. Play 150 games.
+**Demo film v7 (6:32, 1080p) is in the repo: [`docs/media/clashy-demo.mp4`](docs/media/clashy-demo.mp4)** (71 MB; the
+master is `marketing/clashy-x/demo/clashy-demo-film-v7.mp4` in the grokbot folder, outside this repo). Not yet uploaded
+anywhere: NICK uploads it (unlisted YouTube or Drive) and pastes the link above. App shots are iOS Simulator recordings
+(real status bar, a ring on every tap) of the Clashy web app on the home screen, live on Solana devnet and MagicBlock's
+TEE rollup, Nov 27:
+- the Clashy title, onboarding (four slides, a name, a funded test wallet) and the Play tab;
+- the private 1v1 clash: MagicBlock VRF rolls SOL, both phones show the coin's last hour and the tie rule (same call: both
+  stakes back, no fee), Ana calls up and Ben down, both sealed in the TEE with session keys, 61 crank ticks, the Magic
+  Action payout (Ben +9.70 USDC); trail `chain/evidence/devnet-proof-nov27-ios-duel2.txt`;
+- a squad war (Moon Pack is made, Ben joins, both fund the chest) and a rematch: both squads call SOL down 10x, Ben votes
+  yes on his own phone, and the better return wins (Moon Pack -0.05% vs Night Owls -0.27%); trail
+  `chain/evidence/devnet-proof-nov27-ios-squad-rematch.txt`. The rival squad was a scripted third wallet off camera;
+- the squad's #general on the MagicBlock rollup with messages and MagicBlock stickers;
+- Tap Grid full screen on Bitcoin, Draw the Line, and two walls of six practice games played live;
+- the web app on desktop; seven Solana Explorer cards for the same clash and rematch; store plans (App Store, Google
+  Play, Solana dApp Store: coming soon) and the tagline: Clash 1v1. Squad up. Play 150 games.
 Trails: [`chain/evidence/devnet-proof-nov27-ios-duel.txt`](chain/evidence/devnet-proof-nov27-ios-duel.txt) and
 [`chain/evidence/devnet-proof-nov27-ios-squad-war.txt`](chain/evidence/devnet-proof-nov27-ios-squad-war.txt). Narration: the builder's voice,
 cloned (ElevenLabs; a local Chatterbox model for the Royale, squad war, games and Stash lines).
